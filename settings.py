@@ -157,3 +157,8 @@ AUTHENTICATION_BACKENDS = (
 
 #Django-guardian settings
 ANONYMOUS_USER_ID = -1
+
+#Userena settings
+LOGIN_REDIRECT_URL = '/users/%(username)s/'
+LOGIN_URL = '/users/signin/'
+LOGOUT_URL = '/users/signout/'
