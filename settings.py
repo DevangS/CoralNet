@@ -119,10 +119,11 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
-    'registration',
+    'userena',
+    'guardian',
+    'easy_thumbnails',
 )
 
-ACCOUNT_ACTIVATION_DAYS = 7 # One-week activation window
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -146,3 +147,13 @@ LOGGING = {
         },
     }
 }
+
+AUTHENTICATION_BACKENDS = (
+    'userena.backends.UserenaAuthenticationBackend',
+    'guardian.backends.ObjectPermissionBackend',
+    'django.contrib.auth.backends.ModelBackend', # this is default
+
+)
+
+#Django-guardian settings
+ANONYMOUS_USER_ID = -1
