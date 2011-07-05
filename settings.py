@@ -108,9 +108,8 @@ TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
 
     'C:/Users/Stephen/Documents/CVCE/Git_repo/CoralNet/templates',
-    # Put your path here in the same format:
-    # Devang
-    # Oscar
+    # Devang's path goes here
+    # Oscar's path goes here
 )
 
 INSTALLED_APPS = (
@@ -124,9 +123,11 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
+    'userena',
+    'guardian',
+    'easy_thumbnails',
 )
 
-ACCOUNT_ACTIVATION_DAYS = 7 # One-week activation window
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -150,3 +151,18 @@ LOGGING = {
         },
     }
 }
+
+AUTHENTICATION_BACKENDS = (
+    'userena.backends.UserenaAuthenticationBackend',
+    'guardian.backends.ObjectPermissionBackend',
+    'django.contrib.auth.backends.ModelBackend', # this is default
+
+)
+
+#Django-guardian settings
+ANONYMOUS_USER_ID = -1
+
+#Userena settings
+LOGIN_REDIRECT_URL = '/users/%(username)s/'
+LOGIN_URL = '/users/signin/'
+LOGOUT_URL = '/users/signout/'
