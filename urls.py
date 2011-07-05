@@ -5,7 +5,7 @@ from django.conf.urls.defaults import patterns, include, url
 # admin.autodiscover()
 
 urlpatterns = patterns('',
-    (r'^users/', include('userena.urls')),
+   # (r'^users/', include('userena.urls')),
 
     # Examples:
     # url(r'^$', 'CoralNet.views.home', name='home'),
