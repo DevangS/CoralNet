@@ -5,6 +5,7 @@ from django.conf.urls.defaults import patterns, include, url
 # admin.autodiscover()
 
 urlpatterns = patterns('',
+    (r'', include('images.urls')),
     # Examples:
     # url(r'^$', 'CoralNet.views.home', name='home'),
     # url(r'^CoralNet/', include('CoralNet.foo.urls')),
