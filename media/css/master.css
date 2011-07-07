@@ -120,7 +120,7 @@ html, body{
 #intro{
     padding: 30px 20px;
     min-height: 290px;
-    background: #e7e2de url(/* TODO: put link to logo here */) no-repeat 90px 30px;
+    background: #e7e2de url(../img/example.jpg) no-repeat 90px 30px;
     -moz-border-radius: 8px;
     -webkit-border-radius: 8px;
     border-radius: 8px;
