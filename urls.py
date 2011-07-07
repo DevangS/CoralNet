@@ -6,6 +6,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
+    (r'', include('images.urls')),
     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
     (r'^admin/', include(admin.site.urls)),
     (r'^accounts/', include('userena.urls')),
@@ -14,8 +15,8 @@ urlpatterns = patterns('',
         direct_to_template,
         {'template': 'static/index.html'},
         name='index'),
-    (r'^i18n/', include('django.conf.urls.i18n')),
-
+    (r'^i18n/', include('django.conf.urls.i18n')),                   
+   
     # Examples:
     # url(r'^$', 'CoralNet.views.home', name='home'),
     # url(r'^CoralNet/', include('CoralNet.foo.urls')),
@@ -25,6 +26,8 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     # url(r'^admin/', include(admin.site.urls)),
+
+
 )
 
 if settings.DEBUG:
