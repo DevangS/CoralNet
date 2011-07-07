@@ -1,4 +1,10 @@
 # Django settings for CoralNet project.
+import os, sys
+
+abspath = lambda *p: os.path.abspath(os.path.join(*p))
+PROJECT_ROOT = abspath(os.path.dirname(__file__))
+USERENA_MODULE_PATH = abspath(PROJECT_ROOT, '..')
+sys.path.insert(0, USERENA_MODULE_PATH)
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -33,6 +39,15 @@ TIME_ZONE = 'America/Los_Angeles'
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-us'
 
+ugettext = lambda s: s
+LANGUAGES = (
+    ('en', ugettext('English')),
+    ('nl', ugettext('Dutch')),
+    ('fr', ugettext('French')),
+    ('pl', ugettext('Polish')),
+    ('pt', ugettext('Portugese')),
+)
+
 SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
@@ -45,13 +60,17 @@ USE_L10N = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = ''
+MEDIA_ROOT = abspath(PROJECT_ROOT, 'media')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = ''
+MEDIA_URL = '/media/'
 
+DOCUMENT_ROOT = abspath(PROJECT_ROOT, 'docs')
+
+
+ADMIN_MEDIA_PREFIX = '/media/admin/'
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
@@ -92,12 +111,23 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.Loader',
 )
 
+TEMPLATE_CONTEXT_PROCESSORS = (
+    "django.contrib.auth.context_processors.auth",
+    "django.core.context_processors.debug",
+    "django.core.context_processors.i18n",
+    "django.core.context_processors.media",
+    "django.contrib.messages.context_processors.messages",
+    "django.core.context_processors.request",
+)
+
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'userena.middleware.UserenaLocaleMiddleware',
 )
 
 ROOT_URLCONF = 'CoralNet.urls'
@@ -106,6 +136,7 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
+    abspath(PROJECT_ROOT, 'templates')
 )
 
 INSTALLED_APPS = (
@@ -120,8 +151,10 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
     'userena',
+    'userena.contrib.umessages',
     'guardian',
     'easy_thumbnails',
+    'CoralNet.accounts',
 )
 
 
@@ -159,6 +192,9 @@ AUTHENTICATION_BACKENDS = (
 ANONYMOUS_USER_ID = -1
 
 #Userena settings
-LOGIN_REDIRECT_URL = '/users/%(username)s/'
-LOGIN_URL = '/users/signin/'
-LOGOUT_URL = '/users/signout/'
+LOGIN_REDIRECT_URL = '/accounts/%(username)s/'
+LOGIN_URL = '/accounts/signin/'
+LOGOUT_URL = '/accounts/signout/'
+AUTH_PROFILE_MODULE = 'accounts.Profile'
+
+
