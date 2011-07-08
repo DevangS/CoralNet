@@ -155,6 +155,7 @@ INSTALLED_APPS = (
     'guardian',
     'easy_thumbnails',
     'CoralNet.accounts',
+    'CoralNet.images',
 )
 
 
