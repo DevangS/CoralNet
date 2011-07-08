@@ -1,19 +1,35 @@
-<!-- DOCTYPE html -->
+{% extends "base.html" %}
 
-<!-- Uh... find appropriate templates later.  Check the Django docs perhaps. -->
+{% block title %}CoralNet - New Source{% endblock %}
 
-<html>
+{% block content %}
 
-<head>
-    <title>CoralNet - New Source</title>
-</head>
+    <h2>Create a new source</h2>
 
-<body>
+    {% comment %}
+    When the user system's all up and running:
+    - change this form's method to "post"
+    - add a {% csrf_token %} tag inside the form
+    - uncomment views.py's alternate code in newsource().
+    {% endcomment %}
 
-<h2>Create a new source</h2>
+    <form action="/newsource/success/" method="get">
 
-<p>Source Name: <input type="text" value="name" /></p>
+        <p><label for="sourceName"><i>Source Name:</i></label>
+            <input type="text" name="sourceName" id="sourceName" />
+        </p>
 
-</body>
+        <p><i>Privacy Setting:</i>
+            <input type="radio" name="privacySetting" id="public" value="public"/>
+            <label for="public">Public</label>
+            <input type="radio" name="privacySetting" id="private" value="private"/>
+            <label for="private">Private</label>
+            <input type="radio" name="privacySetting" id="invisible" value="invisible"/>
+            <label for="invisible">Invisible</label>
+        </p>
 
-</html>
+        <p><input type="submit" value="Create Source" /></p>
+    
+    </form>
+
+{% endblock %}
