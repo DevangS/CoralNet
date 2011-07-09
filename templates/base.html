@@ -13,6 +13,13 @@
     <link rel="stylesheet" type="text/css" media="screen" href="{{ MEDIA_URL }}css/master.css" />
     <link rel="shortcut icon" type="image/ico" href="/favicon.ico" />
 
+    {% comment %}
+    base.html doesn't include the <script type="text/javascript">
+    because having that in the child template instead will
+    enable JavaScript syntax highlighting while coding the child template. -Stephen
+    {% endcomment %}
+    {% block javascript-functions %}{% endblock %}
+
   </head>
   <body>
     <div id="top">
@@ -23,6 +30,7 @@
         {% endfor %}
       </ul>
       {% endif %}
+    </div>
 
  
     <div id="container">	
@@ -50,5 +58,6 @@
       <div id="content-container">
         {% block content %}{% endblock %}
       </div><!-- /content-container-->
-   </body>
- </html>
+    </div>
+  </body>
+</html>

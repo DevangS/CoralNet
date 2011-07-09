@@ -2,6 +2,46 @@
 
 {% block title %}CoralNet - New Source{% endblock %}
 
+{% block javascript-functions %}
+<script type="text/javascript">
+
+    function changeKeyFields()
+    {
+        var key1_elmt = document.getElementById("key1");
+        var key2_elmt = document.getElementById("key2");
+        var key3_elmt = document.getElementById("key3");
+        var key4_elmt = document.getElementById("key4");
+        var key5_elmt = document.getElementById("key5");
+
+        // Set each disabled property to true or false
+        key2_elmt.disabled = (key1_elmt.value == "");
+        key3_elmt.disabled = (key2_elmt.value == "" || key2_elmt.disabled);
+        key4_elmt.disabled = (key3_elmt.value == "" || key3_elmt.disabled);
+        key5_elmt.disabled = (key4_elmt.value == "" || key4_elmt.disabled);
+    }
+
+    function setVisibilityExplanation(form)
+    {
+        var visibilityExplanation_elmt = document.getElementById("visibilityExplanation");
+        var visibilitySetting = null;
+
+        for (var i=0; i<form.visibilitySetting.length; i++)
+        {
+            if (form.visibilitySetting[i].checked)
+                visibilitySetting = form.visibilitySetting[i].value;
+        }
+
+        if (visibilitySetting == 'public')
+            visibilityExplanation_elmt.innerHTML = "Images are public by default";
+        else if (visibilitySetting == 'private')
+            visibilityExplanation_elmt.innerHTML = "Images are private (visible only to Source participants) by default";
+        else if (visibilitySetting == 'invisible')
+            visibilityExplanation_elmt.innerHTML = "The entire Source's existence is hidden from the public";
+    }
+
+</script>
+{% endblock %}
+
 {% block content %}
 
     <h2>Create a new source</h2>
@@ -20,12 +60,39 @@
         </p>
 
         <p><i>Visibility Setting:</i>
-            <input type="radio" name="visibilitySetting" id="public" value="public"/>
-            <label for="public">Public</label>
-            <input type="radio" name="visibilitySetting" id="private" value="private"/>
-            <label for="private">Private</label>
-            <input type="radio" name="visibilitySetting" id="invisible" value="invisible"/>
-            <label for="invisible">Invisible</label>
+            <input type="radio" name="visibilitySetting" id="public" value="public" onchange="setVisibilityExplanation(this.form)"/>
+             <label for="public">Public</label>
+            <input type="radio" name="visibilitySetting" id="private" value="private" onchange="setVisibilityExplanation(this.form)"/>
+             <label for="private">Private</label>
+            <input type="radio" name="visibilitySetting" id="invisible" value="invisible" onchange="setVisibilityExplanation(this.form)"/>
+             <label for="invisible">Invisible</label>
+
+            <br />
+            <span id="visibilityExplanation">
+
+            </span>
+        </p>
+
+        <p><i>Location keys (up to 5):</i><br />
+            (Most general)<br />
+            <label for="key1">1</label>
+             <input type="text" name="key1" id="key1" onkeyup="changeKeyFields()"/><br />
+            <label for="key2">2</label>
+             <input type="text" name="key2" id="key2" disabled="disabled" onkeyup="changeKeyFields()"/><br />
+            <label for="key3">3</label>
+             <input type="text" name="key3" id="key3" disabled="disabled" onkeyup="changeKeyFields()"/><br />
+            <label for="key4">4</label>
+             <input type="text" name="key4" id="key4" disabled="disabled" onkeyup="changeKeyFields()"/><br />
+            <label for="key5">5</label>
+             <input type="text" name="key5" id="key5" disabled="disabled" onkeyup="changeKeyFields()"/><br />
+            (Most specific)
+        </p>
+
+        <p><i>World location:</i><br />
+            <label for="longitude">Longitude:</label>
+             <input type="text" name="longitude" id="longitude" /><br />
+            <label for="latitude">Latitude:</label>
+             <input type="text" name="latitude" id="latitude" /><br />
         </p>
 
         <p><input type="submit" value="Create Source" /></p>
