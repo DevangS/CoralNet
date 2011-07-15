@@ -54,27 +54,27 @@ class Source(models.Model):
         displayStr += "\n"
         return displayStr
 
-    class camera_info(models.Model):
-        name = models.CharField(max_length=45, blank=True)
-        description = models.CharField(max_length=45, blank=True)
-        pixel_cm_ratio = models.IntegerField
-        height = models.IntegerField
-        width = models.IntegerField
-        photographer = models.CharField(max_length=45, blank=True)
-        water_quality =  = models.CharField(max_length=45, blank=True)
+"""class camera_info(models.Model):
+    name = models.CharField(max_length=45, blank=True)
+    description = models.CharField(max_length=45, blank=True)
+    pixel_cm_ratio = models.IntegerField
+    height = models.IntegerField
+    width = models.IntegerField
+    photographer = models.CharField(max_length=45, blank=True)
+    water_quality = models.CharField(max_length=45, blank=True)
 
-    class Image(models.Model):
-        status = models.CharField(max_length=1, blank-True)
-        total_points = models.IntegerField
-        camera = models.ForeignKey(camera_info)
-        source = models.ForeignKey(Source)
+class Image(models.Model):
+    status = models.CharField(max_length=1, blank=True)
+    total_points = models.IntegerField
+    camera = models.ForeignKey(camera_info)
+    source = models.ForeignKey(Source)
         
 
-    class Point(models.Model):
-        row = models.IntegerField
-        column = models.IntegerField
-        point_number = models.IntegerField
-        annotation_status =  = models.CharField(max_length=1, blank=True)
-        image = models.ForeignKey(Image)
+class Point(models.Model):
+    row = models.IntegerField
+    column = models.IntegerField
+    point_number = models.IntegerField
+    annotation_status = models.CharField(max_length=1, blank=True)
+    image = models.ForeignKey(Image)
 
-    #TODO: class value_1, 2, etc?
+    #TODO: class value_1, 2, etc? """
