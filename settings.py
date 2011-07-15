@@ -1,5 +1,6 @@
 # Django settings for CoralNet project.
 import os, sys
+from django.conf.locale import en
 
 abspath = lambda *p: os.path.abspath(os.path.join(*p))
 PROJECT_ROOT = abspath(os.path.dirname(__file__))
@@ -197,5 +198,7 @@ LOGIN_REDIRECT_URL = '/accounts/%(username)s/'
 LOGIN_URL = '/accounts/signin/'
 LOGOUT_URL = '/accounts/signout/'
 AUTH_PROFILE_MODULE = 'accounts.Profile'
+USERENA_USE_MESSAGES = False
+USERENA_LANGUAGE_FIELD = 'en'
 
 
