@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}CoralNet - {{ source.name }}{% endblock %}
+
+{% block javascript-functions %}
+{% endblock %}
+
+{% block content %}
+
+    <div id="static_info">
+        <h2>{{ source.name }}</h2>
+
+        <p>Visibility: {{ source.get_visibility_display }}</p>
+
+        <p>Date Created: {{ source.create_date }}</p>
+
+        <p>Location keys: </p>
+        <table border="0">
+            <tr><td>{{ source.key1 }}</td></tr>
+            <tr><td>{{ source.key2 }}</td></tr>
+            <tr><td>{{ source.key3 }}</td></tr>
+            <tr><td>{{ source.key4 }}</td></tr>
+            <tr><td>{{ source.key5 }}</td></tr>
+        </table>
+
+        <p>Longitude: {{ source.longitude }}</p>
+        <p>Latitude: {{ source.latitude }}</p>
+    </div>
+
+    <div id="editable_info">
+        {% comment %}
+        TODO:
+        An "Edit" button should un-hide this div, which is a form for
+        editing the Source info. (Only available if the user has edit
+        permissions on this Source.)
+        Hopefully we can re-use newsource.html's form code.
+        {% endcomment %}
+    </div>
+
+{% endblock %}

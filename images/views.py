@@ -6,34 +6,27 @@ from images.models import Source
 from images.forms import ImageSourceForm
 
 def newsource(request):
+    """
+    Page with the form to create a new Image Source.
+    """
 
     # We can get here one of two ways: either we just got to the form
     # page, or we just submitted the form.  If POST, we submitted; if
     # GET, we just got here.
     if request.method == 'POST':
-        form = ImageSourceForm(request.POST) # A form bound to the POST data
-        
-        if form.is_valid(): # All validation rules pass
+        # A form bound to the POST data
+        form = ImageSourceForm(request.POST)
 
-            # Process form.cleaned_data:
-            # Key n only makes sense if 1 through n-1 are specified
-            data = form.cleaned_data
-            if not data.has_key('key1'):
-                del data['key2']
-            if not data.has_key('key2'):
-                del data['key3']
-            if not data.has_key('key3'):
-                del data['key4']
-            if not data.has_key('key4'):
-                del data['key5']
-            form.cleaned_data = data
-
-            form.save()
-            return HttpResponseRedirect('success/') # Redirect after POST
+        # is_valid() calls our ModelForm's clean() and checks validity
+        if form.is_valid():
+            newSource = form.save()
+            return HttpResponseRedirect('../' + str(newSource.id) + '/')
     else:
-        form = ImageSourceForm() # An unbound form
+        # An unbound form
+        form = ImageSourceForm()
 
-    # RequestContext needed for CSRF verification of POST form.
+    # RequestContext needed for CSRF verification of POST form,
+    # and to correctly get the path of the CSS file being used.
     return render_to_response('images/newsource.html', {
         'form': form,
         },
@@ -41,10 +34,13 @@ def newsource(request):
         )
 
 
-def newsource_success(request):
-    
-    # RequestContext seems to be needed to correctly get the
-    # path of the CSS file being used.
-    return render_to_response('images/newsource_success.html',
+def source_main(request, source_id):
+    """
+    Main page for a particular image source.
+    """
+
+    source = Source.objects.get(id=source_id)
+    return render_to_response('images/source_main.html',
+        {'source': source},
         context_instance=RequestContext(request)
         )
