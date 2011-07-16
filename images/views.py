@@ -2,6 +2,7 @@ from django.shortcuts import render_to_response
 from django.http import HttpResponseRedirect
 from django.template import RequestContext
 
+from images.models import Source
 from images.forms import ImageSourceForm
 
 def newsource(request):
@@ -11,9 +12,23 @@ def newsource(request):
     # GET, we just got here.
     if request.method == 'POST':
         form = ImageSourceForm(request.POST) # A form bound to the POST data
+        
         if form.is_valid(): # All validation rules pass
-            # Process the data in form.cleaned_data
-            # ...
+
+            # Process form.cleaned_data:
+            # Key n only makes sense if 1 through n-1 are specified
+            data = form.cleaned_data
+            if not data.has_key('key1'):
+                del data['key2']
+            if not data.has_key('key2'):
+                del data['key3']
+            if not data.has_key('key3'):
+                del data['key4']
+            if not data.has_key('key4'):
+                del data['key5']
+            form.cleaned_data = data
+
+            form.save()
             return HttpResponseRedirect('success/') # Redirect after POST
     else:
         form = ImageSourceForm() # An unbound form
