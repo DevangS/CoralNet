@@ -3,39 +3,49 @@ from django.db import models
 class Source(models.Model):
 
     # Example: 'Moorea'
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
 
-    # This determines the visibility setting of the image source.
-    # 'public' = images are visible to the public by default
-    # 'private' = images are visible only to the source participators by default
-    # 'invisible' = private images + the project's existence is not known to the public
-    visibility = models.CharField(max_length=1)
+    # Visibility choices:
+    # The verbose names are very verbose to clarify the options to the
+    # user on the New Source form.  However, this may or may not be ideal
+    # when displaying the status of an existing project.
+    VISIBILITY_CHOICES = (
+        ('b', "Public (images are public by default)"),
+        ('v', "Private (images are viewable only to Source participants by default)"),
+        ('i', "Invisible (the entire Source's existence is hidden from the public)"),
+    )
+    visibility = models.CharField(max_length=1, choices=VISIBILITY_CHOICES)
 
-    # Allow us to go from 'b' to 'public' or vice versa
-    visibilityCodeToStr = {'b':'public', 'v':'private', 'i':'invisible'}
-    visibilityStrToCode = dict( [(b,a) for (a,b) in visibilityCodeToStr.items()] )
-
-    create_date = models.DateTimeField('date created')
+    # Automatically set to the date and time of creation.
+    create_date = models.DateTimeField('Date created', auto_now_add=True, editable=False)
 
     # Each of these fields is allowed to be blank (an empty string).
     # We're assuming that we'll only have key 2 if we have
     # key 1, we'll only have key 3 if we have key 2, etc.
-    key1 = models.CharField('location key 1', max_length=50, blank=True)
-    key2 = models.CharField('location key 2', max_length=50, blank=True)
-    key3 = models.CharField('location key 3', max_length=50, blank=True)
-    key4 = models.CharField('location key 4', max_length=50, blank=True)
-    key5 = models.CharField('location key 5', max_length=50, blank=True)
+    key1 = models.CharField('Key 1', max_length=50, blank=True)
+    key2 = models.CharField('Key 2', max_length=50, blank=True)
+    key3 = models.CharField('Key 3', max_length=50, blank=True)
+    key4 = models.CharField('Key 4', max_length=50, blank=True)
+    key5 = models.CharField('Key 5', max_length=50, blank=True)
 
     longitude = models.CharField(max_length=20, blank=True)
     latitude = models.CharField(max_length=20, blank=True)
 
-    def visibilityStr(self):
-        return self.visibilityCodeToStr[self.visibility]
-
-    # To-string method
     def __unicode__(self):
+        """
+        To-string method.
+        """
+        return self.name
+
+    def detail_str(self):
+        """
+        Print all the details of this Source.
+        This isn't really suitable for __unicode__(), since __unicode__
+        would be used for a list of Sources on the admin site...
+        but maybe this detail string could still come in handy.
+        """
         displayStr = "\nName: " + self.name \
-               + "\nVisibility: " + self.visibilityStr() \
+               + "\nVisibility: " + self.get_visibility_display() \
                + "\nDate created: " + str(self.create_date)
         if self.key1:
             displayStr += ("\nLocation keys: " + self.key1)

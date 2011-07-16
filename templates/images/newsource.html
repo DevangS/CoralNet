@@ -7,36 +7,17 @@
 
     function changeKeyFields()
     {
-        var key1_elmt = document.getElementById("key1");
-        var key2_elmt = document.getElementById("key2");
-        var key3_elmt = document.getElementById("key3");
-        var key4_elmt = document.getElementById("key4");
-        var key5_elmt = document.getElementById("key5");
+        var key1_elmt = document.getElementById("id_key1");
+        var key2_elmt = document.getElementById("id_key2");
+        var key3_elmt = document.getElementById("id_key3");
+        var key4_elmt = document.getElementById("id_key4");
+        var key5_elmt = document.getElementById("id_key5");
 
         // Set each disabled property to true or false
         key2_elmt.disabled = (key1_elmt.value == "");
         key3_elmt.disabled = (key2_elmt.value == "" || key2_elmt.disabled);
         key4_elmt.disabled = (key3_elmt.value == "" || key3_elmt.disabled);
         key5_elmt.disabled = (key4_elmt.value == "" || key4_elmt.disabled);
-    }
-
-    function setVisibilityExplanation(form)
-    {
-        var visibilityExplanation_elmt = document.getElementById("visibilityExplanation");
-        var visibilitySetting = null;
-
-        for (var i=0; i<form.visibilitySetting.length; i++)
-        {
-            if (form.visibilitySetting[i].checked)
-                visibilitySetting = form.visibilitySetting[i].value;
-        }
-
-        if (visibilitySetting == 'public')
-            visibilityExplanation_elmt.innerHTML = "Images are public by default";
-        else if (visibilitySetting == 'private')
-            visibilityExplanation_elmt.innerHTML = "Images are private (visible only to Source participants) by default";
-        else if (visibilitySetting == 'invisible')
-            visibilityExplanation_elmt.innerHTML = "The entire Source's existence is hidden from the public";
     }
 
 </script>
@@ -47,55 +28,58 @@
     <h2>Create a new source</h2>
 
     {% comment %}
-    When the user system's all up and running:
+    To do:
     - change this form's method to "post"
     - add a {% csrf_token %} tag inside the form
-    - uncomment views.py's alternate code in newsource().
+    - uncomment views.py's RequestContext code in newsource().
     {% endcomment %}
 
-    <form action="/newsource/success/" method="get">
+    <form action="success/" method="post">{% csrf_token %}
 
-        <p><label for="sourceName"><i>Source Name:</i></label>
-            <input type="text" name="sourceName" id="sourceName" />
-        </p>
+    {{ form.non_field_errors }}
+    <div class="fieldWrapper">
+      <p>
+        {{ form.name.errors }}
+        {{ form.name.label_tag }}
+        {{ form.name }}
+      </p>
+    </div>
+    <div class="fieldWrapper">
+      <p>
+        {{ form.visibility.errors }}
+        {{ form.visibility.label_tag }}
+        {{ form.visibility }}
+      </p>
+    </div>
+      <p>Location keys (up to 5):<br />
+        (Most general)<br />
+        {{ form.key1.label_tag }}
+         <input id="id_key1" type="text" name="key1" maxlength="50" onkeyup="changeKeyFields()"/><br />
+        {{ form.key2.label_tag }}
+         <input id="id_key2" type="text" name="key2" maxlength="50" onkeyup="changeKeyFields()" disabled="disabled"/><br />
+        {{ form.key3.label_tag }}
+         <input id="id_key3" type="text" name="key3" maxlength="50" onkeyup="changeKeyFields()" disabled="disabled"/><br />
+        {{ form.key4.label_tag }}
+         <input id="id_key4" type="text" name="key4" maxlength="50" onkeyup="changeKeyFields()" disabled="disabled"/><br />
+        {{ form.key5.label_tag }}
+         <input id="id_key5" type="text" name="key5" maxlength="50" onkeyup="changeKeyFields()" disabled="disabled"/><br />
+        (Most specific)
+      </p>
 
-        <p><i>Visibility Setting:</i>
-            <input type="radio" name="visibilitySetting" id="public" value="public" onchange="setVisibilityExplanation(this.form)"/>
-             <label for="public">Public</label>
-            <input type="radio" name="visibilitySetting" id="private" value="private" onchange="setVisibilityExplanation(this.form)"/>
-             <label for="private">Private</label>
-            <input type="radio" name="visibilitySetting" id="invisible" value="invisible" onchange="setVisibilityExplanation(this.form)"/>
-             <label for="invisible">Invisible</label>
 
-            <br />
-            <span id="visibilityExplanation">
+      World location:<br />
+        <div class="fieldWrapper">
+            {{ form.longitude.errors }}
+            {{ form.longitude.label_tag }}
+            {{ form.longitude }}
+        </div>
+        <div class="fieldWrapper">
+            {{ form.latitude.errors }}
+            {{ form.latitude.label_tag }}
+            {{ form.latitude }}
+        </div>
 
-            </span>
-        </p>
-
-        <p><i>Location keys (up to 5):</i><br />
-            (Most general)<br />
-            <label for="key1">1</label>
-             <input type="text" name="key1" id="key1" onkeyup="changeKeyFields()"/><br />
-            <label for="key2">2</label>
-             <input type="text" name="key2" id="key2" disabled="disabled" onkeyup="changeKeyFields()"/><br />
-            <label for="key3">3</label>
-             <input type="text" name="key3" id="key3" disabled="disabled" onkeyup="changeKeyFields()"/><br />
-            <label for="key4">4</label>
-             <input type="text" name="key4" id="key4" disabled="disabled" onkeyup="changeKeyFields()"/><br />
-            <label for="key5">5</label>
-             <input type="text" name="key5" id="key5" disabled="disabled" onkeyup="changeKeyFields()"/><br />
-            (Most specific)
-        </p>
-
-        <p><i>World location:</i><br />
-            <label for="longitude">Longitude:</label>
-             <input type="text" name="longitude" id="longitude" /><br />
-            <label for="latitude">Latitude:</label>
-             <input type="text" name="latitude" id="latitude" /><br />
-        </p>
-
-        <p><input type="submit" value="Create Source" /></p>
+      <p><input type="submit" value="Create Source" /></p>
     
     </form>
 

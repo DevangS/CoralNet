@@ -201,4 +201,6 @@ AUTH_PROFILE_MODULE = 'accounts.Profile'
 USERENA_USE_MESSAGES = False
 USERENA_LANGUAGE_FIELD = 'en'
 
+IMAGES_URL = '/images/'
+
 
