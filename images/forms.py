@@ -1,10 +1,25 @@
-from django.forms import ModelForm
+from django.forms import ModelForm, TextInput
 from images.models import Source
 from CoralNet.forms import FormHelper
 
 class ImageSourceForm(ModelForm):
     class Meta:
         model = Source
+        widgets = {
+            'key1': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
+            'key2': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
+            'key3': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
+            'key4': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
+            'key5': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
+        }
+
+    class Media:
+        js = (
+            # From root static directory
+            "js/util.js",
+            # From images static directory
+            "js/ImageSourceFormHelper.js",
+        )
 
     #error_css_class = ...
     #required_css_class = ...

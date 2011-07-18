@@ -14,9 +14,13 @@
     <link rel="shortcut icon" type="image/ico" href="/favicon.ico" />
 
     {% comment %}
-    base.html doesn't include the <script type="text/javascript">
-    because having that in the child template instead will
-    enable JavaScript syntax highlighting while coding the child template. -Stephen
+    CSS or JS includes, or stuff like {{ form.media }}, can go here. -Stephen
+    {% endcomment %}
+    {% block media-includes %}{% endblock %}
+
+    {% comment %}
+    Page-header JavaScript functions can go here.
+    (Though it's often better to include an external .js instead). -Stephen
     {% endcomment %}
     {% block javascript-functions %}{% endblock %}
 
@@ -37,7 +41,7 @@
       <div id="header">
 
         {% block nav %}
-        <ul id="nav">
+        <ul class="nav" id="nav_main">
           <li><a href="{% url index %}"><span>{% trans 'Home' %}</span></a></li>
           {% if user.is_authenticated %}
           <li><a href="{% url userena_profile_list %}"><span>{% trans 'All profiles' %}</span></a></li>

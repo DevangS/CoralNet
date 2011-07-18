@@ -1,8 +1,10 @@
-{% extends "base.html" %}
+{% extends "images/base_source.html" %}
 
 {% block title %}CoralNet - {{ source.name }}{% endblock %}
 
-{% block javascript-functions %}
+{% block media-includes %}
+  {{ block.super }}
+  {{ editSourceForm.media }}
 {% endblock %}
 
 {% block content %}
@@ -25,16 +27,6 @@
 
         <p>Longitude: {{ source.longitude }}</p>
         <p>Latitude: {{ source.latitude }}</p>
-    </div>
-
-    <div id="editable_info">
-        {% comment %}
-        TODO:
-        An "Edit" button should un-hide this div, which is a form for
-        editing the Source info. (Only available if the user has edit
-        permissions on this Source.)
-        Hopefully we can re-use newsource.html's form code.
-        {% endcomment %}
     </div>
 
 {% endblock %}

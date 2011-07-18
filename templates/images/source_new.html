@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}CoralNet - New Source{% endblock %}
+
+{% block media-includes %}
+  {{ form.media }}
+{% endblock %}
+
+{% block content %}
+
+    <h2>Create a New Source</h2>
+
+    {# This form submits to the same URL as this page. #}
+    {# The view function redirects to the success page if the form is valid. #}
+
+    <form action="" method="post">{% csrf_token %}
+      {{ form.as_p }}
+      <input type="submit" value="Create Source" />
+    </form>
+
+{% endblock %}

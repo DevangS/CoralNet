@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}CoralNet - Source{% endblock %}
+
+{% block media-includes %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/source.css" />
+{% endblock %}
+
+{% block nav %}
+    {{ block.super }}
+    <ul class="nav" id="nav_source">
+      <li><a href="{% url source_main source.id %}"><span>{% trans 'Source Main Page' %}</span></a></li>
+        {# TODO: Check if the user has edit permissions on this Source #}
+      <li><a href="{% url source_edit source.id %}"><span>{% trans 'Edit Source' %}</span></a></li>
+    </ul>
+{% endblock %}

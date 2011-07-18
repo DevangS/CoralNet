@@ -88,10 +88,15 @@ STATIC_URL = '/static/'
 ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # Additional locations of static files
+# (besides apps' "static/" subdirectories, which are automatically included)
 STATICFILES_DIRS = (
     # Put strings here, like "/home/chtml/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
+    # And remember to include a comma after the last element.
+
+    # Project-wide static files
+    abspath(PROJECT_ROOT, 'static'),
 )
 
 # List of finder classes that know how to find static files in
@@ -117,6 +122,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.debug",
     "django.core.context_processors.i18n",
     "django.core.context_processors.media",
+    "django.core.context_processors.static",
     "django.contrib.messages.context_processors.messages",
     "django.core.context_processors.request",
 )

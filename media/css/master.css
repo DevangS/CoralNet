@@ -48,15 +48,15 @@ html, body{
     position: relative;
 }
 
-#nav{
+/* Generic/default attributes for all navigation menus */
+ul.nav{
     position: absolute;
     right: 12px;
     top: 48px;
     overflow: auto;
-
 }
 
-#nav li{
+ul.nav li{
     float: left;
     margin: 0 0 0 10px ;
     border-width: 1px; 
@@ -68,7 +68,7 @@ html, body{
     -webkit-background-clip: padding-box;
 }
 
-#nav li a{ 
+ul.nav li a{
     background: #ede9e4; 
     float: left; 
     padding: 4px 4px 3px; 
@@ -80,7 +80,7 @@ html, body{
     -webkit-background-clip: padding-box;
 }
 
-#nav li a span { 
+ul.nav li a span {
     display: block; 
     color: #686868; 
     padding: 0.52em 1.6em 0.48em;  
@@ -100,11 +100,11 @@ html, body{
     font-weight: bold;
 }
 
-#nav li a:hover span {
+ul.nav li a:hover span {
     background-color: #e0dfda;
 }
 
-#nav li a:active span {  
+ul.nav li a:active span {
     background-color: #e0dfda;
     -webkit-box-shadow: rgba(33,33,33,0.45) 0px 0px 1px; 
     -moz-box-shadow: rgba(33,33,33,0.45) 0px 0px 1px; 
@@ -113,8 +113,13 @@ html, body{
     line-height: 1.5em;
 }
 
-#nav li a span:active { 
+ul.nav li a span:active {
 
+}
+
+/* Specific to the main navigation menu */
+#nav_main {
+    
 }
 
 #intro{

@@ -1,0 +1,20 @@
+{% extends "images/base_source.html" %}
+
+{% block title %}CoralNet - Edit Source{% endblock %}
+
+{% block media-includes %}
+  {{ block.super }}
+  {{ editSourceForm.media }}
+{% endblock %}
+
+{% block content %}
+
+    <h2>Edit Source</h2>
+    
+    <form action="" method="post">{% csrf_token %}
+      {{ editSourceForm.as_p }}
+      <input type="submit" value="Save Changes" />
+      <input name="cancel" type="submit" value="Cancel Changes" />
+    </form>
+
+{% endblock %}

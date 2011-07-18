@@ -1,0 +1,31 @@
+/* nav_source's attributes which are different from .nav in master.css */
+#nav_source{
+    position: absolute;
+    right: 12px;
+    top: 96px;
+    overflow: auto;
+}
+
+#nav_source li{
+
+}
+
+#nav_source li a{
+    background: #c8c8e8;
+}
+
+#nav_source li a span {
+
+}
+
+#nav_source li a:hover span {
+    background-color: #c0c0d8;
+}
+
+#nav_source li a:active span {
+    background-color: #c0c0d8;
+}
+
+#nav_source li a span:active {
+
+}
