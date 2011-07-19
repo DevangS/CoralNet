@@ -1,3 +1,8 @@
+/* Expand the header to accommodate another row of buttons.*/
+#header{
+    height: 178px;  /* 130 + 48 */
+}
+
 /* nav_source's attributes which are different from .nav in master.css */
 #nav_source{
     position: absolute;

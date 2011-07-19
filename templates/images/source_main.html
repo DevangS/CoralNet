@@ -16,14 +16,16 @@
 
         <p>Date Created: {{ source.create_date }}</p>
 
+        <p>Description: {{ source.description|linebreaks }}</p>
+
         <p>Location keys: </p>
-        <table border="0">
-            <tr><td>{{ source.key1 }}</td></tr>
-            <tr><td>{{ source.key2 }}</td></tr>
-            <tr><td>{{ source.key3 }}</td></tr>
-            <tr><td>{{ source.key4 }}</td></tr>
-            <tr><td>{{ source.key5 }}</td></tr>
-        </table>
+            <ul>
+            {% if source.key1 %}<li><p>1. {{ source.key1 }}</p></li>{% endif %}
+            {% if source.key2 %}<li><p>2. {{ source.key2 }}</p></li>{% endif %}
+            {% if source.key3 %}<li><p>3. {{ source.key3 }}</p></li>{% endif %}
+            {% if source.key4 %}<li><p>4. {{ source.key4 }}</p></li>{% endif %}
+            {% if source.key5 %}<li><p>5. {{ source.key5 }}</p></li>{% endif %}
+            </ul>
 
         <p>Longitude: {{ source.longitude }}</p>
         <p>Latitude: {{ source.latitude }}</p>

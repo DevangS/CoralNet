@@ -19,17 +19,25 @@ class Source(models.Model):
     # Automatically set to the date and time of creation.
     create_date = models.DateTimeField('Date created', auto_now_add=True, editable=False)
 
+    description = models.TextField(blank=True)
+
     # Each of these fields is allowed to be blank (an empty string).
     # We're assuming that we'll only have key 2 if we have
     # key 1, we'll only have key 3 if we have key 2, etc.
-    key1 = models.CharField('Key 1', max_length=50, blank=True, help_text='Location keys (1 most general, 5 most specific)')
+    key1 = models.CharField('Key 1', max_length=50, blank=True, help_text='Location keys - 1 most general, 5 most specific')
     key2 = models.CharField('Key 2', max_length=50, blank=True)
     key3 = models.CharField('Key 3', max_length=50, blank=True)
     key4 = models.CharField('Key 4', max_length=50, blank=True)
     key5 = models.CharField('Key 5', max_length=50, blank=True)
 
-    longitude = models.CharField(max_length=20, blank=True, help_text='World location')
+    longitude = models.CharField(max_length=20, blank=True, help_text='World location - for locating your Source on Google Maps')
     latitude = models.CharField(max_length=20, blank=True)
+
+    # Permissions for users to perform actions on Sources
+    class Meta:
+        permissions = (
+            ('all', 'All'),
+        )
 
     def __unicode__(self):
         """
@@ -46,7 +54,8 @@ class Source(models.Model):
         """
         displayStr = "\nName: " + self.name \
                + "\nVisibility: " + self.get_visibility_display() \
-               + "\nDate created: " + str(self.create_date)
+               + "\nDate created: " + str(self.create_date) \
+               + "\nDescription: " + self.description
         if self.key1:
             displayStr += ("\nLocation keys: " + self.key1)
         if self.key2:
