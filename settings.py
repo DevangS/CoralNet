@@ -163,6 +163,9 @@ INSTALLED_APPS = (
     'easy_thumbnails',
     'CoralNet.accounts',
     'CoralNet.images',
+    'CoralNet.annotations',
+    'CoralNet.visualization',
+    'CoralNet.bug_reporting',
 )
 
 
@@ -208,5 +211,8 @@ USERENA_USE_MESSAGES = False
 USERENA_LANGUAGE_FIELD = 'en'
 
 IMAGES_URL = '/images/'
+ANNOTATIONS_URL = '/annotations/'
+VISUALIZATION_URL = '/visualization/'
+BUGS_URL = '/bugs/'
 
 
