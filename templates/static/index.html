@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div id="intro">
   <h2 class="intro"><span>CoralNet</span><br/>Bringing coral reef research to the next level</h2>
@@ -10,7 +11,9 @@
 
 <div id="start">
   <h2><span>Getting Started</span></h2>
-  <a href="{% url source_new %}">Create a new Source - for uploading photos</a>
+
+  <a href="{% url source_about %}">Sources - for uploading photos</a>
+
 </div><!-- /start-->
 
 {% endblock %}

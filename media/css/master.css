@@ -48,17 +48,26 @@ html, body{
     position: relative;
 }
 
-/* Generic/default attributes for all navigation menus */
-ul.nav{
+/* Positioning for top-left navigation menu */
+ul.nav_topleft{
+    position: absolute;
+    left: 12px;
+    top: 48px;
+    overflow: auto;
+}
+
+/* Positioning for top-right navigation menu */
+ul.nav_topright{
     position: absolute;
     right: 12px;
     top: 48px;
     overflow: auto;
 }
 
+/* Generic/default attributes for all navigation menus */
 ul.nav li{
     float: left;
-    margin: 0 0 0 10px ;
+    margin: 0 5px 0 5px;
     border-width: 1px; 
     border-style: solid; 
     border-color: #eee #eee #fff #eee ; 
@@ -70,7 +79,7 @@ ul.nav li{
 
 ul.nav li a{
     background: #ede9e4; 
-    float: left; 
+    float: left;
     padding: 4px 4px 3px; 
     text-decoration: none; 
     outline: 0; 
@@ -117,10 +126,7 @@ ul.nav li a span:active {
 
 }
 
-/* Specific to the main navigation menu */
-#nav_main {
-    
-}
+
 
 #intro{
     padding: 30px 20px;

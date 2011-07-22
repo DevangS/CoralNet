@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load guardian_tags %}
 
 {% block title %}CoralNet - Source{% endblock %}
 
@@ -11,7 +12,9 @@
     {{ block.super }}
     <ul class="nav" id="nav_source">
       <li><a href="{% url source_main source.id %}"><span>{% trans 'Source Main Page' %}</span></a></li>
-        {# TODO: Check if the user has edit permissions on this Source #}
+      {% get_obj_perms user for source as "source_perms" %}
+      {% if "source_admin" in source_perms %}
       <li><a href="{% url source_edit source.id %}"><span>{% trans 'Edit Source' %}</span></a></li>
+      {% endif %}
     </ul>
 {% endblock %}

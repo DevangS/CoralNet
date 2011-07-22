@@ -1,4 +1,5 @@
 from django.db import models
+from guardian.shortcuts import get_objects_for_user
 
 class Source(models.Model):
 
@@ -36,8 +37,12 @@ class Source(models.Model):
     # Permissions for users to perform actions on Sources
     class Meta:
         permissions = (
-            ('all', 'All'),
+            ('source_admin', 'Admin'),
         )
+
+    @staticmethod
+    def get_sources_of_user(user):
+        return get_objects_for_user(user, 'images.source_admin')
 
     def __unicode__(self):
         """

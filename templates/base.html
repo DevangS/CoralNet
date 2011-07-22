@@ -41,8 +41,11 @@
       <div id="header">
 
         {% block nav %}
-        <ul class="nav" id="nav_main">
+        <ul class="nav nav_topleft" id="nav_main">
           <li><a href="{% url index %}"><span>{% trans 'Home' %}</span></a></li>
+          <li><a href="{% url source_list %}"><span>{% trans 'Sources' %}</span></a></li>
+        </ul>
+        <ul class="nav nav_topright" id="nav_user">
           {% if user.is_authenticated %}
           <li><a href="{% url userena_profile_list %}"><span>{% trans 'All profiles' %}</span></a></li>
           <li><a href="{% url userena_umessages_list %}"><span>{% trans 'Messages' %}</span></a></li>

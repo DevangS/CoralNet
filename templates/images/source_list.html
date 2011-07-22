@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Your Sources</h2>
+    <ul>
+        {% for source in sources %}
+            <li><a href="{% url source_main source.id %}">{{ source.name }}</a></li>
+        {% endfor %}
+    </ul>
+    <hr />
+    <p><a href="{% url source_new %}">Create a new Source</a></p>
+{% endblock %}

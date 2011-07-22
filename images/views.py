@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.template import RequestContext
 
@@ -10,6 +10,43 @@ from guardian.shortcuts import assign
 
 from images.models import Source
 from images.forms import ImageSourceForm
+
+def source_list(request):
+    """
+    Page with a list of the user's Sources.
+    Redirect to the About page if the user isn't logged in or doesn't have any Sources.
+    """
+
+    if request.user.is_authenticated():
+        sources_of_user = Source.get_sources_of_user(request.user)
+        
+        if sources_of_user:
+            return render_to_response('images/source_list.html', {
+                'sources': sources_of_user,
+                },
+                context_instance=RequestContext(request)
+            )
+
+    return HttpResponseRedirect(reverse('source_about'))
+
+def source_about(request):
+    """
+    Page that explains what Sources are and how to use them.
+    """
+
+    if request.user.is_authenticated():
+        if Source.get_sources_of_user(request.user):
+            user_status = 'has_sources'
+        else:
+            user_status = 'no_sources'
+    else:
+        user_status = 'anonymous'
+
+    return render_to_response('images/source_about.html', {
+        'user_status': user_status,
+        },
+        context_instance=RequestContext(request)
+    )
 
 @login_required
 def source_new(request):
@@ -29,7 +66,7 @@ def source_new(request):
             # Save the source in the database
             newSource = form.save()
             # Grant permissions for this source
-            assign('all', request.user, newSource)
+            assign('source_admin', request.user, newSource)
             # Add a success message
             messages.success(request, 'Source successfully created.')
             # Redirect to the source's main page
@@ -54,7 +91,7 @@ def source_main(request, source_id):
     Main page for a particular image source.
     """
 
-    source = Source.objects.get(id=source_id)
+    source = get_object_or_404(Source, id=source_id)
 
     return render_to_response('images/source_main.html', {
         'source': source,
@@ -62,13 +99,14 @@ def source_main(request, source_id):
         context_instance=RequestContext(request)
         )
 
-@permission_required('all', (Source, 'id', 'source_id'))
+# Must have the 'source_admin' permission for the Source whose id is source_id
+@permission_required('source_admin', (Source, 'id', 'source_id'))
 def source_edit(request, source_id):
     """
     Edit an image source: name, visibility, location keys, etc.
     """
 
-    source = Source.objects.get(id=source_id)
+    source = get_object_or_404(Source, id=source_id)
 
     if request.method == 'POST':
 

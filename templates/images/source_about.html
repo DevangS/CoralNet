@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Sources</h2>
+    <p>A Source is a collection of photos or images. To get started with photo uploading, create or join a Source first, and then you can upload your coral photos to the Source. Generally, a Source will contain all of a research group's photos from a particular world location. You can choose to make your photos private or open to the public.</p>
+    <p>Once you've uploaded your photos to a Source, they'll be ready for analysis. With an Annotation Effort, the photos' contents can be analyzed for the presence and quantity of coral, algae, or anything else.</p>
+    <hr />
+    {% if user_status == 'has_sources' %}
+    <p><a href="{% url source_list %}">See your Sources</a>.</p>
+    {% endif %}
+    {% if user_status == 'no_sources' %}
+    <p>You're not part of any Sources. <a href="{% url source_new %}">Create a new Source</a>, or ask to be invited to one.</p>
+    {% endif %}
+    {% if user_status == 'anonymous' %}
+    <p>You need an account to work with Sources. <a href="{% url userena_signin %}">Sign in</a> or <a href="{% url userena_signup %}">create an account</a>.</p>
+    {% endif %}
+{% endblock %}
