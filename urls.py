@@ -11,6 +11,7 @@ urlpatterns = patterns('',
     (r'^admin/', include(admin.site.urls)),
     (r'^accounts/', include('userena.urls')),
     (r'^messages/', include('userena.contrib.umessages.urls')),
+    (r'^sentry/', include('sentry.web.urls')),
     url(r'^$',
         direct_to_template,
         {'template': 'static/index.html'},
@@ -38,3 +39,19 @@ if settings.DEBUG:
 )
 
 
+# Custom server-error handler
+def handler500(request):
+    """
+    500 error handler which includes ``request`` in the context.
+    One use of this is to display a Sentry error ID on the 500 page.
+
+    Templates: `500.html`
+    Context: None
+    """
+    from django.template import Context, loader
+    from django.http import HttpResponseServerError
+
+    t = loader.get_template('500.html') # You need to create a 500.html template.
+    return HttpResponseServerError(t.render(Context({
+        'request': request,
+    })))

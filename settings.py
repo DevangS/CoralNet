@@ -8,7 +8,10 @@ USERENA_MODULE_PATH = abspath(PROJECT_ROOT, '..')
 sys.path.insert(0, USERENA_MODULE_PATH)
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
+
+# TEMPLATE_DEBUG = True lets Sentry get template error info.  This
+# won't reveal any error details to end users as long as DEBUG = False.
+TEMPLATE_DEBUG = True
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
@@ -135,6 +138,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'userena.middleware.UserenaLocaleMiddleware',
+    'sentry.client.middleware.Sentry404CatchMiddleware',
 )
 
 ROOT_URLCONF = 'CoralNet.urls'
@@ -162,6 +166,8 @@ INSTALLED_APPS = (
     'guardian',
     'easy_thumbnails',
     'south',
+    'sentry',
+    'sentry.client',
     'CoralNet.accounts',
     'CoralNet.images',
     'CoralNet.annotations',
@@ -221,6 +227,10 @@ SOUTH_MIGRATION_MODULES = {
     # (as of version 1.0 alpha 17).
     'easy_thumbnails': 'ignore',
 }
+
+# Sentry settings: http://readthedocs.org/docs/sentry/en/latest/config/index.html
+# SENTRY_TESTING enables usage of Sentry even when DEBUG = True
+SENTRY_TESTING = True
 
 # App URL bases
 IMAGES_URL = '/images/'
