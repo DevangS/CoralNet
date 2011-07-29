@@ -161,6 +161,7 @@ INSTALLED_APPS = (
     'userena.contrib.umessages',
     'guardian',
     'easy_thumbnails',
+    'south',
     'CoralNet.accounts',
     'CoralNet.images',
     'CoralNet.annotations',
@@ -210,6 +211,18 @@ AUTH_PROFILE_MODULE = 'accounts.Profile'
 USERENA_USE_MESSAGES = False
 USERENA_LANGUAGE_FIELD = 'en'
 
+# South settings: http://south.aeracode.org/docs/settings.html
+SOUTH_MIGRATION_MODULES = {
+    # Specify a nonexistent path like 'ignore' if an app has a migrations
+    # folder in the default location and you want South to ignore it.
+
+    # easy_thumbnails has migrations modules, but South has issues
+    # getting to them because the easy_thumbnails egg is zip-safe
+    # (as of version 1.0 alpha 17).
+    'easy_thumbnails': 'ignore',
+}
+
+# App URL bases
 IMAGES_URL = '/images/'
 ANNOTATIONS_URL = '/annotations/'
 VISUALIZATION_URL = '/visualization/'
