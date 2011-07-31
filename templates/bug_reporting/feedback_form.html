@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}CoralNet - Feedback{% endblock %}
+
+{% block content %}
+    <p>Here you can give a suggestion for a site feature or change, report a bug, or send us your feedback.</p>
+    <p>If you're reporting a bug, please try to explain what you did before the bug occurred, and how the behavior was buggy. This will help us find and fix the bug.</p>
+
+    <form action="" method="post">{% csrf_token %}
+      {{ form.as_p }}
+      <input type="submit" value="Submit" />
+    </form>
+{% endblock %}

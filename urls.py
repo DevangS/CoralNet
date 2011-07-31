@@ -6,7 +6,9 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
+    (r'^feedback/', include('bug_reporting.urls')),
     (r'^images/', include('images.urls')),
+    
     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
     (r'^admin/', include(admin.site.urls)),
     (r'^accounts/', include('userena.urls')),
@@ -51,7 +53,10 @@ def handler500(request):
     from django.template import Context, loader
     from django.http import HttpResponseServerError
 
-    t = loader.get_template('500.html') # You need to create a 500.html template.
+    t = loader.get_template('500.html')
     return HttpResponseServerError(t.render(Context({
         'request': request,
+        # It seems the user needs to be passed in manually for the
+        # handler500 in particular - if this is mistaken, then change it
+        'user': request.user,
     })))

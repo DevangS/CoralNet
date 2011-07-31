@@ -236,6 +236,6 @@ SENTRY_TESTING = True
 IMAGES_URL = '/images/'
 ANNOTATIONS_URL = '/annotations/'
 VISUALIZATION_URL = '/visualization/'
-BUGS_URL = '/bugs/'
+BUG_REPORTING_URL = '/feedback/'
 
 
