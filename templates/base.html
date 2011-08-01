@@ -35,36 +35,51 @@
       </ul>
       {% endif %}
     </div>
-
  
-    <div id="container">	
+    <div id="container">
+
       <div id="header">
 
         {% block nav %}
-        <ul class="nav nav_topleft" id="nav_main">
-          <li><a href="{% url index %}"><span>{% trans 'Home' %}</span></a></li>
-          <li><a href="{% url source_list %}"><span>{% trans 'Sources' %}</span></a></li>
-        </ul>
-        <ul class="nav nav_topright" id="nav_user">
-          {% if user.is_authenticated %}
-          <li><a href="{% url userena_profile_list %}"><span>{% trans 'All profiles' %}</span></a></li>
-          <li><a href="{% url userena_umessages_list %}"><span>{% trans 'Messages' %}</span></a></li>
-          <li><a href="{% url userena_profile_detail user.username %}"><span>{% trans 'Account' %} ({{ user.username }})</span></a></li>
-          <li><a href="{% url userena_signout %}"><span>{% trans 'Signout' %}</span></a></li>
-          {% else %}
-          <li><a href="{% url userena_signin %}"><span>{% trans 'Signin' %}</span></a></li>
-          <li><a href="{% url userena_signup %}"><span>{% trans 'Signup' %}</span></a></li>
-          {% endif %}
-        </ul>
-        {% endblock %}
+        <div class="nav_container" id="nav_main_container">
+          <ul class="nav nav_left" id="nav_main">
+            <li><a href="{% url index %}"><span>{% trans 'Home' %}</span></a></li>
+            <li><a href="{% url source_list %}"><span>{% trans 'Sources' %}</span></a></li>
+          </ul>
+          <ul class="nav nav_right" id="nav_user">
+            {% if user.is_authenticated %}
+            <li><a href="{% url userena_profile_list %}"><span>{% trans 'All profiles' %}</span></a></li>
+            <li><a href="{% url userena_umessages_list %}"><span>{% trans 'Messages' %}</span></a></li>
+            <li><a href="{% url userena_profile_detail user.username %}"><span>{% trans 'Account' %} ({{ user.username }})</span></a></li>
+            <li><a href="{% url userena_signout %}"><span>{% trans 'Signout' %}</span></a></li>
+            {% else %}
+            <li><a href="{% url userena_signin %}"><span>{% trans 'Signin' %}</span></a></li>
+            <li><a href="{% url userena_signup %}"><span>{% trans 'Signup' %}</span></a></li>
+            {% endif %}
+          </ul>
+        </div>
+        {% endblock %}{# /nav #}
+
         {% if not user.is_authenticated %}
         <div id="try"></div>
         {% endif %}
 
-      </div>
+      </div><!-- /header -->
+
       <div id="content-container">
         {% block content %}{% endblock %}
       </div><!-- /content-container-->
-    </div>
+
+      <div id="footer">
+        <div class="nav_container" id="nav_footer_container">
+          <ul class="nav nav_left" id="nav_footer">
+            {% if user.is_authenticated %}
+            <li class="button_prominent"><a href="{% url feedback_form %}"><span>{% trans 'Site Feedback' %}</span></a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div><!-- /footer -->
+    
+    </div><!-- /container -->
   </body>
 </html>

@@ -10,11 +10,14 @@
 
 {% block nav %}
     {{ block.super }}
-    <ul class="nav" id="nav_source">
-      <li><a href="{% url source_main source.id %}"><span>{% trans 'Source Main Page' %}</span></a></li>
-      {% get_obj_perms user for source as "source_perms" %}
-      {% if "source_admin" in source_perms %}
-      <li><a href="{% url source_edit source.id %}"><span>{% trans 'Edit Source' %}</span></a></li>
-      {% endif %}
-    </ul>
+    <div class="nav_container" id="nav_second_container">
+      <ul class="nav nav_right" id="nav_source">
+        <li><a href="{% url source_main source.id %}"><span>{% trans 'Source Main Page' %}</span></a></li>
+
+        {% get_obj_perms user for source as "source_perms" %}
+        {% if "source_admin" in source_perms %}
+        <li><a href="{% url source_edit source.id %}"><span>{% trans 'Edit Source' %}</span></a></li>
+        {% endif %}
+      </ul>
+    </div>
 {% endblock %}

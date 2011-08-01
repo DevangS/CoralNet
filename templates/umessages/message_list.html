@@ -4,9 +4,19 @@
 {% block content_title %}{% get_unread_message_count_for user as unread_message_count %}
 <h2 class="content-title">Messages ({{ unread_message_count }} )</h2>{% endblock %}
 
+{% block nav %}
+    {{ block.super }}
+
+    <div class="nav_container" id="nav_second_container">
+      <ul class="nav nav_right" id="nav_messages">
+        <li><a href="{% url userena_umessages_compose %}"><span>+ {% trans 'Compose message' %}</span></a></li>
+      </ul>
+    </div>
+    
+{% endblock %}
+
 {% block content %}
 
-<a href="{% url userena_umessages_compose %}" class="button"><span>+ Compose message</span></a>
 <ul id="messages" class="list-view">
   {% for message in message_list %}
   <li>

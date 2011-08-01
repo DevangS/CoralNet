@@ -1,2 +1,37 @@
 {% extends "base.html" %}
+{% load i18n %}
 
+{% block nav %}
+    {{ block.super }}
+
+    {% block nav_profile %}
+
+    <div class="nav_container" id="nav_second_container">
+      <ul class="nav nav_right" id="nav_profile">
+
+        {% comment %}
+        To determine if a link is "selected" or not (i.e. is the
+        current page or not), we add "selected_..." template blocks
+        for the style class of each li.  These blocks can be overridden
+        by child templates to specify which link gets the "selected" style.
+        {% endcomment %}
+
+        <li class="{% block selected_userena_profile_detail %}{% endblock %}">
+            <a href="{% url userena_profile_detail user.username %}"><span>{% trans "View profile" %}</span></a>
+        </li>
+        <li class="{% block selected_userena_profile_edit %}{% endblock %}">
+            <a href="{% url userena_profile_edit user.username %}"><span>{% trans "Edit details" %}</span></a>
+        </li>
+        <li class="{% block selected_userena_password_change %}{% endblock %}">
+            <a href="{% url userena_password_change user.username %}"><span>{% trans "Change password" %}</span></a>
+        </li>
+        <li class="{% block selected_userena_email_change %}{% endblock %}">
+            <a href="{% url userena_email_change user.username %}"><span>{% trans "Change email" %}</span></a>
+        </li>
+
+      </ul>
+    </div>
+
+    {% endblock %}
+
+{% endblock %}

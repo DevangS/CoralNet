@@ -36,39 +36,42 @@ html, body{
     border-bottom: 1px solid #fff;
 }
 
+#header{
+    /* Consider styling the header here */
+}
+
 
 #content-container{
     padding: 12px;
     position: relative;
 }
-#header{
-    height: 130px;
-    margin: -2px 0 0 0;
-    padding: 0 13px;
+
+div.nav_container{
+    margin: 20px 20px 20px 20px;
     position: relative;
+    height: 40px;
 }
 
-/* Positioning for top-left navigation menu */
-ul.nav_topleft{
+/* Positioning for left navigation buttons */
+ul.nav_left{
     position: absolute;
-    left: 12px;
-    top: 48px;
+    left: 0;
     overflow: auto;
 }
 
-/* Positioning for top-right navigation menu */
-ul.nav_topright{
+/* Positioning for right navigation buttons */
+ul.nav_right{
     position: absolute;
-    right: 12px;
-    top: 48px;
+    right: 0;
     overflow: auto;
 }
 
-/* Generic/default attributes for all navigation menus */
 ul.nav li{
     float: left;
-    margin: 0 5px 0 5px;
-    border-width: 1px; 
+    margin-left: 5px;
+    margin-right: 5px;
+    /* The border adds shadow around each button, but does not expand the button's clickable area */
+    border-width: 1px;
     border-style: solid; 
     border-color: #eee #eee #fff #eee ; 
     -webkit-border-radius: 11px; 
@@ -78,9 +81,10 @@ ul.nav li{
 }
 
 ul.nav li a{
-    background: #ede9e4; 
+    background: #ede9e4;
     float: left;
-    padding: 4px 4px 3px; 
+    /* The padding adds shadow around each button; it also expands the button's clickable area */
+    padding: 4px 4px 3px;
     text-decoration: none; 
     outline: 0; 
     -webkit-border-radius: 10px; 
@@ -89,10 +93,11 @@ ul.nav li a{
     -webkit-background-clip: padding-box;
 }
 
+/* This is for the stuff within a button (background and text) */
 ul.nav li a span {
     display: block; 
     color: #686868; 
-    padding: 0.52em 1.6em 0.48em;  
+    padding: 0.52em 1.6em 0.48em;
     text-shadow: rgba(255,254,255,0.45) 0 1px 0; 
     -webkit-box-shadow: rgba(33,33,33,0.45) 0px 0px 3px; 
     -moz-box-shadow: rgba(33,33,33,0.45) 0px 0px 3px; 
@@ -109,6 +114,10 @@ ul.nav li a span {
     font-weight: bold;
 }
 
+ul.nav li.selected a span {
+    color: #000000;
+}
+
 ul.nav li a:hover span {
     background-color: #e0dfda;
 }
@@ -122,8 +131,34 @@ ul.nav li a:active span {
     line-height: 1.5em;
 }
 
-ul.nav li a span:active {
+ul.nav li.button_prominent a{
+    background: #e8c8c8;
+}
+ul.nav li.button_prominent a:hover span {
+    background-color: #f0b8b8;
+}
+ul.nav li.button_prominent a:active span {
+    background-color: #f0b8b8;
+}
 
+#nav_profile li a{
+    background: #e8e8b8;
+}
+#nav_profile li a:hover span {
+    background-color: #f0f0a8;
+}
+#nav_profile li a:active span {
+    background-color: #f0f0a8;
+}
+
+#nav_messages li a{
+    background: #e8d8c0;
+}
+#nav_messages li a:hover span {
+    background-color: #f0e0b0;
+}
+#nav_messages li a:active span {
+    background-color: #f0e0b0;
 }
 
 
@@ -141,7 +176,6 @@ ul.nav li a span:active {
    position: relative;
    overflow: hidden;
 }
-
 
 #xtra-info{
     text-align: center;
@@ -170,13 +204,6 @@ border-bottom-left-radius: 8px;
 
 #xtra-info a{
 	color: #fff;
-}
-
-
-#footer{
-    background: url(../img/stripe.png) repeat-x center top;
-    margin: 40px 12px 0;
-    padding: 20px 0;
 }
 
 .white-box{
@@ -299,6 +326,7 @@ a{
     text-decoration: underline;
 }
 
+/* a.button: CSS previously used for "Compose Message" and "Reply" buttons for userena Messages */
 a.button{ 
     background: #ede9e4; 
 	display: block;
@@ -538,6 +566,8 @@ p.forgot-password{
 }
 
 
+/* profile-nav was userena's original profile navigation menu -
+the menu items looked more like tabs and less like buttons. */
 ul#profile-nav{
     height: 40px;
     position: absolute;
@@ -627,8 +657,10 @@ ul.blocks li{
 
 /*	footer
 ................................... */ 
-
-   
+#footer{
+    background: url(../img/stripe.png) repeat-x center top;
+    padding-top: 5px;
+}
 
 #footer p{
     text-align: right;

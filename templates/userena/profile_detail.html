@@ -4,25 +4,25 @@
 {% block title %}{{ profile.user.username }}'s {% trans "profile" %}.{% endblock %}
 {% block content_title %}<h2 class="content-title">{{ profile.user.username }} {% if profile.user.get_full_name %}({{ profile.user.get_full_name }}){% endif %}</h2>{% endblock %}
 
+{# Don't show the profile menu if you're viewing someone else's profile #}
+{% block nav_profile %}
+{% if profile.user.username == user.username %}
+    {{ block.super }}
+{% endif %}
+{% endblock %}
+
+{% block selected_userena_profile_detail %}selected{% endblock %}
+
 {% block content %}
 
-
-    {% comment %}Dirty hack. Will use django-guardian in the future.{% endcomment %}
-    {% if user.username == profile.user.username %}
-    <ul id="profile-nav">
-        <li class="selected"><a href="{% url userena_profile_detail user.username %}">{% trans "View profile" %}</a></li>
-        <li><a href="{% url userena_profile_edit user.username %}">{% trans "Edit details" %}</a></li>
-        <li><a href="{% url userena_password_change user.username %}">{% trans "Change password" %}</a></li>
-        <li><a href="{% url userena_email_change user.username %}">{% trans "Change email" %}</a></li>
-    </ul>
-    {% endif %}
+    <h2>{{ profile.user.username }}'s Profile</h2>
 
     <div id="details">
         <img src="{{ profile.get_mugshot_url }}" alt="{% trans "Your mugshot" %}" />
         {% if profile.user.get_full_name %}
         <p><strong>{% trans "Name" %}</strong><br /> {{ profile.user.get_full_name }}</p>
         {% endif %}
-        {% if profile.age != 0 %}
+        {% if profile.age %}
         <p><strong>{% trans "Age" %}</strong><br /> {{ profile.age }}</p>
         {% endif %}
         {% if profile.website %}
@@ -36,5 +36,4 @@
         {% endif %}
     </div>
     
-
 {% endblock %}
