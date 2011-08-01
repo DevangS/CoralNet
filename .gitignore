@@ -1,0 +1,6 @@
+#Ignore settings
+settings.py
+settings.pyc
+
+#Ignore apache configs
+apache/django.wsgi
