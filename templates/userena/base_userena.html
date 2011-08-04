@@ -6,6 +6,7 @@
 
     {% block nav_profile %}
 
+    {% if user.username %}
     <div class="nav_container" id="nav_second_container">
       <ul class="nav nav_right" id="nav_profile">
 
@@ -31,6 +32,7 @@
 
       </ul>
     </div>
+    {% endif %}
 
     {% endblock %}
 
