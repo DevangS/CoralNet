@@ -1,0 +1,9 @@
+#nav_visualize li a{
+    background: #e8b8e8;
+}
+#nav_visualize li a:hover span {
+    background-color: #f0a8f0;
+}
+#nav_visualize li a:active span {
+    background-color: #f0a8f0;
+}
