@@ -1,21 +1,17 @@
 from django.db import models
-from guardian.shortcuts import get_objects_for_user
+from guardian.shortcuts import get_objects_for_user, get_perms
+from django.contrib.auth.models import User
 
 class Source(models.Model):
 
     # Example: 'Moorea'
     name = models.CharField(max_length=200, unique=True)
 
-    # Visibility choices:
-    # The verbose names are very verbose to clarify the options to the
-    # user on the New Source form.  However, this may or may not be ideal
-    # when displaying the status of an existing project.
     VISIBILITY_CHOICES = (
-        ('b', "Public (images are public by default)"),
-        ('v', "Private (images are viewable only to Source participants by default)"),
-        ('i', "Invisible (the entire Source's existence is hidden from the public)"),
+        ('b', "Public"),    # Eventually, public Sources could still have individual images be public/private
+        ('v', "Private"),
     )
-    visibility = models.CharField(max_length=1, choices=VISIBILITY_CHOICES)
+    visibility = models.CharField(max_length=1, choices=VISIBILITY_CHOICES, default='v')
 
     # Automatically set to the date and time of creation.
     create_date = models.DateTimeField('Date created', auto_now_add=True, editable=False)
@@ -41,8 +37,33 @@ class Source(models.Model):
         )
 
     @staticmethod
+    def get_public_sources():
+        return [source for source in Source.objects.all()
+                if source.visibility == 'b']
+
+    @staticmethod
     def get_sources_of_user(user):
         return get_objects_for_user(user, 'images.source_admin')
+
+    #TODO: There's probably a way to optimize this, as well as any code
+    # that uses both get_sources_of_user and get_other_public_sources
+    @staticmethod
+    def get_other_public_sources(user):
+        return [source for source in Source.objects.all()
+                if (source.visibility == 'b' and source not in Source.get_sources_of_user(user))]
+
+    #TODO: get rid of the 'user.is_superuser' hack.  That's just to prevent superusers from
+    #appearing in every single Source's member list, but it also prevents superusers from
+    #using Sources at all.
+    def has_member(self, user):
+        return (get_perms(user, self) != []) and not user.is_superuser
+
+    def get_members(self):
+        return [user for user in User.objects.all()
+                if self.has_member(user) ]
+
+    def visible_to_user(self, user):
+        return (self.visibility == 'b') or self.has_member(user)
 
     def __unicode__(self):
         """

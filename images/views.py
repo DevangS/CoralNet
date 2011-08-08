@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -11,6 +12,7 @@ from guardian.shortcuts import assign
 from images.models import Source
 from images.forms import ImageSourceForm
 
+
 def source_list(request):
     """
     Page with a list of the user's Sources.
@@ -18,11 +20,13 @@ def source_list(request):
     """
 
     if request.user.is_authenticated():
-        sources_of_user = Source.get_sources_of_user(request.user)
+        your_sources = Source.get_sources_of_user(request.user)
+        other_sources = Source.get_other_public_sources(request.user)
         
-        if sources_of_user:
+        if your_sources:
             return render_to_response('images/source_list.html', {
-                'sources': sources_of_user,
+                'your_sources': your_sources,
+                'other_sources': other_sources,
                 },
                 context_instance=RequestContext(request)
             )
@@ -44,6 +48,7 @@ def source_about(request):
 
     return render_to_response('images/source_about.html', {
         'user_status': user_status,
+        'public_sources': Source.get_public_sources(),
         },
         context_instance=RequestContext(request)
     )
@@ -93,11 +98,19 @@ def source_main(request, source_id):
 
     source = get_object_or_404(Source, id=source_id)
 
-    return render_to_response('images/source_main.html', {
-        'source': source,
-        },
-        context_instance=RequestContext(request)
-        )
+    # Is there a way to make the perm check in a permission_required decorator?
+    # Having to manually code the redirect to login is slightly annoying.
+    if source.visible_to_user(request.user):
+        members = source.get_members()
+
+        return render_to_response('images/source_main.html', {
+            'source': source,
+            'members': members,
+            },
+            context_instance=RequestContext(request)
+            )
+    else:
+        return HttpResponseRedirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
 # Must have the 'source_admin' permission for the Source whose id is source_id
 @permission_required('source_admin', (Source, 'id', 'source_id'))

@@ -3,10 +3,18 @@
 {% block content %}
     <h2>Your Sources</h2>
     <ul>
-        {% for source in sources %}
+        {% for source in your_sources %}
             <li><a href="{% url source_main source.id %}">{{ source.name }}</a></li>
         {% endfor %}
     </ul>
+    <br />
+    <p><a href="{% url source_new %}">+ Create a new Source</a></p>
+    
     <hr />
-    <p><a href="{% url source_new %}">Create a new Source</a></p>
+    <h2>Other Public Sources</h2>
+    <ul>
+        {% for source in other_sources %}
+            <li><a href="{% url source_main source.id %}">{{ source.name }}</a></li>
+        {% endfor %}
+    </ul>
 {% endblock %}
