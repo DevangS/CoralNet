@@ -78,7 +78,7 @@ class Source(models.Model):
         displayStr += "\n"
         return displayStr
 
-class CameraInfo(models.Model):
+class Metadata(models.Model):
     name = models.CharField(max_length=45, blank=True)
     description = models.CharField(max_length=45, blank=True)
     pixel_cm_ratio = models.IntegerField()
@@ -86,13 +86,19 @@ class CameraInfo(models.Model):
     width = models.IntegerField()
     photographer = models.CharField(max_length=45, blank=True)
     water_quality = models.CharField(max_length=45, blank=True)
+    group1_percent = models.IntegerField(default=0)
+    group2_percent = models.IntegerField(default=0)
+    group3_percent = models.IntegerField(default=0)
+    group4_percent = models.IntegerField(default=0)
+    group5_percent = models.IntegerField(default=0)
+    group6_percent = models.IntegerField(default=0)
+    group7_percent = models.IntegerField(default=0)
 
 class Image(models.Model):
     status = models.CharField(max_length=1, blank=True)
     total_points = models.IntegerField()
-    camera = models.ForeignKey(CameraInfo)
+    camera = models.ForeignKey(Metadata)
     source = models.ForeignKey(Source)
-        
 
 class Point(models.Model):
     row = models.IntegerField()
