@@ -1,4 +1,5 @@
 {% extends "images/base_source.html" %}
+{% load thumbnail %}
 
 {% block title %}CoralNet - {{ source.name }}{% endblock %}
 
@@ -27,8 +28,25 @@
             {% if source.key5 %}<li><p>5. {{ source.key5 }}</p></li>{% endif %}
             </ul>
 
+        <p>Annotation points per image: {{ source.default_total_points }}</p>
+
         <p>Longitude: {{ source.longitude }}</p>
         <p>Latitude: {{ source.latitude }}</p>
+    </div>
+
+    <hr />
+    <div id="latest_images">
+        <h2>Latest images</h2>
+        {% if latest_images %}
+            {% for image in latest_images %}
+                <a href="{% url image_detail source.id image.id %}">
+                    <img src="{% thumbnail image.original_file 100x100 %}"
+                         title="{{ image.get_image_element_title }}"/>
+                </a>
+            {% endfor %}
+        {% else %}
+            <p>(No images yet)</p>
+        {% endif %}
     </div>
 
     {% if members %}

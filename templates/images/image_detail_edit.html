@@ -1,0 +1,15 @@
+{% extends "images/base_image.html" %}
+
+{% block title %}CoralNet - Edit Image Details{% endblock %}
+
+{% block content %}
+
+    <h2>Edit Image Details</h2>
+
+    <form action="" method="post">{% csrf_token %}
+      {{ imageDetailForm.as_p }}
+      <input type="submit" value="Save Changes" />
+      <input name="cancel" type="submit" value="Cancel Changes" />
+    </form>
+
+{% endblock %}

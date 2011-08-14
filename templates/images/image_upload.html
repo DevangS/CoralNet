@@ -1,0 +1,29 @@
+{% extends "images/base_source.html" %}
+{% load thumbnail %}
+
+{% block title %}CoralNet - Upload Images{% endblock %}
+
+{% block content %}
+
+    {% if uploadedImages %}
+    <div>
+      <h2>Just uploaded (up to 5 shown):</h2>
+      {% for image in uploadedImages %}
+        <a href="{% url image_detail source.id image.id %}">
+          <img src="{% thumbnail image.original_file 100x100 %}"
+               title="{{ image.get_image_element_title }}"/>
+        </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <hr />
+
+    <h2>Upload Images</h2>
+
+    <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+        {{ imageUploadForm.as_p }}
+      <input type="submit" value="Upload Images" />
+    </form>
+
+{% endblock %}

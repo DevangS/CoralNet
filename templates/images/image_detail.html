@@ -1,0 +1,26 @@
+{% extends "images/base_image.html" %}
+
+{% block title %}{{ metadata.name }} | CoralNet{% endblock %}
+
+{% block content %}
+
+    <img src="{{ image.original_file.url }}" />
+    <p>Name: {{ metadata.name }}</p>
+    <p>Photo date: {{ metadata.photo_date|default:"(Unknown)" }}</p>
+    <p>
+    {% if source.key1 %}  {{ source.key1 }}: {{ metadata.value1.name }}<br />  {% endif %}
+    {% if source.key2 %}  {{ source.key2 }}: {{ metadata.value2.name }}<br />  {% endif %}
+    {% if source.key3 %}  {{ source.key3 }}: {{ metadata.value3.name }}<br />  {% endif %}
+    {% if source.key4 %}  {{ source.key4 }}: {{ metadata.value4.name }}<br />  {% endif %}
+    {% if source.key5 %}  {{ source.key5 }}: {{ metadata.value5.name }}<br />  {% endif %}
+    </p>
+    <p>Upload date: {{ image.upload_date }}</p>
+    <p>Uploaded by: {{ image.uploaded_by|default:"(Unknown)" }}</p>
+    {% if metadata.pixel_cm_ratio %}  <p>Pixel/cm ratio: {{ metadata.pixel_cm_ratio }}</p>  {% endif %}
+    {% if metadata.camera %}  <p>Camera: {{ metadata.camera }}</p>  {% endif %}
+    {% if metadata.strobes %}  <p>Strobes: {{ metadata.strobes }}</p>  {% endif %}
+    {% if metadata.water_quality %}  <p>Water quality: {{ metadata.water_quality }}</p>  {% endif %}
+    {% if metadata.photographer %}  <p>Photographer: {{ metadata.photographer }}</p>  {% endif %}
+    {% if metadata.description %}  <p>Description: {{ metadata.description|linebreaks }}</p>  {% endif %}
+
+{% endblock %}
