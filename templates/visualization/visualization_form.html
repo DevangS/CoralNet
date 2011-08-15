@@ -1,0 +1,16 @@
+<html>
+<head>
+    <title>Please select some descriptors to search for images in this source</title>
+</head>
+<body>
+     {% if errors %}
+        <ul>
+            {% for error in errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    
+</body>
+</html>
