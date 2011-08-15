@@ -80,6 +80,11 @@ ul.nav li{
     -webkit-background-clip: padding-box;
 }
 
+ul.nav li.text{
+    /* No borders for text elements, only for buttons.  For now. */
+    border-width: 0;
+}
+
 ul.nav li a{
     background: #ede9e4;
     float: left;

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load guardian_tags %}
+
+{% block title %}Visualization{% endblock %}
+
+{% block media-includes %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/visualization.css" />
+{% endblock %}
+
+{% block nav %}
+    {{ block.super }}
+    <div class="nav_container" id="nav_second_container">
+      <ul class="nav nav_right" id="nav_visualize">
+        <li><a href="{% url source_main source.id %}"><span>{% trans 'Source' %} ({{ source.name }})</span></a></li>
+        <li><a href="{% url image_upload source.id %}"><span>{% trans 'Upload Images' %}</span></a></li>
+      </ul>
+    </div>
+{% endblock %}

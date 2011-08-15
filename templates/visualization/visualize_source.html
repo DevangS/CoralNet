@@ -1,0 +1,36 @@
+{% extends "visualization/base_visualize.html" %}
+{% load thumbnail %}
+
+{% block title %}{{ source.name }} - Visualization | CoralNet{% endblock %}
+
+{% block content %}
+
+    <h2>Browse Images</h2>
+
+    {% for image in images.object_list %}
+      {% with metadata=image.metadata %}
+        <a href="{% url image_detail source.id image.id %}">
+            {# TODO: Make a grid with reasonable spacing between grid elements. #}
+            <img src="{% thumbnail image.original_file 150x150 %}"
+                 title="{{ image.get_image_element_title }}"/>
+        </a>
+      {% endwith %}
+    {% endfor %}
+
+    <div class="pagination">
+        <span class="step-links">
+            {% if images.has_previous %}
+                <a href="?page={{ images.previous_page_number }}">&lt;</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ images.number }} of {{ images.paginator.num_pages }}
+            </span>
+
+            {% if images.has_next %}
+                <a href="?page={{ images.next_page_number }}">&gt;</a>
+            {% endif %}
+        </span>
+    </div>
+
+{% endblock %}

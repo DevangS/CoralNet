@@ -3,16 +3,13 @@ from django.conf import settings
 from django.views.generic.simple import direct_to_template
 
 from django.contrib import admin
-import visualization import views.source_select_form, views.visualize_form
-
-
 admin.autodiscover()
 
 urlpatterns = patterns('',
     (r'^feedback/', include('bug_reporting.urls')),
     (r'^images/', include('images.urls')),
-    (r'^source-select/', source_select_form),
-    (r'^visualize/', visualize_form ),
+    (r'^visualization/', include('visualization.urls')),
+    
     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
     (r'^admin/', include(admin.site.urls)),
     (r'^accounts/', include('userena.urls')),
