@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -12,8 +12,10 @@ from django.template import RequestContext
 
 from guardian.decorators import permission_required
 from guardian.shortcuts import assign
+from accounts.models import Profile
+from annotations.models import LabelGroup, Label, Annotation
 
-from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5
+from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, Point
 from images.forms import ImageSourceForm, ImageUploadForm, ImageDetailForm
 
 from os.path import splitext
@@ -342,3 +344,76 @@ def image_detail_edit(request, image_id, source_id):
         },
         context_instance=RequestContext(request)
         )
+
+#TODO: check permissions
+def import_labels(request, fileLocation)
+    file = open(fileLocation, 'r') #opens the file for reading
+
+    #iterates over each line in the file and processes it
+    for line in file:
+        #sanitizes and splits apart the string/line
+        line = line.replace("; ", ';')
+        words = line.split(';')
+
+        #creates a label object and stores it in the database
+        group = get_object_or_404(LabelGroup, name=words[2])
+        label = Label(name=words[0], code=words[1], group=group)
+        label.save()
+
+    file.close() #closes file since we're done
+
+def import_annotations(request, source_id, fileLocation)
+    source = get_object_or_404(Source, id=source_id)
+    file = open(fileLocation, 'r') #opens the file for reading
+    count = 0 #keeps track of total points in one image
+    prevImg = None #keeps track of the image processed on the previous iteration
+
+    #iterate over each line in the file and processes it
+    for line in file:
+        #sanitizes and splits apart the string/line
+        line = line.replace("; ", ';')
+        words = line.split(';')
+
+        #gets the 5 values that would describe the image
+        value1 = get_object_or_404(Value1, name=words[0], source=source)
+        value2 = get_object_or_404(Value2, name=words[1], source=source)
+        value3 = get_object_or_404(Value3, name=words[2], source=source)
+        value4 = get_object_or_404(Value4, name=words[3], source=source)
+        value5 = get_object_or_404(Value5, name=words[4], source=source)
+
+        #there should be one unique image that has the 5 values above, so get that image
+        metadata = get_object_or_404(Metadata, value1=value1,
+                                     value2=value2, value3=value3,
+                                     value4=value4, value5=value5)
+        image = get_object_or_404(Image, metadata=metadata)
+
+        #check if this is the first image being processed
+        if prevImg is None:
+            prevImg = image
+
+        #if the previous image was the same as this one, increment the point count
+        if prevImg == image:
+            count += 1
+        else:
+            count = 1
+
+        prevImg = image
+
+        #gets the label for the point, assumes it's already in the database
+        label = get_object_or_404(Label, name=words[8])
+        row = int(words[6])
+        col = int(words[7])
+        user = get_object_or_404(Profile, )
+
+        #creates a point object and saves it in the database
+        point = Point(row=row, col=col, point_number=count, image=image)
+        point.save()
+
+        #creates an annotation object and saves it in the database
+        annotation = Annotation(annotation_date=datetime.now(), point=point, image=image,
+                                user=user, label=label, source=source)
+        annotation.save()
+
+        #end for loop
+
+    file.close() #closes the file since we're done

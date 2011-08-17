@@ -16,7 +16,7 @@ class LabelSet(models.Model):
     location = models.CharField(max_length=45, blank=True)
 
 class Annotation(models.Model):
-    annotation_date = models.DateField()
+    annotation_date = models.DateTimeField(blank=True)
     point = models.ForeignKey(images.models.Point)
     image = models.ForeignKey(images.models.Image)
     user = models.ForeignKey(accounts.models.Profile)

@@ -9,4 +9,6 @@ urlpatterns = patterns('',
     url(r'^source/(?P<source_id>\d+)/upload/$', 'images.views.image_upload', name="image_upload"),
     url(r'^source/(?P<source_id>\d+)/view/(?P<image_id>\d+)/$', 'images.views.image_detail', name="image_detail"),
     url(r'^source/(?P<source_id>\d+)/edit/(?P<image_id>\d+)/$', 'images.views.image_detail_edit', name="image_detail_edit"),
+    (r'^source/importLabels/(?P<filename>\w+)/$', 'images.views.import_labels'),
+    (r'^source/importAnnotations/(?P<source_id>\d+)/(?P<filename>\w+)/$', 'images.views.import_annotations'),
 )
