@@ -346,7 +346,7 @@ def image_detail_edit(request, image_id, source_id):
         )
 
 #TODO: check permissions
-def import_labels(request, fileLocation)
+def import_labels(request, fileLocation):
     file = open(fileLocation, 'r') #opens the file for reading
 
     #iterates over each line in the file and processes it
@@ -362,7 +362,7 @@ def import_labels(request, fileLocation)
 
     file.close() #closes file since we're done
 
-def import_annotations(request, source_id, fileLocation)
+def import_annotations(request, source_id, fileLocation):
     source = get_object_or_404(Source, id=source_id)
     file = open(fileLocation, 'r') #opens the file for reading
     count = 0 #keeps track of total points in one image

@@ -5,7 +5,7 @@ from guardian.decorators import permission_required
 from images.models import Source
 
 @permission_required('source_admin', (Source, 'id', 'source_id'))
-def visualize_source(request, source_id, value1_id, value2_id, value3_id, value4_id, value5_id):
+def visualize_source(request, source_id):
     """
     View for browsing through a source's images.
     """
@@ -36,5 +36,9 @@ def visualize_source(request, source_id, value1_id, value2_id, value3_id, value4
         },
         context_instance=RequestContext(request)
         
-        def source_select_form(request):
-    return render_to_response('source_select_form.html')
+    )
+
+    """
+    def source_select_form(request):
+        return render_to_response('source_select_form.html')
+    """
