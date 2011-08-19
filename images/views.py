@@ -13,7 +13,7 @@ from django.template import RequestContext
 from guardian.decorators import permission_required
 from guardian.shortcuts import assign
 from accounts.models import Profile
-from annotations.models import LabelGroup, Label, Annotation
+from annotations.models import LabelGroup, Label, Annotation, LabelSet
 
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, Point
 from images.forms import ImageSourceForm, ImageUploadForm, ImageDetailForm
@@ -346,8 +346,13 @@ def image_detail_edit(request, image_id, source_id):
         )
 
 #TODO: check permissions
-def import_labels(request, fileLocation):
+def import_labels(request, source_id, fileLocation):
     file = open(fileLocation, 'r') #opens the file for reading
+    source = get_object_or_404(Source, id=source_id)
+
+    #creates a new labelset for the source
+    labelset = LabelSet(description="Automatically generated from importing labels")
+    labelset.save()
 
     #iterates over each line in the file and processes it
     for line in file:
@@ -359,6 +364,9 @@ def import_labels(request, fileLocation):
         group = get_object_or_404(LabelGroup, name=words[2])
         label = Label(name=words[0], code=words[1], group=group)
         label.save()
+
+        #adds label to the labelset
+        labelset.labels.add(label)
 
     file.close() #closes file since we're done
 
@@ -401,9 +409,10 @@ def import_annotations(request, source_id, fileLocation):
 
         #gets the label for the point, assumes it's already in the database
         label = get_object_or_404(Label, name=words[8])
+        get_object_or_404(LabelSet, sources=source, labels=label) #check that label is in labelset
         row = int(words[6])
         col = int(words[7])
-        user = get_object_or_404(Profile, )
+        user = get_object_or_404(Profile, ) #TODO: create imported user
 
         #creates a point object and saves it in the database
         point = Point(row=row, col=col, point_number=count, image=image)
