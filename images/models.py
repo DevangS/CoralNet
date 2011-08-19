@@ -1,10 +1,10 @@
 import random
 import string
 from os.path import splitext
-from CoralNet import annotations
 
 import settings
 from django.db import models
+
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
 from guardian.shortcuts import get_objects_for_user, get_perms
@@ -25,7 +25,8 @@ class Source(models.Model):
 
     description = models.TextField(blank=True)
 
-    #TODO: add this labelset = models.ForeignKey(annotations.models.LabelSet)
+    labelset = models.ForeignKey('annotations.LabelSet')
+    
     # Each of these fields is allowed to be blank (an empty string).
     # We're assuming that we'll only have key 2 if we have
     # key 1, we'll only have key 3 if we have key 2, etc.

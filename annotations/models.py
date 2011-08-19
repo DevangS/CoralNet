@@ -1,6 +1,6 @@
 from django.db import models
 from CoralNet import accounts
-from CoralNet import images
+from images.models import Point, Image, Source
 
 class LabelGroup(models.Model):
     name = models.CharField(max_length=45, blank=True)
@@ -14,11 +14,12 @@ class Label(models.Model):
 class LabelSet(models.Model):
     description = models.TextField(blank=True)
     location = models.CharField(max_length=45, blank=True)
-
+    labels = models.ManyToManyField(Label)
+    
 class Annotation(models.Model):
     annotation_date = models.DateTimeField(blank=True)
-    point = models.ForeignKey(images.models.Point)
-    image = models.ForeignKey(images.models.Image)
+    point = models.ForeignKey(Point)
+    image = models.ForeignKey(Image)
     user = models.ForeignKey(accounts.models.Profile)
     label = models.ForeignKey(Label) #TODO: verify
-    source = models.ForeignKey(images.models.Source)
+    source = models.ForeignKey(Source)
