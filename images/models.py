@@ -122,11 +122,6 @@ class Metadata(models.Model):
     strobes = models.CharField(max_length=200, blank=True)
     photographer = models.CharField(max_length=45, blank=True)
     water_quality = models.CharField(max_length=45, blank=True)
-    value1 = models.ForeignKey(Value1, null=True, blank=True)
-    value2 = models.ForeignKey(Value2, null=True, blank=True)
-    value3 = models.ForeignKey(Value3, null=True, blank=True)
-    value4 = models.ForeignKey(Value4, null=True, blank=True)
-    value5 = models.ForeignKey(Value5, null=True, blank=True)
     group1_percent = models.IntegerField(default=0)
     group2_percent = models.IntegerField(default=0)
     group3_percent = models.IntegerField(default=0)
@@ -185,7 +180,12 @@ class Image(models.Model):
     total_points = models.IntegerField('Number of annotation points')
     metadata = models.ForeignKey(Metadata)
     source = models.ForeignKey(Source)
-
+    value1 = models.ForeignKey(Value1, null=True, blank=True)
+    value2 = models.ForeignKey(Value2, null=True, blank=True)
+    value3 = models.ForeignKey(Value3, null=True, blank=True)
+    value4 = models.ForeignKey(Value4, null=True, blank=True)
+    value5 = models.ForeignKey(Value5, null=True, blank=True)
+    
     def __unicode__(self):
         return self.metadata.name
 
@@ -194,11 +194,11 @@ class Image(models.Model):
     def get_image_element_title(self):
         metadata = self.metadata
         dataStrings = []
-        for v in [metadata.value1,
-                  metadata.value2,
-                  metadata.value3,
-                  metadata.value4,
-                  metadata.value5 ]:
+        for v in [self.value1,
+                  self.value2,
+                  self.value3,
+                  self.value4,
+                  self.value5 ]:
             if v:
                 dataStrings.append(v.name)
             else:
