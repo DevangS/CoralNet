@@ -6,10 +6,22 @@ class LabelGroup(models.Model):
     name = models.CharField(max_length=45, blank=True)
     code = models.CharField(max_length=5, blank=True)
 
+    def __unicode__(self):
+        """
+        To-string method.
+        """
+        return self.name
+
 class Label(models.Model):
     name = models.CharField(max_length=45, blank=True)
     code = models.CharField(max_length=5, blank=True)
     group = models.ForeignKey(LabelGroup)
+    
+    def __unicode__(self):
+        """
+        To-string method.
+        """
+        return self.name
 
 class LabelSet(models.Model):
     description = models.TextField(blank=True)
