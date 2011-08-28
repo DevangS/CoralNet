@@ -9,7 +9,7 @@ urlpatterns = patterns('',
     (r'^feedback/', include('bug_reporting.urls')),
     (r'^images/', include('images.urls')),
     (r'^visualization/', include('visualization.urls')),
-    
+    (r'^annotations/', include('annotations.urls')),
     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
     (r'^admin/', include(admin.site.urls)),
     (r'^accounts/', include('userena.urls')),

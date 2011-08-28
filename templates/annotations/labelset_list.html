@@ -1,0 +1,12 @@
+{% extends "annotations/base_label.html" %}
+
+{% block content %}
+    <h2>All LabelSets</h2>
+    <ul>
+        {% for labelset in labelsets %}
+            <li><a href="{% url labelset_main labelset.id %}">{{ labelset.description }}</a></li>
+        {% endfor %}
+    </ul>
+
+
+{% endblock %}

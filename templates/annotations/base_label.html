@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load guardian_tags %}
+
+{% block title %}CoralNet - Labels{% endblock %}
+
+{% block media-includes %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/label.css" />
+{% endblock %}
+
+{% block nav %}
+    {{ block.super }}
+    <div class="nav_container" id="nav_second_container">
+      <ul class="nav nav_right" id="nav_label">
+        <li><a href="{% url label_list %}"><span>{% trans 'View Labels' %}</span></a></li>
+        <li><a href="{% url label_new %}"><span>{% trans 'Create Label' %}</span></a></li>
+        <li><a href="{% url labelset_list %}"><span>{% trans 'View LabelSets' %}</span></a></li>
+        <li><a href="{% url labelset_new %}"><span>{% trans 'Create LabelSet' %}</span></a></li>
+      </ul>
+    </div>
+{% endblock %}

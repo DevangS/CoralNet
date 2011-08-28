@@ -26,11 +26,38 @@ def visualize_source(request, source_id):
         form = VisualizationSearchForm(source_id, request.GET)
         if form.is_valid():
             value1Index = request.GET.get('value1', '')
+            value2Index = request.GET.get('value2', '')
+            value3Index = request.GET.get('value3', '')
+            value4Index = request.GET.get('value4', '')
+            value5Index = request.GET.get('value5', '')
+            label = request.GET.get('label', '')
+
             value1List = Value1.objects.filter(source=source)
+            value2List = Value2.objects.filter(source=source)
+            value3List = Value3.objects.filter(source=source)
+            value4List = Value4.objects.filter(source=source)
+            value5List = Value5.objects.filter(source=source)
+
             if value1Index != "":
                 kwargs['value1'] = value1List[int(value1Index)]
+            if value2Index != "":
+                kwargs['value2'] = value2List[int(value2Index)]
+            if value3Index != "":
+                kwargs['value3'] = value3List[int(value3Index)]
+            if value4Index != "":
+                kwargs['value4'] = value4List[int(value4Index)]
+            if value5Index != "":
+                kwargs['value5'] = value5List[int(value5Index)]
 
-            #label = request.GET.label
+            #get all annotations for the source that contain the label
+            #for each annotation
+                #optional: check if annotation already has cropped image
+                    #TODO: add the imagefield to annotation table, check image table for reference
+                #get the annotation point
+                #get the image
+                #crop the image with the annotation point at center
+
+
     else:
         form = VisualizationSearchForm(source_id)
 
@@ -64,8 +91,3 @@ def visualize_source(request, source_id):
         context_instance=RequestContext(request)
         
     )
-
-    """
-    def source_select_form(request):
-        return render_to_response('source_select_form.html')
-    """

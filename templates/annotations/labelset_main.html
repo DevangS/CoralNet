@@ -1,0 +1,16 @@
+{% extends "annotations/base_label.html" %}
+
+{% block title %}CoralNet - {{ labelset.name }}{% endblock %}
+
+{% block content %}
+
+        <p>Description:{{ labelset.description }}</p>
+
+        <p>Location: {{ labelset.location }}</p>
+
+        <p>Labels:</p>
+         {% for label in labelset.labels.all %}
+                <li>{{ label.name }}</li> <!--TODO: verify-->
+         {% endfor %}
+
+{% endblock %}
