@@ -38,7 +38,7 @@ class VisualizationSearchForm(forms.Form):
         if gSource.key5:
             self.fields[gSource.key5].queryset = Value5.objects.filter(source=gSource)
         self.fields['year'].queryset = Metadata.objects.filter(image__source=gSource).distinct()
-        self.fields['labels'].queryset = Label.objects.filter(labelset__id=gSource.labelset_id).distinct()
+        self.fields['label'].queryset = Label.objects.filter(labelset__id=gSource.labelset_id).distinct()
 
     global gSource
     
@@ -57,4 +57,4 @@ class VisualizationSearchForm(forms.Form):
         
     year = YearModelChoiceField(queryset=(), empty_label="All", required=False)
     mode = forms.ChoiceField(choices=MODE_CHOICES)
-    labels = forms.ModelChoiceField(queryset=(), empty_label="All", required=False)
+    label = forms.ModelChoiceField(queryset=(), empty_label="All", required=False)
