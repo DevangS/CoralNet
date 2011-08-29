@@ -1,0 +1,14 @@
+{% extends "annotations/base_label.html" %}
+
+{% block title %}Import Labels | CoralNet{% endblock %}
+
+{% block content %}
+
+    <h2>Import Labels</h2>
+
+    <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+        {{ labelImportForm.as_p }}
+        <input type="submit" value="Import Labels" />
+    </form>
+
+{% endblock %}

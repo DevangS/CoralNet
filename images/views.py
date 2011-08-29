@@ -16,7 +16,7 @@ from guardian.shortcuts import assign
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
 
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, Point
-from images.forms import ImageSourceForm, ImageUploadForm, ImageDetailForm, AnnotationImportForm, ImageUploadFormBasic
+from images.forms import ImageSourceForm, ImageUploadForm, ImageDetailForm, AnnotationImportForm, ImageUploadFormBasic, LabelImportForm
 
 from os.path import splitext
 from images.utils import filename_to_metadata, get_location_value_objs
@@ -359,29 +359,63 @@ def import_groups(request, fileLocation):
     file.close()
     
 
-def import_labels(request, source_id, fileLocation):
-    file = open(fileLocation, 'r') #opens the file for reading
+def import_labels(request, source_id):
+
     source = get_object_or_404(Source, id=source_id)
 
     #creates a new labelset for the source
     labelset = LabelSet(description="Automatically generated from importing labels")
     labelset.save()
 
-    #iterates over each line in the file and processes it
-    for line in file:
-        #sanitizes and splits apart the string/line
-        line = line.replace("; ", ';')
-        words = line.split(';')
+    labelsImported = 0
 
-        #creates a label object and stores it in the database
-        group = get_object_or_404(LabelGroup, name=words[2])
-        label = Label(name=words[0], code=words[1], group=group)
-        label.save()
+    if request.method == 'POST':
+        labelImportForm = LabelImportForm(request.POST, request.FILES)
 
-        #adds label to the labelset
-        labelset.labels.add(label)
+        if labelImportForm.is_valid():
 
-    file.close() #closes file since we're done
+            file = request.FILES['labels_file']
+
+            # We'll assume we're using an InMemoryUploadedFile, as opposed to a filename of a temp-disk-storage file.
+            # If we encounter a case where we have a filename, use the below:
+            #file = open(fileLocation, 'r') #opens the file for reading
+
+            #iterates over each line in the file and processes it
+            for line in file:
+                #sanitizes and splits apart the string/line
+                line = line.strip().replace("; ", ';')
+                words = line.split(';')
+
+                # Ignore blank lines
+                if line == '':
+                    continue
+
+                #creates a label object and stores it in the database
+                group = get_object_or_404(LabelGroup, name=words[2])
+                label = Label(name=words[0], code=words[1], group=group)
+                label.save()
+
+                #adds label to the labelset
+                labelset.labels.add(label)
+                labelsImported += 1
+
+            file.close() #closes file since we're done
+
+            success_msg = "%d labels imported." % labelsImported
+            messages.success(request, success_msg)
+
+        else:
+            messages.error(request, 'Please correct the errors below.')
+
+    # GET
+    else:
+        labelImportForm = LabelImportForm()
+
+    return render_to_response('images/label_import.html', {
+            'labelImportForm': labelImportForm,
+            },
+            context_instance=RequestContext(request)
+    )
 
 
 def get_image_identifier(valueList, year):

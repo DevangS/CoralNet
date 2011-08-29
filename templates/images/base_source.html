@@ -20,6 +20,7 @@
         {% if "source_admin" in source_perms %}
         <li><a href="{% url source_edit source.id %}"><span>{% trans 'Edit Details' %}</span></a></li>
         <li><a href="{% url image_upload source.id %}"><span>{% trans 'Upload Images' %}</span></a></li>
+        <li><a href="{% url label_import source.id %}"><span>{% trans 'Import Labels' %}</span></a></li>
         <li><a href="{% url annotation_import source.id %}"><span>{% trans 'Import Annotations' %}</span></a></li>
         {% endif %}
       </ul>

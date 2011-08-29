@@ -196,3 +196,8 @@ class AnnotationImportForm(Form):
     annotations_file = FileField(
         label='Annotation file (.txt)',
     )
+
+class LabelImportForm(Form):
+    labels_file = FileField(
+        label='Labels file (.txt)',
+    )
