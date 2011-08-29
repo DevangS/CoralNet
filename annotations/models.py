@@ -5,7 +5,7 @@ from userena.models import User
 
 class LabelGroup(models.Model):
     name = models.CharField(max_length=45, blank=True)
-    code = models.CharField(max_length=5, blank=True)
+    code = models.CharField(max_length=10, blank=True)
 
     def __unicode__(self):
         """
@@ -15,7 +15,7 @@ class LabelGroup(models.Model):
 
 class Label(models.Model):
     name = models.CharField(max_length=45, blank=True)
-    code = models.CharField(max_length=6, blank=True)
+    code = models.CharField(max_length=10, blank=True)
     group = models.ForeignKey(LabelGroup)
     
     def __unicode__(self):

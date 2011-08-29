@@ -347,6 +347,18 @@ def image_detail_edit(request, image_id, source_id):
         )
 
 #TODO: check permissions
+def import_groups(request, fileLocation):
+    file = open(fileLocation, 'r') #opens the file for reading
+    for line in file:
+        line = line.replace("; ", ';')
+        words = line.split(';')
+
+        #creates a label object and stores it in the database
+        group = LabelGroup(name=words[0], code=words[1])
+        group.save()
+    file.close()
+    
+
 def import_labels(request, source_id, fileLocation):
     file = open(fileLocation, 'r') #opens the file for reading
     source = get_object_or_404(Source, id=source_id)
