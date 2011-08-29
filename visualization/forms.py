@@ -41,9 +41,9 @@ class VisualizationSearchForm(forms.Form):
         self.fields['labels'].queryset = Label.objects.filter(labelset__id=gSource.labelset_id).distinct()
 
     global gSource
-
+    
     #These checks are redundant with the field ones above, but after spending 2 hours on this issue,
-    # it's the best I came up with and there's a deadline to meet so TODO: optimize
+    # it's the best I came up with and there's a deadline to meet so TODO: optimize by trying to use get method on vars()
     if gSource.key1:
         vars()[gSource.key1] = forms.ModelChoiceField(queryset=(), empty_label="All", required=False)
     if gSource.key2:

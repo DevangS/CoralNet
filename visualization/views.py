@@ -20,10 +20,12 @@ def visualize_source(request, source_id):
     }
 
     errors = [] #keeps tracks of errors that occur
+    all_images = [] #holds all the images to display
     source = get_object_or_404(Source, id=source_id)
     kwargs['source'] = source
 
     if request.GET:
+
         #form to select descriptors to sort images
         form = VisualizationSearchForm(source_id, request.GET)
         if form.is_valid():
@@ -62,7 +64,7 @@ def visualize_source(request, source_id):
                     #gets all the images based on the filters specified
                     all_images = Image.objects.filter(**kwargs).order_by('-upload_date')
 
-            if mode == "patch":
+            elif mode == "patch":
                 if label == "":
                     errors.append("Sorry, you must specify a label in Patch View Mode")
                 else:
@@ -70,7 +72,6 @@ def visualize_source(request, source_id):
                     label = Label.objects.filter(name=label)
                     annotations = Annotation.objects.filter(source=source, label=label)
                     #TODO: add searching annotations based on key/value pairs
-                    all_images = []
 
                     #create a cropped image for each annotation
                     for annotation in annotations:
@@ -112,6 +113,12 @@ def visualize_source(request, source_id):
     else:
         form = VisualizationSearchForm(source_id)
         all_images = Image.objects.filter(source=source).order_by('-upload_date')
+
+    if not all_images and not errors:
+        if request.GET:
+            errors.append("Sorry, no images matched your query")
+        else:
+            errors.append("Sorry, there are no images for this source yet. Please upload some.")
 
     paginator = Paginator(all_images, 20) # Show 25 images per page
 

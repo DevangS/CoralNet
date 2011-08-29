@@ -7,13 +7,6 @@
 
     <h2>Browse Images</h2>
     
-    {% if errors %}
-        <ul>
-            {% for error in errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
     <!-- This is the menu to select descriptors to sort through the images -->
     <form action="" method="get">
     <table>
@@ -22,32 +15,39 @@
     <input type='submit' value="Search">
     </form>
 
-    {% for image in images.object_list %}
-      {% with metadata=image.metadata %}
-        <a href="{% url image_detail source.id image.id %}">
-            {# TODO: Make a grid with reasonable spacing between grid elements. #}
-            <img src="{% thumbnail image.original_file 150x150 %}"
-                 title="{{ image.get_image_element_title }}"/>
-        </a>
-      {% endwith %}
-    {% endfor %}
+    {% if errors %}
+        <ul>
+            {% for error in errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        {% for image in images.object_list %}
+          {% with metadata=image.metadata %}
+            <a href="{% url image_detail source.id image.id %}">
+                {# TODO: Make a grid with reasonable spacing between grid elements. #}
+                <img src="{% thumbnail image.original_file 150x150 %}"
+                     title="{{ image.get_image_element_title }}"/>
+            </a>
+          {% endwith %}
+        {% endfor %}
 
-    <div class="pagination">
-        <span class="step-links">
-            {% if images.has_previous %}
-                <a href="?page={{ images.previous_page_number }}">&lt;</a>
-            {% endif %}
+        <div class="pagination">
+            <span class="step-links">
+                {% if images.has_previous %}
+                    <a href="?page={{ images.previous_page_number }}">&lt;</a>
+                {% endif %}
 
-            <span class="current">
-                Page {{ images.number }} of {{ images.paginator.num_pages }}
+                <span class="current">
+                    Page {{ images.number }} of {{ images.paginator.num_pages }}
+                </span>
+
+                {% if images.has_next %}
+                    <a href="?page={{ images.next_page_number }}">&gt;</a>
+                {% endif %}
             </span>
+        </div>
 
-            {% if images.has_next %}
-                <a href="?page={{ images.next_page_number }}">&gt;</a>
-            {% endif %}
-        </span>
-    </div>
-        
     {% endif %}
 
 {% endblock %}
