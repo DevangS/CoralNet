@@ -19,6 +19,11 @@ def visualize_source(request, source_id):
         #all possible values are not filled
     }
 
+    pargs = {
+        #same as above but needs different indexes because it's used
+        #for patch mode. TODO: reimplement this in a non-hackish way
+    }
+
     errors = [] #keeps tracks of errors that occur
     all_images = [] #holds all the images to display
     source = get_object_or_404(Source, id=source_id)
@@ -36,7 +41,6 @@ def visualize_source(request, source_id):
             value5Index = request.GET.get('value5', '')
             year = request.GET.get('year', '')
             label = request.GET.get('label', '')
-            mode = request.GET.get('mode', '')
 
             value1List = Value1.objects.filter(source=source)
             value2List = Value2.objects.filter(source=source)
@@ -46,14 +50,19 @@ def visualize_source(request, source_id):
 
             if value1Index != "":
                 kwargs['value1'] = value1List[int(value1Index)]
+                pargs['image__value1'] = value1List[int(value1Index)]
             if value2Index != "":
                 kwargs['value2'] = value2List[int(value2Index)]
+                pargs['image__value2'] = value1List[int(value1Index)]
             if value3Index != "":
                 kwargs['value3'] = value3List[int(value3Index)]
+                pargs['image__value3'] = value1List[int(value1Index)]
             if value4Index != "":
                 kwargs['value4'] = value4List[int(value4Index)]
+                pargs['image__value4'] = value1List[int(value1Index)]
             if value5Index != "":
                 kwargs['value5'] = value5List[int(value5Index)]
+                pargs['image__value5'] = value1List[int(value1Index)]
             if year != "":
                 kwargs['metadata__photo_date__year'] = year
 
@@ -63,7 +72,7 @@ def visualize_source(request, source_id):
             else:
                 #get all annotations for the source that contain the label
                 label = Label.objects.filter(name=label)
-                annotations = Annotation.objects.filter(source=source, label=label)
+                annotations = Annotation.objects.filter(source=source, label=label, **pargs).filter()
                 #TODO: add searching annotations based on key/value pairs
 
                 #create a cropped image for each annotation
