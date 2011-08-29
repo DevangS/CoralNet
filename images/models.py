@@ -114,7 +114,7 @@ class Value5(LocationValue):
 
 class Metadata(models.Model):
     name = models.CharField(max_length=200, blank=True)
-    photo_date = models.DateField('Photo date', null=True, blank=True)
+    photo_date = models.DateField('Photo date')
     description = models.TextField(max_length=1000, blank=True)
     # Do we need any input checking on pixel_cm_ratio?
     pixel_cm_ratio = models.CharField('Pixel/cm ratio', max_length=45, null=True, blank=True)

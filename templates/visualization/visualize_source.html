@@ -6,10 +6,19 @@
 {% block content %}
 
     <h2>Browse Images</h2>
-
-        <!-- This is the menu to select descriptors to sort through the images -->
+    
+    {% if errors %}
+        <ul>
+            {% for error in errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+    <!-- This is the menu to select descriptors to sort through the images -->
     <form action="" method="get">
-    {{ form.as_p }}
+    <table>
+    {{ form.as_table }}
+    </table>
     <input type='submit' value="Search">
     </form>
 
@@ -38,5 +47,7 @@
             {% endif %}
         </span>
     </div>
+        
+    {% endif %}
 
 {% endblock %}
