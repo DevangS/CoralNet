@@ -57,58 +57,51 @@ def visualize_source(request, source_id):
             if year != "":
                 kwargs['metadata__photo_date__year'] = year
 
-            if mode == "image":
-                if label != "":
-                    errors.append("Sorry, you cannot specify a label in Whole Image View Mode")
-                else:
-                    #gets all the images based on the filters specified
-                    all_images = Image.objects.filter(**kwargs).order_by('-upload_date')
+            if label == "":
+                all_images = Image.objects.filter(**kwargs).order_by('-upload_date')
 
-            elif mode == "patch":
-                if label == "":
-                    errors.append("Sorry, you must specify a label in Patch View Mode")
-                else:
-                    #get all annotations for the source that contain the label
-                    label = Label.objects.filter(name=label)
-                    annotations = Annotation.objects.filter(source=source, label=label)
-                    #TODO: add searching annotations based on key/value pairs
+            else:
+                #get all annotations for the source that contain the label
+                label = Label.objects.filter(name=label)
+                annotations = Annotation.objects.filter(source=source, label=label)
+                #TODO: add searching annotations based on key/value pairs
 
-                    #create a cropped image for each annotation
-                    for annotation in annotations:
-                        path = annotation.image.original_file
-                        image = imageobj.open(path)
+                #create a cropped image for each annotation
+                for annotation in annotations:
+                    path = annotation.image.original_file
+                    image = imageobj.open(path)
 
-                        max_x = Annotation.image.original_width
-                        max_y = Annotation.image.original_height
-                        x = Annotation.point.row
-                        y = Annotation.point.column
+                    max_x = Annotation.image.original_width
+                    max_y = Annotation.image.original_height
+                    x = Annotation.point.row
+                    y = Annotation.point.column
 
-                        if x-75 > 0:
-                            left = x-75
-                        else:
-                            left = 0
+                    if x-75 > 0:
+                        left = x-75
+                    else:
+                        left = 0
 
-                        if x+75 < max_x:
-                            right = x+75
-                        else:
-                            right = max_x
+                    if x+75 < max_x:
+                        right = x+75
+                    else:
+                        right = max_x
 
-                        if y-75 > 0:
-                            upper = y-75
-                        else:
-                            upper = 0
+                    if y-75 > 0:
+                        upper = y-75
+                    else:
+                        upper = 0
 
-                        if y+75 < max_y:
-                            lower = y+75
-                        else:
-                            lower = 0
+                    if y+75 < max_y:
+                        lower = y+75
+                    else:
+                        lower = 0
 
-                        #mark the subrectangle to be select from the image
-                        box = (left,upper,right,lower)
+                    #mark the subrectangle to be select from the image
+                    box = (left,upper,right,lower)
 
-                        #get the image
-                        region = image.crop(box)
-                        all_images.append(region)
+                    #get the image
+                    region = image.crop(box)
+                    all_images.append(region)
 
     else:
         form = VisualizationSearchForm(source_id)

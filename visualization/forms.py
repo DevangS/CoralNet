@@ -5,11 +5,6 @@ from annotations.models import Label
 from images.models import Source, Value1, Value2, Value3, Value4, Value5, Metadata
 from django.forms.extras.widgets import SelectDateWidget
 
-MODE_CHOICES = (
-    ('image', 'View whole images'),
-    ('patch', 'View patches'),
-)
-
 DATE_CHOICES = ()
 
 gSource = get_object_or_404(Source, id=1)
@@ -56,5 +51,4 @@ class VisualizationSearchForm(forms.Form):
         vars()[gSource.key5] = forms.ModelChoiceField(queryset=(), empty_label="All", required=False)
         
     year = YearModelChoiceField(queryset=(), empty_label="All", required=False)
-    mode = forms.ChoiceField(choices=MODE_CHOICES)
-    label = forms.ModelChoiceField(queryset=(), empty_label="All", required=False)
+    label = forms.ModelChoiceField(queryset=(), empty_label="View Whole Images", required=False)
