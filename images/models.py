@@ -81,6 +81,28 @@ class Source(models.Model):
 
     def get_all_images(self):
         return Image.objects.filter(source=self)
+    
+    def get_key_list(self):
+        """
+        Get a list of this Source's location keys.
+        Just to be safe, only gets key n if keys 1 to n-1 are present.
+        """
+
+        keyList = []
+
+        for k in ['key1', 'key2', 'key3', 'key4', 'key5']:
+            if getattr(self,k):
+                keyList.append(getattr(self,k))
+            else:
+                break
+
+        return keyList
+
+    def num_of_keys(self):
+        """
+        Return the number of location keys that this Source has.
+        """
+        return len(self.get_key_list())
 
     def __unicode__(self):
         """

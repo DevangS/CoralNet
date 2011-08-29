@@ -1,5 +1,5 @@
 from django.forms import Form, ModelForm, TextInput, FileInput, CharField
-from django.forms.fields import ChoiceField, BooleanField, ImageField
+from django.forms.fields import ChoiceField, BooleanField, ImageField, FileField
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5
 from CoralNet.forms import FormHelper
 
@@ -50,11 +50,13 @@ class ImageSourceForm(ModelForm):
         return super(ImageSourceForm, self).clean()
 
 
-class ImageUploadForm(Form):
+class ImageUploadFormBasic(Form):
     files = ImageField(
         label='Image files',
         widget=FileInput(attrs={'multiple': 'multiple'}))
-    
+
+
+class ImageUploadForm(ImageUploadFormBasic):
     has_data_from_filenames = BooleanField(
         label='Collect metadata from filenames',
         required=False)
@@ -188,3 +190,9 @@ class ImageDetailForm(ModelForm):
             
         self.cleaned_data = data
         return super(ImageDetailForm, self).clean()
+
+
+class AnnotationImportForm(Form):
+    annotations_file = FileField(
+        label='Annotation file (.txt)',
+    )

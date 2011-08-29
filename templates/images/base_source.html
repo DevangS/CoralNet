@@ -11,6 +11,7 @@
 {% block nav %}
     {{ block.super }}
     <div class="nav_container" id="nav_second_container">
+      <h2>{{ source.name }}</h2>
       <ul class="nav nav_right" id="nav_source">
         <li><a href="{% url source_main source.id %}"><span>{% trans 'Main Page' %}</span></a></li>
         <li><a href="{% url visualize_source source.id %}"><span>{% trans 'Browse Images' %}</span></a></li>
@@ -19,7 +20,7 @@
         {% if "source_admin" in source_perms %}
         <li><a href="{% url source_edit source.id %}"><span>{% trans 'Edit Details' %}</span></a></li>
         <li><a href="{% url image_upload source.id %}"><span>{% trans 'Upload Images' %}</span></a></li>
-
+        <li><a href="{% url annotation_import source.id %}"><span>{% trans 'Import Annotations' %}</span></a></li>
         {% endif %}
       </ul>
     </div>

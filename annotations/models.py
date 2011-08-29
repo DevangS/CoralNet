@@ -1,6 +1,7 @@
 from django.db import models
 from CoralNet import accounts
 from images.models import Point, Image, Source
+from userena.models import User
 
 class LabelGroup(models.Model):
     name = models.CharField(max_length=45, blank=True)
@@ -14,7 +15,7 @@ class LabelGroup(models.Model):
 
 class Label(models.Model):
     name = models.CharField(max_length=45, blank=True)
-    code = models.CharField(max_length=5, blank=True)
+    code = models.CharField(max_length=6, blank=True)
     group = models.ForeignKey(LabelGroup)
     
     def __unicode__(self):
@@ -29,9 +30,10 @@ class LabelSet(models.Model):
     labels = models.ManyToManyField(Label)
     
 class Annotation(models.Model):
-    annotation_date = models.DateTimeField(blank=True)
+    annotation_date = models.DateTimeField(blank=True, auto_now=True, editable=False)
     point = models.ForeignKey(Point)
     image = models.ForeignKey(Image)
-    user = models.ForeignKey(accounts.models.Profile)
+    # 'user' can be the dummy user "Imported".
+    user = models.ForeignKey(User)
     label = models.ForeignKey(Label) #TODO: verify
     source = models.ForeignKey(Source)
