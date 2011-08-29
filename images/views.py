@@ -365,7 +365,6 @@ def import_labels(request, source_id):
 
     #creates a new labelset for the source
     labelset = LabelSet(description="Automatically generated from importing labels")
-    labelset.save()
 
     labelsImported = 0
 
@@ -399,6 +398,7 @@ def import_labels(request, source_id):
                 labelset.labels.add(label)
                 labelsImported += 1
 
+            labelset.save()
             file.close() #closes file since we're done
 
             success_msg = "%d labels imported." % labelsImported
