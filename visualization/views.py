@@ -52,16 +52,16 @@ def visualize_source(request, source_id):
                 kwargs['value1'] = value1List[int(value1Index)-1]
                 pargs['image__metadata__value1'] = value1List[int(value1Index)-1]
             if value2Index:
-                kwargs['value2'] = value2List[int(value2Index)]
+                kwargs['value2'] = value2List[int(value2Index)-1]
                 pargs['image__metadata__value2'] = value2List[int(value2Index)-1]
             if value3Index:
-                kwargs['value3'] = value3List[int(value3Index)]
+                kwargs['value3'] = value3List[int(value3Index)-1]
                 pargs['image__metadata__value3'] = value3List[int(value3Index)-1]
             if value4Index:
-                kwargs['value4'] = value4List[int(value4Index)]
+                kwargs['value4'] = value4List[int(value4Index)-1]
                 pargs['image__metadata__value4'] = value4List[int(value4Index)-1]
             if value5Index:
-                kwargs['value5'] = value5List[int(value5Index)]
+                kwargs['value5'] = value5List[int(value5Index)-1]
                 pargs['image__metadata__value5'] = value5List[int(value5Index)-1]
             if year:
                 kwargs['metadata__photo_date__year'] = year

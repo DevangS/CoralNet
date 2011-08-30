@@ -26,8 +26,9 @@ class VisualizationSearchForm(forms.Form):
         metadatas = Metadata.objects.filter(image__source=source).distinct().dates('photo_date', 'year')
         years = []
         for metadata in metadatas:
-            if not metadata.year in years:
-                years.append(metadata.year)
+            if metadata:
+                if not metadata.year in years:
+                    years.append(metadata.year)
 
         self.fields['year'] = ChoiceField(choices=years,
                                                 required=False)
