@@ -75,10 +75,10 @@ def visualize_source(request, source_id):
                     path = annotation.image.original_file
                     image = imageobj.open(path)
 
-                    max_x = Annotation.image.original_width
-                    max_y = Annotation.image.original_height
-                    x = Annotation.point.row
-                    y = Annotation.point.column
+                    max_x = annotation.image.original_width
+                    max_y = annotation.image.original_height
+                    x = annotation.point.row
+                    y = annotation.point.column
 
                     if x-75 > 0:
                         left = x-75
