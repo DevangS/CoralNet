@@ -51,12 +51,9 @@ class VisualizationSearchForm(forms.Form):
                     choices.append((valueObj.id, valueObj.name))
                 
                 self.fields[valueField] = ChoiceField(choices, label=key, required=False)
-                
 
-
-
-           # else:
-            #    del self.fields[valueField]
+            else:
+                del self.fields[valueField]
 
 """        global gSource
         gSource = get_object_or_404(Source,id=source_id)
