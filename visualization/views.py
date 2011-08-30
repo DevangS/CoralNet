@@ -40,7 +40,7 @@ def visualize_source(request, source_id):
             value4Index = request.GET.get('value4', 0)
             value5Index = request.GET.get('value5', 0)
             year = request.GET.get('year', 0)
-            label = request.GET.get('label', '')
+            label = request.GET.get('label', 0)
 
             value1List = Value1.objects.filter(source=source)
             value2List = Value2.objects.filter(source=source)
@@ -49,24 +49,24 @@ def visualize_source(request, source_id):
             value5List = Value5.objects.filter(source=source)
 
             if value1Index:
-                kwargs['value1'] = value1List[int(value1Index)]
-                pargs['image__value1'] = value1List[int(value1Index)]
+                kwargs['value1'] = value1List[int(value1Index)-1]
+                pargs['image__metadata__value1'] = value1List[int(value1Index)-1]
             if value2Index:
                 kwargs['value2'] = value2List[int(value2Index)]
-                pargs['image__value2'] = value2List[int(value2Index)]
+                pargs['image__metadata__value2'] = value2List[int(value2Index)-1]
             if value3Index:
                 kwargs['value3'] = value3List[int(value3Index)]
-                pargs['image__value3'] = value3List[int(value3Index)]
+                pargs['image__metadata__value3'] = value3List[int(value3Index)-1]
             if value4Index:
                 kwargs['value4'] = value4List[int(value4Index)]
-                pargs['image__value4'] = value4List[int(value4Index)]
+                pargs['image__metadata__value4'] = value4List[int(value4Index)-1]
             if value5Index:
                 kwargs['value5'] = value5List[int(value5Index)]
-                pargs['image__value5'] = value5List[int(value5Index)]
+                pargs['image__metadata__value5'] = value5List[int(value5Index)-1]
             if year:
                 kwargs['metadata__photo_date__year'] = year
 
-            if label == "":
+            if label:
                 all_images = Image.objects.filter(**kwargs).order_by('-upload_date')
 
             else:

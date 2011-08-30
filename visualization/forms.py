@@ -24,6 +24,14 @@ class VisualizationSearchForm(forms.Form):
         super(VisualizationSearchForm,self).__init__(*args,**kwargs)
         source = Source.objects.filter(id=source_id)[0]
 
+        self.fields['year'] = forms.ModelChoiceField(Metadata.objects.filter(image__source=gSource).distinct(),
+                                                  empty_label="All",
+                                                  required=False)
+
+        labelset = LabelSet.objects.filter(source=gSource)[0]
+        self.fields['labels'] = forms.ModelChoiceField(labelset.labels.all(),
+                                            empty_label="View Whole Images",
+                                            required=False)
         for key, valueField, valueClass in [
                 (source.key1, 'value1', Value1),
                 (source.key2, 'value2', Value2),
@@ -36,33 +44,15 @@ class VisualizationSearchForm(forms.Form):
                 valueObjs = valueClass.objects.filter(source=source).order_by('name')
                 for valueObj in valueObjs:
                     choices.append((valueObj.id, valueObj.name))
-
+                
                 self.fields[valueField] = ChoiceField(choices, label=key, required=False)
                 
-                self.fields['year'] = forms.ModelChoiceField(Metadata.objects.filter(image__source=gSource).distinct(),
-                                                  empty_label="All",
-                                                  required=False)
 
-                labelset = LabelSet.objects.filter(source=gSource)[0]
-                self.fields['labels'] = forms.ModelChoiceField(labelset.labels.all(),
-                                                    empty_label="View Whole Images",
-                                                    required=False)
 
-                # Add a text input field for specifying the Other choice
-                pos = self.fields.keyOrder.index(valueField)
 
-                self.fields.insert(pos+1, valueField + '_other',
-                                   CharField(label='Other',
-                                             max_length=valueClass._meta.get_field('name').max_length,
-                                             required=False,
-                                             #TODO: Make the Other textbox actually float to the right of the dropdown list
-                                             widget=TextInput(attrs={'style': 'float:right'})
-                                   )
-                )
+           # else:
+            #    del self.fields[valueField]
 
-            else:
-                del self.fields[valueField]
-                
 """        global gSource
         gSource = get_object_or_404(Source,id=source_id)
 
