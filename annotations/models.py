@@ -28,6 +28,9 @@ class LabelSet(models.Model):
     description = models.TextField(blank=True)
     location = models.CharField(max_length=45, blank=True)
     labels = models.ManyToManyField(Label)
+
+    def __unicode__(self):
+        return self.description
     
 class Annotation(models.Model):
     annotation_date = models.DateTimeField(blank=True, auto_now=True, editable=False)
