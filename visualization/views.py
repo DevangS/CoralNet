@@ -40,7 +40,7 @@ def visualize_source(request, source_id):
             value4Index = request.GET.get('value4', 0)
             value5Index = request.GET.get('value5', 0)
             year = request.GET.get('year', '')
-            label = request.GET.get('label', '')
+            label = request.GET.get('labels', '')
 
             if value1Index:
                 kwargs['metadata__value1__id'] = value1Index
