@@ -39,8 +39,8 @@ def visualize_source(request, source_id):
             value3Index = request.GET.get('value3', 0)
             value4Index = request.GET.get('value4', 0)
             value5Index = request.GET.get('value5', 0)
-            year = request.GET.get('year', 0)
-            label = request.GET.get('label', 0)
+            year = request.GET.get('year', '')
+            label = request.GET.get('label', '')
 
             if value1Index:
                 kwargs['metadata__value1__id'] = value1Index
@@ -56,13 +56,11 @@ def visualize_source(request, source_id):
                 pargs['image__metadata__value4__id'] = value4Index
             if value5Index:
                 kwargs['metadata__value5__id'] = value5Index
-                pargs['image__metadata__value5__id'] = value5Index
             if year:
-                kwargs['metadata__photo_date__year'] = year
+                kwargs['metadata__photo_date__year'] = int(year)
 
             if not label:
                 all_images = Image.objects.filter(**kwargs).order_by('-upload_date')
-
             else:
                 #get all annotations for the source that contain the label
                 label = Label.objects.filter(name=label)
