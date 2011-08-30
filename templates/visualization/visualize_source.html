@@ -23,13 +23,17 @@
         </ul>
     {% else %}
         {% for image in images.object_list %}
-          {% with metadata=image.metadata %}
-            <a href="{% url image_detail source.id image.id %}">
-                {# TODO: Make a grid with reasonable spacing between grid elements. #}
-                <img src="{% thumbnail image.original_file 150x150 %}"
-                     title="{{ image.get_image_element_title }}"/>
-            </a>
-          {% endwith %}
+           {% if image.metadata %}
+              {% with metadata=image.metadata %}
+                <a href="{% url image_detail source.id image.id %}">
+                    {# TODO: Make a grid with reasonable spacing between grid elements. #}
+                    <img src="{% thumbnail image.original_file 150x150 %}"
+                         title="{{ image.get_image_element_title }}"/>
+                </a>
+              {% endwith %}
+            {% else %}
+               <img src="{% image %}"> <!--Images are file names if in label mode-->
+            {% endif %}
         {% endfor %}
 
         <div class="pagination">

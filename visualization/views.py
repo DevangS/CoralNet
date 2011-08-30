@@ -72,40 +72,49 @@ def visualize_source(request, source_id):
 
                 #create a cropped image for each annotation
                 for annotation in annotations:
-                    path = annotation.image.original_file
-                    image = imageobj.open(path)
+                    #check if patch exists for the annotation
+                    try:
+                        path = "data/annotations/" + annotation.id + ".jpg"
+                        all_images.append(path)
+                    #otherwise generate the patch
+                    except IOError:
 
-                    max_x = annotation.image.original_width
-                    max_y = annotation.image.original_height
-                    x = annotation.point.row
-                    y = annotation.point.column
+                        path = annotation.image.original_file
+                        image = imageobj.open(path)
 
-                    if x-75 > 0:
-                        left = x-75
-                    else:
-                        left = 0
+                        max_x = annotation.image.original_width
+                        max_y = annotation.image.original_height
+                        x = annotation.point.row
+                        y = annotation.point.column
 
-                    if x+75 < max_x:
-                        right = x+75
-                    else:
-                        right = max_x
+                        if x-75 > 0:
+                            left = x-75
+                        else:
+                            left = 0
 
-                    if y-75 > 0:
-                        upper = y-75
-                    else:
-                        upper = 0
+                        if x+75 < max_x:
+                            right = x+75
+                        else:
+                            right = max_x
 
-                    if y+75 < max_y:
-                        lower = y+75
-                    else:
-                        lower = 0
+                        if y-75 > 0:
+                            upper = y-75
+                        else:
+                            upper = 0
 
-                    #mark the subrectangle to be select from the image
-                    box = (left,upper,right,lower)
+                        if y+75 < max_y:
+                            lower = y+75
+                        else:
+                            lower = 0
 
-                    #get the image
-                    region = image.crop(box)
-                    all_images.append(region)
+                        #mark the subrectangle to be select from the image
+                        box = (left,upper,right,lower)
+
+                        #get the image, crops it, saves it, and adds to all_images
+                        region = image.crop(box)
+                        path = "data/annotations/" + annotation.id + ".jpg"
+                        region.save(path)
+                        all_images.append(path)
 
     else:
         form = VisualizationSearchForm(source_id)
