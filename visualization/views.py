@@ -43,7 +43,7 @@ def visualize_source(request, source_id):
             label = request.GET.get('label', 0)
 
             if value1Index:
-                kwargs['metadata__value1___id'] = value1Index
+                kwargs['metadata__value1__id'] = value1Index
                 pargs['image__metadata__value1__id'] = value1Index
             if value2Index:
                 kwargs['metadata__value2__id'] = value2Index
@@ -55,8 +55,8 @@ def visualize_source(request, source_id):
                 kwargs['metadata__value4__id'] = value4Index
                 pargs['image__metadata__value4__id'] = value4Index
             if value5Index:
-                kwargs['metadata__value5___id'] = value5Index
-                pargs['image__metadata__value5___id'] = value5Index
+                kwargs['metadata__value5__id'] = value5Index
+                pargs['image__metadata__value5__id'] = value5Index
             if year:
                 kwargs['metadata__photo_date__year'] = year
 
