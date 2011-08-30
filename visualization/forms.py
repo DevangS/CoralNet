@@ -1,5 +1,6 @@
 from django import forms
-from django.forms.fields import DateField
+from django.forms.fields import DateField, ChoiceField, CharField
+from django.forms.widgets import TextInput
 from django.shortcuts import get_object_or_404
 from annotations.models import Label, LabelSet
 from images.models import Source, Value1, Value2, Value3, Value4, Value5, Metadata
@@ -15,10 +16,54 @@ class YearModelChoiceField(forms.ModelChoiceField):
 
 
 class VisualizationSearchForm(forms.Form):
-
+    class Meta:
+        fields = ('value1', 'value2', 'value3',
+              'value4', 'value5', 'year', 'labels')
+        
     def __init__(self,source_id,*args,**kwargs):
         super(VisualizationSearchForm,self).__init__(*args,**kwargs)
-        global gSource
+        source = Source.objects.filter(id=source_id)[0]
+
+        for key, valueField, valueClass in [
+                (source.key1, 'value1', Value1),
+                (source.key2, 'value2', Value2),
+                (source.key3, 'value3', Value3),
+                (source.key4, 'value4', Value4),
+                (source.key5, 'value5', Value5)
+                ]:
+            if key:
+                choices = [('', 'All')]
+                valueObjs = valueClass.objects.filter(source=source).order_by('name')
+                for valueObj in valueObjs:
+                    choices.append((valueObj.id, valueObj.name))
+
+                self.fields[valueField] = ChoiceField(choices, label=key, required=False)
+                
+                self.fields['year'] = forms.ModelChoiceField(Metadata.objects.filter(image__source=gSource).distinct(),
+                                                  empty_label="All",
+                                                  required=False)
+
+                labelset = LabelSet.objects.filter(source=gSource)[0]
+                self.fields['labels'] = forms.ModelChoiceField(labelset.labels.all(),
+                                                    empty_label="View Whole Images",
+                                                    required=False)
+
+                # Add a text input field for specifying the Other choice
+                pos = self.fields.keyOrder.index(valueField)
+
+                self.fields.insert(pos+1, valueField + '_other',
+                                   CharField(label='Other',
+                                             max_length=valueClass._meta.get_field('name').max_length,
+                                             required=False,
+                                             #TODO: Make the Other textbox actually float to the right of the dropdown list
+                                             widget=TextInput(attrs={'style': 'float:right'})
+                                   )
+                )
+
+            else:
+                del self.fields[valueField]
+                
+"""        global gSource
         gSource = get_object_or_404(Source,id=source_id)
 
         #Gets options to show for each value that the user selects
@@ -52,4 +97,4 @@ class VisualizationSearchForm(forms.Form):
         vars()[gSource.key5] = forms.ModelChoiceField(queryset=(), empty_label="All", required=False)
 
     year = YearModelChoiceField(queryset=(), empty_label="All", required=False)
-    labels = forms.ModelChoiceField(queryset=(), empty_label="All", required=False)
+    labels = forms.ModelChoiceField(queryset=(), empty_label="All", required=False) """
