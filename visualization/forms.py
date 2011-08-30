@@ -8,7 +8,7 @@ from django.forms.extras.widgets import SelectDateWidget
 
 DATE_CHOICES = ()
 
-gSource = get_object_or_404(Source, id=1)
+#gSource = get_object_or_404(Source, id=1)
 
 class YearModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, Metadata):
@@ -24,11 +24,11 @@ class VisualizationSearchForm(forms.Form):
         super(VisualizationSearchForm,self).__init__(*args,**kwargs)
         source = Source.objects.filter(id=source_id)[0]
 
-        self.fields['year'] = forms.ModelChoiceField(Metadata.objects.filter(image__source=gSource).distinct(),
+        self.fields['year'] = forms.ModelChoiceField(Metadata.objects.filter(image__source=source).distinct(),
                                                   empty_label="All",
                                                   required=False)
 
-        labelset = LabelSet.objects.filter(source=gSource)[0]
+        labelset = LabelSet.objects.filter(source=source)[0]
         self.fields['labels'] = forms.ModelChoiceField(labelset.labels.all(),
                                             empty_label="View Whole Images",
                                             required=False)
