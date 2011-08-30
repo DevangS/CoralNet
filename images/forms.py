@@ -121,21 +121,7 @@ class ImageDetailForm(ModelForm):
                 valueObjs = valueClass.objects.filter(source=source).order_by('name')
                 for valueObj in valueObjs:
                     choices.append((valueObj.id, valueObj.name))
-                choices.append(('OtherId', 'Other'))
 
-                self.fields[valueField] = ChoiceField(choices, label=key, required=False)
-
-                # Add a text input field for specifying the Other choice
-                pos = self.fields.keyOrder.index(valueField)
-
-                self.fields.insert(pos+1, valueField + '_other',
-                                   CharField(label='Other',
-                                             max_length=valueClass._meta.get_field('name').max_length,
-                                             required=False,
-                                             #TODO: Make the Other textbox actually float to the right of the dropdown list
-                                             widget=TextInput(attrs={'style': 'float:right'})
-                                   )
-                )
             else:
                 del self.fields[valueField]
 
