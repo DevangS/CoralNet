@@ -42,31 +42,25 @@ def visualize_source(request, source_id):
             year = request.GET.get('year', 0)
             label = request.GET.get('label', 0)
 
-            value1List = Value1.objects.filter(source=source)
-            value2List = Value2.objects.filter(source=source)
-            value3List = Value3.objects.filter(source=source)
-            value4List = Value4.objects.filter(source=source)
-            value5List = Value5.objects.filter(source=source)
-
             if value1Index:
-                kwargs['value1'] = value1List[int(value1Index)-1]
-                pargs['image__metadata__value1'] = value1List[int(value1Index)-1]
+                kwargs['metadata_value1_id'] = value1Index
+                pargs['image__metadata__value1_id'] = value1Index
             if value2Index:
-                kwargs['value2'] = value2List[int(value2Index)-1]
-                pargs['image__metadata__value2'] = value2List[int(value2Index)-1]
+                kwargs['metadata_value2_id'] = value2Index
+                pargs['image__metadata__value2_id'] = value2Index
             if value3Index:
-                kwargs['value3'] = value3List[int(value3Index)-1]
-                pargs['image__metadata__value3'] = value3List[int(value3Index)-1]
+                kwargs['metadata_value3_id'] = value3Index
+                pargs['image__metadata__value3_id'] = value3Index
             if value4Index:
-                kwargs['value4'] = value4List[int(value4Index)-1]
-                pargs['image__metadata__value4'] = value4List[int(value4Index)-1]
+                kwargs['metadata_value4_id'] = value4Index
+                pargs['image__metadata__value4_id'] = value4Index
             if value5Index:
-                kwargs['value5'] = value5List[int(value5Index)-1]
-                pargs['image__metadata__value5'] = value5List[int(value5Index)-1]
+                kwargs['metadata_value5_id'] = value5Index
+                pargs['image__metadata__value5_id'] = value5Index
             if year:
                 kwargs['metadata__photo_date__year'] = year
 
-            if label:
+            if not label:
                 all_images = Image.objects.filter(**kwargs).order_by('-upload_date')
 
             else:
