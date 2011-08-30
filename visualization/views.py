@@ -62,6 +62,7 @@ def visualize_source(request, source_id):
             if not label:
                 all_images = Image.objects.filter(**kwargs).order_by('-upload_date')
             else:
+                all_images = []
                 #get all annotations for the source that contain the label
                 label = get_object_or_404(Label, id=label)
                 annotations = Annotation.objects.filter(source=source, label=label, **pargs)
