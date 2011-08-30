@@ -23,14 +23,16 @@ class VisualizationSearchForm(forms.Form):
     def __init__(self,source_id,*args,**kwargs):
         super(VisualizationSearchForm,self).__init__(*args,**kwargs)
         source = Source.objects.filter(id=source_id)[0]
-        metadatas = Metadata.objects.filter(image__source=source).distinct().dates('photo_date', 'year')
-        years = ["All"]
+        """metadatas =
+        years = []
+        years.append("All")
         for metadata in metadatas:
             if not metadata.year in years:
-                years.append(metadata)
+                years.append(metadata.year)"""
 
-        self.fields['year'] = forms.ChoiceField(choices=years,
-                                                required=False)
+        self.fields['year'] = forms.ModelChoiceField(queryset=Metadata.objects.filter(image__source=source).distinct().dates('photo_date', 'year'),
+                                                     empty_label="All",
+                                                     required=False)
 
         labelset = LabelSet.objects.filter(source=source)[0]
         self.fields['labels'] = forms.ModelChoiceField(labelset.labels.all(),
