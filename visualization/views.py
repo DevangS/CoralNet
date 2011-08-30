@@ -59,7 +59,7 @@ def visualize_source(request, source_id):
                 pargs['image__metadata__value4__id'] = value4Index
             if year != "All" and year:
                 kwargs['metadata__photo_date__year'] = int(year)
-                pargs['image__metadata__photo_date_year'] = int(year)
+                pargs['image__metadata__photo_date__year'] = int(year)
 
             if not label:
                 all_images = Image.objects.filter(**kwargs).order_by('-upload_date')
