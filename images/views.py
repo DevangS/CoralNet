@@ -365,7 +365,7 @@ def import_labels(request, source_id):
 
     #creates a new labelset for the source
     labelset = LabelSet(description="Automatically generated from importing labels")
-
+    labelset.save()
     labelsImported = 0
 
     if request.method == 'POST':
