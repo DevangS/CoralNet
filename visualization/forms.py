@@ -29,8 +29,8 @@ class VisualizationSearchForm(forms.Form):
             if not metadata.year in years:
                 years.append(metadata.year)
 
-        self.fields['year'] = forms.ChoiceField(choices=years,
-                                                     required=False)
+        self.fields['year'] = ChoiceField(choices=years,
+                                                required=False)
 
         labelset = LabelSet.objects.filter(source=source)[0]
         self.fields['labels'] = forms.ModelChoiceField(labelset.labels.all(),
