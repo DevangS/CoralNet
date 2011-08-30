@@ -43,20 +43,20 @@ def visualize_source(request, source_id):
             label = request.GET.get('label', 0)
 
             if value1Index:
-                kwargs['metadata_value1_id'] = value1Index
-                pargs['image__metadata__value1_id'] = value1Index
+                kwargs['metadata__value1___id'] = value1Index
+                pargs['image__metadata__value1__id'] = value1Index
             if value2Index:
-                kwargs['metadata_value2_id'] = value2Index
-                pargs['image__metadata__value2_id'] = value2Index
+                kwargs['metadata__value2__id'] = value2Index
+                pargs['image__metadata__value2__id'] = value2Index
             if value3Index:
-                kwargs['metadata_value3_id'] = value3Index
-                pargs['image__metadata__value3_id'] = value3Index
+                kwargs['metadata__value3__id'] = value3Index
+                pargs['image__metadata__value3__id'] = value3Index
             if value4Index:
-                kwargs['metadata_value4_id'] = value4Index
-                pargs['image__metadata__value4_id'] = value4Index
+                kwargs['metadata__value4__id'] = value4Index
+                pargs['image__metadata__value4__id'] = value4Index
             if value5Index:
-                kwargs['metadata_value5_id'] = value5Index
-                pargs['image__metadata__value5_id'] = value5Index
+                kwargs['metadata__value5___id'] = value5Index
+                pargs['image__metadata__value5___id'] = value5Index
             if year:
                 kwargs['metadata__photo_date__year'] = year
 
