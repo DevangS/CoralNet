@@ -115,6 +115,7 @@ def source_main(request, source_id):
 
         return render_to_response('images/source_main.html', {
             'source': source,
+            'loc_keys': ', '.join(source.get_key_list()),
             'members': members,
             'latest_images': latest_images,
             },
@@ -359,14 +360,18 @@ def import_groups(request, fileLocation):
     file.close()
     
 
+@transaction.commit_on_success
 def import_labels(request, source_id):
 
     source = get_object_or_404(Source, id=source_id)
 
     #creates a new labelset for the source
-    labelset = LabelSet(description="Automatically generated from importing labels")
+    labelset = LabelSet()
     labelset.save()
+
     labelsImported = 0
+    newLabels = 0
+    existingLabels = 0
 
     if request.method == 'POST':
         labelImportForm = LabelImportForm(request.POST, request.FILES)
@@ -389,20 +394,51 @@ def import_labels(request, source_id):
                 if line == '':
                     continue
 
-                #creates a label object and stores it in the database
-                group = get_object_or_404(LabelGroup, name=words[2])
-                label = Label(name=words[0], code=words[1], group=group)
-                label.save()
+                labelName, labelCode, groupName = words[0], words[1], words[2]
+                group = get_object_or_404(LabelGroup, name=groupName)
+
+                # (1) Create a new label, (2) use an existing label,
+                # or (3) throw an error if a file label and existing
+                # label of the same code don't match.
+                try:
+                    existingLabel = Label.objects.get(code=labelCode)
+                except Label.DoesNotExist:
+                    #creates a label object and stores it in the database
+                    label = Label(name=labelName, code=labelCode, group=group)
+                    label.save()
+                    newLabels += 1
+                else:
+                    if (existingLabel.name == labelName and
+                        existingLabel.code == labelCode and
+                        existingLabel.group == group
+                    ):
+                        label = existingLabel
+                        existingLabels += 1
+                    else:
+                        raise ValidationError(
+                            """Our database already has a label with code %s,
+                            but it doesn't match yours.
+                            Ours: %s, %s, %s
+                            Yours: %s, %s, %s""" % (
+                            labelCode,
+                            existingLabel.name, existingLabel.code, existingLabel.group.name,
+                            labelName, labelCode, groupName
+                            ))
 
                 #adds label to the labelset
                 labelset.labels.add(label)
                 labelsImported += 1
 
-            labelset.save()
             file.close() #closes file since we're done
 
-            success_msg = "%d labels imported." % labelsImported
+            labelset.description = labelImportForm.cleaned_data['labelset_description']
+            labelset.save()
+            source.labelset = labelset
+            source.save()
+
+            success_msg = "%d labels imported: %d new labels and %d existing labels." % (labelsImported, newLabels, existingLabels)
             messages.success(request, success_msg)
+            return HttpResponseRedirect(reverse('source_main', args=[source_id]))
 
         else:
             messages.error(request, 'Please correct the errors below.')
@@ -413,6 +449,7 @@ def import_labels(request, source_id):
 
     return render_to_response('images/label_import.html', {
             'labelImportForm': labelImportForm,
+            'source': source,
             },
             context_instance=RequestContext(request)
     )

@@ -184,6 +184,10 @@ class AnnotationImportForm(Form):
     )
 
 class LabelImportForm(Form):
+    labelset_description = CharField(
+        label='Labelset description',
+    )
+
     labels_file = FileField(
         label='Labels file (.txt)',
     )

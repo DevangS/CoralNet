@@ -1,10 +1,14 @@
-{% extends "annotations/base_label.html" %}
+{% extends "images/base_source.html" %}
 
 {% block title %}Import Labels | CoralNet{% endblock %}
 
 {% block content %}
 
     <h2>Import Labels</h2>
+
+    <p>Here, you can create a labelset for your Source by specifying a text file with your labels.</p>
+    <p>In your labelset file, please specify one label per line in the following format:<br />
+    Label name; Label code; Functional group</p>
 
     <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
         {{ labelImportForm.as_p }}

@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load guardian_tags %}
 
-{% block title %}CoralNet - Source{% endblock %}
+{% block title %}Source | CoralNet{% endblock %}
 
 {% block media-includes %}
     <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/source.css" />
@@ -18,7 +18,6 @@
       
         {% get_obj_perms user for source as "source_perms" %}
         {% if "source_admin" in source_perms %}
-        <li><a href="{% url source_edit source.id %}"><span>{% trans 'Edit Details' %}</span></a></li>
         <li><a href="{% url image_upload source.id %}"><span>{% trans 'Upload Images' %}</span></a></li>
         <li><a href="{% url label_import source.id %}"><span>{% trans 'Import Labels' %}</span></a></li>
         <li><a href="{% url annotation_import source.id %}"><span>{% trans 'Import Annotations' %}</span></a></li>

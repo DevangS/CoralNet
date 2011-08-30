@@ -1,7 +1,9 @@
 {% extends "images/base_source.html" %}
+{% load i18n %}
+{% load guardian_tags %}
 {% load thumbnail %}
 
-{% block title %}CoralNet - {{ source.name }}{% endblock %}
+{% block title %}{{ source.name }} | CoralNet{% endblock %}
 
 {% block media-includes %}
   {{ block.super }}
@@ -17,21 +19,24 @@
 
         <p>Date Created: {{ source.create_date }}</p>
 
-        <p>Description: {{ source.description|linebreaks }}</p>
+        <p>Description: {{ source.description|linebreaks|default:"(None)" }}</p>
 
-        <p>Location keys: </p>
-            <ul>
-            {% if source.key1 %}<li><p>1. {{ source.key1 }}</p></li>{% endif %}
-            {% if source.key2 %}<li><p>2. {{ source.key2 }}</p></li>{% endif %}
-            {% if source.key3 %}<li><p>3. {{ source.key3 }}</p></li>{% endif %}
-            {% if source.key4 %}<li><p>4. {{ source.key4 }}</p></li>{% endif %}
-            {% if source.key5 %}<li><p>5. {{ source.key5 }}</p></li>{% endif %}
-            </ul>
+        <p>Location keys: {{ loc_keys }}</p>
 
         <p>Annotation points per image: {{ source.default_total_points }}</p>
 
-        <p>Longitude: {{ source.longitude }}</p>
-        <p>Latitude: {{ source.latitude }}</p>
+        <p>Longitude: {{ source.longitude|default:"(None)" }}</p>
+        <p>Latitude: {{ source.latitude|default:"(None)" }}</p>
+
+        {% if source.labelset %}
+        <p>Labelset: <a href="{% url labelset_main source.labelset.id %}">View labelset ({{ source.labelset.description|default:"Untitled" }})</a></p>
+        {% else %} {# TODO: Will we need to handle the case where the Source doesn't have a labelset yet? #}
+        {% endif %}
+
+        {% get_obj_perms user for source as "source_perms" %}
+        {% if "source_admin" in source_perms %}
+        <a href="{% url source_edit source.id %}">{% trans 'Edit Source Details' %}</a>
+        {% endif %}
     </div>
 
     <hr />
