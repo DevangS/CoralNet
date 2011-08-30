@@ -2,9 +2,46 @@
 
 {% block title %}{{ metadata.name }} | CoralNet{% endblock %}
 
+{% block javascript-functions %}
+<script type="text/javascript">
+
+    var ORIGINAL_WIDTH = {{ image.original_width }};
+    var SCALED_WIDTH = {{ scaled_width }};
+
+    function initImageDetailPage() {
+        $("#coralImage").width(SCALED_WIDTH);
+
+        if (ORIGINAL_WIDTH == SCALED_WIDTH) {
+            $("#originalWidthButton").hide();
+            $("#scaledWidthButton").hide();
+        }
+        else {
+            $("#originalWidthButton").show();
+            $("#scaledWidthButton").hide();
+        }
+    }
+
+    function setImageToOriginalWidth() {
+        $("#coralImage").width(ORIGINAL_WIDTH);
+        $("#scaledWidthButton").show();
+        $("#originalWidthButton").hide();
+    }
+    function setImageToScaledWidth() {
+        $("#coralImage").width(SCALED_WIDTH);
+        $("#originalWidthButton").show();
+        $("#scaledWidthButton").hide();
+    }
+
+</script>
+{% endblock %}
+
 {% block content %}
 
-    <img src="{{ image.original_file.url }}" />
+    <button type="button" id="originalWidthButton" onclick="setImageToOriginalWidth()">View full image</button>
+    <button type="button" id="scaledWidthButton" onclick="setImageToScaledWidth()">Scale image to page</button>
+
+    <img id="coralImage" src="{{ image.original_file.url }}" />
+    
     <p>Name: {{ metadata.name }}</p>
     <p>Photo date: {{ metadata.photo_date|default:"(Unknown)" }}</p>
     <p>
@@ -14,6 +51,7 @@
     {% if source.key4 %}  {{ source.key4 }}: {{ metadata.value4.name }}<br />  {% endif %}
     {% if source.key5 %}  {{ source.key5 }}: {{ metadata.value5.name }}<br />  {% endif %}
     </p>
+    <p>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</p>
     <p>Upload date: {{ image.upload_date }}</p>
     <p>Uploaded by: {{ image.uploaded_by|default:"(Unknown)" }}</p>
     {% if metadata.pixel_cm_ratio %}  <p>Pixel/cm ratio: {{ metadata.pixel_cm_ratio }}</p>  {% endif %}
@@ -22,5 +60,12 @@
     {% if metadata.water_quality %}  <p>Water quality: {{ metadata.water_quality }}</p>  {% endif %}
     {% if metadata.photographer %}  <p>Photographer: {{ metadata.photographer }}</p>  {% endif %}
     {% if metadata.description %}  <p>Description: {{ metadata.description|linebreaks }}</p>  {% endif %}
+
+    <!-- Script in the body will run on page load. -->
+    <script type="text/javascript">
+
+        initImageDetailPage();
+
+    </script>
 
 {% endblock %}

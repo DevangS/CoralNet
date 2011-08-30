@@ -7,5 +7,5 @@ urlpatterns = patterns('',
     url(r'^labels/(?P<label_id>\d+)/$', 'annotations.views.label_main', name="label_main"),
     url(r'^labelset/new/$', 'annotations.views.labelset_new', name="labelset_new"),
     url(r'^labels/new/$', 'annotations.views.label_new', name="label_new"),
-
+    url(r'^source/(?P<source_id>\d+)/annotate/(?P<image_id>\d+)/$', 'annotations.views.annotation_tool', name="annotation_tool"),
 )

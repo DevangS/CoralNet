@@ -1,0 +1,238 @@
+{% extends "images/base_image.html" %}
+{% load i18n %}
+{% load guardian_tags %}
+
+{% block title %}Annotation Tool | CoralNet{% endblock %}
+
+{% block javascript-functions %}
+<script type="text/javascript">
+
+    var annotationArea, coralImage, pointsCanvas;
+	var context;
+    var points, imagePoints;
+	var POINT_RADIUS = 16;
+    var NUMBER_FONT = "bold 24px sans-serif";
+
+    // Border where the canvas is drawn, but the coral image is not.
+    // This is used to fully show the points that are located near the edge of the image.
+	var CANVAS_GUTTER = 25;
+    var CANVAS_GUTTER_COLOR = "#888888";
+
+	// Color for unselected points (point selection to be implemented)
+    var UNANNOTATED_COLOR = "#FFFF00";
+	var UNANNOTATED_COLOR_OUTLINE = "#000000";
+	var ANNOTATED_COLOR = "#FF0000";
+	var SELECTED_COLOR = "#888888";
+
+	// We should automatically match the coral image's width/height ratio and support up to a maximum width/height.
+	var IMAGE_DISPLAY_HEIGHT = {{ initial_display_height }};
+	var IMAGE_DISPLAY_WIDTH = {{ initial_display_width }};
+    var IMAGE_FULL_HEIGHT = {{ image.original_height }};
+	var IMAGE_FULL_WIDTH = {{ image.original_width }};
+
+	function initAnnotationTool() {
+
+        // Initialize styling for everything
+
+        $("#annotationArea").css({
+            "width": IMAGE_DISPLAY_WIDTH + (CANVAS_GUTTER * 2),
+            "height": IMAGE_DISPLAY_HEIGHT + (CANVAS_GUTTER * 2),
+            "background-color": CANVAS_GUTTER_COLOR
+        });
+
+        $("#coralImage").css({
+            "height": IMAGE_DISPLAY_HEIGHT + "px",
+            "left": CANVAS_GUTTER + "px",
+            "top": CANVAS_GUTTER + "px",
+            "z-index": 0
+        });
+
+        $("#pointsCanvas").css({
+            "left": 0,
+		    "top": 0,
+            "z-index": 1
+        });
+
+        // Get the actual DOM element for the canvas
+        pointsCanvas = $("#pointsCanvas").get(0);
+
+        // Note that the canvas's width and height elements are different from the
+        // canvas style's width and height. We're interested in the canvas width and height,
+        // so the canvas contents don't stretch.
+        pointsCanvas.width = IMAGE_DISPLAY_WIDTH + (CANVAS_GUTTER * 2);
+        pointsCanvas.height = IMAGE_DISPLAY_HEIGHT + (CANVAS_GUTTER * 2);
+
+		context = pointsCanvas.getContext("2d");
+
+        // Be able to specify all x,y coordinates in (scaled) image coordinates,
+        // instead of the coordinates of the entire canvas (which includes the gutter).
+        context.translate(CANVAS_GUTTER, CANVAS_GUTTER);
+
+		// Mouse button is pressed and un-pressed
+		pointsCanvas.addEventListener("mouseup", onMouseup, false);
+	}
+
+	/* Get the mouse position in the canvas element:
+	(mouse's position in the HTML document) minus
+	(canvas element's position in the HTML document).
+	The method for getting the mouse position in the HTML document
+	varies depending on the browser: can be based on pageX/Y or clientX/Y. */
+	function getMousePosition(e) {
+	    var x;
+		var y;
+		if (e.pageX != undefined && e.pageY != undefined) {
+			x = e.pageX;
+			y = e.pageY;
+		}
+		else {
+			x = e.clientX + document.body.scrollLeft +
+					document.documentElement.scrollLeft;
+			y = e.clientY + document.body.scrollTop +
+					document.documentElement.scrollTop;
+		}
+
+		x -= drawingCanvas.offsetLeft;
+		y -= drawingCanvas.offsetTop;
+
+	    return [x,y];  // Return an array
+	}
+
+    /*
+    TODO: Implement point-selection and other mouseclick functionality here.
+     */
+	function onMouseup(e) {
+
+	}
+
+    /*
+    To get the points in canvas coordinates,
+    scale the coordinates to match the scaling of the image.
+     */
+    function getCanvasPoints() {
+
+        // Apparently JavaScript uses decimal division by default, which we want in this case.
+        var scaleFactor = IMAGE_DISPLAY_WIDTH / IMAGE_FULL_WIDTH;
+
+        for (var i = 0; i < points.length; i++) {
+            points[i] = {
+                num: imagePoints[i].num,
+                row: imagePoints[i].row * scaleFactor,
+                col: imagePoints[i].col * scaleFactor
+            };
+        }
+    }
+
+    function drawPoints() {
+        for (var i = 0; i < points.length; i++) {
+            drawAnnotationPoint(points[i].col, points[i].row);
+            drawNumber(points[i].num.toString(), points[i].col, points[i].row);
+        }
+    }
+
+    /*
+    Draw an annotation point (the crosshair, circle, etc.)
+    which is centered at x,y.
+     */
+    function drawAnnotationPoint(x,y) {
+
+		// Adjust x and y by 0.5 so that straight lines are centered
+		// at the halfway point of a pixel, not on a pixel boundary.
+		// This ensures that 1-pixel-wide lines are really 1 pixel wide,
+		// instead of 2 pixels wide.
+        // NOTE: This only applies to odd-width lines.
+		x = x+0.5;
+		y = y+0.5;
+
+        context.strokeStyle = UNANNOTATED_COLOR;
+        context.lineWidth = 3;
+
+		context.beginPath();
+		//context.arc(x, y, POINT_RADIUS, 0, 2.0*Math.PI);    // A circle
+
+		context.moveTo(x, y+POINT_RADIUS);
+		context.lineTo(x, y-POINT_RADIUS);
+
+		context.moveTo(x-POINT_RADIUS, y);
+		context.lineTo(x+POINT_RADIUS, y);
+
+		context.stroke();
+	}
+
+    /*
+    Draw the number of an annotation point
+    which is centered at x,y.
+     */
+	function drawNumber(num, x, y) {
+		context.textBaseline = "bottom";
+		context.textAlign = "left";
+		context.fillStyle = UNANNOTATED_COLOR;
+        context.strokeStyle = UNANNOTATED_COLOR_OUTLINE;
+        context.lineWidth = 1;
+	    context.font = NUMBER_FONT;
+
+		// Offset the number's position a bit so it doesn't overlap with the annotation point.
+		// (Unlike the line drawing, 0.5 pixel adjustment doesn't seem to make a difference)
+        x = x + 3, y = y - 3;
+
+        context.fillText(num, x, y);    // Color in the number
+		context.strokeText(num, x, y);    // Outline the number (make it easier to see)
+	}
+
+	/*
+	Toggle the points on/off by bringing them in front of or behind the image.
+	TODO: Add a button that does this.
+	*/
+	function togglePoints() {
+
+		if (pointsCanvas.style.visibility == 'hidden')
+			pointsCanvas.style.visibility = 'visible';
+		else    // 'visible' or ''
+			pointsCanvas.style.visibility = 'hidden';
+	}
+
+</script>
+{% endblock %}
+
+{% block content %}
+
+<p>The annotation tool hasn't been made yet, but here you can see the points that have been generated for this image.</p>
+<p>Image: {{ metadata.name }}</p>
+<p>Location keys: {{ location_values|default:"(Unknown)" }}</p>
+<p>Year: {{ metadata.photo_date.year|default:"(Unknown)" }}</p>
+<p>Annotation points: {{ points_list|length }}</p>
+
+<!-- For the image and canvas, use position:absolute
+and make their positions (left, top) the same.  This'll make
+them overlap.  Use z-index to determine which "layers" are on
+top or bottom.  Also, the surrounding div must have
+position:relative so that the image and canvas don't overlap
+the rest of the page elements. -->
+
+<div id="annotationArea" style="position: relative;">
+
+    <!-- The coral image  -->
+    <img id="coralImage" src="{{ image.original_file.url }}"
+         style="position: absolute;" />
+
+    <!-- HTML5 canvas element for drawing points -->
+    <canvas id="pointsCanvas"
+        style="position: absolute;">
+    </canvas>
+</div>
+
+<!-- Script in the body will run on page load. -->
+<script type="text/javascript">
+    initAnnotationTool();
+
+    imagePoints = new Array({{ points_list|length }});
+    {% for p in points_list %}
+        imagePoints[{{ p.point_number|add:-1 }}] = { num: {{ p.point_number }}, row: {{ p.row }}, col: {{ p.column }} };
+    {% endfor %}
+
+    points = new Array({{ points_list|length }});
+    getCanvasPoints();
+
+    drawPoints();
+</script>
+
+{% endblock %}

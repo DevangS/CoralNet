@@ -298,10 +298,15 @@ def image_detail(request, image_id, source_id):
     # Fields to show on the detail page
     metadata = image.metadata
 
+    # Default max viewing width
+    # Feel free to change the constant according to the page layout.
+    scaled_width = min(image.original_width, 1000)
+
     return render_to_response('images/image_detail.html', {
         'source': source,
         'image': image,
         'metadata': metadata,
+        'scaled_width': scaled_width,
         },
         context_instance=RequestContext(request)
     )
@@ -482,7 +487,7 @@ def annotations_file_to_python(annoFile, source):
     # If we encounter a case where we have a filename, use the below:
     #annoFile = open(annoFile, 'r')
 
-    parseError = ValueError('Error parsing one of the lines in the annotations file.')
+    parseErrorMsg = 'Error parsing line %d in the annotations file:\n%s'
     
     numOfKeys = source.num_of_keys()
 
@@ -494,16 +499,16 @@ def annotations_file_to_python(annoFile, source):
 
     annotationsDict = dict()
 
-    for line in annoFile:
+    for lineNum, line in enumerate(annoFile, 1):
 
         # Sanitize the line and split it into words/tokens.
         # Allow for separators of ";" or "; "
-        line = line.strip().replace("; ", ';')
-        words = line.split(';')
+        cleanedLine = line.strip().replace("; ", ';')
+        words = cleanedLine.split(';')
 
         # Check that the basic line formatting is right, i.e. all words/tokens are there.
         if len(words) != numOfWordsExpected:
-            raise parseError
+            raise ValueError(parseErrorMsg % (lineNum, line))
 
         # Encode the line data into a dictionary: {'value1':'Shore2', 'row':'575', ...}
         lineData = dict(zip(wordsFormat, words))
@@ -665,7 +670,7 @@ def annotation_import(request, source_id):
                     try:
                         label = Label.objects.get(code=anno['label'])
                     except:
-                        raise ValidationError('Label with code %s not found in the database.' % anno['label'])
+                        raise ValidationError('Database either has no label or multiple labels with code %s.' % anno['label'])
 
                     # TODO: Check that the Label object is actually in this Source's labelset.
                     #LabelSet.objects.get(sources=source, labels=label)

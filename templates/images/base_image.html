@@ -16,6 +16,7 @@
 
         {% get_obj_perms user for source as "source_perms" %}
         {% if "source_admin" in source_perms %}
+        <li><a href="{% url annotation_tool source.id image.id %}"><span>{% trans 'Annotate Image' %}</span></a></li>
         <li><a href="{% url image_detail_edit source.id image.id %}"><span>{% trans 'Edit Details' %}</span></a></li>
         {% endif %}
 

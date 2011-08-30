@@ -4,8 +4,11 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
+from guardian.decorators import permission_required
 from annotations.forms import NewLabelForm, NewLabelSetForm
 from annotations.models import Label, LabelSet
+from images.models import Source, Image, Point
+from images.utils import get_location_value_str_list
 
 @login_required
 def label_new(request):
@@ -97,4 +100,39 @@ def label_list(request):
                 'labels': labels,
                 },
                 context_instance=RequestContext(request)
+    )
+
+
+@permission_required('source_admin', (Source, 'id', 'source_id'))
+def annotation_tool(request, image_id, source_id):
+    """
+    View for the annotation tool.
+    Redirect to a view for generating points, if there's no points yet.
+    """
+
+    image = get_object_or_404(Image, id=image_id)
+    #source = get_object_or_404(Source, Image.objects.get(pk=image_id).source.id)
+    source = get_object_or_404(Source, id=source_id)
+
+    metadata = image.metadata
+    points = Point.objects.filter(image=image)
+
+    # Get all the points from the DB now, instead of one by one
+    # from the DB later.
+    points_list = list(points)
+
+    # Scale the image so it fits with the webpage layout.
+    initial_display_width = 950    # Change this according to how it looks on the page
+    initial_display_height = (initial_display_width * image.original_height) / image.original_width
+
+    return render_to_response('annotations/annotation_tool.html', {
+        'source': source,
+        'image': image,
+        'metadata': metadata,
+        'location_values': ', '.join(get_location_value_str_list(image)),
+        'points_list': points_list,
+        'initial_display_width': initial_display_width,
+        'initial_display_height': initial_display_height,
+        },
+        context_instance=RequestContext(request)
     )
