@@ -48,22 +48,22 @@ def visualize_source(request, source_id):
             value4List = Value4.objects.filter(source=source)
             value5List = Value5.objects.filter(source=source)
 
-            if value1Index != "":
+            if value1Index.isDigit():
                 kwargs['value1'] = value1List[int(value1Index)]
                 pargs['image__value1'] = value1List[int(value1Index)]
-            if value2Index != "":
+            if value2Index.isDigit():
                 kwargs['value2'] = value2List[int(value2Index)]
                 pargs['image__value2'] = value2List[int(value2Index)]
-            if value3Index != "":
+            if value3Index.isDigit():
                 kwargs['value3'] = value3List[int(value3Index)]
                 pargs['image__value3'] = value3List[int(value3Index)]
-            if value4Index != "":
-                kwargs['value4'] = value4List[value4Index]
-                pargs['image__value4'] = value4List[value4Index]
-            if value5Index != "":
+            if value4Index.isDigit():
+                kwargs['value4'] = value4List[int(value4Index)]
+                pargs['image__value4'] = value4List[int(value4Index)]
+            if value5Index.isDigit():
                 kwargs['value5'] = value5List[int(value5Index)]
                 pargs['image__value5'] = value5List[int(value5Index)]
-            if year != "":
+            if year.isDigit():
                 kwargs['metadata__photo_date__year'] = year
 
             if label == "":
