@@ -18,9 +18,7 @@ class VisualizationSearchForm(forms.Form):
 
     def __init__(self,source_id,*args,**kwargs):
         super(VisualizationSearchForm,self).__init__(*args,**kwargs)
-
-
-"""        global gSource
+        global gSource
         gSource = get_object_or_404(Source,id=source_id)
 
         #Gets options to show for each value that the user selects
@@ -54,4 +52,4 @@ class VisualizationSearchForm(forms.Form):
         vars()[gSource.key5] = forms.ModelChoiceField(queryset=(), empty_label="All", required=False)
 
     year = YearModelChoiceField(queryset=(), empty_label="All", required=False)
-    labels = forms.ModelChoiceField(queryset=(), empty_label="All", required=False) """
+    labels = forms.ModelChoiceField(queryset=(), empty_label="All", required=False)
