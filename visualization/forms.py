@@ -24,7 +24,7 @@ class VisualizationSearchForm(forms.Form):
         super(VisualizationSearchForm,self).__init__(*args,**kwargs)
         source = Source.objects.filter(id=source_id)[0]
         metadatas = Metadata.objects.filter(image__source=source).distinct().dates('photo_date', 'year')
-        years = []
+        years = ["All"]
         for metadata in metadatas:
             if metadata:
                 if not metadata.year in years:
