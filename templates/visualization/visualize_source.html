@@ -32,7 +32,13 @@
                 </a>
               {% endwith %}
             {% else %}
-               <img src="{% image %}"> <!--Images are file names if in label mode-->
+              {% with fullImage=image.fullImage %}
+                <a href="{% url image_detail source.id fullImage.id %}">
+                    <img src="{{ MEDIA_URL }}{{ image.patchPath }}"
+                         title="Point {{ image.pointNum }} ({{ image.row }},{{ image.col }}) in: {{ fullImage.get_image_element_title }}"/>
+                </a>
+              {% endwith %}
+{#               <img src="{{ MEDIA_URL }}{{ image }}"> <!--Images are file names if in label mode-->#}
             {% endif %}
         {% endfor %}
 

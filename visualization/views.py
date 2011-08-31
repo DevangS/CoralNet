@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
@@ -6,7 +7,7 @@ from guardian.decorators import permission_required
 from annotations.models import Annotation, Label
 from images.models import Source, Value1, Value2, Value3, Value4, Value5, Image
 from visualization.forms import VisualizationSearchForm
-import Image as imageobj
+import Image as PILImage
 
 @permission_required('source_admin', (Source, 'id', 'source_id'))
 def visualize_source(request, source_id):
@@ -72,15 +73,27 @@ def visualize_source(request, source_id):
 
                 #create a cropped image for each annotation
                 for annotation in annotations:
+
+                    patchPath = "data/annotations/" + str(annotation.id) + ".jpg"
+                    patchFullPath = "media/" + patchPath
+
+                    all_images.append(dict(
+                        fullImage=annotation.image,
+                        patchPath=patchPath,
+                        row=annotation.point.row,
+                        col=annotation.point.column,
+                        pointNum=annotation.point.point_number,
+                    ))
+
                     #check if patch exists for the annotation
                     try:
-                        path = "data/annotations/" + annotation.id + ".jpg"
-                        all_images.append(path)
+                        PILImage.open(patchFullPath)
+
                     #otherwise generate the patch
                     except IOError:
 
-                        path = annotation.image.original_file
-                        image = imageobj.open(path)
+                        originalPath = annotation.image.original_file
+                        image = PILImage.open(originalPath)
 
                         max_x = annotation.image.original_width
                         max_y = annotation.image.original_height
@@ -112,9 +125,7 @@ def visualize_source(request, source_id):
 
                         #get the image, crops it, saves it, and adds to all_images
                         region = image.crop(box)
-                        path = "data/annotations/" + annotation.id + ".jpg"
-                        region.save(path)
-                        all_images.append(path)
+                        region.save(patchFullPath)
 
     else:
         form = VisualizationSearchForm(source_id)
