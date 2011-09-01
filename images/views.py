@@ -15,11 +15,12 @@ from guardian.decorators import permission_required
 from guardian.shortcuts import assign
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
 
-from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, Point
-from images.forms import ImageSourceForm, ImageUploadForm, ImageDetailForm, AnnotationImportForm, ImageUploadFormBasic, LabelImportForm
+from images.models import Source, Image, Metadata, Point, find_dupe_image
+from images.models import get_location_value_objs
+from images.forms import ImageSourceForm, ImageUploadForm, ImageDetailForm, AnnotationImportForm, ImageUploadFormBasic, LabelImportForm, PointGenForm
+from images.utils import filename_to_metadata, PointGen
 
 from os.path import splitext
-from images.utils import filename_to_metadata, get_location_value_objs
 
 
 def source_list(request):
@@ -73,12 +74,19 @@ def source_new(request):
     # GET, we just got here.
     if request.method == 'POST':
         # A form bound to the POST data
-        form = ImageSourceForm(request.POST)
+        sourceForm = ImageSourceForm(request.POST)
+        pointGenForm = PointGenForm(request.POST)
 
         # is_valid() calls our ModelForm's clean() and checks validity
-        if form.is_valid():
-            # Save the source in the database
-            newSource = form.save()
+        source_form_is_valid = sourceForm.is_valid()
+        point_gen_form_is_valid = pointGenForm.is_valid()
+
+        if source_form_is_valid and point_gen_form_is_valid:
+            # After calling a ModelForm's is_valid(), an instance is created.
+            # We can get this instance and add a bit more to it before saving to the DB.
+            newSource = sourceForm.instance
+            newSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
+            newSource.save()
             # Grant permissions for this source
             assign('source_admin', request.user, newSource)
             # Add a success message
@@ -90,12 +98,14 @@ def source_new(request):
             messages.error(request, 'Please correct the errors below.')
     else:
         # An unbound form (empty form)
-        form = ImageSourceForm()
+        sourceForm = ImageSourceForm()
+        pointGenForm = PointGenForm()
 
     # RequestContext needed for CSRF verification of POST form,
     # and to correctly get the path of the CSS file being used.
     return render_to_response('images/source_new.html', {
-        'form': form,
+        'sourceForm': sourceForm,
+        'pointGenForm': pointGenForm,
         },
         context_instance=RequestContext(request)
         )
@@ -142,21 +152,29 @@ def source_edit(request, source_id):
             return HttpResponseRedirect(reverse('source_main', args=[source_id]))
 
         # Submit
-        form = ImageSourceForm(request.POST, instance=source)
-        
-        if form.is_valid():
-            form.save()
+        sourceForm = ImageSourceForm(request.POST, instance=source)
+        pointGenForm = PointGenForm(request.POST)
+
+        source_form_is_valid = sourceForm.is_valid()
+        point_gen_form_is_valid = pointGenForm.is_valid()
+
+        if source_form_is_valid and point_gen_form_is_valid:
+            editedSource = sourceForm.instance
+            editedSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
+            editedSource.save()
             messages.success(request, 'Source successfully edited.')
             return HttpResponseRedirect(reverse('source_main', args=[source_id]))
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
         # Just reached this form page
-        form = ImageSourceForm(instance=source)
+        sourceForm = ImageSourceForm(instance=source)
+        pointGenForm = PointGenForm(source=source)
 
     return render_to_response('images/source_edit.html', {
         'source': source,
-        'editSourceForm': form,
+        'editSourceForm': sourceForm,
+        'pointGenForm': pointGenForm,
         },
         context_instance=RequestContext(request)
         )
@@ -174,6 +192,8 @@ def image_upload(request, source_id):
 
     source = get_object_or_404(Source, id=source_id)
     uploadedImages = []
+    duplicates = 0
+    imagesUploaded = 0
 
     if request.method == 'POST':
         form = ImageUploadForm(request.POST, request.FILES, source=source)
@@ -187,80 +207,102 @@ def image_upload(request, source_id):
             # Need getlist instead of simply request.FILES, in order to handle
             # multiple files.
             fileList = request.FILES.getlist('files')
-
-            hasDataFromFilenames = form.cleaned_data['has_data_from_filenames']
+            dupe_option = form.cleaned_data['skip_or_replace_duplicates']
 
             for file in fileList:
 
                 filenameWithoutExtension = splitext(file.name)[0]
 
-                if hasDataFromFilenames:
+                if form.cleaned_data['has_data_from_filenames']:
 
                     try:
-
-                        # Make a generator of the metadata 'tokens' from the filename
-                        tokens = (t for t in filenameWithoutExtension.split('_'))
-                        metadataTokens = dict()
-
-                        for keyIndex, valueIndex, valueClass in [
-                                ('key1', 'value1', Value1),
-                                ('key2', 'value2', Value2),
-                                ('key3', 'value3', Value3),
-                                ('key4', 'value4', Value4),
-                                ('key5', 'value5', Value5) ]:
-
-                            if getattr(source, keyIndex):
-                                metadataTokens[valueIndex], created = valueClass.objects.get_or_create(name=tokens.next(), source=source)
-                            else:
-                                break  # Source has no more keys
-
-                        #TODO: Consider an alternative to just filling in January 1:
-                        # - use a date format that can be either year only, year and month
-                        #   only, or year month and day (is such a format available)?
-                        # - just require the month and day to be specified too
-                        date_string = tokens.next()
-                        year, month, day = date_string.split("-")
-                        metadataTokens['photo_date'] = date(int(year), int(month), int(day))
+                        metadataDict = filename_to_metadata(filenameWithoutExtension, source)
 
                     #TODO: Have far more robust exception/error checking, which checks
                     # not just the filename parsing, but also the validity of the image files
                     # themselves.
                     # The idea is you need to call is_valid() with each file somehow,
                     # because it only checks one file per call.
-                    # Perhaps this is a good time to jump ship and go with an AJAX form.
+                    # Perhaps this is a good time to jump ship and go with an AJAX form which
+                    # sends files to Django one by one.
                     except (ValueError, StopIteration):
                         messages.error(request, 'Upload failed - Error when parsing the filename %s for metadata.' % file.name)
                         encountered_error = True
                         transaction.rollback()
                         uploadedImages = []
+                        duplicatesDeleted = 0
                         break
 
+                    # Detect duplicate images and handle them
+                    dupe = find_dupe_image(source, **metadataDict)
+                    if dupe:
+                        duplicates += 1
+                        if dupe_option == 'skip':
+                            # Skip uploading this file.
+                            continue
+                        elif dupe_option == 'replace':
+                            # Proceed uploading this file, and delete the dupe.
+                            dupe.delete()
+
                     # Set the metadata
+                    valueDict = get_location_value_objs(source, metadataDict['values'], createNewValues=True)
+                    photoDate = date(year = int(metadataDict['year']),
+                                     month = int(metadataDict['month']),
+                                     day = int(metadataDict['day']))
                     metadata = Metadata(name=filenameWithoutExtension,
-                                        **metadataTokens)
-#                    for paramName, paramValue in metadataTokens:
-#                        setattr(metadata, paramName, paramValue)
+                                        photo_date=photoDate,
+                                        **valueDict)
 
                 else:
                     metadata = Metadata(name=filenameWithoutExtension)
-                    
+
                 metadata.save()
 
+                point_generation_method = source.default_point_generation_method
+
+                # Save the image into the DB
                 img = Image(original_file=file,
                         uploaded_by=request.user,
-                        total_points=source.default_total_points,
+                        point_generation_method=point_generation_method,
                         metadata=metadata,
                         source=source)
                 img.save()
 
+                # Generate points
+                if point_generation_method:
+                    points = PointGen.generate_points(img, **PointGen.db_to_args_format(point_generation_method))
+
+                    # Save points
+                    for pt in points:
+                        Point(row=pt['row'],
+                              column=pt['column'],
+                              point_number=pt['point_number'],
+                              image=img,
+                        ).save()
+
                 # Up to 5 uploaded images will be shown
-                # upon successful upload
-                uploadedImages.append(img)
+                # upon successful upload.
+
+                # Prepend to list, so most recent image comes first
+                uploadedImages.insert(0, img)
                 if len(uploadedImages) > 5:
-                    uploadedImages = uploadedImages[1:]
+                    uploadedImages = uploadedImages[:5]
+
+                imagesUploaded += 1
 
             if not encountered_error:
-                messages.success(request, '%d images uploaded.' % len(fileList))
+
+                # Construct success message.
+                if dupe_option == 'replace':
+                    duplicate_msg_base = "%d duplicates replaced."
+                else:
+                    duplicate_msg_base = "%d duplicates skipped."
+
+                uploaded_msg = "%d images uploaded." % imagesUploaded
+                duplicate_msg = duplicate_msg_base % duplicates
+                success_msg = uploaded_msg + ' ' + duplicate_msg
+
+                messages.success(request, success_msg)
 
         else:
             messages.error(request, 'Please correct the errors below.')
@@ -270,16 +312,14 @@ def image_upload(request, source_id):
     else:
         form = ImageUploadForm(source=source)
 
-    #TODO: Show some kind of confirmation of the uploaded images.
-    # (Maybe show a few samples)
-
     return render_to_response('images/image_upload.html', {
         'source': source,
         'imageUploadForm': form,
-        'uploadedImages': uploadedImages
+        'uploadedImages': uploadedImages,
         },
         context_instance=RequestContext(request)
     )
+
 
 # TODO: Make custom permission_required_blahblah decorators.
 # For example, based on an image id, see if the user has permission to it. Make that permission_required_image.

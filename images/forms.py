@@ -1,11 +1,15 @@
 from django.forms import Form, ModelForm, TextInput, FileInput, CharField
-from django.forms.fields import ChoiceField, BooleanField, ImageField, FileField
+from django.forms.fields import ChoiceField, BooleanField, ImageField, FileField, IntegerField
+from django.forms.widgets import Select
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5
 from CoralNet.forms import FormHelper
+from images.utils import PointGen, metadata_to_filename
 
 class ImageSourceForm(ModelForm):
+    
     class Meta:
         model = Source
+        exclude = ('default_point_generation_method',)
         widgets = {
             'key1': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'key2': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
@@ -57,34 +61,60 @@ class ImageUploadFormBasic(Form):
 
 
 class ImageUploadForm(ImageUploadFormBasic):
+    class Media:
+        css = {
+            'all': ("css/uploadForm.css",)
+        }
+        js = (
+            # From root static directory
+            "js/util.js",
+            # From annotations static directory
+            "js/ImageUploadFormHelper.js",
+        )
+
     has_data_from_filenames = BooleanField(
         label='Collect metadata from filenames',
+        initial=True,
+        required=False)
+
+    skip_or_replace_duplicates = ChoiceField(
+        label='Skip or replace duplicate images',
+        help_text="Duplicates are defined as images with the same location keys and year.",
+        choices=(('skip', 'Skip'), ('replace', 'Replace')),
         required=False)
 
     def __init__(self, *args, **kwargs):
         """
-        Dynamically generate help text for has_data_from_filenames.
+        (1) Dynamically generate help text.
+        (2) If the source doesn't have a point generation method specified, then remove the
+        "will_generate_points" checkbox from the form.
         """
         source = kwargs.pop('source')
         super(ImageUploadForm, self).__init__(*args, **kwargs)
 
-        sourceKeys = []
-        sourceKeyExamples = []
-        for key, exampleSuffix in [
-                (source.key1, 'A'),
-                (source.key2, ' 7'),
-                (source.key3, ' 2-2'),
-                (source.key4, 'C'),
-                (source.key5, '1') ]:
-            if key:
-                sourceKeys.append(key)
-                sourceKeyExamples.append(key + exampleSuffix)
-        locKeysFormat = '_'.join(sourceKeys) + '_'
-        locKeysExample = '_'.join(sourceKeyExamples) + '_'
+        # Dynamically generate help text.
+        # Show the filename format that should be used,
+        # and an example of a filename adhering to that format.
+        filenameFormatArgs = dict(year='YYYY', month='MM', day='DD')
+        filenameExampleArgs = dict(year='2010', month='08', day='23')
+
+        sourceKeys = source.get_key_list()
+        exampleSuffixes = ['A', ' 7', ' 2-2', 'C', '1'][0 : len(sourceKeys)]
+
+        filenameFormatArgs['values'] = sourceKeys
+        filenameExampleArgs['values'] = [a+b for a,b in zip(sourceKeys, exampleSuffixes)]
+
+        filenameFormatStr = metadata_to_filename(**filenameFormatArgs)
+        filenameExampleStr = metadata_to_filename(**filenameExampleArgs)
 
         self.fields['has_data_from_filenames'].help_text = \
-            "Required format: %sYYYY-MM-DD " % locKeysFormat + \
-            "(Example: %s2010-08-23)" % locKeysExample
+            "Required format: %s" % filenameFormatStr + '\n' + \
+            "(Example: %s)" % filenameExampleStr
+
+        self.additional_details = [
+            """Annotation points will be automatically generated for your images.
+            Your Source's point generation settings: %s""" % PointGen.db_to_readable_format(source.default_point_generation_method)
+        ]
 
 
 class ImageDetailForm(ModelForm):
@@ -176,6 +206,104 @@ class ImageDetailForm(ModelForm):
             
         self.cleaned_data = data
         return super(ImageDetailForm, self).clean()
+
+
+class PointGenForm(Form):
+
+    class Media:
+        js = (
+            # From root static directory
+            "js/util.js",
+            # From annotations static directory
+            "js/PointGenFormHelper.js",
+        )
+
+    MAX_NUM_POINTS = 1000
+
+    point_generation_type = ChoiceField(
+        label='Point generation type',
+        choices=Source.POINT_GENERATION_CHOICES,
+        widget=Select(attrs={'onchange': 'PointGenFormHelper.showOnlyRelevantFields()'}),
+    )
+
+    # The following fields may or may not be required depending on the
+    # point_generation_type. We'll make all of them required by default,
+    # then in clean(), we'll ignore the errors for fields that
+    # we decide are not required.
+
+    # For simple random
+    simple_number_of_points = IntegerField(
+        label='Number of annotation points', required=True,
+        min_value=1, max_value=MAX_NUM_POINTS,
+    )
+
+    # For stratified random and uniform grid
+    number_of_cell_rows = IntegerField(
+        label='Number of cell rows', required=True,
+        min_value=1, max_value=MAX_NUM_POINTS,
+    )
+    number_of_cell_columns = IntegerField(
+        label='Number of cell columns', required=True,
+        min_value=1, max_value=MAX_NUM_POINTS,
+    )
+
+    # For stratified random
+    stratified_points_per_cell = IntegerField(
+        label='Points per cell', required=True,
+        min_value=1, max_value=MAX_NUM_POINTS,
+    )
+
+    def __init__(self, *args, **kwargs):
+        """
+        If a Source is passed in as an argument, then get
+        the point generation method of that Source,
+        and use that to fill the form fields' initial values.
+        """
+        if kwargs.has_key('source'):
+            source = kwargs.pop('source')
+            kwargs['initial'] = PointGen.db_to_args_format(source.default_point_generation_method)
+
+        super(PointGenForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        data = self.cleaned_data
+        type = data['point_generation_type']
+
+        # Depending on the point generation type that was picked, different
+        # fields are going to be required or not. Identify the required fields
+        # (other than the point-gen type).
+        additional_required_fields = []
+        if type == PointGen.Types.SIMPLE:
+            additional_required_fields = ['simple_number_of_points']
+        elif type == PointGen.Types.STRATIFIED:
+            additional_required_fields = ['number_of_cell_rows', 'number_of_cell_columns', 'stratified_points_per_cell']
+        elif type == PointGen.Types.UNIFORM:
+            additional_required_fields = ['number_of_cell_rows', 'number_of_cell_columns']
+
+        # Get rid of errors for the fields we don't care about.
+        required_fields = ['point_generation_type'] + additional_required_fields
+        for key in self._errors.keys():
+            if key not in required_fields:
+                del self._errors[key]
+
+        # If there are no errors so far, do a final check of
+        # the total number of points specified.
+        # It should be between 1 and MAX_NUM_POINTS.
+        if len(self._errors) == 0:
+
+            num_points = 0
+            if type == PointGen.Types.SIMPLE:
+                num_points = data['simple_number_of_points']
+            elif type == PointGen.Types.STRATIFIED:
+                num_points = data['number_of_cell_rows'] * data['number_of_cell_columns'] * data['stratified_points_per_cell']
+            elif type == PointGen.Types.UNIFORM:
+                num_points = data['number_of_cell_rows'] * data['number_of_cell_columns']
+
+            if num_points > PointGenForm.MAX_NUM_POINTS:
+                raise ValidationError("You specified %s points total. Please make it no more than %s." % (num_points, PointGenForm.MAX_NUM_POINTS))
+
+        self.cleaned_data = data
+        return super(PointGenForm, self).clean()
 
 
 class AnnotationImportForm(Form):

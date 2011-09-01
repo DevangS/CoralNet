@@ -199,7 +199,7 @@
 <p>Image: {{ metadata.name }}</p>
 <p>Location keys: {{ location_values|default:"(Unknown)" }}</p>
 <p>Year: {{ metadata.photo_date.year|default:"(Unknown)" }}</p>
-<p>Annotation points: {{ points_list|length }}</p>
+<p>Annotation point type: {{ image.point_gen_method_display }}</p>
 
 <!-- For the image and canvas, use position:absolute
 and make their positions (left, top) the same.  This'll make

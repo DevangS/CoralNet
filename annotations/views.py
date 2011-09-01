@@ -8,7 +8,6 @@ from guardian.decorators import permission_required
 from annotations.forms import NewLabelForm, NewLabelSetForm
 from annotations.models import Label, LabelSet
 from images.models import Source, Image, Point
-from images.utils import get_location_value_str_list
 
 @login_required
 def label_new(request):
@@ -129,7 +128,7 @@ def annotation_tool(request, image_id, source_id):
         'source': source,
         'image': image,
         'metadata': metadata,
-        'location_values': ', '.join(get_location_value_str_list(image)),
+        'location_values': ', '.join(image.get_location_value_str_list()),
         'points_list': points_list,
         'initial_display_width': initial_display_width,
         'initial_display_height': initial_display_height,

@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}CoralNet - New Source{% endblock %}
+{% block title %}New Source | CoralNet{% endblock %}
 
 {% block media-includes %}
-  {{ form.media }}
+  {{ sourceForm.media }}
+  {{ pointGenForm.media }}
 {% endblock %}
 
 {% block content %}
@@ -14,7 +15,8 @@
     {# The view function redirects to the success page if the form is valid. #}
 
     <form action="" method="post">{% csrf_token %}
-      {{ form.as_p }}
+      {{ sourceForm.as_p }}
+      {% include "images/form_pointgen.html" with form=pointGenForm %}
       <input type="submit" value="Create Source" />
     </form>
 

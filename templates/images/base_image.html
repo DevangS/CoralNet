@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load guardian_tags %}
 
-{% block title %}CoralNet - Image{% endblock %}
+{% block title %}Image | CoralNet{% endblock %}
 
 {% block media-includes %}
     <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/image.css" />
@@ -10,6 +10,9 @@
 
 {% block nav %}
     {{ block.super }}
+    
+    <h2><a href="{% url source_main source.id %}">{{ source.name }}</a></h2>
+
     <div class="nav_container" id="nav_second_container">
       <ul class="nav nav_right" id="nav_image">
         <li><a href="{% url image_detail source.id image.id %}"><span>{% trans 'View Image' %}</span></a></li>
@@ -20,7 +23,6 @@
         <li><a href="{% url image_detail_edit source.id image.id %}"><span>{% trans 'Edit Details' %}</span></a></li>
         {% endif %}
 
-        <li><a href="{% url source_main source.id %}"><span>{% trans 'Source' %} ({{ source.name }})</span></a></li>
         <li><a href="{% url visualize_source source.id %}"><span>{% trans 'Browse Source Images' %}</span></a></li>
       </ul>
     </div>
