@@ -5,6 +5,9 @@ from django.views.generic.simple import direct_to_template
 from django.contrib import admin
 admin.autodiscover()
 
+from dajaxice.core import dajaxice_autodiscover
+dajaxice_autodiscover()
+
 urlpatterns = patterns('',
     (r'^feedback/', include('bug_reporting.urls')),
     (r'^images/', include('images.urls')),
@@ -15,6 +18,7 @@ urlpatterns = patterns('',
     (r'^accounts/', include('userena.urls')),
     (r'^messages/', include('userena.contrib.umessages.urls')),
     (r'^sentry/', include('sentry.web.urls')),
+    (r'^%s/' % settings.DAJAXICE_MEDIA_PREFIX, include('dajaxice.urls')),
     url(r'^$',
         direct_to_template,
         {'template': 'static/index.html'},

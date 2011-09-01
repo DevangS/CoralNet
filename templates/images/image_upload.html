@@ -1,7 +1,14 @@
 {% extends "images/base_source.html" %}
 {% load thumbnail %}
+{% load dajaxice_templatetags %}
 
 {% block title %}Upload Images | CoralNet{% endblock %}
+
+{% block media-includes %}
+  {{ block.super }}
+  {% dajaxice_js_import %}
+  {{ imageUploadForm.media }} {# CSS and JS #}
+{% endblock %}
 
 {% block content %}
 
@@ -15,15 +22,40 @@
         </a>
       {% endfor %}
     </div>
+    {% endif %}
 
     <hr />
-    {% endif %}
 
     <h2>Upload Images</h2>
 
     <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-        {{ imageUploadForm.as_p }}
-      <input type="submit" value="Upload Images" />
+    
+        {{ imageUploadForm.non_field_errors }}
+        {% for field in imageUploadForm %}
+            <div id="id_{{ field.name }}_wrapper">
+                {{ field.errors }}
+                <p>
+                    <label for="{{ field.widget.id_for_label }}">{{ field.label }}:</label> {{ field }}
+                    <span class="helptext">{{ field.help_text|linebreaksbr }}</span>
+                </p>
+            </div>
+        {% endfor %}
+        {% for detail in imageUploadForm.additional_details %}
+            <p><span class="helptext">{{ detail|linebreaksbr }}</span></p>
+        {% endfor %}
+        <input type="submit" id="id_upload_submit" value="Upload Images" />
     </form>
+
+    <!-- Preview the files selected for upload. -->
+    <div id="previewArea">
+
+    </div>
+
+    <!-- Script in the body will run on page load. -->
+    <script type="text/javascript">
+
+        ImageUploadFormHelper.initForm("previewArea", {{ source.id }});
+
+    </script>
 
 {% endblock %}
