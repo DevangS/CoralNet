@@ -1,6 +1,6 @@
-#Ignore settings
-settings.py
-settings.pyc
+#Ignore settings_2, because settings there should differ between dev and production
+settings_2.py
+settings_2.pyc
 
 #Ignore apache configs
 apache/django.wsgi

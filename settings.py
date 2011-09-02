@@ -1,4 +1,5 @@
 # Django settings for CoralNet project.
+import settings_2
 import os, sys
 from django.conf.locale import en
 
@@ -7,28 +8,17 @@ PROJECT_ROOT = abspath(os.path.dirname(__file__))
 USERENA_MODULE_PATH = abspath(PROJECT_ROOT, '..')
 sys.path.insert(0, USERENA_MODULE_PATH)
 
-DEBUG = True
+DEBUG = settings_2.DEBUG
 
 # TEMPLATE_DEBUG = True lets Sentry get template error info.  This
 # won't reveal any error details to end users as long as DEBUG = False.
 TEMPLATE_DEBUG = True
 
-ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
-)
+ADMINS = settings_2.ADMINS
 
-MANAGERS = ADMINS
+MANAGERS = settings_2.MANAGERS
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'coralnet',                      # Or path to database file if using sqlite3.
-        'USER': 'django',                      # Not used with sqlite3.
-        'PASSWORD': 'djangor0cks',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
-    }
-}
+DATABASES = settings_2.DATABASES
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -71,15 +61,17 @@ MEDIA_ROOT = abspath(PROJECT_ROOT, 'media')
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
 MEDIA_URL = '/media/'
 
+# File uploading
+ORIGINAL_IMAGE_DIR = 'data/original/'
+FILE_UPLOAD_MAX_MEMORY_SIZE = settings_2.FILE_UPLOAD_MAX_MEMORY_SIZE
+
 DOCUMENT_ROOT = abspath(PROJECT_ROOT, 'docs')
 
-
-ADMIN_MEDIA_PREFIX = '/media/admin/'
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-STATIC_ROOT = ''
+STATIC_ROOT = settings_2.STATIC_ROOT
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
@@ -111,13 +103,13 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'tg5t&4x9f8edmnhe)d55tkk$e-djc4m_q%=^xo%n-jipn&v&8j'
+SECRET_KEY = settings_2.SECRET_KEY
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
+    'django.template.loaders.eggs.Loader',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -168,6 +160,8 @@ INSTALLED_APPS = (
     'south',
     'sentry',
     'sentry.client',
+    'dajaxice',
+    'dajax',
     'CoralNet.accounts',
     'CoralNet.images',
     'CoralNet.annotations',
@@ -231,6 +225,9 @@ SOUTH_MIGRATION_MODULES = {
 # Sentry settings: http://readthedocs.org/docs/sentry/en/latest/config/index.html
 # SENTRY_TESTING enables usage of Sentry even when DEBUG = True
 SENTRY_TESTING = True
+
+# Dajaxice settings
+DAJAXICE_MEDIA_PREFIX = "dajaxice"
 
 # App URL bases
 IMAGES_URL = '/images/'
