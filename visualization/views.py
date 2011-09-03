@@ -7,7 +7,12 @@ from guardian.decorators import permission_required
 from annotations.models import Annotation, Label
 from images.models import Source, Value1, Value2, Value3, Value4, Value5, Image
 from visualization.forms import VisualizationSearchForm
-import Image as PILImage
+
+try:
+    from PIL import Image as PILImage
+except ImportError:
+    import Image as PILImage
+
 
 @permission_required('source_admin', (Source, 'id', 'source_id'))
 def visualize_source(request, source_id):
