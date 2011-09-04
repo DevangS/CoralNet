@@ -145,8 +145,8 @@ def visualize_source(request, source_id):
 
                 max_x = annotation.image.original_width
                 max_y = annotation.image.original_height
-                x = annotation.point.row
-                y = annotation.point.column
+                x = annotation.point.column
+                y = annotation.point.row
 
                 if x-75 > 0:
                     left = x-75
@@ -166,7 +166,7 @@ def visualize_source(request, source_id):
                 if y+75 < max_y:
                     lower = y+75
                 else:
-                    lower = 0
+                    lower = max_y
 
                 #mark the subrectangle to be select from the image
                 box = (left,upper,right,lower)
