@@ -7,6 +7,7 @@ from guardian.decorators import permission_required
 from annotations.models import Annotation, Label
 from images.models import Source, Value1, Value2, Value3, Value4, Value5, Image
 from visualization.forms import VisualizationSearchForm
+import os
 
 try:
     from PIL import Image as PILImage
@@ -19,6 +20,8 @@ def visualize_source(request, source_id):
     """
     View for browsing through a source's images.
     """
+    IMAGES_PER_PAGE = 20
+
     kwargs = {
         #this will contain the parameters to filter the images by
         #that way the filter args can be dynamically generated if
@@ -34,6 +37,8 @@ def visualize_source(request, source_id):
     all_images = [] #holds all the images to display
     source = get_object_or_404(Source, id=source_id)
     kwargs['source'] = source
+    searchParamsStr = ''  # GET params in url format - for constructing prev page/next page links
+    will_generate_patches = False
 
     if request.GET:
 
@@ -62,7 +67,7 @@ def visualize_source(request, source_id):
                 pargs['image__metadata__value4__id'] = value4Index
             if value5Index:
                 kwargs['metadata__value5__id'] = value5Index
-                pargs['image__metadata__value4__id'] = value4Index
+                pargs['image__metadata__value5__id'] = value5Index
             if year != "All" and year:
                 kwargs['metadata__photo_date__year'] = int(year)
                 pargs['image__metadata__photo_date__year'] = int(year)
@@ -70,67 +75,21 @@ def visualize_source(request, source_id):
             if not label:
                 all_images = Image.objects.filter(**kwargs).order_by('-upload_date')
             else:
-                all_images = []
                 #get all annotations for the source that contain the label
                 label = get_object_or_404(Label, id=label)
                 annotations = Annotation.objects.filter(source=source, label=label, **pargs)
                 #TODO: add searching annotations based on key/value pairs
 
-                #create a cropped image for each annotation
-                for annotation in annotations:
+                # Placeholder the image patches with the annotation objects for now.
+                # We'll actually get the patches when we know which page we're showing.
+                all_images = annotations
+                will_generate_patches = True
 
-                    patchPath = "data/annotations/" + str(annotation.id) + ".jpg"
-                    patchFullPath = "media/" + patchPath
-
-                    all_images.append(dict(
-                        fullImage=annotation.image,
-                        patchPath=patchPath,
-                        row=annotation.point.row,
-                        col=annotation.point.column,
-                        pointNum=annotation.point.point_number,
-                    ))
-
-                    #check if patch exists for the annotation
-                    try:
-                        PILImage.open(patchFullPath)
-
-                    #otherwise generate the patch
-                    except IOError:
-
-                        originalPath = annotation.image.original_file
-                        image = PILImage.open(originalPath)
-
-                        max_x = annotation.image.original_width
-                        max_y = annotation.image.original_height
-                        x = annotation.point.row
-                        y = annotation.point.column
-
-                        if x-75 > 0:
-                            left = x-75
-                        else:
-                            left = 0
-
-                        if x+75 < max_x:
-                            right = x+75
-                        else:
-                            right = max_x
-
-                        if y-75 > 0:
-                            upper = y-75
-                        else:
-                            upper = 0
-
-                        if y+75 < max_y:
-                            lower = y+75
-                        else:
-                            lower = 0
-
-                        #mark the subrectangle to be select from the image
-                        box = (left,upper,right,lower)
-
-                        #get the image, crops it, saves it, and adds to all_images
-                        region = image.crop(box)
-                        region.save(patchFullPath)
+            searchParams = dict(request.GET)
+            if searchParams.has_key('page'):
+                del searchParams['page']
+            searchParamsStr = '&'.join(['%s=%s' % (paramName, searchParams[paramName][0])
+                                     for paramName in searchParams])
 
     else:
         form = VisualizationSearchForm(source_id)
@@ -142,7 +101,7 @@ def visualize_source(request, source_id):
         else:
             errors.append("Sorry, there are no images for this source yet. Please upload some.")
 
-    paginator = Paginator(all_images, 20) # Show 25 images per page
+    paginator = Paginator(all_images, IMAGES_PER_PAGE)
 
     # Make sure page request is an int. If not, deliver first page.
     try:
@@ -156,11 +115,72 @@ def visualize_source(request, source_id):
     except (EmptyPage, InvalidPage):
         images = paginator.page(paginator.num_pages)
 
+    if will_generate_patches:
+        
+        # Get an image-patch for each result on the page.
+        # Earlier we placeholdered the image patches with the annotation objects,
+        # so we're iterating over those annotations now.
+        for index, annotation in enumerate(images.object_list):
+
+            patchPath = "data/annotations/" + str(annotation.id) + ".jpg"
+            patchFullPath = os.path.join(settings.MEDIA_ROOT, patchPath)
+
+            images.object_list[index] = dict(
+                fullImage=annotation.image,
+                patchPath=patchPath,
+                row=annotation.point.row,
+                col=annotation.point.column,
+                pointNum=annotation.point.point_number,
+            )
+
+            #check if patch exists for the annotation
+            try:
+                PILImage.open(patchFullPath)
+
+            #otherwise generate the patch
+            except IOError:
+
+                originalPath = annotation.image.original_file
+                image = PILImage.open(originalPath)
+
+                max_x = annotation.image.original_width
+                max_y = annotation.image.original_height
+                x = annotation.point.row
+                y = annotation.point.column
+
+                if x-75 > 0:
+                    left = x-75
+                else:
+                    left = 0
+
+                if x+75 < max_x:
+                    right = x+75
+                else:
+                    right = max_x
+
+                if y-75 > 0:
+                    upper = y-75
+                else:
+                    upper = 0
+
+                if y+75 < max_y:
+                    lower = y+75
+                else:
+                    lower = 0
+
+                #mark the subrectangle to be select from the image
+                box = (left,upper,right,lower)
+
+                #get the image, crops it, saves it, and adds to all_images
+                region = image.crop(box)
+                region.save(patchFullPath)
+
     return render_to_response('visualization/visualize_source.html', {
         'errors': errors,
         'form': form,
         'source': source,
         'images': images,
+        'searchParamsStr': searchParamsStr,
         },
         context_instance=RequestContext(request)
         

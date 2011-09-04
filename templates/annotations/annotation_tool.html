@@ -195,11 +195,12 @@
 
 {% block content %}
 
-<p>The annotation tool hasn't been made yet, but here you can see the points that have been generated for this image.</p>
+<p>The annotation tool hasn't been made yet, but here you can see the annotation points for this image.</p>
 <p>Image: {{ metadata.name }}</p>
 <p>Location keys: {{ location_values|default:"(Unknown)" }}</p>
 <p>Year: {{ metadata.photo_date.year|default:"(Unknown)" }}</p>
 <p>Annotation point type: {{ image.point_gen_method_display }}</p>
+<p>Annotation progress: {{ num_of_annotations }} of {{ num_of_points }} points done</p>
 
 <!-- For the image and canvas, use position:absolute
 and make their positions (left, top) the same.  This'll make
@@ -220,16 +221,32 @@ the rest of the page elements. -->
     </canvas>
 </div>
 
+{% if num_of_annotations > 0 %}
+  <hr />
+
+  <div id="annotationList">
+    <table>
+    {% for a in annotations %}
+      <tr>
+        <td style="padding-left: 20px; padding-right: 20px;">{{ a.point_number }}</td>
+        <td style="padding-left: 20px; padding-right: 20px;">{{ a.label__name }}</td>
+        <td style="padding-left: 20px; padding-right: 20px;">{{ a.label__code }}</td>
+      </tr>
+    {% endfor %}
+    </table>
+  </div>
+{% endif %}
+
 <!-- Script in the body will run on page load. -->
 <script type="text/javascript">
     initAnnotationTool();
 
-    imagePoints = new Array({{ points_list|length }});
-    {% for p in points_list %}
-        imagePoints[{{ p.point_number|add:-1 }}] = { num: {{ p.point_number }}, row: {{ p.row }}, col: {{ p.column }} };
+    imagePoints = new Array({{ num_of_points }});
+    {% for a in annotations %}
+        imagePoints[{{ a.point_number|add:-1 }}] = { num: {{ a.point_number }}, row: {{ a.row }}, col: {{ a.column }} };
     {% endfor %}
 
-    points = new Array({{ points_list|length }});
+    points = new Array({{ num_of_points }});
     getCanvasPoints();
 
     drawPoints();

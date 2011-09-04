@@ -685,21 +685,26 @@ def annotation_import(request, source_id):
                                     **valueDict)
                 metadata.save()
 
-                img = Image(original_file=imageFile,
-                        uploaded_by=request.user,
-                        total_points=source.default_total_points,
-                        metadata=metadata,
-                        source=source)
-                img.save()
-
                 # Use the location values and the year to build a string identifier for the image, such as:
                 # Shore1;Reef5;...;2008
                 imageIdentifier = get_image_identifier(metadataDict['values'], metadataDict['year'])
 
                 # Use the identifier as the index into the annotation file's data.
-                # Now we can iterate over this image's annotations.
+                imageAnnotations = annotationData[imageIdentifier]
+
+                img = Image(original_file=imageFile,
+                        uploaded_by=request.user,
+                        point_generation_method=PointGen.args_to_db_format(
+                            point_generation_type=PointGen.Types.IMPORTED,
+                            imported_number_of_points=len(imageAnnotations)
+                        ),
+                        metadata=metadata,
+                        source=source)
+                img.save()
+
+                # Iterate over this image's annotations.
                 pointNum = 1
-                for anno in annotationData[imageIdentifier]:
+                for anno in imageAnnotations:
 
                     # Save the Point in the database.
                     point = Point(row=anno['row'], column=anno['col'], point_number=pointNum, image=img)

@@ -6,7 +6,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from guardian.decorators import permission_required
 from annotations.forms import NewLabelForm, NewLabelSetForm
-from annotations.models import Label, LabelSet
+from annotations.models import Label, LabelSet, Annotation
 from images.models import Source, Image, Point
 
 @login_required
@@ -114,11 +114,26 @@ def annotation_tool(request, image_id, source_id):
     source = get_object_or_404(Source, id=source_id)
 
     metadata = image.metadata
-    points = Point.objects.filter(image=image)
 
-    # Get all the points from the DB now, instead of one by one
-    # from the DB later.
-    points_list = list(points)
+    pointValues = Point.objects.filter(image=image).values(
+        'point_number', 'row', 'column')
+    annotationValues = Annotation.objects.filter(image=image).values(
+        'point__point_number', 'label__name', 'label__code')
+
+    annotations = dict()
+    for p in pointValues:
+        annotations[p['point_number']] = p
+    for a in annotationValues:
+        annotations[a['point__point_number']].update(a)
+
+    annotations = list(annotations.values())
+    annotations.sort(key=lambda x:x['point_number'])
+
+    # Now we've gotten all the relevant points and annotations
+    # from the database, in a list of dicts:
+    # [{'point_number':1, 'row':294, 'column':749, 'label__name':'Porites', 'label__code':'Porit'},
+    #  {'point_number':2, ...},
+    #  ...]
 
     # Scale the image so it fits with the webpage layout.
     initial_display_width = 950    # Change this according to how it looks on the page
@@ -129,7 +144,9 @@ def annotation_tool(request, image_id, source_id):
         'image': image,
         'metadata': metadata,
         'location_values': ', '.join(image.get_location_value_str_list()),
-        'points_list': points_list,
+        'annotations': annotations,
+        'num_of_points': len(annotations),
+        'num_of_annotations': len(annotationValues),
         'initial_display_width': initial_display_width,
         'initial_display_height': initial_display_height,
         },
