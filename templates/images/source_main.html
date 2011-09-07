@@ -28,9 +28,10 @@
         <p>Longitude: {{ source.longitude|default:"(None)" }}</p>
         <p>Latitude: {{ source.latitude|default:"(None)" }}</p>
 
-        {% if source.labelset %}
-        <p>Labelset: <a href="{% url labelset_main source.labelset.id %}">View labelset ({{ source.labelset.description|default:"Untitled" }})</a></p>
-        {% else %} {# TODO: Will we need to handle the case where the Source doesn't have a labelset yet? #}
+        {% if source.labelset.isEmptyLabelset %}
+        <p><a href="{% url labelset_new source.id %}">Create a labelset</a> to get started with annotations</p>
+        {% else %}
+        <p>Labelset: <a href="{% url labelset_main source.id %}">View labelset</a></p>
         {% endif %}
 
         {% get_obj_perms user for source as "source_perms" %}

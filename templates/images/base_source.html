@@ -20,9 +20,9 @@
       
         {% get_obj_perms user for source as "source_perms" %}
         {% if "source_admin" in source_perms %}
-        <li><a href="{% url image_upload source.id %}"><span>{% trans 'Upload Images' %}</span></a></li>
-        <li><a href="{% url label_import source.id %}"><span>{% trans 'Import Labels' %}</span></a></li>
-        <li><a href="{% url annotation_import source.id %}"><span>{% trans 'Import Annotations' %}</span></a></li>
+          <li><a href="{% url image_upload source.id %}"><span>{% trans 'Upload Images' %}</span></a></li>
+          <li><a href="{% url labelset_main source.id %}"><span>{% trans 'LabelSet' %}</span></a></li>
+          <li><a href="{% url annotation_import source.id %}"><span>{% trans 'Import Annotations' %}</span></a></li>
         {% endif %}
       </ul>
     </div>

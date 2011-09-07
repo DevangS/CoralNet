@@ -1,16 +1,12 @@
-{% extends "annotations/base_label.html" %}
+{% extends "images/base_source.html" %}
 
-{% block title %}CoralNet - {{ labelset.name }}{% endblock %}
+{% block title %}Labelset for {{ source.name }} | CoralNet{% endblock %}
 
 {% block content %}
 
-        <p>Description: {{ labelset.description }}</p>
-
-        <p>Location: {{ labelset.location }}</p>
-
-        <p>Labels:</p>
+        <h2>{{ source.name }} labelset</h2>
          {% for label in labelset.labels.all %}
-                <li>{{ label.name }}</li> <!--TODO: verify-->
+                <li><a href="{% url label_main label.id %}">{{ label.name }}</a></li> <!--TODO: verify-->
          {% endfor %}
 
 {% endblock %}

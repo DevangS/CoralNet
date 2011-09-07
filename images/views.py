@@ -86,6 +86,7 @@ def source_new(request):
             # We can get this instance and add a bit more to it before saving to the DB.
             newSource = sourceForm.instance
             newSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
+            newSource.labelset = LabelSet.getEmptyLabelset()
             newSource.save()
             # Grant permissions for this source
             assign('source_admin', request.user, newSource)

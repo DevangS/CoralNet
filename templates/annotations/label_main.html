@@ -1,17 +1,21 @@
-{% extends "annotations/base_label.html" %}
+{% extends "base.html" %}
 
-{% block title %}CoralNet - {{ label.name }}{% endblock %}
+{% block title %}{{ label.name }} (Label) | CoralNet{% endblock %}
 
 {% block content %}
 
     <div id="static_info">
         <h1>{{ label.name }}</h1>
 
-        <p>Code: {{ label.code }}</p>
-
+        <p>Name: {{ label.name }}</p>
+        <p>Short Code: {{ label.code }}</p>
         <p>Functional Group: {{ label.group.name }}</p>
-
-        <p>Group Code: {{ label.group.code }}</p>
+        <p>Description: </p>
+        <p>Used in:</p>
+        <p>Create Date: </p>
+        <p>Created By: </p>
+        {# TODO: add thumbnail #}
+        {# TODO: add example patches randomly picked from public sources #}
 
     </div>
 

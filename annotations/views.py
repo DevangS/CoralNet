@@ -11,6 +11,9 @@ from images.models import Source, Image, Point
 
 @login_required
 def label_new(request):
+    """
+    Page to create a new label for CoralNet.
+    """
     if request.method == 'POST':
         form = NewLabelForm(request.POST)
 
@@ -30,14 +33,23 @@ def label_new(request):
     )
 
 @login_required
-def labelset_new(request):
+def labelset_new(request, source_id):
+    """
+    Page to create a labelset for a source.
+    """
+
+    source = get_object_or_404(Source, id=source_id)
+
     if request.method == 'POST':
         form = NewLabelSetForm(request.POST)
 
         if form.is_valid():
-            labelSet = form.save()
+            labelset = form.save()
+            source.labelset = labelset
+            source.save()
+
             messages.success(request, 'LabelSet successfully created.')
-            return HttpResponseRedirect(reverse('labelset_main', args=[labelSet.id]))
+            return HttpResponseRedirect(reverse('labelset_main', args=[source.id]))
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -45,6 +57,7 @@ def labelset_new(request):
 
     return render_to_response('annotations/labelset_new.html', {
         'form': form,
+        'source': source,
         },
         context_instance=RequestContext(request)
     )
@@ -62,14 +75,16 @@ def label_main(request, label_id):
             context_instance=RequestContext(request)
     )
 
-def labelset_main(request, labelset_id):
+def labelset_main(request, source_id):
     """
-    Main page for a particular labelset
+    Main page for a particular source's labelset
     """
 
-    labelset = get_object_or_404(LabelSet, id=labelset_id)
+    source = get_object_or_404(Source, id=source_id)
+    labelset = source.labelset
 
     return render_to_response('annotations/labelset_main.html', {
+            'source': source,
             'labelset': labelset,
             },
             context_instance=RequestContext(request)

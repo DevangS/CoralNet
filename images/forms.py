@@ -9,7 +9,7 @@ class ImageSourceForm(ModelForm):
     
     class Meta:
         model = Source
-        exclude = ('default_point_generation_method',)
+        exclude = ('default_point_generation_method', 'labelset')
         widgets = {
             'key1': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'key2': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),

@@ -55,3 +55,7 @@ class NewLabelSetForm(ModelForm):
 
     class Meta:
         model = LabelSet
+
+        # description and location are obsolete now that there's a 1-to-1
+        # correspondence between labelsets and sources.
+        exclude = ('description', 'location')
