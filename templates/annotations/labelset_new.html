@@ -3,19 +3,58 @@
 {% block title %}New LabelSet | CoralNet{% endblock %}
 
 {% block media-includes %}
-  {{ form.media }}
+  {{ block.super }}
+  {{ labelSetForm.media }}
+  {{ labelForm.media }}
 {% endblock %}
 
 {% block content %}
 
-    <h2>Create a new LabelSet</h2>
+    {# inline display confines the bottom border to the length of the text. #}
+    <legend style="display:inline">Create a new LabelSet</legend>
 
-    {# This form submits to the same URL as this page. #}
-    {# The view function redirects to the success page if the form is valid. #}
+    <br />
+    <button id="id_button_show_label_form">Add a new label that's not in the list</button>
 
-    <form action="" method="post">{% csrf_token %}
-      {{ form.as_p }}
-      <input type="submit" value="Create LabelSet" />
+    <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+        
+      <div id="id_new_label_form_wrapper" style="display:none">
+
+        <hr />
+          
+        <fieldset>
+          <legend>Create a new Label</legend>
+
+          {% include "annotations/form_new_label.html" with form=labelForm %}
+        </fieldset>
+
+        <div class="submit_button_wrapper">
+          <input type="submit" id="id_button_send_label_form" name="create_label" value="Create Label" />
+          <button type="button" class="submit" id="id_button_cancel_label_form">Cancel</button>
+        </div>
+          
+        <hr />
+
+      </div>
+
+      <fieldset>
+        {% include "annotations/form_new_labelset.html" with form=labelSetForm %}
+      </fieldset>
+        
+      <div class="submit_button_wrapper">
+        <input type="submit" name="create_labelset" value="Create LabelSet" />
+      </div>
+    
     </form>
+
+    <!-- Script in the body will run on page load. -->
+    <script type="text/javascript">
+        initiallyCheckedLabels = new Array({{ initiallyCheckedLabels|length }});
+        {% for labelNum in initiallyCheckedLabels %}
+            initiallyCheckedLabels[{{ forloop.counter0 }}] = {{ labelNum }};
+        {% endfor %}
+        LabelsetFormHelper.init({{ showLabelFormInitially }}, initiallyCheckedLabels);
+    </script>
+
 
 {% endblock %}

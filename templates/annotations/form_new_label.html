@@ -1,0 +1,18 @@
+{% comment %}
+This form template is meant to be used with the "include" template tag.
+{% endcomment %}
+
+{{ form.non_field_errors }}
+{% for field in form %}
+    <div class="form_item_wrapper">
+        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+
+        <div class="field_wrapper">
+            {{ field }}
+            <div class="errorlist_wrapper">{{ field.errors|safe }}</div>  {# Some error messages may have links (to info on already existing labels) #}
+            {% if field.help_text %}
+              <div class="helptext">{{ field.help_text }}</div>
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}

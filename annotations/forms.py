@@ -1,10 +1,13 @@
 from itertools import chain
+from django.core.urlresolvers import reverse
+from django.forms.widgets import TextInput
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
 from django import forms
 from django.forms.models import ModelForm
 from annotations.models import Label, LabelSet
+from CoralNet.forms import FormHelper
 
 # Custom widget to enable multiple checkboxes without outputting a wrongful
 # helptext since I'm modifying the widget used to display labels.
@@ -43,6 +46,42 @@ class CustomCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
 class NewLabelForm(ModelForm):
     class Meta:
         model = Label
+        widgets = {
+            'code': TextInput(attrs={'size': 10}),
+        }
+        
+    def clean(self):
+        """
+        1. Strip spaces from character fields.
+        2. Add an error if the specified name or code matches that of an existing label.
+        3. Call the parent's clean() to finish up with the default behavior.
+        """
+        data = FormHelper.stripSpacesFromFields(
+            self.cleaned_data, self.fields)
+
+        if data.has_key('name'):
+            labelsOfSameName = Label.objects.filter(name__iexact=data['name'])
+            if len(labelsOfSameName) > 0:
+                # mark_safe(), along with the |safe template filter, allows HTML in the message.
+                msg = mark_safe('There is already a label with the name %s: <a href="%s" target="_blank">%s</a>' % (
+                    data['name'],
+                    reverse('label_main', args=[labelsOfSameName[0].id]),
+                    labelsOfSameName[0].name,
+                ))
+                self._errors['name'] = self.error_class([msg])
+
+        if data.has_key('code'):
+            labelsOfSameCode = Label.objects.filter(code__iexact=data['code'])
+            if len(labelsOfSameCode) > 0:
+                msg = mark_safe('There is already a label with the short code %s: <a href="%s" target="_blank">%s</a>' % (
+                    data['code'],
+                    reverse('label_main', args=[labelsOfSameCode[0].id]),
+                    labelsOfSameCode[0].name,
+                ))
+                self._errors['code'] = self.error_class([msg])
+
+        self.cleaned_data = data
+        return super(NewLabelForm, self).clean()
 
 class NewLabelSetForm(ModelForm):
     def __init__(self, *args, **kwargs):
@@ -59,3 +98,11 @@ class NewLabelSetForm(ModelForm):
         # description and location are obsolete now that there's a 1-to-1
         # correspondence between labelsets and sources.
         exclude = ('description', 'location')
+
+    class Media:
+        js = (
+            # From the general static folder
+            "js/util.js",
+            # From this app's static folder
+            "js/LabelsetFormHelper.js",
+        )

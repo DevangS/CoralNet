@@ -1,0 +1,19 @@
+{% comment %}
+This template is meant to be part of a larger template; use it
+in the larger template with the "include" template tag.
+{% endcomment %}
+
+<table class="detail_table">
+  <tr>
+    <th>Name</th>
+    <th>Short Code</th>
+    <th>Functional Group</th>
+  </tr>
+  {% for label in labels %}
+    <tr>
+      <td><a href="{% url label_main label.id %}">{{ label.name }}</a></td>
+      <td>{{ label.code }}</td>
+      <td>{{ label.group }}</td>
+    </tr>
+  {% endfor %}
+</table>

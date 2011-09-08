@@ -1,0 +1,23 @@
+{% comment %}
+This form template is meant to be used with the "include" template tag.
+{% endcomment %}
+
+{{ form.non_field_errors }}
+
+{% with labelsField=form.labels %}
+    {{ labelsField.errors }}
+    <ul>
+      {% for value, name in labelsField.field.choices %}
+        {% with labelId=value|stringformat:"d" %}
+        {% with checkboxId="id_labels_"|add:labelId %}
+          <li class="checkbox_field">
+            <input type="checkbox" name="{{ labelsField.name }}" value="{{ value }}" id="{{ checkboxId }}" />
+            <label for="{{ checkboxId }}">
+              {{ name }}
+            </label>
+          </li>
+        {% endwith %}
+        {% endwith %}
+      {% endfor %}
+    </ul>
+{% endwith %}

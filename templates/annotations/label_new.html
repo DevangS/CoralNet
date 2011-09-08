@@ -1,6 +1,6 @@
-{% extends "annotations/base_label.html" %}
+{% extends "base.html" %}
 
-{% block title %}CoralNet - New Label{% endblock %}
+{% block title %}New Label | CoralNet{% endblock %}
 
 {% block media-includes %}
   {{ form.media }}
@@ -13,7 +13,7 @@
     {# This form submits to the same URL as this page. #}
     {# The view function redirects to the success page if the form is valid. #}
 
-    <form action="" method="post">{% csrf_token %}
+    <form action="{% url label_new %}" method="post">{% csrf_token %}
       {{ form.as_p }}
       <input type="submit" value="Create Label" />
     </form>

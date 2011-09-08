@@ -4,9 +4,8 @@
 
 {% block content %}
 
-        <h2>{{ source.name }} labelset</h2>
-         {% for label in labelset.labels.all %}
-                <li><a href="{% url label_main label.id %}">{{ label.name }}</a></li> <!--TODO: verify-->
-         {% endfor %}
+    <h2>{{ source.name }} Labelset</h2>
+
+    {% include "annotations/helper_label_list.html" with labels=labels %}
 
 {% endblock %}

@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
 from guardian.shortcuts import get_objects_for_user, get_perms
 from images.utils import PointGen
+from CoralNet.utils import generate_random_filename
 
 class Source(models.Model):
 
@@ -181,30 +182,12 @@ class Metadata(models.Model):
         return "Metadata of " + self.name
 
 
-def rand_string():
-    """
-    Generates a 10-char-long string of lowercase letters and numbers.
-    That makes 36^10 = 3 x 10^15 possibilities.
-    
-    If we generate filenames randomly, it's harder for people to guess filenames
-    and view images when they don't have permission to do so.
-    """
-    return ''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(10))
-
-def generate_image_filename(originalFilename):
-    #TODO: Check for filename collisions with existing files
-
-    extension = splitext(originalFilename)[1]
-    filenameBase = rand_string()
-    return filenameBase + extension
-
 def get_original_image_upload_path(instance, filename):
     """
     Generate a destination path (on the server filesystem) for
-    a data-image upload. This will be automatically prepended
-    with MEDIA_ROOT.
+    a data-image upload.
     """
-    return settings.ORIGINAL_IMAGE_DIR + generate_image_filename(filename)
+    return generate_random_filename(settings.ORIGINAL_IMAGE_DIR, filename, numOfChars=10)
     
 class Image(models.Model):
     # width_field and height_field allow Django to cache the width and height values

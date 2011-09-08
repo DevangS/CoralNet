@@ -2,11 +2,6 @@
 
 {% block content %}
     <h2>All Labels</h2>
-    <ul>
-        {% for label in labels %}
-            <li><a href="{% url label_main label.id %}">{{ label.name }}</a></li>
-        {% endfor %}
-    </ul>
 
-
+    {% include "annotations/helper_label_list.html" with labels=labels %}
 {% endblock %}

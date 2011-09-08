@@ -1,5 +1,15 @@
 /* @override http://localhost:8000/media/css/master.css */
 
+/*
+CSS EXPLANATIONS
+
+border-radius: for making rounded corners; browser support may vary
+
+margin: spacing around the outside of an element.  If specified by 4
+ values, it means top left bottom right.  If both left and right have
+ a value of auto, then the element is centered horizontally.
+*/
+
 /*	WdeB
 breadandpepper.com
 ................................... */
@@ -250,7 +260,7 @@ border-bottom-left-radius: 8px;
 h1, h2, h3, h4, h5, h6 { font-family: 'Droid Sans', helvetica, arial, Geneva, sans-serif; text-transform: uppercase; text-shadow: #ffffff 1px 1px 0px;}
 
 p{
-    font-size: 0.9em;
+    font-size: 1.0em;
     line-height: 1.5em;
     color: #444;
     margin: 0 0 0.9em 0;
@@ -269,6 +279,11 @@ p.intro{
 h1{
     margin: 25px 0 0 ;
     font-size: 2.2em;
+}
+
+h2{
+    margin: 0 0 1.0em 0;
+    font-size: 1.4em;
 }
 
 h2.content-title{
@@ -397,35 +412,10 @@ a.button:active span {
 form {
     margin: 15px auto 20px;
     padding: 12px 0;
-    -moz-border-radius: 8px;
-    -webkit-border-radius: 8px;
-    border-radius: 8px;
-    width: 500px;
-
+    width: 800px;
 }
 
-form p {
-    padding: 4px 0 4px;
-    margin: 0 0 0 0;
-    position: relative;
-    border-bottom: 1px solid #ddd;
-    overflow: hidden;
-    font-size: 0.7em;
-    color: #999;
-}
-
-form p label {
-    width: 160px;
-    padding: 10px 20px 0 0;
-    float: left;
-    display: block;
-    font-weight: bold;
-    font-size: 0.9em;
-    color: #444;
-    text-align: right;
-}
-
-form p.checkbox {
+/*form p.checkbox {
     border: none;
 }
 
@@ -439,20 +429,57 @@ form p.checkbox label {
 span.label {
     color: #111;
     font-weight: bold;
+}*/
+
+/* The element around the whole form field, containing the label, field, helptext, and errors. */
+form p, .form_item_wrapper {
+    padding: 3px 0;  /* vertical horizontal*/
+    margin: 0;
+    border-bottom: 1px solid #ddd;
+    overflow: auto;  /* This allows the element to expand for multi-line labels and such */
+}
+
+label {
+    /* This puts the label in a left column, with the text
+     aligned on the right side of that column. */
+    width: 250px;
+    float: left;
+    text-align: right;
+
+    /* Effectively get top/bottom margins for each text line
+    in the label (including between lines in a multiline label) */
+    line-height: 140%;
+
+    /* Right margin makes a bit of horizontal space between the label and the field */
+    margin: 7px 10px 7px 0;    /* top right bottom left */
+    
+    font-size: 1.0em;
+    color: #444;
+}
+
+/* labels for checkboxes.  To use this, be sure that the label is inside an element
+ with class checkbox_field. */
+.checkbox_field label {
+    /* Simply float: none should work for a simple list of checkboxes. */
+    float: none;
+}
+
+.field_wrapper {
+    /* Everything in this wrapper goes in a block that sits to
+     the right of the field label.  Need display:table-cell
+     to make everything sit to the right. */
+    display: table-cell;
 }
 
 input[type=text],input[type=password], input[type=file], textarea, span.editable {
-    width: 306px;
     border: 1px solid #d7d7d7;
     font-size: 14px;
-    line-height: 20px;
     padding: 5px 6px;
+    margin: 3px 0;
     color: #000;
     -moz-border-radius: 3px;
     -webkit-border-radius: 3px;
     border-radius: 3px;
-    background-color: none;
-    float: right;
 }
 
 input[type=checkbox] {
@@ -464,9 +491,10 @@ input[type=radio] {
     margin: 0 8px 0 0;
 }
 
+/* Dropdown box */
 select {
     min-width: 60px;
-    margin: 10px 2px 0;
+    margin: 7px 0;    /* top/bottom left/right */
 }
 
 input:focus,
@@ -477,19 +505,20 @@ span.editable:focus {
     border: 1px solid #4c4c4c;
 }
 
+/* Multiline text field */
 textarea {
     height: 4em;
-    margin: 10px 0;
+    margin: 3px 0;    /* top/bottom left/right */
 }
 
-input[type=submit] {
+input[type=submit], button.submit {
     height: 35px;
+    display: inline;
     line-height: 34px;
     padding: 0 10px;
-    margin: 4px 0 0 180px;
+    margin-top: 4px;
     min-width: 150px;
     background-color: #ab292a;
-    display: block;
     -moz-border-radius: 3px;
     -webkit-border-radius: 3px;
     border-radius: 3px;
@@ -504,44 +533,67 @@ input[type=submit] {
     font-family: 'Droid Sans', helvetica, arial, Geneva, sans-serif;
 }
 
-input[type=submit]:hover {
-    color: #f9f9f9;
-    cursor: pointer;
-}
-
-input[type=submit]:active {
-    line-height: 36px;
+input[type=submit]:active, button.submit:active {
+    line-height: 36px;  /* Intended effect is to make the button move a bit as you click it.  May not work the same in FF and Chrome though. */
     background-color: #bd302d;
-    line-height: 36px;
     border: 1px inset #ce3024;
 }
 
-#signin input[type=checkbox] {
-    display: block;
-    float: left;
-    padding: 0;
-    margin: 3px;
-    width: 10px;
+input[type=submit][disabled], button.submit[disabled] {
+    line-height: 34px;
+    background-color: #666666;
+    border: 1px outset #888888;
+    cursor: default;
+}
+/* Don't define a [disabled]:active style, so the disabled submit button doesn't change appearance when you click it */
+
+
+/* Wrap one or multiple submit buttons of a form. */
+.submit_button_wrapper {
+    /* This aligns the buttons themselves. */
+    text-align: center;
 }
 
+/* Field errors.  "This field is required", etc. */
 ul.errorlist {
     border: 1px solid #a3181c;
     background-color: #fedae0;
     color: #a3181c;
-    margin: 5px 0 3px 0;
+    margin: 3px 0;    /* top/bottom left/right */
+    display: block;
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
     border-radius: 4px;
 }
-
 ul.errorlist li {
-    font-size: 0.7em;
+    font-size: 0.8em;
     padding: 5px 5px 4px 5px;
     font-weight: bold;
 }
 
+.errorlist_wrapper {
+    /* This prevents the errorlist element from expanding beyond the space that
+    its text needs. We could make the errorlist itself display as a table-cell,
+    but this would make the margins not work (margins only work for block elements). */
+    display: table-cell;
+}
+
+/* Help text for a field: "No more than 20 characters", etc. */
+.helptext {
+    /* left margin is label's width + label's margin-right */
+    margin: 3px 0;    /* top/bottom left/right */
+    display: block;
+
+    line-height: 120%;
+}
+
+/* For groups of fields */
+fieldset {
+    margin: 0 0 20px 0;
+}
+/* A special header, conventionally for fieldsets */
 legend {
-    width: 500px;
+    width: auto;
     padding: 5px 0 6px 0;
     font-size: 1.3em;
     color: #ab292a;
@@ -550,8 +602,13 @@ legend {
 	text-transform: uppercase;
 }
 
-fieldset {
-    margin: 0 0 20px 0;
+/* Userena special cases, apparently */
+#signin input[type=checkbox] {
+    display: block;
+    float: left;
+    padding: 0;
+    margin: 3px;
+    width: 10px;
 }
 
 p.forgot-password{
@@ -879,5 +936,16 @@ min-height: 52px;
 
 
 
+/*	detail tables
+(for example, table listing the details of each label in a labelset)
+................................... */
 
-
+table.detail_table {
+    border: 1px solid #999999;
+    border-collapse: separate;  /* Firefox seems to make border widths inconsistent if border-collapse: collapse */
+}
+table.detail_table th,
+table.detail_table td {
+    border: 1px solid #999999;
+    padding: 5px;
+}

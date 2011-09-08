@@ -9,7 +9,7 @@ can be hidden with JavaScript.
     <div id="id_{{ field.name }}_wrapper">
         {{ field.errors }}
         <p>
-            <label for="{{ field.widget.id_for_label }}">{{ field.label }}:</label> {{ field }}
+            <label for="{{ field.id_for_label }}">{{ field.label }}:</label> {{ field }}
         </p>
     </div>
 {% endfor %}

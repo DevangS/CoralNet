@@ -4,6 +4,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
+from django.utils import simplejson
 from guardian.decorators import permission_required
 from annotations.forms import NewLabelForm, NewLabelSetForm
 from annotations.models import Label, LabelSet, Annotation
@@ -39,25 +40,63 @@ def labelset_new(request, source_id):
     """
 
     source = get_object_or_404(Source, id=source_id)
+    showLabelForm = False
+    initiallyCheckedLabels = []
 
     if request.method == 'POST':
-        form = NewLabelSetForm(request.POST)
+        if 'create_label' in request.POST:
+            labelForm = NewLabelForm(request.POST, request.FILES)
+            newLabel = None
 
-        if form.is_valid():
-            labelset = form.save()
-            source.labelset = labelset
-            source.save()
+            # is_valid() checks for label conflicts in the database (same-name label found, etc.).
+            if labelForm.is_valid():
+                newLabel = labelForm.instance
+                newLabel.created_by = request.user
+                newLabel.save()
+                messages.success(request, 'Label successfully created.')
+            else:
+                messages.error(request, 'Please correct the errors below.')
+                showLabelForm = True
 
-            messages.success(request, 'LabelSet successfully created.')
-            return HttpResponseRedirect(reverse('labelset_main', args=[source.id]))
-        else:
-            messages.error(request, 'Please correct the errors below.')
+            # Also return the user's in-progress labelset form.  If a label
+            # was successfully added, that label should be in the form now,
+            # and it should be pre-checked.
+            labelList = request.POST.getlist('labels')
+            if newLabel:
+                labelList.append(newLabel.id)
+            initiallyCheckedLabels = labelList
+
+            labelSetForm = NewLabelSetForm()
+            # Currently, we just look at the labelList and manually check
+            # the checkboxes with JavaScript.  If we can find an automatic
+            # way to check the checkboxes using the form's initial values,
+            # then we might use this:
+            #labelSetForm = NewLabelSetForm(initial=dict(labels=labelList))
+
+        else:  # 'create_labelset' in request.POST
+            labelSetForm = NewLabelSetForm(request.POST)
+            labelForm = NewLabelForm()
+
+            if labelSetForm.is_valid():
+                labelset = labelSetForm.save()
+                source.labelset = labelset
+                source.save()
+
+                messages.success(request, 'LabelSet successfully created.')
+                return HttpResponseRedirect(reverse('labelset_main', args=[source.id]))
+            else:
+                messages.error(request, 'Please correct the errors below.')
+    
     else:
-        form = NewLabelSetForm()
+        labelForm = NewLabelForm()
+        labelSetForm = NewLabelSetForm()
 
     return render_to_response('annotations/labelset_new.html', {
-        'form': form,
+        'showLabelFormInitially': simplejson.dumps(showLabelForm),
+        'labelSetForm': labelSetForm,
+        'labelForm': labelForm,
         'source': source,
+        'initiallyCheckedLabels': initiallyCheckedLabels,
         },
         context_instance=RequestContext(request)
     )
@@ -69,10 +108,17 @@ def label_main(request, label_id):
 
     label = get_object_or_404(Label, id=label_id)
 
+    sources_with_label = Source.objects.filter(labelset__labels=label).order_by('name')
+    visible_sources_with_label = [s for s in sources_with_label if s.visible_to_user(request.user)]
+
+    patches = None
+
     return render_to_response('annotations/label_main.html', {
-            'label': label,
-            },
-            context_instance=RequestContext(request)
+        'label': label,
+        'sources_with_label': visible_sources_with_label,
+        'patches': patches,
+        },
+        context_instance=RequestContext(request)
     )
 
 def labelset_main(request, source_id):
@@ -81,11 +127,18 @@ def labelset_main(request, source_id):
     """
 
     source = get_object_or_404(Source, id=source_id)
+
     labelset = source.labelset
+    if labelset.isEmptyLabelset():
+        return HttpResponseRedirect(reverse('labelset_new', args=[source.id]))
+
+    labels = labelset.labels.all().order_by('group__id', 'name')
+
 
     return render_to_response('annotations/labelset_main.html', {
             'source': source,
             'labelset': labelset,
+            'labels': labels,
             },
             context_instance=RequestContext(request)
     )
@@ -108,7 +161,7 @@ def label_list(request):
     Page with a list of all the labels
     """
 
-    labels = Label.objects.all()
+    labels = Label.objects.all().order_by('group__id', 'name')
 
     return render_to_response('annotations/label_list.html', {
                 'labels': labels,
