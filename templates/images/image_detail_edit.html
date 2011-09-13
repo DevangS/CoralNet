@@ -1,15 +1,33 @@
 {% extends "images/base_image.html" %}
 
-{% block title %}CoralNet - Edit Image Details{% endblock %}
+{% block title %}Edit Image Details | CoralNet{% endblock %}
+
+{% block media-includes %}
+  {{ block.super }}
+  {{ imageDetailForm.media }} {# CSS and JS #}
+{% endblock %}
 
 {% block content %}
 
-    <h2>Edit Image Details</h2>
+    <legend>Edit Image Details</legend>
 
     <form action="" method="post">{% csrf_token %}
-      {{ imageDetailForm.as_p }}
-      <input type="submit" value="Save Changes" />
-      <input name="cancel" type="submit" value="Cancel Changes" />
+      
+      <fieldset>
+        <legend class="small">Date and Location Keys</legend>
+        <span class="helptext">This information can be used as search keys when you browse through your Source's images.</span>
+        {% include "form_generic.html" with form=imageDetailForm.fieldsets.keys %}
+      </fieldset>
+        
+      <fieldset>
+        <legend class="small">Other Information</legend>
+        {% include "form_generic.html" with form=imageDetailForm.fieldsets.other_info %}
+      </fieldset>
+
+      <div class="submit_button_wrapper">
+        <input type="submit" value="Save Changes" />
+        <input name="cancel" type="submit" value="Cancel Changes" />
+      </div>
     </form>
 
 {% endblock %}

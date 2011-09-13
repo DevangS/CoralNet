@@ -13,8 +13,7 @@
     <legend>Edit Source</legend>
     
     <form action="" method="post">{% csrf_token %}
-      {% include "form_generic.html" with form=editSourceForm %}
-      {% include "form_generic.html" with form=pointGenForm %}
+      {% include "images/form_source.html" with sourceForm=editSourceForm pointGenForm=pointGenForm %}
 
       <div class="submit_button_wrapper">
         <input type="submit" value="Save Changes" />

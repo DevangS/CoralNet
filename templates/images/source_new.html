@@ -15,8 +15,7 @@
     {# The view function redirects to the success page if the form is valid. #}
 
     <form action="" method="post">{% csrf_token %}
-      {% include "form_generic.html" with form=sourceForm %}
-      {% include "form_generic.html" with form=pointGenForm %}
+      {% include "images/form_source.html" with sourceForm=sourceForm pointGenForm=pointGenForm %}
 
       <div class="submit_button_wrapper">
         <input type="submit" value="Create Source" />

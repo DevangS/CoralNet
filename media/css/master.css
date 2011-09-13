@@ -585,6 +585,11 @@ legend {
 	text-transform: uppercase;
 }
 
+legend.small {
+    font-size: 1.2em;
+    text-transform: none;
+}
+
 /* Userena special cases, apparently */
 #signin input[type=checkbox] {
     display: block;

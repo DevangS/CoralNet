@@ -29,6 +29,16 @@ class ImageSourceForm(ModelForm):
     #error_css_class = ...
     #required_css_class = ...
 
+    def __init__(self, *args, **kwargs):
+
+        super(ImageSourceForm, self).__init__(*args, **kwargs)
+
+        # For use in templates.  Can iterate over fieldsets instead of the entire form.
+        self.fieldsets = {'general_info': [self[name] for name in ['name', 'visibility', 'description']],
+                          'keys': [self[name] for name in ['key1', 'key2', 'key3', 'key4', 'key5']],
+                          'world_location': [self[name] for name in ['latitude', 'longitude']]}
+
+
     def clean(self):
         """
         1. Strip spaces from character fields.
@@ -120,10 +130,17 @@ class ImageUploadForm(ImageUploadFormBasic):
 class ImageDetailForm(ModelForm):
     class Meta:
         model = Metadata
-        fields = ('name', 'photo_date', 'value1', 'value2', 'value3',
-                  'value4', 'value5', 'pixel_cm_ratio',
-                  'camera', 'strobes', 'water_quality',
-                  'photographer', 'description')
+#        fields = ('name', 'photo_date', 'value1', 'value2', 'value3',
+#                  'value4', 'value5', 'pixel_cm_ratio',
+#                  'camera', 'strobes', 'water_quality',
+#                  'photographer', 'description')
+    class Media:
+        js = (
+            # Collected from root static directory
+            "js/util.js",
+            # Collected from app-specific static directory
+            "js/ImageDetailFormHelper.js",
+        )
 
     def __init__(self, *args, **kwargs):
         """
@@ -133,6 +150,8 @@ class ImageDetailForm(ModelForm):
         """
         source = kwargs.pop('source')
         super(ImageDetailForm, self).__init__(*args, **kwargs)
+
+        valueFields = []
 
         for key, valueField, valueClass in [
                 (source.key1, 'value1', Value1),
@@ -151,9 +170,27 @@ class ImageDetailForm(ModelForm):
                 valueObjs = valueClass.objects.filter(source=source).order_by('name')
                 for valueObj in valueObjs:
                     choices.append((valueObj.id, valueObj.name))
+                choices.append(('Other', 'Other (Specify)'))
+
+                self.fields[valueField] = ChoiceField(choices, label=key, required=False)
+
+                # Add a text input field for specifying the Other choice
+                self.fields[valueField + '_other'] = CharField(
+                    label='Other',
+                    max_length=valueClass._meta.get_field('name').max_length,
+                    required=False
+                )
+
+                valueFields += [valueField, valueField + '_other']
 
             else:
+                # If the key isn't in the source, just remove the
+                # corresponding value field from the form
                 del self.fields[valueField]
+
+        # For use in templates.  Can iterate over fieldsets instead of the entire form.
+        self.fieldsets = {'keys': [self[name] for name in (['photo_date'] + valueFields)],
+                          'other_info': [self[name] for name in ['name', 'pixel_cm_ratio', 'camera', 'strobes', 'water_quality', 'photographer', 'description']] }
 
     def clean(self):
         """
@@ -184,11 +221,11 @@ class ImageDetailForm(ModelForm):
                     data[valueField] = None
 
                 # "Other" was chosen.
-                elif data[valueField] == 'OtherId':
+                elif data[valueField] == 'Other':
                     otherValue = data[valueField + '_other']
                     if not otherValue:
                         # Error
-                        msg = u"If you select Other, you must specify the %s below." % key
+                        msg = u"Since you selected Other, you must use this text box to specify the %s." % key
                         self._errors[valueField + '_other'] = self.error_class([msg])
                         data[valueField] = None
                     else:

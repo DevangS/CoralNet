@@ -1,4 +1,6 @@
 {% extends "images/base_image.html" %}
+{% load i18n %}
+{% load guardian_tags %}
 
 {% block title %}{{ metadata.name }} | CoralNet{% endblock %}
 
@@ -60,6 +62,11 @@
     {% if metadata.water_quality %}  <p>Water quality: {{ metadata.water_quality }}</p>  {% endif %}
     {% if metadata.photographer %}  <p>Photographer: {{ metadata.photographer }}</p>  {% endif %}
     {% if metadata.description %}  <p>Description: {{ metadata.description|linebreaks }}</p>  {% endif %}
+
+    {% get_obj_perms user for source as "source_perms" %}
+    {% if "source_admin" in source_perms %}
+    <a href="{% url image_detail_edit source.id image.id %}">{% trans 'Edit Image Details' %}</a>
+    {% endif %}
 
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">

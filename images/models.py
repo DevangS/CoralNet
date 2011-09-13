@@ -32,7 +32,7 @@ class Source(models.Model):
     # Each of these fields is allowed to be blank (an empty string).
     # We're assuming that we'll only have key 2 if we have
     # key 1, we'll only have key 3 if we have key 2, etc.
-    key1 = models.CharField('Key 1', max_length=50, blank=True, help_text='Location keys - 1 most general, 5 most specific')
+    key1 = models.CharField('Key 1', max_length=50, blank=True)
     key2 = models.CharField('Key 2', max_length=50, blank=True)
     key3 = models.CharField('Key 3', max_length=50, blank=True)
     key4 = models.CharField('Key 4', max_length=50, blank=True)
@@ -48,11 +48,10 @@ class Source(models.Model):
         max_length=50,
         default=PointGen.args_to_db_format(
                     point_generation_type=PointGen.Types.SIMPLE,
-                    simple_number_of_points=200),
-        help_text="If you choose to generate annotation points as you upload images, this is how they'll be generated."
+                    simple_number_of_points=200)
     )
 
-    longitude = models.CharField(max_length=20, blank=True, help_text='World location - for locating your Source on Google Maps')
+    longitude = models.CharField(max_length=20, blank=True)
     latitude = models.CharField(max_length=20, blank=True)
 
     # Permissions for users to perform actions on Sources
@@ -157,7 +156,8 @@ class Value5(LocationValue):
 
 class Metadata(models.Model):
     name = models.CharField(max_length=200, blank=True)
-    photo_date = models.DateField('Photo date')
+    photo_date = models.DateField('Photo date',
+                                  help_text='Format: YYYY-MM-DD')
     description = models.TextField(max_length=1000, blank=True)
     # Do we need any input checking on pixel_cm_ratio?
     pixel_cm_ratio = models.CharField('Pixel/cm ratio', max_length=45, null=True, blank=True)
