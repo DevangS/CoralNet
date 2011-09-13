@@ -1,4 +1,6 @@
 {% extends "images/base_source.html" %}
+{% load i18n %}
+{% load guardian_tags %}
 
 {% block title %}Labelset for {{ source.name }} | CoralNet{% endblock %}
 
@@ -7,5 +9,10 @@
     <h2>{{ source.name }} Labelset</h2>
 
     {% include "annotations/helper_label_list.html" with labels=labels %}
+
+    {% get_obj_perms user for source as "source_perms" %}
+    {% if "source_admin" in source_perms %}
+    <br /><a href="{% url labelset_edit source.id %}">{% trans 'Edit LabelSet' %}</a>
+    {% endif %}
 
 {% endblock %}

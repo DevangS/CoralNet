@@ -86,6 +86,11 @@ class NewLabelForm(ModelForm):
 class NewLabelSetForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(NewLabelSetForm, self).__init__(*args, **kwargs)
+
+        # Put the label choices in order
+        self.fields['labels'].choices = \
+            [(label.id, label) for label in Label.objects.all().order_by('group__id', 'name')]
+
         # Custom widget for label selection
         self.fields['labels'].widget = CustomCheckboxSelectMultiple(
             choices=self.fields['labels'].choices)

@@ -101,6 +101,74 @@ def labelset_new(request, source_id):
         context_instance=RequestContext(request)
     )
 
+@login_required
+def labelset_edit(request, source_id):
+    """
+    Page to edit a source's labelset.
+    """
+
+    source = get_object_or_404(Source, id=source_id)
+    # TODO: Throw 404 or something if this source doesn't have a labelset yet
+    labelset = source.labelset
+
+    showLabelForm = False
+    initiallyCheckedLabels = [label.id for label in labelset.labels.all()]
+
+    if request.method == 'POST':
+        if 'create_label' in request.POST:
+            labelForm = NewLabelForm(request.POST, request.FILES)
+            newLabel = None
+
+            # is_valid() checks for label conflicts in the database (same-name label found, etc.).
+            if labelForm.is_valid():
+                newLabel = labelForm.instance
+                newLabel.created_by = request.user
+                newLabel.save()
+                messages.success(request, 'Label successfully created.')
+            else:
+                messages.error(request, 'Please correct the errors below.')
+                showLabelForm = True
+
+            # Also return the user's in-progress labelset form.  If a label
+            # was successfully added, that label should be in the form now,
+            # and it should be pre-checked.
+            labelList = request.POST.getlist('labels')
+            if newLabel:
+                labelList.append(newLabel.id)
+            initiallyCheckedLabels = labelList
+
+            labelSetForm = NewLabelSetForm()
+
+        elif 'edit_labelset' in request.POST:
+            labelSetForm = NewLabelSetForm(request.POST, instance=labelset)
+            labelForm = NewLabelForm()
+
+            if labelSetForm.is_valid():
+                labelSetForm.save()
+
+                messages.success(request, 'LabelSet successfully edited.')
+                return HttpResponseRedirect(reverse('labelset_main', args=[source.id]))
+            else:
+                messages.error(request, 'Please correct the errors below.')
+
+        else: # Cancel
+            messages.success(request, 'Edit cancelled.')
+            return HttpResponseRedirect(reverse('labelset_main', args=[source_id]))
+
+    else:
+        labelForm = NewLabelForm()
+        labelSetForm = NewLabelSetForm(instance=labelset)
+
+    return render_to_response('annotations/labelset_edit.html', {
+        'showLabelFormInitially': simplejson.dumps(showLabelForm),
+        'labelSetForm': labelSetForm,
+        'labelForm': labelForm,
+        'source': source,
+        'initiallyCheckedLabels': initiallyCheckedLabels,
+        },
+        context_instance=RequestContext(request)
+    )
+
 def label_main(request, label_id):
     """
     Main page for a particular label
