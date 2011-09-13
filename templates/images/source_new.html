@@ -9,15 +9,18 @@
 
 {% block content %}
 
-    <h2>Create a New Source</h2>
+    <legend>Create a New Source</legend>
 
     {# This form submits to the same URL as this page. #}
     {# The view function redirects to the success page if the form is valid. #}
 
     <form action="" method="post">{% csrf_token %}
-      {{ sourceForm.as_p }}
-      {% include "images/form_pointgen.html" with form=pointGenForm %}
-      <input type="submit" value="Create Source" />
+      {% include "form_generic.html" with form=sourceForm %}
+      {% include "form_generic.html" with form=pointGenForm %}
+
+      <div class="submit_button_wrapper">
+        <input type="submit" value="Create Source" />
+      </div>
     </form>
 
 {% endblock %}

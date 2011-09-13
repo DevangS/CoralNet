@@ -7,7 +7,9 @@
     <p>If you're reporting a bug, please try to explain what you did before the bug occurred, and how the behavior was buggy. This will help us find and fix the bug.</p>
 
     <form action="" method="post">{% csrf_token %}
-      {{ form.as_p }}
-      <input type="submit" value="Submit" />
+      {% include "form_generic.html" with form=form %}
+      <div class="submit_button_wrapper">
+        <input type="submit" value="Submit" />
+      </div>
     </form>
 {% endblock %}

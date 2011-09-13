@@ -22,28 +22,21 @@
         </a>
       {% endfor %}
     </div>
-    {% endif %}
 
     <hr />
+    {% endif %}
 
-    <h2>Upload Images</h2>
+    <legend>Upload Images</legend>
 
     <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-    
-        {{ imageUploadForm.non_field_errors }}
-        {% for field in imageUploadForm %}
-            <div id="id_{{ field.name }}_wrapper">
-                {{ field.errors }}
-                <p>
-                    <label for="{{ field.widget.id_for_label }}">{{ field.label }}:</label> {{ field }}
-                    <span class="helptext">{{ field.help_text|linebreaksbr }}</span>
-                </p>
-            </div>
-        {% endfor %}
+        {% include "form_generic.html" with form=imageUploadForm %}
         {% for detail in imageUploadForm.additional_details %}
-            <p><span class="helptext">{{ detail|linebreaksbr }}</span></p>
+            <span class="helptext">{{ detail|linebreaksbr }}</span>
         {% endfor %}
-        <input type="submit" id="id_upload_submit" value="Upload Images" />
+
+        <div class="submit_button_wrapper">
+            <input type="submit" id="id_upload_submit" value="Upload Images" />
+        </div>
     </form>
 
     <!-- Preview the files selected for upload. -->

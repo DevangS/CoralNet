@@ -12,8 +12,9 @@
 
     {# inline display confines the bottom border to the length of the text. #}
     <legend style="display:inline">Create a new LabelSet</legend>
-
-    <br />
+    {# unfortunately, inline display means we need to manually insert linebreaks #}
+    <br /><br />
+    
     <button id="id_button_show_label_form">Add a new label that's not in the list</button>
 
     <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
@@ -25,7 +26,7 @@
         <fieldset>
           <legend>Create a new Label</legend>
 
-          {% include "annotations/form_new_label.html" with form=labelForm %}
+          {% include "form_generic.html" with form=labelForm %}
         </fieldset>
 
         <div class="submit_button_wrapper">

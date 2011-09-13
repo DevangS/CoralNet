@@ -3,16 +3,48 @@
 
 {% block title %}{{ source.name }} - Visualization | CoralNet{% endblock %}
 
+{% block css-code %}
+<style type="text/css">
+
+fieldset.fieldset_visualization {
+    margin: 0;
+}
+
+.form_item_wrapper_visualization {
+    float: left;
+    margin: 0 10px;
+    border: 0;
+}
+
+label.label_visualization {
+    width: auto;
+}
+
+</style>
+{% endblock %}
+
 {% block content %}
 
     <h2>Browse Images</h2>
     
     <!-- This is the menu to select descriptors to sort through the images -->
     <form action="" method="get">
-    <table>
-    {{ form.as_table }}
-    </table>
-    <input type='submit' value="Search">
+
+        <fieldset class="fieldset_visualization">
+          {% for field in form %}
+            <div class="form_item_wrapper, form_item_wrapper_visualization" id="id_{{ field.name }}_wrapper">
+                <label for="{{ field.id_for_label }}" class="label_visualization">{{ field.label }}:</label>
+
+                <div class="field_wrapper">
+                    {{ field }}
+                </div>
+            </div>
+          {% endfor %}
+        </fieldset>
+        
+      <div class="submit_button_wrapper">
+        <input type='submit' value="Search">
+      </div>
     </form>
 
     {% if errors %}
@@ -38,7 +70,6 @@
                          title="Point {{ image.pointNum }} ({{ image.row }},{{ image.col }}) in: {{ fullImage.get_image_element_title }}"/>
                 </a>
               {% endwith %}
-{#               <img src="{{ MEDIA_URL }}{{ image }}"> <!--Images are file names if in label mode-->#}
             {% endif %}
         {% endfor %}
 

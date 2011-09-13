@@ -415,22 +415,6 @@ form {
     width: 800px;
 }
 
-/*form p.checkbox {
-    border: none;
-}
-
-form p.checkbox label {
-    width: inherit;
-    float: none;
-    text-align: left;
-    padding: 0 0 0 175px;
-}
-
-span.label {
-    color: #111;
-    font-weight: bold;
-}*/
-
 /* The element around the whole form field, containing the label, field, helptext, and errors. */
 form p, .form_item_wrapper {
     padding: 3px 0;  /* vertical horizontal*/
@@ -457,9 +441,8 @@ label {
     color: #444;
 }
 
-/* labels for checkboxes.  To use this, be sure that the label is inside an element
- with class checkbox_field. */
-.checkbox_field label {
+/* labels for checkboxes. At least the ones in the new-labelset form. */
+label.checkbox_label {
     /* Simply float: none should work for a simple list of checkboxes. */
     float: none;
 }

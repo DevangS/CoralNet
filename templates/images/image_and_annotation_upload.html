@@ -19,12 +19,15 @@
     <hr />
     {% endif %}
 
-    <h2>Upload Images with Annotations</h2>
+    <legend>Upload Images with Annotations</legend>
 
     <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-        {{ annotationsUploadForm.as_p }}
-        {{ imageUploadForm.as_p }}
-      <input type="submit" value="Upload Images and Annotations" />
+        {% include "form_generic.html" with form=annotationsUploadForm %}
+        {% include "form_generic.html" with form=imageUploadForm %}
+
+        <div class="submit_button_wrapper">
+          <input type="submit" value="Upload Images and Annotations" />
+        </div>
     </form>
 
 {% endblock %}

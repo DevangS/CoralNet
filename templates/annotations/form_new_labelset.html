@@ -6,18 +6,17 @@ This form template is meant to be used with the "include" template tag.
 
 {% with labelsField=form.labels %}
     {{ labelsField.errors }}
-    <ul>
+
       {% for value, name in labelsField.field.choices %}
         {% with labelId=value|stringformat:"d" %}
         {% with checkboxId="id_labels_"|add:labelId %}
-          <li class="checkbox_field">
-            <input type="checkbox" name="{{ labelsField.name }}" value="{{ value }}" id="{{ checkboxId }}" />
-            <label for="{{ checkboxId }}">
-              {{ name }}
-            </label>
-          </li>
+          <div class="checkbox_field">
+              <input type="checkbox" name="{{ labelsField.name }}" value="{{ value }}" id="{{ checkboxId }}" />
+              <label for="{{ checkboxId }}" class="checkbox_label">
+                  {{ name }}
+              </label>
+          </div>
         {% endwith %}
         {% endwith %}
       {% endfor %}
-    </ul>
 {% endwith %}
