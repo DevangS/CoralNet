@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.forms import ValidationError
+from django.forms.models import model_to_dict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.template import RequestContext
@@ -335,9 +336,26 @@ def image_detail(request, image_id, source_id):
     image = get_object_or_404(Image, id=image_id)
     #source = get_object_or_404(Source, Image.objects.get(pk=image_id).source.id)
     source = get_object_or_404(Source, id=source_id)
-
-    # Fields to show on the detail page
     metadata = image.metadata
+
+    # Get the metadata fields (including the right no. of keys for the source)
+    # and organize into fieldsets.  The image detail form already has this
+    # logic, so let's just borrow the form's functionality...
+    imageDetailForm = ImageDetailForm(source=source, initial=model_to_dict(metadata))
+    fieldsets = imageDetailForm.fieldsets
+
+    # ...But we don't need the form's "Other" value fields.
+    # (Code note: [:] creates a copy of the list, so we're not iterating over the same list we're removing things from)
+    for field in fieldsets['keys'][:]:
+        if field.name.endswith('_other'):
+            fieldsets['keys'].remove(field)
+
+    detailsets = dict()
+    for key, fieldset in fieldsets.items():
+        detailsets[key] = [dict(label=field.label,
+                                name=field.name,
+                                value=getattr(metadata, field.name))
+                         for field in fieldset]
 
     # Default max viewing width
     # Feel free to change the constant according to the page layout.
@@ -347,6 +365,7 @@ def image_detail(request, image_id, source_id):
         'source': source,
         'image': image,
         'metadata': metadata,
+        'detailsets': detailsets,
         'scaled_width': scaled_width,
         },
         context_instance=RequestContext(request)

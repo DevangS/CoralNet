@@ -54,6 +54,9 @@ class Source(models.Model):
     longitude = models.CharField(max_length=20, blank=True)
     latitude = models.CharField(max_length=20, blank=True)
 
+    #start_date = models.DateField(null=True, blank=True)
+    #end_date = models.DateField(null=True, blank=True)
+
     # Permissions for users to perform actions on Sources
     class Meta:
         permissions = (
@@ -111,6 +114,25 @@ class Source(models.Model):
 
         return keyList
 
+    def get_value_field_list(self):
+        """
+        If the source has 3 keys, this returns
+        ['value1','value2','value3']
+        Could be useful for forms when determining
+        which metadata values apply to a given source.
+        """
+        valueFieldList = []
+        
+        for k,v in [('key1','value1'),
+                    ('key2','value2'),
+                    ('key3','value3'),
+                    ('key4','value4'),
+                    ('key5','value5'),]:
+            if getattr(self,k):
+                valueFieldList.append(v)
+
+        return valueFieldList
+
     def num_of_keys(self):
         """
         Return the number of location keys that this Source has.
@@ -158,18 +180,28 @@ class Metadata(models.Model):
     name = models.CharField(max_length=200, blank=True)
     photo_date = models.DateField('Photo date',
                                   help_text='Format: YYYY-MM-DD')
-    description = models.TextField(max_length=1000, blank=True)
+
+    latitude = models.CharField(max_length=20, blank=True)
+    longitude = models.CharField(max_length=20, blank=True)
+    depth = models.CharField(max_length=45, blank=True)
+
     # Do we need any input checking on pixel_cm_ratio?
     pixel_cm_ratio = models.CharField('Pixel/cm ratio', max_length=45, null=True, blank=True)
     camera = models.CharField(max_length=200, blank=True)
-    strobes = models.CharField(max_length=200, blank=True)
     photographer = models.CharField(max_length=45, blank=True)
     water_quality = models.CharField(max_length=45, blank=True)
-    value1 = models.ForeignKey(Value1, null=True, blank=True)
-    value2 = models.ForeignKey(Value2, null=True, blank=True)
-    value3 = models.ForeignKey(Value3, null=True, blank=True)
-    value4 = models.ForeignKey(Value4, null=True, blank=True)
-    value5 = models.ForeignKey(Value5, null=True, blank=True)
+
+    strobes = models.CharField(max_length=200, blank=True)
+    framing = models.CharField('Framing gear used', max_length=200, blank=True)
+    balance = models.CharField('White balance card', max_length=200, blank=True)
+    
+    comments = models.TextField(max_length=1000, blank=True)
+    
+    value1 = models.ForeignKey(Value1, null=True)
+    value2 = models.ForeignKey(Value2, null=True)
+    value3 = models.ForeignKey(Value3, null=True)
+    value4 = models.ForeignKey(Value4, null=True)
+    value5 = models.ForeignKey(Value5, null=True)
     group1_percent = models.IntegerField(default=0)
     group2_percent = models.IntegerField(default=0)
     group3_percent = models.IntegerField(default=0)

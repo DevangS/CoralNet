@@ -115,7 +115,7 @@ class ImageUploadForm(ImageUploadFormBasic):
         filenameExampleArgs['values'] = [a+b for a,b in zip(sourceKeys, exampleSuffixes)]
 
         filenameFormatStr = metadata_to_filename(**filenameFormatArgs)
-        filenameExampleStr = metadata_to_filename(**filenameExampleArgs)
+        filenameExampleStr = metadata_to_filename(**filenameExampleArgs) + ".jpg"
 
         self.fields['has_data_from_filenames'].help_text = \
             "Required format: %s" % filenameFormatStr + '\n' + \
@@ -130,10 +130,9 @@ class ImageUploadForm(ImageUploadFormBasic):
 class ImageDetailForm(ModelForm):
     class Meta:
         model = Metadata
-#        fields = ('name', 'photo_date', 'value1', 'value2', 'value3',
-#                  'value4', 'value5', 'pixel_cm_ratio',
-#                  'camera', 'strobes', 'water_quality',
-#                  'photographer', 'description')
+        exclude = ('group1_percent', 'group2_percent', 'group3_percent',
+                   'group4_percent', 'group5_percent', 'group6_percent', 'group7_percent')
+
     class Media:
         js = (
             # Collected from root static directory
@@ -172,7 +171,7 @@ class ImageDetailForm(ModelForm):
                     choices.append((valueObj.id, valueObj.name))
                 choices.append(('Other', 'Other (Specify)'))
 
-                self.fields[valueField] = ChoiceField(choices, label=key, required=False)
+                self.fields[valueField] = ChoiceField(choices, label=key, required=True)
 
                 # Add a text input field for specifying the Other choice
                 self.fields[valueField + '_other'] = CharField(
@@ -190,7 +189,10 @@ class ImageDetailForm(ModelForm):
 
         # For use in templates.  Can iterate over fieldsets instead of the entire form.
         self.fieldsets = {'keys': [self[name] for name in (['photo_date'] + valueFields)],
-                          'other_info': [self[name] for name in ['name', 'pixel_cm_ratio', 'camera', 'strobes', 'water_quality', 'photographer', 'description']] }
+                          'other_info': [self[name] for name in ['name', 'latitude', 'longitude', 'depth',
+                                                                 'pixel_cm_ratio', 'camera', 'photographer',
+                                                                 'water_quality', 'strobes', 'framing',
+                                                                 'balance', 'comments']] }
 
     def clean(self):
         """
@@ -216,18 +218,20 @@ class ImageDetailForm(ModelForm):
             # Make sure the form actually has this valueN.
             if data.has_key(valueField):
 
-                # This field's value is blank, so set object to None.
-                if not data[valueField]:
-                    data[valueField] = None
-
                 # "Other" was chosen.
-                elif data[valueField] == 'Other':
+                if data[valueField] == 'Other':
                     otherValue = data[valueField + '_other']
                     if not otherValue:
                         # Error
                         msg = u"Since you selected Other, you must use this text box to specify the %s." % key
                         self._errors[valueField + '_other'] = self.error_class([msg])
-                        data[valueField] = None
+
+                        # TODO: Make this not a hack.  This sets the valueField to be some arbitrary non-blank
+                        # valueN object, so (1) we won't get an error on clean() about 'Other'
+                        # not being a valueClass object, and (2) we won't get a
+                        # "field cannot be blank" error on the dropdown.
+                        # One possible consequence of this hack is that it'll crash if there are no valueClass objects of that value number on the site yet. (e.g. no value5s)
+                        data[valueField] = valueClass.objects.all()[0]
                     else:
                         # Add new value to database, or get it if it already exists
                         # (the latter case would be the user not noticing it was already in the choices).
