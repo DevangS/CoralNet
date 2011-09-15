@@ -5,7 +5,10 @@ This form template is meant to be used with the "include" template tag.
 {{ form.non_field_errors }}
 {% for field in form %}
     <div class="form_item_wrapper" id="id_{{ field.name }}_wrapper">
-        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+        <label for="{{ field.id_for_label }}">
+            {% if field.field.required %} <span style="color:red;"> * </span> {% endif %}
+            {{ field.label }}:
+        </label>
 
         <div class="field_wrapper">
             {{ field }}
