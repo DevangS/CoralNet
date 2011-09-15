@@ -441,10 +441,16 @@ label {
     color: #444;
 }
 
-/* labels for checkboxes. At least the ones in the new-labelset form. */
-label.checkbox_label {
-    /* Simply float: none should work for a simple list of checkboxes. */
+/* If your form needs labels for accessibility, but the form layout
+ just doesn't lend itself to the regular label styles, then use this */
+label.no_style {
+    width: auto;
     float: none;
+    text-align: left;
+    line-height: 1em;
+    margin: 0;
+    font-size: 1em;
+    color: #000;
 }
 
 .field_wrapper {
@@ -590,7 +596,22 @@ legend.small {
     text-transform: none;
 }
 
-/* Userena special cases, apparently */
+/* Special cases */
+
+/* Table rows that can be clicked to toggle form values, like checkboxes.
+   Used in the labelset form. */
+.checkbox_row {
+    cursor: pointer;
+}
+/* Multiple classes like .class1.class2 may not work in IE6 */
+.checkbox_row.selected {
+    background-color: #bbbbdd;
+}
+.checkbox_row.selected.disabled {
+    cursor: default;
+    background-color: #aaaaaa;
+}
+
 #signin input[type=checkbox] {
     display: block;
     float: left;

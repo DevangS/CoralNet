@@ -7,16 +7,45 @@ This form template is meant to be used with the "include" template tag.
 {% with labelsField=form.labels %}
     {{ labelsField.errors }}
 
-      {% for value, name in labelsField.field.choices %}
-        {% with labelId=value|stringformat:"d" %}
-        {% with checkboxId="id_labels_"|add:labelId %}
-          <div class="checkbox_field">
-              <input type="checkbox" name="{{ labelsField.name }}" value="{{ value }}" id="{{ checkboxId }}" />
-              <label for="{{ checkboxId }}" class="checkbox_label">
-                  {{ name }}
-              </label>
-          </div>
+    <table class="detail_table">
+
+      <tr>
+        <th>Name</th>
+        <th>Short Code</th>
+        <th>Functional Group</th>
+        {% if isEditLabelsetForm %}
+          <th style="width: 55px;">Status</th>  {# The width prevents the column from expanding when a cell has the word "deleted".  Bit of a hack #}
+        {% endif %}
+      </tr>
+    
+      {% for label in allLabels %}
+        {% with labelId=label.labelId %}
+        {% with checkboxId="id_labels_"|add:labelId   rowId="id_row_"|add:labelId %}
+          <tr class="checkbox_row" id="{{ rowId }}">
+              <td>
+                  {% comment %}
+                  The checkbox is completely hidden from view.  The checkbox's purpose is to
+                  hold a "checked" state, and to tie into the Django form, which still looks
+                  for the checkbox states.
+                  {% endcomment %}
+                  <input type="checkbox" name="{{ labelsField.name }}" value="{{ label.labelId }}" id="{{ checkboxId }}"
+                         style="display: none;"/>
+                  {{ label.name }}
+              </td>
+              <td>
+                  {{ label.code }}
+              </td>
+              <td>
+                  {{ label.group }}
+              </td>
+              {% if isEditLabelsetForm %}
+                <td class="change_status">
+                  
+                </td>
+              {% endif %}
+          </tr>
         {% endwith %}
         {% endwith %}
       {% endfor %}
+    </table>
 {% endwith %}

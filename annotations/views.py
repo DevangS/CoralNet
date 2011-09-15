@@ -44,6 +44,9 @@ def labelset_new(request, source_id):
     initiallyCheckedLabels = []
 
     if request.method == 'POST':
+
+        initiallyCheckedLabels = [int(labelId) for labelId in request.POST.getlist('labels')]
+
         if 'create_label' in request.POST:
             labelForm = NewLabelForm(request.POST, request.FILES)
             newLabel = None
@@ -58,20 +61,13 @@ def labelset_new(request, source_id):
                 messages.error(request, 'Please correct the errors below.')
                 showLabelForm = True
 
-            # Also return the user's in-progress labelset form.  If a label
-            # was successfully added, that label should be in the form now,
-            # and it should be pre-checked.
-            labelList = request.POST.getlist('labels')
-            if newLabel:
-                labelList.append(newLabel.id)
-            initiallyCheckedLabels = labelList
-
+            # The labelset form should now have the new label.
             labelSetForm = NewLabelSetForm()
-            # Currently, we just look at the labelList and manually check
-            # the checkboxes with JavaScript.  If we can find an automatic
-            # way to check the checkboxes using the form's initial values,
-            # then we might use this:
-            #labelSetForm = NewLabelSetForm(initial=dict(labels=labelList))
+
+            # If a label was added, the user probably wanted to add it to their
+            # labelset, so pre-check that label.
+            if newLabel:
+                initiallyCheckedLabels.append(newLabel.id)
 
         else:  # 'create_labelset' in request.POST
             labelSetForm = NewLabelSetForm(request.POST)
@@ -91,12 +87,25 @@ def labelset_new(request, source_id):
         labelForm = NewLabelForm()
         labelSetForm = NewLabelSetForm()
 
+    allLabels = [dict(labelId=str(id), name=label.name,
+                      code=label.code, group=label.group.name)
+                 for id, label in labelSetForm['labels'].field.choices]
+
+    # Dict that tells whether a label should be initially checked: {85: True, 86: True, ...}.
+    isInitiallyChecked = dict()
+    for labelId, label in labelSetForm['labels'].field.choices:
+        isInitiallyChecked[labelId] = labelId in initiallyCheckedLabels
+        
     return render_to_response('annotations/labelset_new.html', {
-        'showLabelFormInitially': simplejson.dumps(showLabelForm),
+        'showLabelFormInitially': simplejson.dumps(showLabelForm),    # Convert Python bool to JSON bool
         'labelSetForm': labelSetForm,
         'labelForm': labelForm,
         'source': source,
-        'initiallyCheckedLabels': initiallyCheckedLabels,
+        'isEditLabelsetForm': False,
+
+        'allLabels': allLabels,    # label dictionary, for accessing as a template variable
+        'allLabelsJSON': simplejson.dumps(allLabels),    # label dictionary, for JS
+        'isInitiallyChecked': simplejson.dumps(isInitiallyChecked),
         },
         context_instance=RequestContext(request)
     )
@@ -112,9 +121,13 @@ def labelset_edit(request, source_id):
     labelset = source.labelset
 
     showLabelForm = False
-    initiallyCheckedLabels = [label.id for label in labelset.labels.all()]
+    labelsInLabelset = [label.id for label in labelset.labels.all()]
+    initiallyCheckedLabels = labelsInLabelset
 
     if request.method == 'POST':
+
+        initiallyCheckedLabels = [int(labelId) for labelId in request.POST.getlist('labels')]
+
         if 'create_label' in request.POST:
             labelForm = NewLabelForm(request.POST, request.FILES)
             newLabel = None
@@ -129,15 +142,13 @@ def labelset_edit(request, source_id):
                 messages.error(request, 'Please correct the errors below.')
                 showLabelForm = True
 
-            # Also return the user's in-progress labelset form.  If a label
-            # was successfully added, that label should be in the form now,
-            # and it should be pre-checked.
-            labelList = request.POST.getlist('labels')
-            if newLabel:
-                labelList.append(newLabel.id)
-            initiallyCheckedLabels = labelList
-
+            # The labelset form should now have the new label.
             labelSetForm = NewLabelSetForm()
+
+            # If a label was added, the user probably wanted to add it to their
+            # labelset, so pre-check that label.
+            if newLabel:
+                initiallyCheckedLabels.append(newLabel.id)
 
         elif 'edit_labelset' in request.POST:
             labelSetForm = NewLabelSetForm(request.POST, instance=labelset)
@@ -159,12 +170,45 @@ def labelset_edit(request, source_id):
         labelForm = NewLabelForm()
         labelSetForm = NewLabelSetForm(instance=labelset)
 
+    # Dictionary of info for each label in the labelset form.
+    allLabels = [dict(labelId=str(id), name=label.name,
+                      code=label.code, group=label.group.name)
+                 for id, label in labelSetForm['labels'].field.choices]
+
+    # Dict that tells whether a label is already in the labelset: {85: True, 86: True, ...}.
+    # This is basically a workaround around JavaScript's lack of a widely supported "is element in list" function.
+    isInLabelset = dict()
+    for labelId, label in labelSetForm['labels'].field.choices:
+        isInLabelset[labelId] = labelId in labelsInLabelset
+
+    # Dict that tells whether a label should be initially checked: {85: True, 86: True, ...}.
+    isInitiallyChecked = dict()
+    for labelId, label in labelSetForm['labels'].field.choices:
+        isInitiallyChecked[labelId] = labelId in initiallyCheckedLabels
+
+    # Dict that tells whether an initially-checked label's status is changeable: {85: True, 86: False, ...}.
+    # A label is unchangeable if it's being used by any annotations in this source.
+    isLabelUnchangeable = dict()
+    for labelId, label in labelSetForm['labels'].field.choices:
+        if labelId in initiallyCheckedLabels:
+            annotationsForLabel = Annotation.objects.filter(image__source=source, label__id=labelId)
+            isLabelUnchangeable[labelId] = len(annotationsForLabel) > 0
+        else:
+            isLabelUnchangeable[labelId] = False
+
+
     return render_to_response('annotations/labelset_edit.html', {
-        'showLabelFormInitially': simplejson.dumps(showLabelForm),
+        'showLabelFormInitially': simplejson.dumps(showLabelForm),    # Python bool to JSON bool
         'labelSetForm': labelSetForm,
         'labelForm': labelForm,
         'source': source,
-        'initiallyCheckedLabels': initiallyCheckedLabels,
+        'isEditLabelsetForm': True,
+
+        'allLabels': allLabels,    # label dictionary, for accessing as a template variable
+        'allLabelsJSON': simplejson.dumps(allLabels),    # label dictionary, for JS
+        'isInLabelset': simplejson.dumps(isInLabelset),
+        'isInitiallyChecked': simplejson.dumps(isInitiallyChecked),
+        'isLabelUnchangeable': simplejson.dumps(isLabelUnchangeable),
         },
         context_instance=RequestContext(request)
     )

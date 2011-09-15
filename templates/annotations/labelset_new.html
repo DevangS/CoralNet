@@ -25,8 +25,9 @@
           
         <fieldset>
           <legend>Create a new Label</legend>
+          <span class="helptext">Please note that any new labels you create will be made publicly available to all CoralNet users.</span>
 
-          {% include "form_generic.html" with form=labelForm %}
+          {% include "form_generic.html" with form=labelForm allLabelsById=allLabelsById %}
         </fieldset>
 
         <div class="submit_button_wrapper">
@@ -39,7 +40,7 @@
       </div>
 
       <fieldset>
-        {% include "annotations/form_new_labelset.html" with form=labelSetForm %}
+        {% include "annotations/form_new_labelset.html" with form=labelSetForm isEditLabelsetForm=isEditLabelsetForm %}
       </fieldset>
         
       <div class="submit_button_wrapper">
@@ -50,11 +51,13 @@
 
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
-        initiallyCheckedLabels = new Array({{ initiallyCheckedLabels|length }});
-        {% for labelNum in initiallyCheckedLabels %}
-            initiallyCheckedLabels[{{ forloop.counter0 }}] = {{ labelNum }};
-        {% endfor %}
-        LabelsetFormHelper.init({{ showLabelFormInitially }}, initiallyCheckedLabels);
+        var allLabels = {{ allLabelsJSON|safe }};
+        var isInLabelset = {};
+        var isInitiallyChecked = {{ isInitiallyChecked|safe }};
+        var isLabelUnchangeable = {};
+        var isEditLabelsetForm = false;  {# Can't use a template variable with a Python bool, as that isn't JSON/JS #}
+        
+        LabelsetFormHelper.init({{ showLabelFormInitially }}, allLabels, isInLabelset, isInitiallyChecked, isLabelUnchangeable, isEditLabelsetForm);
     </script>
 
 
