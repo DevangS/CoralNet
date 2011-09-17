@@ -1,0 +1,11 @@
+{% extends "images/base_source.html" %}
+{% load i18n %}
+
+{% block title %}Labelset required | CoralNet{% endblock %}
+
+{% block content %}
+
+    <p>{{ message }}</p>
+    <p><a href="{% url labelset_new source.id %}">Create a labelset</a></p>
+
+{% endblock %}

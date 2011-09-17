@@ -15,6 +15,7 @@ from userena.models import User
 from guardian.decorators import permission_required
 from guardian.shortcuts import assign
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
+from decorators import labelset_required
 
 from images.models import Source, Image, Metadata, Point, find_dupe_image
 from images.models import get_location_value_objs
@@ -307,8 +308,12 @@ def image_upload(request, source_id):
                 else:
                     duplicate_msg_base = "%d duplicates skipped."
 
+                if duplicates > 0:
+                    duplicate_msg = duplicate_msg_base % duplicates
+                else:
+                    duplicate_msg = ''
+                    
                 uploaded_msg = "%d images uploaded." % imagesUploaded
-                duplicate_msg = duplicate_msg_base % duplicates
                 success_msg = uploaded_msg + ' ' + duplicate_msg
 
                 messages.success(request, success_msg)
@@ -664,6 +669,7 @@ def annotations_file_to_python(annoFile, source):
 
     
 @transaction.commit_on_success
+@labelset_required('source_id', 'You need to create a labelset for your source before you can import annotations.')
 @permission_required('source_admin', (Source, 'id', 'source_id'))
 def annotation_import(request, source_id):
 

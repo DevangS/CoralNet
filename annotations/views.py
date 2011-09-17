@@ -8,6 +8,7 @@ from django.utils import simplejson
 from guardian.decorators import permission_required
 from annotations.forms import NewLabelForm, NewLabelSetForm
 from annotations.models import Label, LabelSet, Annotation
+from decorators import labelset_required
 from images.models import Source, Image, Point
 from visualization.utils import generate_patch_if_doesnt_exist
 
@@ -118,8 +119,10 @@ def labelset_edit(request, source_id):
     """
 
     source = get_object_or_404(Source, id=source_id)
-    # TODO: Throw 404 or something if this source doesn't have a labelset yet
     labelset = source.labelset
+
+    if labelset.isEmptyLabelset():
+        return HttpResponseRedirect(reverse('labelset_new', args=[source.id]))
 
     showLabelForm = False
     labelsInLabelset = [label.id for label in labelset.labels.all()]
@@ -313,6 +316,7 @@ def label_list(request):
     )
 
 
+@labelset_required('source_id', 'You need to create a labelset for your source before you can annotate images.')
 @permission_required('source_admin', (Source, 'id', 'source_id'))
 def annotation_tool(request, image_id, source_id):
     """
