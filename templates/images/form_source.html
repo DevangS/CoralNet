@@ -16,14 +16,14 @@ This form template is meant to be used with the "include" template tag.
 </fieldset>
 
 <fieldset>
+    <legend class="small">Point Generation</legend>
+    <span class="helptext">This is how we'll generate annotation points for the images you upload (if you don't provide pre-annotated images).</span>
+    {% include "form_generic.html" with form=pointGenForm %}
+</fieldset>
+
+<fieldset>
     <legend class="small">World Location</legend>
     <span class="helptext">To get your Source's coordinates, try <a href="http://www.getlatlon.com/">getlatlon.com</a>.<br />
                            Later, we'll use this information to integrate with Google Maps.</span>
     {% include "form_generic.html" with form=sourceForm.fieldsets.world_location %}
-</fieldset>
-
-<fieldset>
-    <legend class="small">Point Generation</legend>
-    <span class="helptext">This is how we'll generate annotation points for the images you upload (if you don't provide pre-annotated images).</span>
-    {% include "form_generic.html" with form=pointGenForm %}
 </fieldset>

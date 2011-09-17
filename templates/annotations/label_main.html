@@ -34,9 +34,13 @@
           <p>Description: (None)</p>
         {% endif %}
 
-        <p>Used in:
-          {% for source in sources_with_label %}
-            <a href="{% url source_main source.id %}">{{ source }}</a>
+        <p>Used in these sources (only including your sources and public sources):</p>
+        <p>
+          {% for type, source in visible_sources_with_label %}
+            <a href="{% url source_main source.id %}"
+               {% if type == 'mine' %}style="color: green"{% endif %}>
+                {{ source }}</a>
+
             {% if not forloop.last %} | {% endif %}
           {% empty %}
             (None)
@@ -46,7 +50,23 @@
         <p>Create Date: {{ label.create_date|default:"(Unknown)" }}</p>
         <p>Created By: {{ label.created_by|default:"(Unknown)" }}</p>
     
-        {# TODO: add example patches randomly picked from public sources #}
+        <div id="example_patches">
+            <h2>Example patches</h2>
+            {% if patches %}
+                {% for patch in patches %}
+                  <span class="thumb_wrapper">
+                    <a href="{% url image_detail patch.source.id patch.fullImage.id %}">
+                    <img class="thumb"
+                         src="{{ MEDIA_URL }}{{ patch.patchPath }}"
+                         title="{{ patch.fullImage.get_image_element_title }} from: {{ patch.source }}"/>
+                    </a>
+                  </span>
+                {% endfor %}
+            {% else %}
+                <p>(None yet)</p>
+            {% endif %}
+        </div>
+
     </div>
 
 {% endblock %}

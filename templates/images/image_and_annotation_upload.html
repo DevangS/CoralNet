@@ -9,10 +9,13 @@
     <div>
       <h2>Just uploaded (up to 5 shown):</h2>
       {% for image in uploadedImages %}
+        <span class="thumb_small_wrapper">
         <a href="{% url image_detail source.id image.id %}">
-          <img src="{% thumbnail image.original_file 100x100 %}"
+          <img class="thumb_small"
+               src="{% thumbnail image.original_file 100x100 %}"
                title="{{ image.get_image_element_title }}"/>
         </a>
+        </span>
       {% endfor %}
     </div>
 

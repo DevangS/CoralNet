@@ -945,10 +945,17 @@ min-height: 52px;
 
 
 
-/*	detail tables
-(for example, table listing the details of each label in a labelset)
+/*	detail pages
 ................................... */
 
+/* Single-object details
+ * (source main page, image detail page) */
+.detail_list div {
+    margin-bottom: 35px;
+}
+
+/* Table details
+ * (label list page) */
 table.detail_table {
     border: 1px solid #999999;
     border-collapse: separate;  /* Firefox seems to make border widths inconsistent if border-collapse: collapse */
@@ -957,4 +964,29 @@ table.detail_table th,
 table.detail_table td {
     border: 1px solid #999999;
     padding: 5px;
+}
+
+/* thumbnails and thumbnail wrappers
+................................... */
+
+.thumb_wrapper {
+    display: inline-block;
+    text-align: center;
+    height: 180px;
+    width: 180px;    /* Make it so 5 images can fit on one row.  Might change this later to accommodate a stats box in the visualization page though. */
+}
+
+.thumb_small_wrapper {
+    display: inline-block;
+    text-align: center;
+    height: 120px;
+    width: 120px;
+}
+
+img.thumb {
+    vertical-align: middle;
+}
+
+img.thumb_small {
+    vertical-align: middle;  /* This works as long as the thumbnail isn't in a wrapper element... */
 }

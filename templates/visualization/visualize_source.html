@@ -1,4 +1,4 @@
-{% extends "visualization/base_visualize.html" %}
+{% extends "images/base_source.html" %}
 {% load thumbnail %}
 
 {% block title %}{{ source.name }} - Visualization | CoralNet{% endblock %}
@@ -57,18 +57,23 @@ label.label_visualization {
         {% for image in images.object_list %}
            {% if image.metadata %}
               {% with metadata=image.metadata %}
+                <span class="thumb_wrapper">
                 <a href="{% url image_detail source.id image.id %}">
-                    {# TODO: Make a grid with reasonable spacing between grid elements. #}
-                    <img src="{% thumbnail image.original_file 150x150 %}"
+                    <img class="thumb"
+                         src="{% thumbnail image.original_file 150x150 %}"
                          title="{{ image.get_image_element_title }}"/>
                 </a>
+                </span>
               {% endwith %}
             {% else %}
               {% with fullImage=image.fullImage %}
+                <span class="thumb_wrapper">
                 <a href="{% url image_detail source.id fullImage.id %}">
-                    <img src="{{ MEDIA_URL }}{{ image.patchPath }}"
+                    <img class="thumb"
+                         src="{{ MEDIA_URL }}{{ image.patchPath }}"
                          title="Point {{ image.pointNum }} ({{ image.row }},{{ image.col }}) in: {{ fullImage.get_image_element_title }}"/>
                 </a>
+                </span>
               {% endwith %}
             {% endif %}
         {% endfor %}

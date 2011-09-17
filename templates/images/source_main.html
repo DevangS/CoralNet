@@ -12,32 +12,52 @@
 
 {% block content %}
 
-    <div id="static_info">
-        <h1>{{ source.name }}</h1>
+    <h1>{{ source.name }}</h1>
 
+    <hr />
+
+    <div class="detail_list">
+
+        <div>
         <p>Visibility: {{ source.get_visibility_display }}</p>
-
         <p>Date Created: {{ source.create_date }}</p>
 
-        <p>Description: {{ source.description|linebreaks|default:"(None)" }}</p>
+        {% if source.description %}
+          <p>Description:</p>
+            <span style="display:block; margin-left:30px;">
+                {{ source.description|linebreaks }}
+            </span>
+        {% else %}
+          <p>Description: (None)</p>
+        {% endif %}
 
+        </div>
+
+        <div>
         <p>Location keys: {{ loc_keys }}</p>
-
         <p>Annotation point generation: {{ source.point_gen_method_display }}</p>
+        </div>
 
+        <div>
         <p>Longitude: {{ source.longitude|default:"(None)" }}</p>
         <p>Latitude: {{ source.latitude|default:"(None)" }}</p>
+        </div>
 
+        <div>
         {% if source.labelset.isEmptyLabelset %}
         <p><a href="{% url labelset_new source.id %}">Create a labelset</a> to get started with annotations</p>
         {% else %}
         <p>Labelset: <a href="{% url labelset_main source.id %}">View labelset</a></p>
         {% endif %}
+        </div>
 
-        {% get_obj_perms user for source as "source_perms" %}
-        {% if "source_admin" in source_perms %}
-        <a href="{% url source_edit source.id %}">{% trans 'Edit Source Details' %}</a>
-        {% endif %}
+    <div>
+    {% get_obj_perms user for source as "source_perms" %}
+    {% if "source_admin" in source_perms %}
+    <a href="{% url source_edit source.id %}">{% trans 'Edit Source Details' %}</a>
+    {% endif %}
+    </div>
+
     </div>
 
     <hr />
@@ -45,11 +65,16 @@
         <h2>Latest images</h2>
         {% if latest_images %}
             {% for image in latest_images %}
+                <span class="thumb_small_wrapper">
                 <a href="{% url image_detail source.id image.id %}">
-                    <img src="{% thumbnail image.original_file 100x100 %}"
+                    <img class="thumb_small"
+                         src="{% thumbnail image.original_file 100x100 %}"
                          title="{{ image.get_image_element_title }}"/>
                 </a>
+                </span>
             {% endfor %}
+            <p>Total images: {{ stats.num_images }}</p>
+            <p>Total annotations: {{ stats.num_annotations }}</p>
         {% else %}
             <p>(No images yet)</p>
         {% endif %}

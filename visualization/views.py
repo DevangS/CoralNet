@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
@@ -7,12 +6,7 @@ from guardian.decorators import permission_required
 from annotations.models import Annotation, Label
 from images.models import Source, Value1, Value2, Value3, Value4, Value5, Image
 from visualization.forms import VisualizationSearchForm
-import os
-
-try:
-    from PIL import Image as PILImage
-except ImportError:
-    import Image as PILImage
+from visualization.utils import generate_patch_if_doesnt_exist
 
 
 @permission_required('source_admin', (Source, 'id', 'source_id'))
@@ -123,7 +117,6 @@ def visualize_source(request, source_id):
         for index, annotation in enumerate(images.object_list):
 
             patchPath = "data/annotations/" + str(annotation.id) + ".jpg"
-            patchFullPath = os.path.join(settings.MEDIA_ROOT, patchPath)
 
             images.object_list[index] = dict(
                 fullImage=annotation.image,
@@ -133,47 +126,7 @@ def visualize_source(request, source_id):
                 pointNum=annotation.point.point_number,
             )
 
-            #check if patch exists for the annotation
-            try:
-                PILImage.open(patchFullPath)
-
-            #otherwise generate the patch
-            except IOError:
-
-                originalPath = annotation.image.original_file
-                image = PILImage.open(originalPath)
-
-                max_x = annotation.image.original_width
-                max_y = annotation.image.original_height
-                x = annotation.point.column
-                y = annotation.point.row
-
-                if x-75 > 0:
-                    left = x-75
-                else:
-                    left = 0
-
-                if x+75 < max_x:
-                    right = x+75
-                else:
-                    right = max_x
-
-                if y-75 > 0:
-                    upper = y-75
-                else:
-                    upper = 0
-
-                if y+75 < max_y:
-                    lower = y+75
-                else:
-                    lower = max_y
-
-                #mark the subrectangle to be select from the image
-                box = (left,upper,right,lower)
-
-                #get the image, crops it, saves it, and adds to all_images
-                region = image.crop(box)
-                region.save(patchFullPath)
+            generate_patch_if_doesnt_exist(patchPath, annotation)
 
     return render_to_response('visualization/visualize_source.html', {
         'errors': errors,

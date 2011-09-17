@@ -123,13 +123,20 @@ def source_main(request, source_id):
     # Having to manually code the redirect to login is slightly annoying.
     if source.visible_to_user(request.user):
         members = source.get_members()
-        latest_images = source.get_all_images().order_by('-upload_date')[:5]
+        all_images = source.get_all_images()
+        latest_images = all_images.order_by('-upload_date')[:5]
+
+        stats = dict(
+            num_images=all_images.count(),
+            num_annotations=Annotation.objects.filter(image__source=source).count(),
+        )
 
         return render_to_response('images/source_main.html', {
             'source': source,
             'loc_keys': ', '.join(source.get_key_list()),
             'members': members,
             'latest_images': latest_images,
+            'stats': stats,
             },
             context_instance=RequestContext(request)
             )

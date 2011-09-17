@@ -9,6 +9,7 @@ from guardian.decorators import permission_required
 from annotations.forms import NewLabelForm, NewLabelSetForm
 from annotations.models import Label, LabelSet, Annotation
 from images.models import Source, Image, Point
+from visualization.utils import generate_patch_if_doesnt_exist
 
 @login_required
 def label_new(request):
@@ -223,11 +224,41 @@ def label_main(request, label_id):
     sources_with_label = Source.objects.filter(labelset__labels=label).order_by('name')
     visible_sources_with_label = [s for s in sources_with_label if s.visible_to_user(request.user)]
 
-    patches = None
+    # Differentiate between the sources that the user is part of
+    # and the other public sources.  Sort the source list accordingly, too.
+    sources_of_user = Source.get_sources_of_user(request.user)
+
+    source_types = []
+    for s in visible_sources_with_label:
+        if s in sources_of_user:
+            source_types.append('mine')
+        else:
+            source_types.append('public')
+
+    visible_sources_with_label = zip(source_types, visible_sources_with_label)
+    visible_sources_with_label.sort(key=lambda x: x[0])  # Mine first, then public
+
+    # Example patches.
+    # TODO: don't hardcode the patch path
+    example_annotations = Annotation.objects.filter(label=label, image__source__visibility='b').order_by('?')[:5]
+    patches = [dict(
+                  annotation=a,
+                  fullImage=a.image,
+                  source=a.image.source,
+                  patchPath="data/annotations/" + str(a.id) + ".jpg",
+                  row=a.point.row,
+                  col=a.point.column,
+                  pointNum=a.point.point_number,
+              )
+              for a in example_annotations]
+
+    for p in patches:
+        generate_patch_if_doesnt_exist(p['patchPath'], p['annotation'])
+
 
     return render_to_response('annotations/label_main.html', {
         'label': label,
-        'sources_with_label': visible_sources_with_label,
+        'visible_sources_with_label': visible_sources_with_label,
         'patches': patches,
         },
         context_instance=RequestContext(request)

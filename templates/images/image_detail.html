@@ -43,23 +43,24 @@
     <button type="button" id="scaledWidthButton" onclick="setImageToScaledWidth()">Scale image to page</button>
 
     <img id="coralImage" src="{{ image.original_file.url }}" />
-
+    
     <hr />
-    <fieldset>
+
+    <div class="detail_list">
+    
+    <div>
     {% for detail in detailsets.keys %}
         <p>{{ detail.label }}: {{ detail.value }}</p>
     {% endfor %}
-    </fieldset>
+    </div>
 
-    <hr />
-    <fieldset>
+    <div>
     <p>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</p>
     <p>Upload date: {{ image.upload_date }}</p>
     <p>Uploaded by: {{ image.uploaded_by|default:"(Unknown)" }}</p>
-    </fieldset>
+    </div>
 
-    <hr />
-    <fieldset>
+    <div>
     {% for detail in detailsets.other_info %}
         {% if detail.value %}
             {% if detail.name == 'comments' %}
@@ -70,12 +71,16 @@
             {% endif %}
         {% endif %}
     {% endfor %}
-    </fieldset>
+    </div>
 
+    <div>
     {% get_obj_perms user for source as "source_perms" %}
     {% if "source_admin" in source_perms %}
     <a href="{% url image_detail_edit source.id image.id %}">{% trans 'Edit Image Details' %}</a>
     {% endif %}
+    </div>
+
+    </div>
 
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
