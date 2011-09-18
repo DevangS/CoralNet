@@ -64,13 +64,17 @@ class ImageSourceForm(ModelForm):
         return super(ImageSourceForm, self).clean()
 
 
-class ImageUploadFormBasic(Form):
+class ImageUploadForm(Form):
     files = ImageField(
         label='Image files',
         widget=FileInput(attrs={'multiple': 'multiple'}))
 
 
-class ImageUploadForm(ImageUploadFormBasic):
+class ImageUploadOptionsForm(Form):
+    """
+    Helper form for the ImageUploadForm.
+    Has options such as choosing to skip or replace duplicate images.
+    """
     class Media:
         css = {
             'all': ("css/uploadForm.css",)
@@ -100,7 +104,7 @@ class ImageUploadForm(ImageUploadFormBasic):
         "will_generate_points" checkbox from the form.
         """
         source = kwargs.pop('source')
-        super(ImageUploadForm, self).__init__(*args, **kwargs)
+        super(ImageUploadOptionsForm, self).__init__(*args, **kwargs)
 
         # Dynamically generate help text.
         # Show the filename format that should be used,
@@ -121,6 +125,8 @@ class ImageUploadForm(ImageUploadFormBasic):
             "Required format: %s" % filenameFormatStr + '\n' + \
             "(Example: %s)" % filenameExampleStr
 
+        # TODO: For correctness, make sure this only applies to the
+        # regular image upload form, not the image+annotation import form.
         self.additional_details = [
             """Annotation points will be automatically generated for your images.
             Your Source's point generation settings: %s""" % PointGen.db_to_readable_format(source.default_point_generation_method)

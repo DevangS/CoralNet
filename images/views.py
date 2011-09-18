@@ -19,7 +19,7 @@ from decorators import labelset_required
 
 from images.models import Source, Image, Metadata, Point, find_dupe_image
 from images.models import get_location_value_objs
-from images.forms import ImageSourceForm, ImageUploadForm, ImageDetailForm, AnnotationImportForm, ImageUploadFormBasic, LabelImportForm, PointGenForm
+from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm
 from images.utils import filename_to_metadata, PointGen
 
 from os.path import splitext
@@ -188,151 +188,6 @@ def source_edit(request, source_id):
         },
         context_instance=RequestContext(request)
         )
-
-
-@transaction.commit_on_success    # This is supposed to make sure Metadata, Value, and Image objects only save if whole form passes
-@permission_required('source_admin', (Source, 'id', 'source_id'))
-def image_upload(request, source_id):
-    """
-    View for uploading images to a source.
-
-    If one file in a multi-file upload fails to upload,
-    none of the images in the upload are saved.
-    """
-
-    source = get_object_or_404(Source, id=source_id)
-    uploadedImages = []
-    duplicates = 0
-    imagesUploaded = 0
-
-    if request.method == 'POST':
-        form = ImageUploadForm(request.POST, request.FILES, source=source)
-
-        # TODO: Figure out why it's getting 500 (NoneType object is not subscriptable)
-        # on certain combinations of files.  For example, bmp + cpc in one upload.
-        if form.is_valid():
-
-            encountered_error = False
-
-            # Need getlist instead of simply request.FILES, in order to handle
-            # multiple files.
-            fileList = request.FILES.getlist('files')
-            dupe_option = form.cleaned_data['skip_or_replace_duplicates']
-
-            for file in fileList:
-
-                filenameWithoutExtension = splitext(file.name)[0]
-
-                if form.cleaned_data['has_data_from_filenames']:
-
-                    try:
-                        metadataDict = filename_to_metadata(filenameWithoutExtension, source)
-
-                    #TODO: Have far more robust exception/error checking, which checks
-                    # not just the filename parsing, but also the validity of the image files
-                    # themselves.
-                    # The idea is you need to call is_valid() with each file somehow,
-                    # because it only checks one file per call.
-                    # Perhaps this is a good time to jump ship and go with an AJAX form which
-                    # sends files to Django one by one.
-                    except (ValueError, StopIteration):
-                        messages.error(request, 'Upload failed - Error when parsing the filename %s for metadata.' % file.name)
-                        encountered_error = True
-                        transaction.rollback()
-                        uploadedImages = []
-                        duplicatesDeleted = 0
-                        break
-
-                    # Detect duplicate images and handle them
-                    dupe = find_dupe_image(source, **metadataDict)
-                    if dupe:
-                        duplicates += 1
-                        if dupe_option == 'skip':
-                            # Skip uploading this file.
-                            continue
-                        elif dupe_option == 'replace':
-                            # Proceed uploading this file, and delete the dupe.
-                            dupe.delete()
-
-                    # Set the metadata
-                    valueDict = get_location_value_objs(source, metadataDict['values'], createNewValues=True)
-                    photoDate = date(year = int(metadataDict['year']),
-                                     month = int(metadataDict['month']),
-                                     day = int(metadataDict['day']))
-                    metadata = Metadata(name=filenameWithoutExtension,
-                                        photo_date=photoDate,
-                                        **valueDict)
-
-                else:
-                    metadata = Metadata(name=filenameWithoutExtension)
-
-                metadata.save()
-
-                point_generation_method = source.default_point_generation_method
-
-                # Save the image into the DB
-                img = Image(original_file=file,
-                        uploaded_by=request.user,
-                        point_generation_method=point_generation_method,
-                        metadata=metadata,
-                        source=source)
-                img.save()
-
-                # Generate points
-                if point_generation_method:
-                    points = PointGen.generate_points(img, **PointGen.db_to_args_format(point_generation_method))
-
-                    # Save points
-                    for pt in points:
-                        Point(row=pt['row'],
-                              column=pt['column'],
-                              point_number=pt['point_number'],
-                              image=img,
-                        ).save()
-
-                # Up to 5 uploaded images will be shown
-                # upon successful upload.
-
-                # Prepend to list, so most recent image comes first
-                uploadedImages.insert(0, img)
-                if len(uploadedImages) > 5:
-                    uploadedImages = uploadedImages[:5]
-
-                imagesUploaded += 1
-
-            if not encountered_error:
-
-                # Construct success message.
-                if dupe_option == 'replace':
-                    duplicate_msg_base = "%d duplicates replaced."
-                else:
-                    duplicate_msg_base = "%d duplicates skipped."
-
-                if duplicates > 0:
-                    duplicate_msg = duplicate_msg_base % duplicates
-                else:
-                    duplicate_msg = ''
-                    
-                uploaded_msg = "%d images uploaded." % imagesUploaded
-                success_msg = uploaded_msg + ' ' + duplicate_msg
-
-                messages.success(request, success_msg)
-
-        else:
-            messages.error(request, 'Please correct the errors below.')
-
-
-    # GET
-    else:
-        form = ImageUploadForm(source=source)
-
-    return render_to_response('images/image_upload.html', {
-        'source': source,
-        'imageUploadForm': form,
-        'uploadedImages': uploadedImages,
-        },
-        context_instance=RequestContext(request)
-    )
 
 
 # TODO: Make custom permission_required_blahblah decorators.
@@ -667,129 +522,272 @@ def annotations_file_to_python(annoFile, source):
 #
 #    file.close() #closes the file since we're done
 
-    
+
+def image_upload_process(imageFiles, optionsForm, source, currentUser, annotationData):
+
+    uploadedImages = []
+    duplicates = 0
+    imagesUploaded = 0
+    annotationsImported = 0
+
+    dupeOption = optionsForm.cleaned_data['skip_or_replace_duplicates']
+    importedUser = User.objects.get(username="Imported")
+
+    for imageFile in imageFiles:
+
+        filenameWithoutExtension = splitext(imageFile.name)[0]
+        metadataDict = None
+
+        # TODO: Determine whether we're keeping the has_data_from_filenames option
+        if annotationData or optionsForm.cleaned_data['has_data_from_filenames']:
+
+            try:
+                metadataDict = filename_to_metadata(filenameWithoutExtension, source)
+
+            # Filename parse error.
+            # TODO: check for validity of the file type and contents, too.
+            except (ValueError, StopIteration):
+                return dict(error=True,
+                    message='Upload failed - Error when parsing the filename %s for metadata.' % imageFile.name,
+                )
+
+            # Detect duplicate images and handle them
+            dupe = find_dupe_image(source, **metadataDict)
+            if dupe:
+                duplicates += 1
+                if dupeOption == 'skip':
+                    # Skip uploading this file.
+                    continue
+                elif dupeOption == 'replace':
+                    # Proceed uploading this file, and delete the dupe.
+                    dupe.delete()
+
+            # Set the metadata
+            valueDict = get_location_value_objs(source, metadataDict['values'], createNewValues=True)
+            photoDate = date(year = int(metadataDict['year']),
+                             month = int(metadataDict['month']),
+                             day = int(metadataDict['day']))
+            metadata = Metadata(name=filenameWithoutExtension,
+                                photo_date=photoDate,
+                                **valueDict)
+
+        else:
+            metadata = Metadata(name=filenameWithoutExtension)
+
+        metadata.save()
+
+        # Image + annotation import form
+        # Assumes we got the images' metadata (from filenames or otherwise)
+        if annotationData:
+
+            # Use the location values and the year to build a string identifier for the image, such as:
+            # Shore1;Reef5;...;2008
+            imageIdentifier = get_image_identifier(metadataDict['values'], metadataDict['year'])
+
+            # Use the identifier as the index into the annotation file's data.
+            imageAnnotations = annotationData[imageIdentifier]
+
+            img = Image(original_file=imageFile,
+                    uploaded_by=currentUser,
+                    point_generation_method=PointGen.args_to_db_format(
+                        point_generation_type=PointGen.Types.IMPORTED,
+                        imported_number_of_points=len(imageAnnotations)
+                    ),
+                    metadata=metadata,
+                    source=source)
+            img.save()
+
+            # Iterate over this image's annotations.
+            pointNum = 1
+            for anno in imageAnnotations:
+
+                # Save the Point in the database.
+                point = Point(row=anno['row'], column=anno['col'], point_number=pointNum, image=img)
+                point.save()
+
+                # Get the Label object for the annotation's label.
+                # TODO: Gracefully handle the case when a label's not found.
+                try:
+                    label = Label.objects.get(code=anno['label'])
+                except:
+                    raise ValidationError('Database either has no label or multiple labels with code %s.' % anno['label'])
+
+                # TODO: Check that the Label object is actually in this Source's labelset.
+                #LabelSet.objects.get(sources=source, labels=label)
+
+                # Save the Annotation in the database. Leave the user as null; we can display
+                # a null annotator as "annotation was imported".
+                annotation = Annotation(user=importedUser,
+                                        point=point, image=img, label=label, source=source)
+                annotation.save()
+
+                annotationsImported += 1
+                pointNum += 1
+
+        # Image upload form, no annotations
+        else:
+
+            point_generation_method = source.default_point_generation_method
+
+            # Save the image into the DB
+            img = Image(original_file=imageFile,
+                    uploaded_by=currentUser,
+                    point_generation_method=point_generation_method,
+                    metadata=metadata,
+                    source=source)
+            img.save()
+
+            # Generate points
+            if point_generation_method:
+                points = PointGen.generate_points(img, **PointGen.db_to_args_format(point_generation_method))
+
+                # Save points
+                for pt in points:
+                    Point(row=pt['row'],
+                          column=pt['column'],
+                          point_number=pt['point_number'],
+                          image=img,
+                    ).save()
+
+        # Up to 5 uploaded images will be shown
+        # upon successful upload.
+
+        # Prepend to list, so most recent image comes first
+        uploadedImages.insert(0, img)
+        if len(uploadedImages) > 5:
+            uploadedImages = uploadedImages[:5]
+
+        imagesUploaded += 1
+
+    # Construct success message.
+    if duplicates > 0:
+        if dupeOption == 'replace':
+            duplicateMsg = "%d duplicate images replaced." % duplicates
+        else:
+            duplicateMsg = "%d duplicate images skipped." % duplicates
+    else:
+        duplicateMsg = ''
+
+    if annotationsImported > 0:
+        annotationMsg = "%d annotations imported." % annotationsImported
+    else:
+        annotationMsg = ''
+
+    uploadedMsg = "%d images uploaded." % imagesUploaded
+    successMsg = uploadedMsg + ' ' + duplicateMsg + ' ' + annotationMsg
+
+    return dict(error=False,
+        uploadedImages=uploadedImages,
+        message=successMsg,
+    )
+
+
+@transaction.commit_on_success    # This is supposed to make sure Metadata, Value, and Image objects only save if whole form passes
+@permission_required('source_admin', (Source, 'id', 'source_id'))
+def image_upload(request, source_id):
+    """
+    View for uploading images to a source.
+
+    If one file in a multi-file upload fails to upload,
+    none of the images in the upload are saved.
+    """
+
+    source = get_object_or_404(Source, id=source_id)
+    uploadedImages = []
+
+    if request.method == 'POST':
+        imageForm = ImageUploadForm(request.POST, request.FILES)
+        optionsForm = ImageUploadOptionsForm(request.POST, source=source)
+
+        # Need getlist instead of simply request.FILES, in order to handle
+        # multiple files.
+        imageFiles = request.FILES.getlist('files')
+
+        # TODO: imageForm.is_valid() just validates the first image file.
+        # Make sure all image files are checked to be valid images.
+        if imageForm.is_valid() and optionsForm.is_valid():
+
+            resultDict = image_upload_process(imageFiles=imageFiles,
+                                              optionsForm=optionsForm,
+                                              source=source,
+                                              currentUser=request.user,
+                                              annotationData=False)
+
+            if resultDict['error']:
+                messages.error(request, resultDict['message'])
+                transaction.rollback()
+            else:
+                uploadedImages = resultDict['uploadedImages']
+                messages.success(request, resultDict['message'])
+
+        else:
+            messages.error(request, 'Please correct the errors below.')
+
+    else:
+        imageForm = ImageUploadForm()
+        optionsForm = ImageUploadOptionsForm(source=source)
+
+    return render_to_response('images/image_upload.html', {
+        'source': source,
+        'imageForm': imageForm,
+        'optionsForm': optionsForm,
+        'uploadedImages': uploadedImages,
+        },
+        context_instance=RequestContext(request)
+    )
+
+
 @transaction.commit_on_success
 @labelset_required('source_id', 'You need to create a labelset for your source before you can import annotations.')
 @permission_required('source_admin', (Source, 'id', 'source_id'))
 def annotation_import(request, source_id):
 
     source = get_object_or_404(Source, id=source_id)
-    importedUser = User.objects.get(username="Imported")
 
     uploadedImages = []
-    imagesUploaded = 0
-    annotationsImported = 0
 
     if request.method == 'POST':
-        annotationsForm = AnnotationImportForm(request.POST, request.FILES)
-        imageForm = ImageUploadFormBasic(request.POST, request.FILES)
+        annotationForm = AnnotationImportForm(request.POST, request.FILES)
+        imageForm = ImageUploadForm(request.POST, request.FILES)
+        optionsForm = ImageUploadOptionsForm(request.POST, source=source)
+
+        # Need getlist instead of simply request.FILES, in order to handle
+        # multiple files.
+        imageFiles = request.FILES.getlist('files')
 
         # TODO: imageForm.is_valid() just validates the first image file.
         # Make sure all image files are checked to be valid images.
-        if annotationsForm.is_valid() and imageForm.is_valid():
+        if annotationForm.is_valid() and imageForm.is_valid() and optionsForm.is_valid():
 
             annoFile = request.FILES['annotations_file']
-            
             annotationData = annotations_file_to_python(annoFile, source)
 
-            imageFiles = request.FILES.getlist('files')
-            encountered_error = False
+            resultDict = image_upload_process(imageFiles=imageFiles,
+                                              optionsForm=optionsForm,
+                                              source=source,
+                                              currentUser=request.user,
+                                              annotationData=annotationData)
 
-            for imageFile in imageFiles:
+            if resultDict['error']:
+                messages.error(request, resultDict['message'])
+                transaction.rollback()
+            else:
+                uploadedImages = resultDict['uploadedImages']
+                messages.success(request, resultDict['message'])
 
-                filenameWithoutExtension = splitext(imageFile.name)[0]
-
-                try:
-                    metadataDict = filename_to_metadata(filenameWithoutExtension, source)
-                except ValueError:
-                    messages.error(request, 'Upload failed - Error when parsing the filename %s for metadata.' % imageFile.name)
-                    encountered_error = True
-                    uploadedImages = []
-                    transaction.rollback()
-                    break
-
-                # Set the metadata
-                valueDict = get_location_value_objs(source, metadataDict['values'], createNewValues=True)
-                photoDate = date(year = int(metadataDict['year']),
-                                 month = int(metadataDict['month']),
-                                 day = int(metadataDict['day']))
-                metadata = Metadata(name=filenameWithoutExtension,
-                                    photo_date=photoDate,
-                                    **valueDict)
-                metadata.save()
-
-                # Use the location values and the year to build a string identifier for the image, such as:
-                # Shore1;Reef5;...;2008
-                imageIdentifier = get_image_identifier(metadataDict['values'], metadataDict['year'])
-
-                # Use the identifier as the index into the annotation file's data.
-                imageAnnotations = annotationData[imageIdentifier]
-
-                img = Image(original_file=imageFile,
-                        uploaded_by=request.user,
-                        point_generation_method=PointGen.args_to_db_format(
-                            point_generation_type=PointGen.Types.IMPORTED,
-                            imported_number_of_points=len(imageAnnotations)
-                        ),
-                        metadata=metadata,
-                        source=source)
-                img.save()
-
-                # Iterate over this image's annotations.
-                pointNum = 1
-                for anno in imageAnnotations:
-
-                    # Save the Point in the database.
-                    point = Point(row=anno['row'], column=anno['col'], point_number=pointNum, image=img)
-                    point.save()
-
-                    # Get the Label object for the annotation's label.
-                    # TODO: Gracefully handle the case when a label's not found.
-                    try:
-                        label = Label.objects.get(code=anno['label'])
-                    except:
-                        raise ValidationError('Database either has no label or multiple labels with code %s.' % anno['label'])
-
-                    # TODO: Check that the Label object is actually in this Source's labelset.
-                    #LabelSet.objects.get(sources=source, labels=label)
-
-                    # Save the Annotation in the database. Leave the user as null; we can display
-                    # a null annotator as "annotation was imported".
-                    annotation = Annotation(user=importedUser,
-                                            point=point, image=img, label=label, source=source)
-                    annotation.save()
-
-                    annotationsImported += 1
-                    pointNum += 1
-
-                imagesUploaded += 1
-
-                # Up to 5 uploaded images will be shown upon successful upload.
-                uploadedImages.insert(0, img)
-                if len(uploadedImages) > 5:
-                    uploadedImages = uploadedImages[:5]
-                
-
-            if not encountered_error:
-
-                uploaded_msg = "%d images uploaded." % imagesUploaded
-                annotations_msg = "%d annotations imported." % annotationsImported
-                success_msg = uploaded_msg + ' ' + annotations_msg
-                
-                messages.success(request, success_msg)
-            
         else:
             messages.error(request, 'Please correct the errors below.')
 
-    # GET
     else:
-        annotationsForm = AnnotationImportForm()
-        imageForm = ImageUploadFormBasic()
+        annotationForm = AnnotationImportForm()
+        imageForm = ImageUploadForm()
+        optionsForm = ImageUploadOptionsForm(source=source)
 
     return render_to_response('images/image_and_annotation_upload.html', {
         'source': source,
-        'annotationsUploadForm': annotationsForm,
-        'imageUploadForm': imageForm,
+        'annotationForm': annotationForm,
+        'imageForm': imageForm,
+        'optionsForm': optionsForm,
         'uploadedImages': uploadedImages,
         },
         context_instance=RequestContext(request)

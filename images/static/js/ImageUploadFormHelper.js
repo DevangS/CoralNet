@@ -4,11 +4,20 @@ var ImageUploadFormHelper = {
     previewTable: null,
 
     sourceId: null,
+    hasAnnotations: null,
 
     numOfDupes: 0,
     numOfErrors: 0,
 
-    initForm: function(previewAreaId, sourceId){
+    initForm: function(previewAreaId, sourceId, hasAnnotations){
+
+        // Initializing.
+        this.previewArea = $('#' + previewAreaId);
+        this.sourceId = sourceId;
+        this.hasAnnotations = hasAnnotations;
+
+        this.previewTable = $("<table>").attr("id", "previewTable");
+        this.previewArea.append(this.previewTable);
 
         // Initialize the status of form fields (show/hide, etc.).
         this.updateFormFields();
@@ -22,13 +31,6 @@ var ImageUploadFormHelper = {
             ImageUploadFormHelper.previewUpload();
             ImageUploadFormHelper.updateFormFields();
         });
-
-        // More initializing.
-        this.previewArea = $('#' + previewAreaId);
-        this.sourceId = sourceId;
-
-        this.previewTable = $("<table>").attr("id", "previewTable");
-        this.previewArea.append(this.previewTable);
     },
 
     filesizeDisplay: function(bytes) {
@@ -129,7 +131,13 @@ var ImageUploadFormHelper = {
         }
         else {
             $("#id_upload_submit").attr('disabled', false);
-            $("#id_upload_submit").attr('value', "Upload Images");
+
+            if (this.hasAnnotations) {
+                $("#id_upload_submit").attr('value', "Upload Images and Annotations");
+            }
+            else {
+                $("#id_upload_submit").attr('value', "Upload Images");
+            }
         }
     },
 

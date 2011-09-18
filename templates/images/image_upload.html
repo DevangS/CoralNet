@@ -7,7 +7,7 @@
 {% block media-includes %}
   {{ block.super }}
   {% dajaxice_js_import %}
-  {{ imageUploadForm.media }} {# CSS and JS #}
+  {{ optionsForm.media }} {# CSS and JS #}
 {% endblock %}
 
 {% block content %}
@@ -32,13 +32,14 @@
     <legend>Upload Images</legend>
 
     <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-        {% include "form_generic.html" with form=imageUploadForm %}
-        {% for detail in imageUploadForm.additional_details %}
+        {% include "form_generic.html" with form=imageForm %}
+        {% include "form_generic.html" with form=optionsForm %}
+        {% for detail in optionsForm.additional_details %}
             <span class="helptext">{{ detail|linebreaksbr }}</span>
         {% endfor %}
 
         <div class="submit_button_wrapper">
-            <input type="submit" id="id_upload_submit" value="Upload Images" />
+            <input type="submit" id="id_upload_submit" value="To be filled in with JS" />
         </div>
     </form>
 
@@ -50,7 +51,7 @@
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
 
-        ImageUploadFormHelper.initForm("previewArea", {{ source.id }});
+        ImageUploadFormHelper.initForm("previewArea", {{ source.id }}, false);
 
     </script>
 
