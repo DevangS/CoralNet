@@ -1,4 +1,4 @@
-from datetime import date, datetime
+import datetime
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -15,7 +15,8 @@ from userena.models import User
 from guardian.decorators import permission_required
 from guardian.shortcuts import assign
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
-from decorators import labelset_required
+from CoralNet.decorators import labelset_required
+from CoralNet.exceptions import FileContentError
 
 from images.models import Source, Image, Metadata, Point, find_dupe_image
 from images.models import get_location_value_objs
@@ -414,9 +415,11 @@ def annotations_file_to_python(annoFile, source):
     # If we encounter a case where we have a filename, use the below:
     #annoFile = open(annoFile, 'r')
 
-    parseErrorMsg = 'Error parsing line %d in the annotations file:\n%s'
+    # Format args: line number, line contents, error message
+    parseErrorMsgBase = 'On line %d:\n%s\n%s'
     
     numOfKeys = source.num_of_keys()
+    uniqueLabelCodes = []
 
     # The order of the words/tokens is encoded here.  If the order ever
     # changes, we should only have to change this part.
@@ -433,18 +436,47 @@ def annotations_file_to_python(annoFile, source):
         cleanedLine = line.strip().replace("; ", ';')
         words = cleanedLine.split(';')
 
-        # Check that the basic line formatting is right, i.e. all words/tokens are there.
+        # Check that all words/tokens are there.
         if len(words) != numOfWordsExpected:
-            raise ValueError(parseErrorMsg % (lineNum, line))
+            raise FileContentError(parseErrorMsgBase % (lineNum, line, "We expected %d pieces of data, but only found %d." % (numOfWordsExpected, len(words)) ))
 
         # Encode the line data into a dictionary: {'value1':'Shore2', 'row':'575', ...}
         lineData = dict(zip(wordsFormat, words))
 
+        
+        # Check that the label code corresponds to a label in the database
+        # and in the source's labelset.
+        # Only check this if the label code hasn't been seen before
+        # in the annotations file.
+        labelCode = lineData['label']
+        if labelCode not in uniqueLabelCodes:
+
+            labelObjs = Label.objects.filter(code=labelCode)
+            if len(labelObjs) == 0:
+                raise FileContentError(parseErrorMsgBase % (lineNum, line, "This line has label code %s, but our database has no label with this code." % labelCode))
+
+            labelObj = labelObjs[0]
+            if labelObj not in source.labelset.labels.all():
+                raise FileContentError(parseErrorMsgBase % (lineNum, line, "This line has label code %s, but your labelset has no label with this code." % labelCode))
+
+            uniqueLabelCodes.append(labelCode)
+
+        # Get and check the photo year to make sure it's valid.
+        # We'll assume the year is the first 4 characters of the date.
+        year = lineData['date'][:4]
+        try:
+            datetime.date(int(year),1,1)
+        # Year is non-coercable to int, or year is out of range (e.g. 0 or negative)
+        except ValueError:
+            raise FileContentError(parseErrorMsgBase % (lineNum, line, "%s is not a valid year." % year))
+
+        # TODO: Check if the row and col in this line are a valid row and col
+        # for the image.  Need the image to do that, though...
+
+
         # Use the location values and the year to build a string identifier for the image, such as:
         # Shore1;Reef5;...;2008
-        # We'll assume the year is the first 4 characters of the date.
         valueList = [lineData['value'+str(i)] for i in range(1,numOfKeys+1)]
-        year = lineData['date'][:4]
         imageIdentifier = get_image_identifier(valueList, year)
 
         # Add/update a dictionary entry for the image with this identifier.
@@ -460,70 +492,9 @@ def annotations_file_to_python(annoFile, source):
     annoFile.close()
 
     return annotationsDict
-        
-
-# Below: The old equivalent of annotations_file_to_python + database insertion.
-# Before removing this (and the URL associated with this method), check that the existing
-# code covers everything that this method tries to do.
-
-#def import_annotations(request, source_id, fileLocation):
-#    source = get_object_or_404(Source, id=source_id)
-#    file = open(fileLocation, 'r') #opens the file for reading
-#    count = 0 #keeps track of total points in one image
-#    prevImg = None #keeps track of the image processed on the previous iteration
-#
-#    #iterate over each line in the file and processes it
-#    for line in file:
-#        #sanitizes and splits apart the string/line
-#        line = line.replace("; ", ';')
-#        words = line.split(';')
-#
-#        #gets the 5 values that would describe the image
-#        value1 = get_object_or_404(Value1, name=words[0], source=source)
-#        value2 = get_object_or_404(Value2, name=words[1], source=source)
-#        value3 = get_object_or_404(Value3, name=words[2], source=source)
-#        value4 = get_object_or_404(Value4, name=words[3], source=source)
-#        value5 = get_object_or_404(Value5, name=words[4], source=source)
-#
-#        #there should be one unique image that has the 5 values above, so get that image
-#        metadata = get_object_or_404(Metadata, value1=value1,
-#                                     value2=value2, value3=value3,
-#                                     value4=value4, value5=value5)
-#        image = get_object_or_404(Image, metadata=metadata)
-#
-#        #check if this is the first image being processed
-#        if prevImg is None:
-#            prevImg = image
-#
-#        #if the previous image was the same as this one, increment the point count
-#        if prevImg == image:
-#            count += 1
-#        else:
-#            count = 1
-#
-#        prevImg = image
-#
-#        #gets the label for the point, assumes it's already in the database
-#        label = get_object_or_404(Label, name=words[8])
-#        get_object_or_404(LabelSet, sources=source, labels=label) #check that label is in labelset
-#        row = int(words[6])
-#        col = int(words[7])
-#
-#        #creates a point object and saves it in the database
-#        point = Point(row=row, col=col, point_number=count, image=image)
-#        point.save()
-#
-#        #creates an annotation object and saves it in the database
-#        annotation = Annotation(annotation_date=datetime.now(), point=point, image=image,
-#                                label=label, source=source)
-#        annotation.save()
-#
-#        #end for loop
-#
-#    file.close() #closes the file since we're done
 
 
-def image_upload_process(imageFiles, optionsForm, source, currentUser, annotationData):
+def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile):
 
     uploadedImages = []
     duplicates = 0
@@ -532,6 +503,15 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annotatio
 
     dupeOption = optionsForm.cleaned_data['skip_or_replace_duplicates']
     importedUser = User.objects.get(username="Imported")
+
+    annotationData = None
+    if annoFile:
+        try:
+            annotationData = annotations_file_to_python(annoFile, source)
+        except FileContentError as errorDetail:
+            return dict(error=True,
+                message='Error reading labels file %s. %s' % (annoFile.name, errorDetail),
+            )
 
     for imageFile in imageFiles:
 
@@ -564,7 +544,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annotatio
 
             # Set the metadata
             valueDict = get_location_value_objs(source, metadataDict['values'], createNewValues=True)
-            photoDate = date(year = int(metadataDict['year']),
+            photoDate = datetime.date(year = int(metadataDict['year']),
                              month = int(metadataDict['month']),
                              day = int(metadataDict['day']))
             metadata = Metadata(name=filenameWithoutExtension,
@@ -585,6 +565,12 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annotatio
             imageIdentifier = get_image_identifier(metadataDict['values'], metadataDict['year'])
 
             # Use the identifier as the index into the annotation file's data.
+            if not annotationData.has_key(imageIdentifier):
+                return dict(error=True,
+                    message='%s seems to have no annotations for the image file %s, which has the following keys:\n%s' % (
+                        annoFile.name, imageFile.name, imageIdentifier.replace(';',' '))
+                )
+
             imageAnnotations = annotationData[imageIdentifier]
 
             img = Image(original_file=imageFile,
@@ -597,7 +583,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annotatio
                     source=source)
             img.save()
 
-            # Iterate over this image's annotations.
+            # Iterate over this image's annotations and save them if the .
             pointNum = 1
             for anno in imageAnnotations:
 
@@ -605,15 +591,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annotatio
                 point = Point(row=anno['row'], column=anno['col'], point_number=pointNum, image=img)
                 point.save()
 
-                # Get the Label object for the annotation's label.
-                # TODO: Gracefully handle the case when a label's not found.
-                try:
-                    label = Label.objects.get(code=anno['label'])
-                except:
-                    raise ValidationError('Database either has no label or multiple labels with code %s.' % anno['label'])
-
-                # TODO: Check that the Label object is actually in this Source's labelset.
-                #LabelSet.objects.get(sources=source, labels=label)
+                label = Label.objects.filter(code=anno['label'])[0]
 
                 # Save the Annotation in the database. Leave the user as null; we can display
                 # a null annotator as "annotation was imported".
@@ -711,7 +689,7 @@ def image_upload(request, source_id):
                                               optionsForm=optionsForm,
                                               source=source,
                                               currentUser=request.user,
-                                              annotationData=False)
+                                              annoFile=None)
 
             if resultDict['error']:
                 messages.error(request, resultDict['message'])
@@ -760,13 +738,12 @@ def annotation_import(request, source_id):
         if annotationForm.is_valid() and imageForm.is_valid() and optionsForm.is_valid():
 
             annoFile = request.FILES['annotations_file']
-            annotationData = annotations_file_to_python(annoFile, source)
 
             resultDict = image_upload_process(imageFiles=imageFiles,
                                               optionsForm=optionsForm,
                                               source=source,
                                               currentUser=request.user,
-                                              annotationData=annotationData)
+                                              annoFile=annoFile)
 
             if resultDict['error']:
                 messages.error(request, resultDict['message'])
