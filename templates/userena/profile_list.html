@@ -1,9 +1,12 @@
 {% extends 'base.html' %}
 {% load i18n %}
 
-{% block content_title %}<h2 class="content-title">{% trans 'Profiles' %}</h2>{% endblock %}
+{% block selected_userena_profile_list %}selected{% endblock %}
 
 {% block content %}
+
+<h2 class="content-title">{% trans 'Profiles' %}</h2>
+
 <ul id="account_list">
     {% for profile in profile_list %}
     <li>

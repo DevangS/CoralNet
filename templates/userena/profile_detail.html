@@ -2,7 +2,6 @@
 {% load i18n %}
 
 {% block title %}{{ profile.user.username }}'s {% trans "profile" %}.{% endblock %}
-{% block content_title %}<h2 class="content-title">{{ profile.user.username }} {% if profile.user.get_full_name %}({{ profile.user.get_full_name }}){% endif %}</h2>{% endblock %}
 
 {# Don't show the profile menu if you're viewing someone else's profile #}
 {% block nav_profile %}

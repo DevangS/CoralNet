@@ -17,8 +17,11 @@
         by child templates to specify which link gets the "selected" style.
         {% endcomment %}
 
+        <li class="{% block selected_userena_profile_list %}{% endblock %}">
+            <a href="{% url userena_profile_list %}"><span>{% trans 'All profiles' %}</span></a>
+        </li>
         <li class="{% block selected_userena_profile_detail %}{% endblock %}">
-            <a href="{% url userena_profile_detail user.username %}"><span>{% trans "View profile" %}</span></a>
+            <a href="{% url userena_profile_detail user.username %}"><span>{% trans "Your profile" %}</span></a>
         </li>
         <li class="{% block selected_userena_profile_edit %}{% endblock %}">
             <a href="{% url userena_profile_edit user.username %}"><span>{% trans "Edit details" %}</span></a>
