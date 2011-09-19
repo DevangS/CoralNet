@@ -27,10 +27,12 @@ var ImageUploadFormHelper = {
             ImageUploadFormHelper.previewUpload();
             ImageUploadFormHelper.updateFormFields();
         });
-        $("#id_has_data_from_filenames").change( function(){
+
+        // This'll become relevant again when we support other methods of specifying metadata
+/*        $("#id_specify_metadata").change( function(){
             ImageUploadFormHelper.previewUpload();
             ImageUploadFormHelper.updateFormFields();
-        });
+        });*/
     },
 
     filesizeDisplay: function(bytes) {
@@ -100,7 +102,7 @@ var ImageUploadFormHelper = {
         }
 
         // AJAX call to a Django method in ajax.py of this app
-        if ($("#id_has_data_from_filenames").attr("checked")) {
+        if ($("#id_specify_metadata").val() == 'filenames') {
             Dajaxice.CoralNet.images.ajax_assess_file_status(
                 this.ajaxUpdateStatus,    // JS callback that the ajax.py method returns to.
                 {'filenames': filenameList,
@@ -118,7 +120,7 @@ var ImageUploadFormHelper = {
     },
 
     updateFormFields: function() {
-        if ($("#id_has_data_from_filenames").attr("checked")) {
+        if ($("#id_specify_metadata").val() == 'filenames') {
             $("#id_skip_or_replace_duplicates_wrapper").show();
         }
         else {

@@ -86,16 +86,19 @@ class ImageUploadOptionsForm(Form):
             "js/ImageUploadFormHelper.js",
         )
 
-    has_data_from_filenames = BooleanField(
-        label='Collect metadata from filenames',
-        initial=True,
-        required=False)
+    specify_metadata = ChoiceField(
+        label='How to specify metadata',
+        help_text='',  # To be filled in by the form constructor
+        choices=(('filenames', 'From filenames'),),
+        initial='filenames',
+        required=True)
 
     skip_or_replace_duplicates = ChoiceField(
         label='Skip or replace duplicate images',
-        help_text="Duplicates are defined as images with the same location keys and year.",
+        help_text="Skip (don't upload) or replace (re-upload) images that have duplicates in your Source.\n"
+                  "Duplicates are defined as images with the same location keys and year.",
         choices=(('skip', 'Skip'), ('replace', 'Replace')),
-        required=False)
+        required=True)
 
     def __init__(self, *args, **kwargs):
         """
@@ -121,8 +124,8 @@ class ImageUploadOptionsForm(Form):
         filenameFormatStr = metadata_to_filename(**filenameFormatArgs)
         filenameExampleStr = metadata_to_filename(**filenameExampleArgs) + ".jpg"
 
-        self.fields['has_data_from_filenames'].help_text = \
-            "Required format: %s" % filenameFormatStr + '\n' + \
+        self.fields['specify_metadata'].help_text = \
+            "Required filename format: %s" % filenameFormatStr + '\n' + \
             "(Example: %s)" % filenameExampleStr
 
         # TODO: For correctness, make sure this only applies to the

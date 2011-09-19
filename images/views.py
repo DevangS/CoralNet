@@ -518,8 +518,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
         filenameWithoutExtension = splitext(imageFile.name)[0]
         metadataDict = None
 
-        # TODO: Determine whether we're keeping the has_data_from_filenames option
-        if annotationData or optionsForm.cleaned_data['has_data_from_filenames']:
+        if optionsForm.cleaned_data['specify_metadata'] == 'filenames':
 
             try:
                 metadataDict = filename_to_metadata(filenameWithoutExtension, source)
