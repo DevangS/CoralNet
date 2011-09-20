@@ -1,55 +1,88 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
 
-class Migration(SchemaMigration):
+class Migration(DataMigration):
 
     depends_on = (
         ("guardian", "0005_auto__chg_field_groupobjectpermission_object_pk__chg_field_userobjectp"),
     )
 
     def forwards(self, orm):
+        print "-----"
+
+        ct = orm['contenttypes.ContentType'].objects.get(model='source', app_label='images') # model must be lowercase
+
+        print "Will create the Source View and Edit permission types, if they don't already exist in the auth system..."
+
+        view_perm, created = orm['auth.permission'].objects.get_or_create(
+            content_type=ct, codename=u'source_view', defaults={'name': u'View'})
+        if created:
+            print "Source View permission type created."
+        else:
+            print "Source View permission type already exists."
+
+        edit_perm, created = orm['auth.permission'].objects.get_or_create(
+            content_type=ct, codename=u'source_edit', defaults={'name': u'Edit'})
+        if created:
+            print "Source Edit permission type created."
+        else:
+            print "Source Edit permission type already exists."
+
+        print ""
+        print "Next, we'll grant View and Edit permissions for all current Source Admins."
+
+        admin_perm = orm['auth.permission'].objects.get(content_type=ct, codename=u'source_admin')
         
-        # Renaming field 'Metadata.description' to 'Metadata.comments'
-        db.rename_column('images_metadata', 'description', 'comments')
+        for p in orm['guardian.userobjectpermission'].objects.filter(permission=admin_perm):
+            source = orm['images.source'].objects.get(pk=p.object_pk)
 
-        # Adding field 'Metadata.latitude'
-        db.add_column('images_metadata', 'latitude', self.gf('django.db.models.fields.CharField')(default='', max_length=20, blank=True), keep_default=False)
+            view_userobjperm, created = orm['guardian.userobjectpermission'].objects.get_or_create(
+                permission=view_perm, object_pk=p.object_pk, user=p.user, content_type=ct)
+            if created:
+                print "User %s has been granted View permission for Source %s." % (p.user.username, source.name)
+            else:
+                print "User %s already has View permission to for Source %s." % (p.user.username, source.name)
 
-        # Adding field 'Metadata.longitude'
-        db.add_column('images_metadata', 'longitude', self.gf('django.db.models.fields.CharField')(default='', max_length=20, blank=True), keep_default=False)
+            edit_userobjperm, created = orm['guardian.userobjectpermission'].objects.get_or_create(
+                permission=edit_perm, object_pk=p.object_pk, user=p.user, content_type=ct)
+            if created:
+                print "User %s has been granted Edit permission for Source %s." % (p.user.username, source.name)
+            else:
+                print "User %s already has Edit permission to for Source %s." % (p.user.username, source.name)
 
-        # Adding field 'Metadata.depth'
-        db.add_column('images_metadata', 'depth', self.gf('django.db.models.fields.CharField')(default='', max_length=45, blank=True), keep_default=False)
-
-        # Adding field 'Metadata.framing'
-        db.add_column('images_metadata', 'framing', self.gf('django.db.models.fields.CharField')(default='', max_length=200, blank=True), keep_default=False)
-
-        # Adding field 'Metadata.balance'
-        db.add_column('images_metadata', 'balance', self.gf('django.db.models.fields.CharField')(default='', max_length=200, blank=True), keep_default=False)
+        print "Done."
+        print "-----"
 
 
     def backwards(self, orm):
+        print "-----"
+        print "NOTE: This backwards migration will remove all instances of the View and Edit Source permissions in the database."
 
-        # Renaming field 'Metadata.comments' to 'Metadata.description'
-        db.rename_column('images_metadata', 'comments', 'description')
+        ct = orm['contenttypes.ContentType'].objects.get(model='source', app_label='images') # model must be lowercase
 
-        # Deleting field 'Metadata.latitude'
-        db.delete_column('images_metadata', 'latitude')
+        view_perm = orm['auth.permission'].objects.get(content_type=ct, codename=u'source_view')
+        edit_perm = orm['auth.permission'].objects.get(content_type=ct, codename=u'source_edit')
 
-        # Deleting field 'Metadata.longitude'
-        db.delete_column('images_metadata', 'longitude')
+        for p in orm['guardian.userobjectpermission'].objects.filter(permission=view_perm, content_type=ct):
+            source = orm['images.source'].objects.get(pk=p.object_pk)
+            p.delete()
+            print "User %s's View permission for Source %s has been removed." % (p.user.username, source.name)
 
-        # Deleting field 'Metadata.depth'
-        db.delete_column('images_metadata', 'depth')
+        for p in orm['guardian.userobjectpermission'].objects.filter(permission=edit_perm, content_type=ct):
+            source = orm['images.source'].objects.get(pk=p.object_pk)
+            p.delete()
+            print "User %s's Edit permission for Source %s has been removed." % (p.user.username, source.name)
 
-        # Deleting field 'Metadata.framing'
-        db.delete_column('images_metadata', 'framing')
+        view_perm.delete()
+        print "Removed the View Source permission type."
+        edit_perm.delete()
+        print "Removed the Edit Source permission type."
 
-        # Deleting field 'Metadata.balance'
-        db.delete_column('images_metadata', 'balance')
+        print "Done."
+        print "-----"
 
 
     models = {

@@ -62,6 +62,8 @@ class Source(models.Model):
     # Permissions for users to perform actions on Sources
     class Meta:
         permissions = (
+            ('source_view', 'View'),
+            ('source_edit', 'Edit'),
             ('source_admin', 'Admin'),
         )
 
