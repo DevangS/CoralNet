@@ -243,7 +243,7 @@ def label_main(request, label_id):
 
     # Example patches.
     # TODO: don't hardcode the patch path
-    example_annotations = Annotation.objects.filter(label=label, image__source__visibility='b').order_by('?')[:5]
+    example_annotations = Annotation.objects.filter(label=label, image__source__visibility=Source.VisibilityTypes.PUBLIC).order_by('?')[:5]
     patches = [dict(
                   annotation=a,
                   fullImage=a.image,

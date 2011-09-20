@@ -1,26 +1,28 @@
-import random
-import string
-from os.path import splitext
-
-import settings
+from django.conf import settings
 from django.db import models
 
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
-from guardian.shortcuts import get_objects_for_user, get_perms
+from guardian.shortcuts import get_objects_for_user, get_users_with_perms
 from images.utils import PointGen
 from CoralNet.utils import generate_random_filename
 
 class Source(models.Model):
 
+    class VisibilityTypes():
+        PUBLIC = 'b'
+        PUBLIC_VERBOSE = 'Public'
+        PRIVATE = 'v'
+        PRIVATE_VERBOSE = 'Private'
+
     # Example: 'Moorea'
     name = models.CharField(max_length=200, unique=True)
 
     VISIBILITY_CHOICES = (
-        ('b', "Public"),
-        ('v', "Private"),
+        (VisibilityTypes.PUBLIC, VisibilityTypes.PUBLIC_VERBOSE),
+        (VisibilityTypes.PRIVATE, VisibilityTypes.PRIVATE_VERBOSE),
     )
-    visibility = models.CharField(max_length=1, choices=VISIBILITY_CHOICES, default='v')
+    visibility = models.CharField(max_length=1, choices=VISIBILITY_CHOICES, default=VisibilityTypes.PRIVATE)
 
     # Automatically set to the date and time of creation.
     create_date = models.DateTimeField('Date created', auto_now_add=True, editable=False)
@@ -68,32 +70,26 @@ class Source(models.Model):
     ##########
     @staticmethod
     def get_public_sources():
-        return [source for source in Source.objects.all()
-                if source.visibility == 'b']
+        return Source.objects.filter(visibility=Source.VisibilityTypes.PUBLIC)
 
     @staticmethod
     def get_sources_of_user(user):
+        # For superusers, this returns ALL sources.
         return get_objects_for_user(user, 'images.source_admin')
 
-    #TODO: There's probably a way to optimize this, as well as any code
-    # that uses both get_sources_of_user and get_other_public_sources
     @staticmethod
     def get_other_public_sources(user):
-        return [source for source in Source.objects.all()
-                if (source.visibility == 'b' and source not in Source.get_sources_of_user(user))]
+        return [source for source in Source.get_public_sources()
+                if source not in Source.get_sources_of_user(user)]
 
-    #TODO: get rid of the 'user.is_superuser' hack.  That's just to prevent superusers from
-    #appearing in every single Source's member list, but it also prevents superusers from
-    #using Sources at all.
     def has_member(self, user):
-        return (get_perms(user, self) != []) and not user.is_superuser
+        return user in self.get_members()
 
     def get_members(self):
-        return [user for user in User.objects.all()
-                if self.has_member(user) ]
+        return get_users_with_perms(self)
 
     def visible_to_user(self, user):
-        return (self.visibility == 'b') or self.has_member(user)
+        return (self.visibility == Source.VisibilityTypes.PUBLIC) or self.has_member(user)
 
     def get_all_images(self):
         return Image.objects.filter(source=self)
