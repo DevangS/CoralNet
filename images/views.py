@@ -209,7 +209,7 @@ def source_invite(request, source_id):
 
     if request.method == 'POST':
 
-        inviteForm = SourceInviteForm(request.POST)
+        inviteForm = SourceInviteForm(request.POST, source_id=source_id)
 
         if inviteForm.is_valid():
 
@@ -227,7 +227,7 @@ def source_invite(request, source_id):
             messages.error(request, 'Please correct the errors below.')
     else:
         # Just reached this form page
-        inviteForm = SourceInviteForm()
+        inviteForm = SourceInviteForm(source_id=source_id)
 
     return render_to_response('images/source_invite.html', {
         'source': source,
@@ -250,7 +250,7 @@ def invites_manage(request):
                 invite = SourceInvite.objects.get(sender__id=sender_id, recipient=request.user, source__id=source_id)
             except SourceInvite.DoesNotExist:
                 messages.error(request, "Sorry, there was an error with this invite.\n"
-                                        "Maybe the user who sent it withdrew the invite.")
+                                        "Maybe the user who sent it withdrew the invite, or you already accepted or declined earlier.")
             else:
                 if 'accept' in request.POST:
                     source = Source.objects.get(id=source_id)
@@ -264,8 +264,8 @@ def invites_manage(request):
                     messages.success(request, 'Invite declined.')
 
         elif 'delete' in request.POST:
-            recipient_id = request.POST['recipient'][0]
-            source_id = request.POST['source'][0]
+            recipient_id = request.POST['recipient']
+            source_id = request.POST['source']
 
             try:
                 invite = SourceInvite.objects.get(recipient__id=recipient_id, sender=request.user, source__id=source_id)

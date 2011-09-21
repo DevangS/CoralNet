@@ -220,6 +220,13 @@ class SourceInvite(models.Model):
         # A user can only be invited once to a source.
         unique_together = ['recipient', 'source']
 
+    def source_perm_verbose(self):
+        for permType in [Source.PermTypes.ADMIN,
+                         Source.PermTypes.EDIT,
+                         Source.PermTypes.VIEW]:
+            if self.source_perm == permType.code:
+                return permType.verbose
+
 
 class LocationValue(models.Model):
     class Meta:

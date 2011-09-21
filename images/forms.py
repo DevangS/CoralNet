@@ -79,6 +79,10 @@ class SourceInviteForm(Form):
     source_perm = ChoiceField(label='Permission level',
                               choices=SourceInvite._meta.get_field('source_perm').choices)
 
+    def __init__(self, *args, **kwargs):
+        self.source_id = kwargs.pop('source_id')
+        super(SourceInviteForm, self).__init__(*args, **kwargs)
+
     def clean_recipient(self):
         """
         This method cleans the recipient field of a submitted form.
@@ -96,9 +100,38 @@ class SourceInviteForm(Form):
         try:
             User.objects.get(username=recipientUsername)
         except User.DoesNotExist:
-            raise ValidationError("There is no user with the username %s." % recipientUsername)
+            raise ValidationError("There is no user with this username.")
 
         return recipientUsername
+
+    def clean(self):
+        """
+        Looking at both the recipient and the source, see if we have an
+        error case:
+        (1) The recipient is already a member of the source.
+        (2) The recipient has already been invited to the source.
+        """
+
+        if not self.cleaned_data.has_key('recipient'):
+            return super(SourceInviteForm, self).clean()
+
+        recipientUser = User.objects.get(username=self.cleaned_data['recipient'])
+        source = Source.objects.get(pk=self.source_id)
+
+        if source.has_member(recipientUser):
+            msg = u"%s is already in this Source." % recipientUser.username
+            self._errors['recipient'] = self.error_class([msg])
+            return super(SourceInviteForm, self).clean()
+
+        try:
+            SourceInvite.objects.get(recipient=recipientUser, source=source)
+        except SourceInvite.DoesNotExist:
+            pass
+        else:
+            msg = u"%s has already been invited to this Source." % recipientUser.username
+            self._errors['recipient'] = self.error_class([msg])
+
+        return super(SourceInviteForm, self).clean()
 
 
 class ImageUploadForm(Form):

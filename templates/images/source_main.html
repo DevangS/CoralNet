@@ -108,7 +108,10 @@
         <br />
         <div>
         {% if "source_admin" in source_perms %}
-        <a href="{% url source_invite source.id %}">+ Invite a new member</a>
+          {% for invite in source.sourceinvite_set.all %}
+            <p>({{ invite.recipient.username }} has been invited with {{ invite.source_perm_verbose }} permissions)</p>
+          {% endfor %}
+          <a href="{% url source_invite source.id %}">+ Invite a new member</a>
         {% endif %}
         </div>
     </div>
