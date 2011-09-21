@@ -59,7 +59,13 @@
           </ul>
           <ul class="nav nav_right" id="nav_user">
             {% if user.is_authenticated %}
-            <li><a href="{% url userena_umessages_list %}"><span>{% trans 'Messages' %}</span></a></li>
+              {% with num_invites_received=user.invites_received.count %}
+                {% if num_invites_received > 0 %}
+                <li class="button_prominent"><a href="{% url invites_manage %}"><span>{% trans 'Invites' %} ({{ num_invites_received }})</span></a></li>
+                {% else %}
+                <li><a href="{% url invites_manage %}"><span>{% trans 'Invites' %}</span></a></li>
+                {% endif %}
+              {% endwith %}
             <li><a href="{% url userena_profile_detail user.username %}"><span>{% trans 'Account' %} ({{ user.username }})</span></a></li>
             <li><a href="{% url userena_signout %}"><span>{% trans 'Signout' %}</span></a></li>
             {% else %}

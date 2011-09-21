@@ -12,6 +12,8 @@
 
 {% block content %}
 
+    {% get_obj_perms user for source as "source_perms" %}
+
     <h1>{{ source.name }}</h1>
 
     <hr />
@@ -44,19 +46,10 @@
         </div>
 
         <div>
-        {% if source.labelset.isEmptyLabelset %}
-        <p><a href="{% url labelset_new source.id %}">Create a labelset</a> to get started with annotations</p>
-        {% else %}
-        <p>Labelset: <a href="{% url labelset_main source.id %}">View labelset</a></p>
+        {% if "source_admin" in source_perms %}
+        <a href="{% url source_edit source.id %}">{% trans 'Edit Source Details' %}</a>
         {% endif %}
         </div>
-
-    <div>
-    {% get_obj_perms user for source as "source_perms" %}
-    {% if "source_admin" in source_perms %}
-    <a href="{% url source_edit source.id %}">{% trans 'Edit Source Details' %}</a>
-    {% endif %}
-    </div>
 
     </div>
 
@@ -74,23 +67,50 @@
                 </span>
             {% endfor %}
             <p>Total images: {{ stats.num_images }}</p>
-            <p>Total annotations: {{ stats.num_annotations }}</p>
         {% else %}
             <p>(No images yet)</p>
         {% endif %}
     </div>
 
+    <hr />
+    <div id="annotations">
+        <h2>Annotations</h2>
+
+        {% if source.labelset.isEmptyLabelset %}
+            {% if "source_admin" in source_perms %}
+            <p><a href="{% url labelset_new source.id %}">Create a labelset</a> to get started with annotations</p>
+            {% else %}
+            <p>The Source admin hasn't created a labelset yet.</p>
+            {% endif %}
+        {% else %}
+        <p>Labelset: <a href="{% url labelset_main source.id %}">View labelset</a></p>
+        {% endif %}
+
+        <p>Total annotations: {{ stats.num_annotations }}</p>
+    </div>
+
     {% if members %}
     <hr />
-    <div id="source_members">
+    <div id="members">
         <h2>Members</h2>
-        <table>
+
+        <div>
+        <table class="detail_table">
             {% for member in members %}
             <tr>
                 <td><a href="{% url userena_profile_detail member.username %}">{{ member.username }}</a></td>
+                <td>{{ member.role }}</td>
             </tr>
             {% endfor %}
         </table>
+        </div>
+
+        <br />
+        <div>
+        {% if "source_admin" in source_perms %}
+        <a href="{% url source_invite source.id %}">+ Invite a new member</a>
+        {% endif %}
+        </div>
     </div>
     {% endif %}
 

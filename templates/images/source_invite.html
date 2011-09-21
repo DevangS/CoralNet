@@ -1,0 +1,21 @@
+{% extends "images/base_source.html" %}
+
+{% block title %}Send Invite | CoralNet{% endblock %}
+
+{% block media-includes %}
+  {{ inviteForm.media }}
+{% endblock %}
+
+{% block content %}
+
+    <legend style="display:inline;">Send an Invite</legend>
+
+    <form action="" method="post">{% csrf_token %}
+      {% include "form_generic.html" with form=inviteForm %}
+
+      <div class="submit_button_wrapper">
+        <input type="submit" value="Send Invite" />
+      </div>
+    </form>
+
+{% endblock %}

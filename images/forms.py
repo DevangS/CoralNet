@@ -1,12 +1,14 @@
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm, TextInput, FileInput, CharField
 from django.forms.fields import ChoiceField, BooleanField, ImageField, FileField, IntegerField
 from django.forms.widgets import Select
-from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5
+from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
 from images.utils import PointGen, metadata_to_filename
 
 class ImageSourceForm(ModelForm):
-    
+
     class Meta:
         model = Source
         exclude = ('default_point_generation_method', 'labelset')
@@ -62,6 +64,41 @@ class ImageSourceForm(ModelForm):
         self.cleaned_data = data
 
         return super(ImageSourceForm, self).clean()
+
+
+class SourceInviteForm(Form):
+    # This is not a ModelForm, because a ModelForm would by default
+    # make us use a dropdown/radiobutton for the recipient field,
+    # and it would validate that the recipient field's value is a
+    # foreign key id.  This is a slight pain to work around if we
+    # want a text box for the recipient field, so it's easier
+    # to just use a Form.
+
+    recipient = CharField(max_length=User._meta.get_field('username').max_length,
+                          help_text="The recipient's username.")
+    source_perm = ChoiceField(label='Permission level',
+                              choices=SourceInvite._meta.get_field('source_perm').choices)
+
+    def clean_recipient(self):
+        """
+        This method cleans the recipient field of a submitted form.
+        It is automatically called during form validation.
+
+        1. Strip spaces.
+        2. Check that we have a valid recipient username.
+        If so, replace the username with the recipient user's id.
+        If not, throw an error.
+        """
+
+        recipientUsername = self.cleaned_data['recipient']
+        recipientUsername = recipientUsername.strip()
+
+        try:
+            User.objects.get(username=recipientUsername)
+        except User.DoesNotExist:
+            raise ValidationError("There is no user with the username %s." % recipientUsername)
+
+        return recipientUsername
 
 
 class ImageUploadForm(Form):

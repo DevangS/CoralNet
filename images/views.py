@@ -18,9 +18,9 @@ from annotations.models import LabelGroup, Label, Annotation, LabelSet
 from CoralNet.decorators import labelset_required
 from CoralNet.exceptions import FileContentError
 
-from images.models import Source, Image, Metadata, Point, find_dupe_image
+from images.models import Source, Image, Metadata, Point, find_dupe_image, SourceInvite
 from images.models import get_location_value_objs
-from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm
+from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm
 from images.utils import filename_to_metadata, PointGen
 
 from os.path import splitext
@@ -69,7 +69,7 @@ def source_about(request):
 @login_required
 def source_new(request):
     """
-    Page with the form to create a new Image Source.
+    Page with the form to create a new Source.
     """
 
     # We can get here one of two ways: either we just got to the form
@@ -91,10 +91,13 @@ def source_new(request):
             newSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
             newSource.labelset = LabelSet.getEmptyLabelset()
             newSource.save()
-            # Grant permissions for this source
-            assign('source_admin', request.user, newSource)
+
+            # Make the user a source admin
+            newSource.assign_role(request.user, Source.PermTypes.ADMIN.code)
+
             # Add a success message
             messages.success(request, 'Source successfully created.')
+            
             # Redirect to the source's main page
             return HttpResponseRedirect(reverse('source_main', args=[newSource.id]))
         else:
@@ -125,6 +128,10 @@ def source_main(request, source_id):
     # Having to manually code the redirect to login is slightly annoying.
     if source.visible_to_user(request.user):
         members = source.get_members()
+        memberDicts = [dict(username=member.username,
+                            role=source.get_member_role(member))
+                       for member in members]
+
         all_images = source.get_all_images()
         latest_images = all_images.order_by('-upload_date')[:5]
 
@@ -136,7 +143,7 @@ def source_main(request, source_id):
         return render_to_response('images/source_main.html', {
             'source': source,
             'loc_keys': ', '.join(source.get_key_list()),
-            'members': members,
+            'members': memberDicts,
             'latest_images': latest_images,
             'stats': stats,
             },
@@ -186,6 +193,92 @@ def source_edit(request, source_id):
         'source': source,
         'editSourceForm': sourceForm,
         'pointGenForm': pointGenForm,
+        },
+        context_instance=RequestContext(request)
+        )
+
+
+@transaction.commit_on_success
+@permission_required('source_admin', (Source, 'id', 'source_id'))
+def source_invite(request, source_id):
+    """
+    Invite a user to this Source.
+    """
+
+    source = get_object_or_404(Source, id=source_id)
+
+    if request.method == 'POST':
+
+        inviteForm = SourceInviteForm(request.POST)
+
+        if inviteForm.is_valid():
+
+            invite = SourceInvite(
+                sender=request.user,
+                recipient=User.objects.get(username=inviteForm.cleaned_data['recipient']),
+                source=source,
+                source_perm=inviteForm.cleaned_data['source_perm'],
+            )
+            invite.save()
+
+            messages.success(request, 'Your invite has been sent!')
+            return HttpResponseRedirect(reverse('source_main', args=[source_id]))
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        # Just reached this form page
+        inviteForm = SourceInviteForm()
+
+    return render_to_response('images/source_invite.html', {
+        'source': source,
+        'inviteForm': inviteForm,
+        },
+        context_instance=RequestContext(request)
+        )
+
+
+@login_required
+def invites_manage(request):
+
+    if request.method == 'POST':
+
+        if ('accept' in request.POST) or ('decline' in request.POST):
+            sender_id = request.POST['sender']
+            source_id = request.POST['source']
+
+            try:
+                invite = SourceInvite.objects.get(sender__id=sender_id, recipient=request.user, source__id=source_id)
+            except SourceInvite.DoesNotExist:
+                messages.error(request, "Sorry, there was an error with this invite.\n"
+                                        "Maybe the user who sent it withdrew the invite.")
+            else:
+                if 'accept' in request.POST:
+                    source = Source.objects.get(id=source_id)
+                    source.assign_role(invite.recipient, invite.source_perm)
+
+                    invite.delete()
+                    messages.success(request, 'Invite accepted!')
+                    return HttpResponseRedirect(reverse('source_main', args=[source.id]))
+                elif 'decline' in request.POST:
+                    invite.delete()
+                    messages.success(request, 'Invite declined.')
+
+        elif 'delete' in request.POST:
+            recipient_id = request.POST['recipient'][0]
+            source_id = request.POST['source'][0]
+
+            try:
+                invite = SourceInvite.objects.get(recipient__id=recipient_id, sender=request.user, source__id=source_id)
+            except SourceInvite.DoesNotExist:
+                messages.error(request, "Sorry, there was an error with this invite.\n"
+                                        "Maybe you already deleted it earlier, or the user who received it already accepted or declined.")
+            else:
+                invite.delete()
+                messages.success(request, 'Invite deleted.')
+
+    return render_to_response('images/invites_manage.html', {
+        'invitesSent': request.user.invites_sent.all(),
+        'invitesReceived': request.user.invites_received.all(),
         },
         context_instance=RequestContext(request)
         )

@@ -3,7 +3,7 @@ from django.db import models
 
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
-from guardian.shortcuts import get_objects_for_user, get_users_with_perms
+from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign
 from images.utils import PointGen
 from CoralNet.utils import generate_random_filename
 
@@ -59,13 +59,29 @@ class Source(models.Model):
     #start_date = models.DateField(null=True, blank=True)
     #end_date = models.DateField(null=True, blank=True)
 
-    # Permissions for users to perform actions on Sources
     class Meta:
+        # Permissions for users to perform actions on Sources.
+        # (Unfortunately, inner classes can't use outer-class
+        # variables such as constants... so we've hardcoded these.)
         permissions = (
             ('source_view', 'View'),
             ('source_edit', 'Edit'),
             ('source_admin', 'Admin'),
         )
+
+    class PermTypes:
+        class ADMIN():
+            code = 'source_admin'
+            fullCode  = 'images.' + code
+            verbose = 'Admin'
+        class EDIT():
+            code = 'source_edit'
+            fullCode  = 'images.' + code
+            verbose = 'Edit'
+        class VIEW():
+            code = 'source_view'
+            fullCode  = 'images.' + code
+            verbose = 'View'
 
     ##########
     # Database-query methods related to Sources
@@ -77,7 +93,7 @@ class Source(models.Model):
     @staticmethod
     def get_sources_of_user(user):
         # For superusers, this returns ALL sources.
-        return get_objects_for_user(user, 'images.source_admin')
+        return get_objects_for_user(user, Source.PermTypes.VIEW.fullCode)
 
     @staticmethod
     def get_other_public_sources(user):
@@ -89,6 +105,46 @@ class Source(models.Model):
 
     def get_members(self):
         return get_users_with_perms(self)
+
+    def get_member_role(self, user):
+        """
+        Get a user's conceptual "role" in the source.
+
+        If they have admin perms, their role is admin.
+        Otherwise, if they have edit perms, their role is edit.
+        Otherwise, if they have view perms, their role is view.
+        Role is None if user is not a Source member.
+        """
+        perms = get_perms(user, self)
+
+        for permType in [Source.PermTypes.ADMIN,
+                         Source.PermTypes.EDIT,
+                         Source.PermTypes.VIEW]:
+            if permType.code in perms:
+                return permType.verbose
+
+    def assign_role(self, user, role):
+        """
+        Shortcut method to assign a conceptual "role" to a user,
+        so assigning permissions can be done compactly.
+
+        Admin role: admin, edit, view perms
+        Edit role: edit, view perms
+        View role: view perm
+        """
+
+        if role == Source.PermTypes.ADMIN.code:
+            assign(Source.PermTypes.ADMIN.code, user, self)
+            assign(Source.PermTypes.EDIT.code, user, self)
+            assign(Source.PermTypes.VIEW.code, user, self)
+        elif role == Source.PermTypes.EDIT.code:
+            assign(Source.PermTypes.EDIT.code, user, self)
+            assign(Source.PermTypes.VIEW.code, user, self)
+        elif role == Source.PermTypes.VIEW.code:
+            assign(Source.PermTypes.VIEW.code, user, self)
+        else:
+            raise ValueError("Invalid Source role: %s" % role)
+
 
     def visible_to_user(self, user):
         return (self.visibility == Source.VisibilityTypes.PUBLIC) or self.has_member(user)
@@ -149,6 +205,20 @@ class Source(models.Model):
         To-string method.
         """
         return self.name
+
+
+class SourceInvite(models.Model):
+    """
+    Invites will be deleted once they're accepted.
+    """
+    sender = models.ForeignKey(User, related_name='invites_sent', editable=False)
+    recipient = models.ForeignKey(User, related_name='invites_received')
+    source = models.ForeignKey(Source, editable=False)
+    source_perm = models.CharField(max_length=50, choices=Source._meta.permissions)
+
+    class Meta:
+        # A user can only be invited once to a source.
+        unique_together = ['recipient', 'source']
 
 
 class LocationValue(models.Model):

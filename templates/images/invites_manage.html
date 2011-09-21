@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}Invites | CoralNet{% endblock %}
+
+{% block content %}
+
+    <h2>Invites received</h2>
+
+    {% for invite in invitesReceived %}
+        <form action="" method="post">{% csrf_token %}
+          <p>Invited by {{ invite.sender }} to Source {{ invite.source.name }}</p>
+
+          <input type="hidden" name="sender" value="{{ invite.sender.id }}" />
+          <input type="hidden" name="source" value="{{ invite.source.id }}" />
+            
+          <button name="accept">Accept</button>
+          <button name="decline">Decline</button>
+        </form>
+    {% empty %}
+        <p>(None)</p>
+    {% endfor %}
+
+    <hr />
+
+    <h2>Invites sent</h2>
+
+    {% for invite in invitesSent %}
+        <form action="" method="post">{% csrf_token %}
+          <p>Invited {{ invite.recipient }} to Source {{ invite.source.name }}</p>
+
+          <input type="hidden" name="recipient" value="{{ invite.recipient.id }}" />
+          <input type="hidden" name="source" value="{{ invite.source.id }}" />
+
+          <button name="delete">Delete</button>
+        </form>
+    {% empty %}
+        <p>(None)</p>
+    {% endfor %}
+
+{% endblock %}
