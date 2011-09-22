@@ -1,15 +1,14 @@
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
-from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
-from guardian.decorators import permission_required
 from annotations.models import Annotation, Label
-from images.models import Source, Value1, Value2, Value3, Value4, Value5, Image
+from CoralNet.decorators import visibility_required
+from images.models import Source, Image
 from visualization.forms import VisualizationSearchForm
 from visualization.utils import generate_patch_if_doesnt_exist
 
 
-@permission_required('source_admin', (Source, 'id', 'source_id'))
+@visibility_required('source_id')
 def visualize_source(request, source_id):
     """
     View for browsing through a source's images.

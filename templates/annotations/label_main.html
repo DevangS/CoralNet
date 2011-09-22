@@ -34,7 +34,12 @@
           <p>Description: (None)</p>
         {% endif %}
 
+        {% if user.is_authenticated %}
         <p>Used in these sources (only including your sources and public sources):</p>
+        {% else %}
+        <p>Used in these sources (only including public sources):</p>
+        {% endif %}
+
         <p>
           {% for type, source in visible_sources_with_label %}
             <a href="{% url source_main source.id %}"

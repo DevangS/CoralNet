@@ -84,16 +84,19 @@ class Source(models.Model):
             verbose = 'View'
 
     ##########
-    # Database-query methods related to Sources
+    # Helper methods for sources
     ##########
     @staticmethod
     def get_public_sources():
-        return Source.objects.filter(visibility=Source.VisibilityTypes.PUBLIC)
+        return Source.objects.filter(visibility=Source.VisibilityTypes.PUBLIC).order_by('name')
 
     @staticmethod
     def get_sources_of_user(user):
         # For superusers, this returns ALL sources.
-        return get_objects_for_user(user, Source.PermTypes.VIEW.fullCode)
+        if user.is_authenticated():
+            return get_objects_for_user(user, Source.PermTypes.VIEW.fullCode).order_by('name')
+        else:
+            return []
 
     @staticmethod
     def get_other_public_sources(user):
@@ -104,7 +107,7 @@ class Source(models.Model):
         return user in self.get_members()
 
     def get_members(self):
-        return get_users_with_perms(self)
+        return get_users_with_perms(self).order_by('username')
 
     def get_member_role(self, user):
         """
@@ -122,6 +125,32 @@ class Source(models.Model):
                          Source.PermTypes.VIEW]:
             if permType.code in perms:
                 return permType.verbose
+
+    @staticmethod
+    def _member_sort_key(memberAndRole):
+        role = memberAndRole[1]
+        if role == Source.PermTypes.ADMIN.verbose:
+            return 1
+        elif role == Source.PermTypes.EDIT.verbose:
+            return 2
+        elif role == Source.PermTypes.VIEW.verbose:
+            return 3
+
+    def get_members_ordered_by_role(self):
+        """
+        Admin first, then edit, then view.
+
+        Within a role, members are sorted by username.  This is
+        because get_members() orders members by username, and Python
+        sorts are stable (meaning that when multiple records have
+        the same key, their original order is preserved).
+        """
+
+        members = self.get_members()
+        membersAndRoles = [(m, self.get_member_role(m)) for m in members]
+        membersAndRoles.sort(key=Source._member_sort_key)
+        orderedMembers = [mr[0] for mr in membersAndRoles]
+        return orderedMembers
 
     def assign_role(self, user, role):
         """
@@ -147,7 +176,8 @@ class Source(models.Model):
 
 
     def visible_to_user(self, user):
-        return (self.visibility == Source.VisibilityTypes.PUBLIC) or self.has_member(user)
+        return (self.visibility == Source.VisibilityTypes.PUBLIC) or \
+               user.has_perm(Source.PermTypes.VIEW.code, self)
 
     def get_all_images(self):
         return Image.objects.filter(source=self)

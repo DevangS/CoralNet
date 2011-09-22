@@ -945,8 +945,13 @@ min-height: 52px;
 
 
 
-/*	detail pages
+/*	object list / detail pages
 ................................... */
+
+/* Object list */
+ul.object_list li {
+    line-height: 1.5em;
+}
 
 /* Single-object details
  * (source main page, image detail page) */

@@ -1,6 +1,5 @@
 import datetime
 
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -12,10 +11,8 @@ from django.http import HttpResponseRedirect
 from django.template import RequestContext
 
 from userena.models import User
-from guardian.decorators import permission_required
-from guardian.shortcuts import assign
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
-from CoralNet.decorators import labelset_required
+from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from CoralNet.exceptions import FileContentError
 
 from images.models import Source, Image, Metadata, Point, find_dupe_image, SourceInvite
@@ -34,12 +31,16 @@ def source_list(request):
 
     if request.user.is_authenticated():
         your_sources = Source.get_sources_of_user(request.user)
-        other_sources = Source.get_other_public_sources(request.user)
+        your_sources_dicts = [dict(id=s.id,
+                                   name=s.name,
+                                   your_role=s.get_member_role(request.user),)
+                              for s in your_sources]
+        other_public_sources = Source.get_other_public_sources(request.user)
         
         if your_sources:
             return render_to_response('images/source_list.html', {
-                'your_sources': your_sources,
-                'other_sources': other_sources,
+                'your_sources': your_sources_dicts,
+                'other_public_sources': other_public_sources,
                 },
                 context_instance=RequestContext(request)
             )
@@ -117,46 +118,44 @@ def source_new(request):
         context_instance=RequestContext(request)
         )
 
+
+@visibility_required('source_id')
 def source_main(request, source_id):
     """
-    Main page for a particular image source.
+    Main page for a particular source.
     """
 
     source = get_object_or_404(Source, id=source_id)
 
-    # Is there a way to make the perm check in a permission_required decorator?
-    # Having to manually code the redirect to login is slightly annoying.
-    if source.visible_to_user(request.user):
-        members = source.get_members()
-        memberDicts = [dict(username=member.username,
-                            role=source.get_member_role(member))
-                       for member in members]
+    members = source.get_members_ordered_by_role()
+    memberDicts = [dict(username=member.username,
+                        role=source.get_member_role(member))
+                   for member in members]
 
-        all_images = source.get_all_images()
-        latest_images = all_images.order_by('-upload_date')[:5]
+    all_images = source.get_all_images()
+    latest_images = all_images.order_by('-upload_date')[:5]
 
-        stats = dict(
-            num_images=all_images.count(),
-            num_annotations=Annotation.objects.filter(image__source=source).count(),
+    stats = dict(
+        num_images=all_images.count(),
+        num_annotations=Annotation.objects.filter(image__source=source).count(),
+    )
+
+    return render_to_response('images/source_main.html', {
+        'source': source,
+        'loc_keys': ', '.join(source.get_key_list()),
+        'members': memberDicts,
+        'latest_images': latest_images,
+        'stats': stats,
+        },
+        context_instance=RequestContext(request)
         )
 
-        return render_to_response('images/source_main.html', {
-            'source': source,
-            'loc_keys': ', '.join(source.get_key_list()),
-            'members': memberDicts,
-            'latest_images': latest_images,
-            'stats': stats,
-            },
-            context_instance=RequestContext(request)
-            )
-    else:
-        return HttpResponseRedirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
-# Must have the 'source_admin' permission for the Source whose id is source_id
-@permission_required('source_admin', (Source, 'id', 'source_id'))
+# Must have admin permission for the Source whose id is source_id
+@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def source_edit(request, source_id):
     """
-    Edit an image source: name, visibility, location keys, etc.
+    Edit a source: name, visibility, location keys, etc.
     """
 
     source = get_object_or_404(Source, id=source_id)
@@ -199,7 +198,7 @@ def source_edit(request, source_id):
 
 
 @transaction.commit_on_success
-@permission_required('source_admin', (Source, 'id', 'source_id'))
+@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def source_invite(request, source_id):
     """
     Invite a user to this Source.
@@ -239,6 +238,9 @@ def source_invite(request, source_id):
 
 @login_required
 def invites_manage(request):
+    """
+    Manage sent and received invites.
+    """
 
     if request.method == 'POST':
 
@@ -284,18 +286,13 @@ def invites_manage(request):
         )
 
 
-# TODO: Make custom permission_required_blahblah decorators.
-# For example, based on an image id, see if the user has permission to it. Make that permission_required_image.
-#@permission_required('source_admin', (Source, 'id', 'Image.objects.get(pk=image_id).source.id'))
-#def image_detail(request, image_id):
-@permission_required('source_admin', (Source, 'id', 'source_id'))
+@visibility_required('source_id')
 def image_detail(request, image_id, source_id):
     """
     View for seeing an image's full size and details/metadata.
     """
 
     image = get_object_or_404(Image, id=image_id)
-    #source = get_object_or_404(Source, Image.objects.get(pk=image_id).source.id)
     source = get_object_or_404(Source, id=source_id)
     metadata = image.metadata
 
@@ -333,7 +330,7 @@ def image_detail(request, image_id, source_id):
     )
 
 @transaction.commit_on_success   # "Other" location values are only saved if form is error-less
-@permission_required('source_admin', (Source, 'id', 'source_id'))
+@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 def image_detail_edit(request, image_id, source_id):
     """
     Edit image details.
@@ -373,8 +370,13 @@ def image_detail_edit(request, image_id, source_id):
         context_instance=RequestContext(request)
         )
 
-#TODO: check permissions
+
+@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def import_groups(request, fileLocation):
+    """
+    Create label groups through a text file.
+    NOTE: This method might be obsolete.
+    """
     file = open(fileLocation, 'r') #opens the file for reading
     for line in file:
         line = line.replace("; ", ';')
@@ -387,7 +389,12 @@ def import_groups(request, fileLocation):
     
 
 @transaction.commit_on_success
+@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def import_labels(request, source_id):
+    """
+    Create a labelset through a text file.
+    NOTE: This view might be obsolete.  Or site-admin only.
+    """
 
     source = get_object_or_404(Source, id=source_id)
 
@@ -588,6 +595,10 @@ def annotations_file_to_python(annoFile, source):
 
 
 def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile):
+    """
+    Helper method for the image upload view and the image+annotation
+    import view.
+    """
 
     uploadedImages = []
     duplicates = 0
@@ -752,14 +763,12 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
     )
 
 
-@transaction.commit_on_success    # This is supposed to make sure Metadata, Value, and Image objects only save if whole form passes
-@permission_required('source_admin', (Source, 'id', 'source_id'))
+@transaction.commit_on_success
+@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 def image_upload(request, source_id):
     """
     View for uploading images to a source.
-
-    If one file in a multi-file upload fails to upload,
-    none of the images in the upload are saved.
+    Should be improved later to have AJAX uploading.
     """
 
     source = get_object_or_404(Source, id=source_id)
@@ -809,8 +818,12 @@ def image_upload(request, source_id):
 
 @transaction.commit_on_success
 @labelset_required('source_id', 'You need to create a labelset for your source before you can import annotations.')
-@permission_required('source_admin', (Source, 'id', 'source_id'))
+@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 def annotation_import(request, source_id):
+    """
+    Upload images and import their annotations from a text file.
+    Should be improved later to have AJAX uploading.
+    """
 
     source = get_object_or_404(Source, id=source_id)
 

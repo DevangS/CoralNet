@@ -5,10 +5,9 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from django.utils import simplejson
-from guardian.decorators import permission_required
 from annotations.forms import NewLabelForm, NewLabelSetForm
 from annotations.models import Label, LabelSet, Annotation
-from decorators import labelset_required
+from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from images.models import Source, Image, Point
 from visualization.utils import generate_patch_if_doesnt_exist
 
@@ -16,6 +15,8 @@ from visualization.utils import generate_patch_if_doesnt_exist
 def label_new(request):
     """
     Page to create a new label for CoralNet.
+    NOTE: This view might be obsolete, deferring in favor of
+    having the new-label form only be in the create-labelset page.
     """
     if request.method == 'POST':
         form = NewLabelForm(request.POST)
@@ -35,7 +36,7 @@ def label_new(request):
         context_instance=RequestContext(request)
     )
 
-@login_required
+@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def labelset_new(request, source_id):
     """
     Page to create a labelset for a source.
@@ -112,7 +113,7 @@ def labelset_new(request, source_id):
         context_instance=RequestContext(request)
     )
 
-@login_required
+@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def labelset_edit(request, source_id):
     """
     Page to edit a source's labelset.
@@ -267,6 +268,8 @@ def label_main(request, label_id):
         context_instance=RequestContext(request)
     )
 
+
+@visibility_required('source_id')
 def labelset_main(request, source_id):
     """
     Main page for a particular source's labelset
@@ -292,12 +295,18 @@ def labelset_main(request, source_id):
 def labelset_list(request):
     """
     Page with a list of all the labelsets
+
+    Not sure where to put a link to this page. It's a little less
+    useful when each source has its own labelset, but this view still
+    might be useful if someone wants to browse through labelsets that
+    they could base their labelset off of.
     """
 
-    labelsets = LabelSet.objects.all()
+    publicSources = Source.objects.filter(visibility=Source.VisibilityTypes.PUBLIC)
+    publicSourcesWithLabelsets = publicSources.exclude(labelset=LabelSet.getEmptyLabelset())
 
     return render_to_response('annotations/labelset_list.html', {
-                'labelsets': labelsets,
+                'publicSourcesWithLabelsets': publicSourcesWithLabelsets,
                 },
                 context_instance=RequestContext(request)
     )
@@ -317,15 +326,13 @@ def label_list(request):
 
 
 @labelset_required('source_id', 'You need to create a labelset for your source before you can annotate images.')
-@permission_required('source_admin', (Source, 'id', 'source_id'))
+@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 def annotation_tool(request, image_id, source_id):
     """
     View for the annotation tool.
-    Redirect to a view for generating points, if there's no points yet.
     """
 
     image = get_object_or_404(Image, id=image_id)
-    #source = get_object_or_404(Source, Image.objects.get(pk=image_id).source.id)
     source = get_object_or_404(Source, id=source_id)
 
     metadata = image.metadata

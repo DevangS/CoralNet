@@ -1,10 +1,10 @@
-{% extends "annotations/base_label.html" %}
+{% extends "base.html" %}
 
 {% block content %}
     <h2>All LabelSets</h2>
-    <ul>
-        {% for labelset in labelsets %}
-            <li><a href="{% url labelset_main labelset.id %}">{{ labelset.description }}</a></li>
+    <ul class="object_list">
+        {% for source in publicSourcesWithLabelsets %}
+            <li><a href="{% url labelset_main source.id %}">{{ source.name }}</a></li>
         {% endfor %}
     </ul>
 

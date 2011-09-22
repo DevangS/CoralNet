@@ -96,6 +96,10 @@
 
         <div>
         <table class="detail_table">
+            <tr>
+                <th>Member</th>
+                <th>Role</th>
+            </tr>
             {% for member in members %}
             <tr>
                 <td><a href="{% url userena_profile_detail member.username %}">{{ member.username }}</a></td>
