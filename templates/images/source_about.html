@@ -2,8 +2,17 @@
 
 {% block content %}
     <h2>Sources</h2>
-    <p>A Source is a collection of photos or images. To get started with photo uploading, create or join a Source first, and then you can upload your coral photos to the Source. Generally, a Source will contain all of a research group's photos from a particular world location. You can choose to make your photos private or open to the public.</p>
-    <p>Once you've uploaded your photos to a Source, they'll be ready for analysis. With an Annotation Effort, the photos' contents can be analyzed for the presence and quantity of coral, algae, or anything else.</p>
+    <p>A Source is CoralNet's name for a coral analysis project.
+       Generally, a Source will contain all of a research group's coral images from a particular world location.
+       Images are organized by their specific location and date. That way, you can compare annotation statistics from the same location between different years.</p>
+
+    <p>To get started, create a Source or get invited to a Source. You can choose to make your Source public or private.
+       Once you have a Source, you'll create a labelset, which is the set of labels that you'll use to annotate your images.
+       Image annotation means identifying points of the image: as Acropora coral, Porites coral, algae, and so on.</p>
+    
+    <p>Once you have a Source and labelset, you can upload images and start annotating them, using our in-browser annotation tool.
+       You can also upload both images and annotations if you have already annotated your images.
+       Then, you can view annotation statistics on your Source or a subset of images: how much Porites there was in 2009, the trend of coral numbers from 2008 to 2009, and so on.</p>
     {% if user_status == 'has_sources' %}
     <p><a href="{% url source_list %}">See your Sources</a>.</p>
     {% endif %}
@@ -16,7 +25,7 @@
 
     <hr />
     <h2>Public Sources</h2>
-    <ul>
+    <ul class="object_list">
         {% for source in public_sources %}
             <li><a href="{% url source_main source.id %}">{{ source.name }}</a></li>
         {% endfor %}

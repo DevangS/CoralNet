@@ -1,18 +1,26 @@
 {% extends "base.html" %}
 
+{% block media-includes %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ MEDIA_URL }}css/index.css" />
+{% endblock %}
+
 {% block content %}
 <div id="intro">
-  <h2 class="intro"><span>CoralNet</span><br/>A Web solution for coral reef analysis</h2>
+  <h2><span>CoralNet</span><br/>A Web solution for coral reef analysis</h2>
 
-  <p class="intro">(This is where we talk about our group and the project)</p>
-  
- 
+  <p>Upload coral reef images, organize and annotate images, and view annotation statistics.</p>
+
 </div><!-- /intro-->
+
+<br />
 
 <div id="start">
   <h2><span>Getting Started</span></h2>
 
-  <a href="{% url source_about %}">Sources - for uploading photos</a>
+  <p>1. Create a <a href="{% url source_about %}">Source</a></p>
+  <p>2. Create a labelset for your Source</p>
+  <p>3. Upload images to the Source</p>
+  <p>4. Use our annotation tool to annotate the images</p>
 
 </div><!-- /start-->
 

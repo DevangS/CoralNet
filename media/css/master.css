@@ -178,20 +178,6 @@ ul.nav li.button_prominent a:active span {
 
 
 
-#intro{
-    padding: 30px 20px;
-    min-height: 290px;
-    background: #e7e2de url(../img/example.jpg) no-repeat 90px 30px;
-    -moz-border-radius: 8px;
-    -webkit-border-radius: 8px;
-    border-radius: 8px;
-     -moz-box-shadow: inset 0 0 3px #999;
-    -webkit-box-shadow: inset 0 0 3px #999;
-    box-shadow: inset 0 0 3px #999;
-   position: relative;
-   overflow: hidden;
-}
-
 #xtra-info{
     text-align: center;
     padding: 10px;
@@ -267,10 +253,6 @@ p{
     text-shadow: #ffffff 1px 1px 0;
 }
 
-p.intro{
-	margin: 0 20px 0 380px;
-}
-
 .white-box p{
     margin: 0 12px 5px;
     color: #000;
@@ -298,13 +280,6 @@ h2.content-title{
     -webkit-box-shadow: inset 0 0 3px #999;
     box-shadow: inset 0 0 3px #999;
     color: #ab292a;
-}
-
-h2.intro{
-    font-size: 1.8em;
-    margin: 10px 20px 9px 380px;
-    padding: 0 0 5px;
-    background: url(../img/stripe.png) repeat-x 0 bottom;
 }
 
 h2 span{

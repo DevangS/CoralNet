@@ -15,7 +15,9 @@ class Migration(DataMigration):
 
         ct = orm['contenttypes.ContentType'].objects.get(model='source', app_label='images') # model must be lowercase
 
-        print "Will create the Source View and Edit permission types, if they don't already exist in the auth system..."
+        print "Will create the Source View and Edit permission types, if they don't already exist in the auth system."
+        print "NOTE: If you have any orphaned object permissions (permission to a source that doesn't exist), this migration might fail. To clean up those orphaned permissions, try:"
+        print "./manage.py clean_orphan_obj_perms"
 
         view_perm, created = orm['auth.permission'].objects.get_or_create(
             content_type=ct, codename=u'source_view', defaults={'name': u'View'})
@@ -44,14 +46,14 @@ class Migration(DataMigration):
             if created:
                 print "User %s has been granted View permission for Source %s." % (p.user.username, source.name)
             else:
-                print "User %s already has View permission to for Source %s." % (p.user.username, source.name)
+                print "User %s already has View permission for Source %s." % (p.user.username, source.name)
 
             edit_userobjperm, created = orm['guardian.userobjectpermission'].objects.get_or_create(
                 permission=edit_perm, object_pk=p.object_pk, user=p.user, content_type=ct)
             if created:
                 print "User %s has been granted Edit permission for Source %s." % (p.user.username, source.name)
             else:
-                print "User %s already has Edit permission to for Source %s." % (p.user.username, source.name)
+                print "User %s already has Edit permission for Source %s." % (p.user.username, source.name)
 
         print "Done."
         print "-----"
