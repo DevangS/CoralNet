@@ -40,11 +40,29 @@ var LabelsetFormHelper = {
                 checkboxRowJQ.addClass("disabled");
             }
             else {
-                /* in-labelset status is changeable, so make it change on a click */
-                checkboxRowJQ.click( function() {
-                   LabelsetFormHelper.toggleRow(this);
-                   LabelsetFormHelper.updateRowAppearance(this);
+                /* in-labelset status is changeable, so make it change when the
+                 * user clicks any of the clickable cells in the row. */
+                var clickableCells = checkboxRowJQ.children(".clickable_cell");
+
+                clickableCells.each( function() {
+                    // Set the click function for each clickable cell
+                    // in this row.
+                    $(this).click(function() {
+                        // This is a click handler for a cell, so this.parent()
+                        // is the row element.
+                        LabelsetFormHelper.toggleRow($(this).parent()[0]);
+                        LabelsetFormHelper.updateRowAppearance($(this).parent()[0]);
+                    });
                 });
+
+/*                for (i = 0; i < clickableCells.length; i++) {
+                    clickableCells[i].click( function() {
+                        // This is a click handler for a cell, so this.parent()
+                        // is the row element.
+                        LabelsetFormHelper.toggleRow(this.parent());
+                        LabelsetFormHelper.updateRowAppearance(this.parent());
+                    });
+                }*/
             }
         }
 

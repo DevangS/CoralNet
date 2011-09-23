@@ -16,33 +16,38 @@ This form template is meant to be used with the "include" template tag.
         {% if isEditLabelsetForm %}
           <th style="width: 55px;">Status</th>  {# The width prevents the column from expanding when a cell has the word "deleted".  Bit of a hack #}
         {% endif %}
+        <th></th>
       </tr>
     
       {% for label in allLabels %}
         {% with labelId=label.labelId %}
         {% with checkboxId="id_labels_"|add:labelId   rowId="id_row_"|add:labelId %}
           <tr class="checkbox_row" id="{{ rowId }}">
-              <td>
+              <td class="clickable_cell">
                   {% comment %}
-                  The checkbox is completely hidden from view.  The checkbox's purpose is to
-                  hold a "checked" state, and to tie into the Django form, which still looks
-                  for the checkbox states.
+                  The actual checkbox element is completely hidden from view.
+                  The checkbox element's purpose is to hold a "checked" state,
+                  and to tie into the Django form, which still looks for the checkbox states.
                   {% endcomment %}
-                  <input type="checkbox" name="{{ labelsField.name }}" value="{{ label.labelId }}" id="{{ checkboxId }}"
+                  <input type="checkbox" name="{{ labelsField.name }}" value="{{ labelId }}" id="{{ checkboxId }}"
                          style="display: none;"/>
                   {{ label.name }}
               </td>
-              <td>
+              <td class="clickable_cell">
                   {{ label.code }}
               </td>
-              <td>
+              <td class="clickable_cell">
                   {{ label.group }}
               </td>
               {% if isEditLabelsetForm %}
-                <td class="change_status">
+                <td class="change_status clickable_cell">
                   
                 </td>
               {% endif %}
+              <td>
+                  <a href="{% url label_main labelId %}"
+                     target="_blank" title="Opens in new tab or window">Info</a>
+              </td>
           </tr>
         {% endwith %}
         {% endwith %}

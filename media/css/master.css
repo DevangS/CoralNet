@@ -600,14 +600,14 @@ legend.small {
 
 /* Table rows that can be clicked to toggle form values, like checkboxes.
    Used in the labelset form. */
-.checkbox_row {
+.checkbox_row td.clickable_cell{
     cursor: pointer;
 }
 /* Multiple classes like .class1.class2 may not work in IE6 */
-.checkbox_row.selected {
+.checkbox_row.selected td.clickable_cell{
     background-color: #bbbbdd;
 }
-.checkbox_row.selected.disabled {
+.checkbox_row.selected.disabled td.clickable_cell{
     cursor: default;
     background-color: #aaaaaa;
 }
