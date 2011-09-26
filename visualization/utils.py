@@ -8,7 +8,10 @@ except ImportError:
 
 def generate_patch_if_doesnt_exist(patchPath, annotation):
     patchFullPath = os.path.join(settings.MEDIA_ROOT, patchPath)
-
+    PATCH_X = 150 #x size of patch
+    PATCH_Y = 150 #y size of patch
+    REDUCE_SIZE = 1/5 #proportion to select patch
+    
     #check if patch exists for the annotation
     try:
         PILImage.open(patchFullPath)
@@ -22,26 +25,27 @@ def generate_patch_if_doesnt_exist(patchPath, annotation):
         #determine the crop box
         max_x = annotation.image.original_width
         max_y = annotation.image.original_height
-        x = annotation.point.column
-        y = annotation.point.row
+        x = annotation.point.row
+        y = annotation.point.column
+        offset = int(max(x,y)*REDUCE_SIZE)
 
-        if x-75 > 0:
-            left = x-75
+        if x-offset > 0:
+            left = x-offset
         else:
             left = 0
 
-        if x+75 < max_x:
-            right = x+75
+        if x+offset < max_x:
+            right = x+offset
         else:
             right = max_x
 
-        if y-75 > 0:
-            upper = y-75
+        if y-offset > 0:
+            upper = y-offset
         else:
             upper = 0
 
-        if y+75 < max_y:
-            lower = y+75
+        if y+offset < max_y:
+            lower = y+offset
         else:
             lower = max_y
 
@@ -49,4 +53,5 @@ def generate_patch_if_doesnt_exist(patchPath, annotation):
 
         #crop the image and save it
         region = image.crop(box)
+        region = region.resize(PATCH_X, PATCH_Y)
         region.save(patchFullPath)
