@@ -28,7 +28,7 @@ def generate_patch_if_doesnt_exist(patchPath, annotation):
         x = annotation.point.row
         y = annotation.point.column
         offset = int(max(x,y)*REDUCE_SIZE)
-
+        size = (PATCH_X, PATCH_Y)
         if x-offset > 0:
             left = x-offset
         else:
@@ -53,5 +53,5 @@ def generate_patch_if_doesnt_exist(patchPath, annotation):
 
         #crop the image and save it
         region = image.crop(box)
-        region = region.resize(PATCH_X, PATCH_Y)
+        region = region.resize(size)
         region.save(patchFullPath)
