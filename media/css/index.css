@@ -2,7 +2,7 @@
 #intro{
     padding: 30px 20px;
     min-height: 290px;
-    background: #e7e2de url(../img/example.jpg) no-repeat 90px 30px;
+    background: #e7e2de url(../img/Front-page-image.jpg) no-repeat 42px 42px;
     -moz-border-radius: 8px;
     -webkit-border-radius: 8px;
     border-radius: 8px;
@@ -15,14 +15,14 @@
 
 #intro h2{
     font-size: 1.8em;
-    margin: 10px 20px 9px 380px;
+    margin: 10px 20px 9px 460px;
     padding: 0 0 5px;
     background: url(../img/stripe.png) repeat-x 0 bottom;
 }
 
 #intro p{
     font-size: 1.3em;
-	margin: 0 20px 0 380px;
+	margin: 0 20px 0 460px;
 }
 
 /* Getting Started box */

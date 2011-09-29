@@ -253,6 +253,10 @@ p{
     text-shadow: #ffffff 1px 1px 0;
 }
 
+p.small{
+    font-size: 0.9em;
+}
+
 .white-box p{
     margin: 0 12px 5px;
     color: #000;
