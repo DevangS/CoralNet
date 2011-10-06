@@ -6,7 +6,7 @@ This form template is meant to be used with the "include" template tag.
 {% for field in form %}
     <div class="form_item_wrapper" id="id_{{ field.name }}_wrapper">
         <label for="{{ field.id_for_label }}">
-            {% if field.field.required %} <span style="color:red;"> * </span> {% endif %}
+            {% if field.field.required and not dont_mark_required %} <span style="color:red;"> * </span> {% endif %}
             {{ field.label }}:
         </label>
 

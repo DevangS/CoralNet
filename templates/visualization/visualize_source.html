@@ -1,5 +1,6 @@
 {% extends "images/base_source.html" %}
 {% load thumbnail %}
+{% load guardian_tags %}
 
 {% block title %}{{ source.name }} - Visualization | CoralNet{% endblock %}
 
@@ -18,6 +19,21 @@ fieldset.fieldset_visualization {
 
 label.label_visualization {
     width: auto;
+}
+
+.form_item_wrapper_actionform {
+    float: none;
+    margin: 0 10px;
+    border: 0;
+}
+
+label.label_actionform {
+    float: left;
+    width: auto;
+}
+
+input.submitbutton_actionform {
+    display: block;
 }
 
 </style>
@@ -97,6 +113,28 @@ label.label_visualization {
                 {% endif %}
             </span>
         </div>
+
+        {% get_obj_perms user for source as "source_perms" %}
+        {% if not showPatches and "source_edit" in source_perms %}
+
+            <form action="?{{ searchParamsStr }}" method="post">{% csrf_token %}
+              {% for field in actionForm %}
+
+                {% if not field.is_hidden %}
+                  <div class="form_item_wrapper, form_item_wrapper_actionform" id="id_{{ field.name }}_wrapper">
+                    <div class="errorlist_wrapper">{{ field.errors|safe }}</div>
+                    <label for="{{ field.id_for_label }}" class="label_actionform">{{ field.label }}:</label>
+                    {{ field }}
+                  </div>
+                {% else %}
+                    {{ field }}
+                {% endif %}
+
+              {% endfor %}
+            
+              <input type="submit" class="submitbutton_actionform" name="Action" value="Perform Action"/>
+            </form>
+        {% endif %}
 
     {% endif %}
 
