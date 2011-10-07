@@ -48,6 +48,14 @@ class VisualizationSearchForm(forms.Form):
 
 
 class ImageBatchActionForm(forms.Form):
+    class Media:
+        js = (
+            # From root static directory
+            "js/util.js",
+            # From app-specific static directory
+            "js/ImageBatchActionFormHelper.js",
+        )
+
     action = ChoiceField(
         label="Action",
         choices=(

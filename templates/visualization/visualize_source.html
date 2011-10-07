@@ -4,6 +4,11 @@
 
 {% block title %}{{ source.name }} - Visualization | CoralNet{% endblock %}
 
+{% block media-includes %}
+  {{ block.super }}
+  {{ actionForm.media }}
+{% endblock %}
+
 {% block css-code %}
 <style type="text/css">
 
@@ -117,7 +122,7 @@ input.submitbutton_actionform {
         {% get_obj_perms user for source as "source_perms" %}
         {% if not showPatches and "source_edit" in source_perms %}
 
-            <form action="?{{ searchParamsStr }}" method="post">{% csrf_token %}
+            <form id="id_actionForm" action="?{{ searchParamsStr }}" method="post">{% csrf_token %}
               {% for field in actionForm %}
 
                 {% if not field.is_hidden %}
@@ -132,8 +137,16 @@ input.submitbutton_actionform {
 
               {% endfor %}
             
-              <input type="submit" class="submitbutton_actionform" name="Action" value="Perform Action"/>
+              <input id="id_actionFormSubmitButton_withoutConfirm"
+                     type="submit" class="submitbutton_actionform" name="Action" value="Perform Action"/>
+              <input id="id_actionFormSubmitButton_withConfirm"
+                     type="submit" class="submitbutton_actionform" name="Action" value="Perform Action"/>
             </form>
+
+            <!-- Script in the body will run on page load. -->
+            <script type="text/javascript">
+                ImageBatchActionFormHelper.init();
+            </script>
         {% endif %}
 
     {% endif %}

@@ -83,8 +83,7 @@ def visualize_source(request, source_id):
                 imagesToDelete = Image.objects.filter(source=source, **actionFormImageArgs)
 
                 for img in imagesToDelete:
-                    pass
-                    #img.delete()
+                    img.delete()
 
                 # Note that img.delete() just removes the image from the
                 # database.  But the image objects are still there in the
