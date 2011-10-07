@@ -367,6 +367,7 @@ def annotation_tool(request, image_id, source_id):
         'metadata': metadata,
         'location_values': ', '.join(image.get_location_value_str_list()),
         'annotations': annotations,
+        'annotationsJSON': simplejson.dumps(annotations),
         'num_of_points': len(annotations),
         'num_of_annotations': len(annotationValues),
         'initial_display_width': initial_display_width,
