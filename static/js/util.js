@@ -35,3 +35,27 @@ var util = {
     }
 
 };
+
+
+
+/*
+ * Extensions of standard types can go here.
+ * Always make sure these don't conflict with third-party JS files' extensions of standard types.
+ */
+
+
+/* String format function, similar to printf in C.
+ * Example usage: "{0} is dead, but {1} is alive! {0} {2}".format("ASP", "ASP.NET")
+ * Example output: ASP is dead, but ASP.NET is alive! ASP {2}
+ * 
+ * Source: http://stackoverflow.com/questions/610406/javascript-equivalent-to-printf-string-format/4673436#4673436
+ */
+String.prototype.format = function() {
+  var args = arguments;
+  return this.replace(/{(\d+)}/g, function(match, number) {
+    return typeof args[number] != 'undefined'
+      ? args[number]
+      : match
+    ;
+  });
+};

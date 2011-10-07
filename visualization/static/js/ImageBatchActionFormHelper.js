@@ -1,18 +1,23 @@
 var ImageBatchActionFormHelper = {
 
-    init: function() {
+    init: function(numOfImages) {
+        this.numOfImages = numOfImages;
+
         this.changeSubmitButton();
 
         var actionFieldJQ = $("#id_action");
-
         actionFieldJQ.change(function() {
             ImageBatchActionFormHelper.changeSubmitButton();
         });
 
         var submitWithConfirmJQ = $("#id_actionFormSubmitButton_withConfirm");
         submitWithConfirmJQ.click(function() {
-            return window.confirm("Are you sure you want to delete these images?");
+            return ImageBatchActionFormHelper.areYouSureDelete();
         });
+    },
+
+    areYouSureDelete: function() {
+        return window.confirm("Are you sure you want to delete these {0} images?".format(this.numOfImages));
     },
 
     changeSubmitButton: function() {

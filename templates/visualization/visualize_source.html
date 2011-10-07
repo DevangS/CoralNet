@@ -145,7 +145,7 @@ input.submitbutton_actionform {
 
             <!-- Script in the body will run on page load. -->
             <script type="text/javascript">
-                ImageBatchActionFormHelper.init();
+                ImageBatchActionFormHelper.init({{ images.paginator.count }});
             </script>
         {% endif %}
 

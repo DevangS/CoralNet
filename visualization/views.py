@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
+from django.db import transaction
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.utils import simplejson
@@ -39,6 +40,7 @@ def image_search_args_to_url_arg_str(searchDict):
                         and paramName != 'page'])
 
 
+@transaction.commit_on_success
 @visibility_required('source_id')
 def visualize_source(request, source_id):
     """
