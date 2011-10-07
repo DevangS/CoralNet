@@ -74,7 +74,7 @@ var AnnotationToolHelper = {
         t.context.translate(t.CANVAS_GUTTER, t.CANVAS_GUTTER);
 
 		// Mouse button is pressed and un-pressed
-		t.pointsCanvas.addEventListener("mouseup", onMouseup, false);
+		t.pointsCanvas.addEventListener("mouseup", t.onMouseup, false);
 
         // Initialize points
         t.imagePoints = points;
