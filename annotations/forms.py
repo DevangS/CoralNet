@@ -1,18 +1,22 @@
 from itertools import chain
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.forms.fields import CharField
 from django.forms.widgets import TextInput
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
 from django import forms
 from django.forms.models import ModelForm
-from annotations.models import Label, LabelSet
+from annotations.models import Label, LabelSet, Annotation
 from CoralNet.forms import FormHelper
 
 # Custom widget to enable multiple checkboxes without outputting a wrongful
 # helptext since I'm modifying the widget used to display labels.
 # This is a workaround for a bug in Django which associates helptext
 # with the view instead of with the widget being used.
+from images.models import Point
+
 class CustomCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
 
    items_per_row = 4 # Number of items per row
@@ -111,3 +115,34 @@ class NewLabelSetForm(ModelForm):
             # From this app's static folder
             "js/LabelsetFormHelper.js",
         )
+
+
+class AnnotationForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        image = kwargs.pop('image')
+        user = kwargs.pop('user')
+        super(AnnotationForm, self).__init__(*args, **kwargs)
+
+        labelFieldMaxLength = Label._meta.get_field('code').max_length
+
+        # Create the text fields for annotating points with label codes.
+        # Labels are named label_1 for point 1, label_23 for point 23, etc.
+        for point in Point.objects.filter(image=image):
+            pointNum = point.point_number
+            labelFieldName = 'label_' + str(pointNum)
+
+            try:
+                #TODO: Use the user parameter, not user "Imported"
+                existingAnnotation = Annotation.objects.get(point=point, user=User.objects.get(username="Imported")).label.code
+            except Annotation.DoesNotExist:
+                existingAnnotation = ''
+
+            self.fields[labelFieldName] = CharField(
+                widget=TextInput(attrs={
+                    'size': 6,
+                }),
+                max_length=labelFieldMaxLength,
+                label=str(pointNum),
+                required=False,
+                initial=existingAnnotation,
+            )

@@ -1,6 +1,7 @@
 var AnnotationToolHelper = {
 
     annotationArea: null,
+    annotationList: null,
     coralImage: null,
     pointsCanvas: null,
 
@@ -37,8 +38,10 @@ var AnnotationToolHelper = {
         t.IMAGE_FULL_WIDTH = fullWidth;
 
         t.annotationArea = $("#annotationArea")[0];
+        t.annotationList = $("#annotationList")[0];
         t.coralImage = $("#coralImage")[0];
         t.pointsCanvas = $("#pointsCanvas")[0];
+        t.saveButton = $("#saveButton")[0];
 
         // Initialize styling for everything
 
@@ -46,6 +49,10 @@ var AnnotationToolHelper = {
             "width": t.IMAGE_DISPLAY_WIDTH + (t.CANVAS_GUTTER * 2),
             "height": t.IMAGE_DISPLAY_HEIGHT + (t.CANVAS_GUTTER * 2),
             "background-color": t.CANVAS_GUTTER_COLOR
+        });
+
+        $(t.annotationList).css({
+            "height": $(t.annotationArea).css("height")
         });
 
         $(t.coralImage).css({
@@ -79,9 +86,14 @@ var AnnotationToolHelper = {
         // Initialize points
         t.imagePoints = points;
         t.points = new Array(points.length);
-
         t.getCanvasPoints();
         t.drawPoints();
+
+        // Initialize save button
+        $(t.saveButton).removeAttr('disabled');  // Firefox might cache this attribute between page loads
+        $(t.saveButton).click(function() {
+            t.saveAnnotations();
+        });
     },
 
     /* Get the mouse position in the canvas element:
@@ -207,5 +219,23 @@ var AnnotationToolHelper = {
 			t.pointsCanvas.style.visibility = 'visible';
 		else    // 'visible' or ''
 			t.pointsCanvas.style.visibility = 'hidden';
-	}
+	},
+
+    saveAnnotations: function() {
+        $(this.saveButton).attr('disabled', 'disabled');
+        $(this.saveButton).text("Now saving...");
+        Dajaxice.CoralNet.annotations.ajax_save_annotations(
+            this.ajaxStatusToSaved,    // JS callback that the ajax.py method returns to.
+            {'annotations': []}    // Args to the ajax.py method.
+        );
+    },
+
+    // AJAX callback: cannot use "this" to refer to AnnotationToolHelper
+    ajaxStatusToSaved: function() {
+        AnnotationToolHelper.statusToSaved();
+    },
+
+    statusToSaved: function() {
+        $(this.saveButton).text("Saved");
+    }
 };

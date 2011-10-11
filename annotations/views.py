@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from django.utils import simplejson
-from annotations.forms import NewLabelForm, NewLabelSetForm
+from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm
 from annotations.models import Label, LabelSet, Annotation
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from images.models import Source, Image, Point
@@ -334,8 +334,9 @@ def annotation_tool(request, image_id, source_id):
 
     image = get_object_or_404(Image, id=image_id)
     source = get_object_or_404(Source, id=source_id)
-
     metadata = image.metadata
+
+    form = AnnotationForm(image=image, user=request.user)
 
     pointValues = Point.objects.filter(image=image).values(
         'point_number', 'row', 'column')
@@ -358,13 +359,14 @@ def annotation_tool(request, image_id, source_id):
     #  ...]
 
     # Scale the image so it fits with the webpage layout.
-    initial_display_width = 950    # Change this according to how it looks on the page
+    initial_display_width = 800    # Change this according to how it looks on the page
     initial_display_height = (initial_display_width * image.original_height) / image.original_width
 
     return render_to_response('annotations/annotation_tool.html', {
         'source': source,
         'image': image,
         'metadata': metadata,
+        'form': form,
         'location_values': ', '.join(image.get_location_value_str_list()),
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
