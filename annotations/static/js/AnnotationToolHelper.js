@@ -3,7 +3,9 @@ var AnnotationToolHelper = {
     annotationArea: null,
     annotationList: null,
     coralImage: null,
+    labelCodes: null,
     pointsCanvas: null,
+    saveButton: null,
 
 	context: null,
     points: null, imagePoints: null,
@@ -29,7 +31,7 @@ var AnnotationToolHelper = {
 
     init: function(initialHeight, initialWidth,
                    fullHeight, fullWidth,
-                   points) {
+                   points, labelCodes) {
         var t = this;  // Alias for less typing
 
         t.IMAGE_DISPLAY_HEIGHT = initialHeight;
@@ -92,7 +94,38 @@ var AnnotationToolHelper = {
         // Initialize save button
         $(t.saveButton).removeAttr('disabled');  // Firefox might cache this attribute between page loads
         $(t.saveButton).click(function() {
-            t.saveAnnotations();
+            AnnotationToolHelper.saveAnnotations();
+        });
+
+        // On-change listener for annotation form's fields
+        t.labelCodes = labelCodes;
+        var annotationFieldsJQ = $(t.annotationList).find('input');
+        annotationFieldsJQ.change(function() {
+
+            var labelCode = this.value;
+
+            // Label is not empty string, and not in the labelset
+            if (labelCode != '' && labelCodes.indexOf(labelCode) == -1) {
+                $(this).addClass('error');
+                $(this).attr('title', 'Label not in labelset');
+                $(AnnotationToolHelper.saveButton).attr('disabled', 'disabled');
+                AnnotationToolHelper.setSaveButtonText("Error");
+            }
+            // Label is in the labelset
+            else {
+                if ($(this).hasClass('error')) {
+                    $(this).removeClass('error');
+                }
+                if ($(this).hasClass('title')) {
+                    $(this).removeAttr('title');
+                }
+
+                // Allow the user to save again
+                if ($(AnnotationToolHelper.saveButton).attr('disabled')) {
+                    $(AnnotationToolHelper.saveButton).removeAttr('disabled');
+                    AnnotationToolHelper.setSaveButtonText("Save progress");
+                }
+            }
         });
     },
 
@@ -226,16 +259,24 @@ var AnnotationToolHelper = {
         $(this.saveButton).text("Now saving...");
         Dajaxice.CoralNet.annotations.ajax_save_annotations(
             this.ajaxStatusToSaved,    // JS callback that the ajax.py method returns to.
-            {'annotations': []}    // Args to the ajax.py method.
+            {'annotationForm': $("#annotationForm").serializeArray()}    // Args to the ajax.py method.
         );
     },
 
     // AJAX callback: cannot use "this" to refer to AnnotationToolHelper
-    ajaxStatusToSaved: function() {
-        AnnotationToolHelper.statusToSaved();
+    ajaxStatusToSaved: function(errorMsg) {
+        if (errorMsg) {
+            AnnotationToolHelper.setSaveButtonText("Error");
+            // TODO: Handle error cases more elegantly?  Alerts are lame.
+            // Though, these errors aren't really supposed to happen unless hackery is involved.
+            alert("Sorry, an error occurred when trying to save your annotations:\n{0}".format(errorMsg));
+        }
+        else {
+            AnnotationToolHelper.setSaveButtonText("Saved");
+        }
     },
 
-    statusToSaved: function() {
-        $(this.saveButton).text("Saved");
+    setSaveButtonText: function(buttonText) {
+        $(this.saveButton).text(buttonText);
     }
 };

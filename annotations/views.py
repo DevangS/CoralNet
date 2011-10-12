@@ -335,6 +335,7 @@ def annotation_tool(request, image_id, source_id):
     image = get_object_or_404(Image, id=image_id)
     source = get_object_or_404(Source, id=source_id)
     metadata = image.metadata
+    labelCodes = [d['code'] for d in source.labelset.labels.all().values('code')]
 
     form = AnnotationForm(image=image, user=request.user)
 
@@ -366,6 +367,7 @@ def annotation_tool(request, image_id, source_id):
         'source': source,
         'image': image,
         'metadata': metadata,
+        'labelCodesJSON': simplejson.dumps(labelCodes),
         'form': form,
         'location_values': ', '.join(image.get_location_value_str_list()),
         'annotations': annotations,

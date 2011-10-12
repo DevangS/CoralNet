@@ -1,8 +1,7 @@
 from itertools import chain
-from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.forms.fields import CharField
-from django.forms.widgets import TextInput
+from django.forms.widgets import TextInput, HiddenInput
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
@@ -118,10 +117,20 @@ class NewLabelSetForm(ModelForm):
 
 
 class AnnotationForm(forms.Form):
+
     def __init__(self, *args, **kwargs):
         image = kwargs.pop('image')
         user = kwargs.pop('user')
         super(AnnotationForm, self).__init__(*args, **kwargs)
+
+        self.fields['image_id'] = CharField(
+            widget=HiddenInput(),
+            initial=str(image.id),
+        )
+        self.fields['user_id'] = CharField(
+            widget=HiddenInput(),
+            initial=str(user.id),
+        )
 
         labelFieldMaxLength = Label._meta.get_field('code').max_length
 
@@ -132,8 +141,7 @@ class AnnotationForm(forms.Form):
             labelFieldName = 'label_' + str(pointNum)
 
             try:
-                #TODO: Use the user parameter, not user "Imported"
-                existingAnnotation = Annotation.objects.get(point=point, user=User.objects.get(username="Imported")).label.code
+                existingAnnotation = Annotation.objects.get(point=point, user=user).label.code
             except Annotation.DoesNotExist:
                 existingAnnotation = ''
 
