@@ -16,7 +16,6 @@ def ajax_save_annotations(request, annotationForm):
     """
 
     #TODO: just use request.POST instead of the annotationForm parameter
-    #annotationForm = simplejson.loads(annotationFormJSON)
     formDict = dict([ (d['name'], d['value']) for d in annotationForm ])
 
     image = Image.objects.get(pk=formDict['image_id'])
@@ -31,7 +30,11 @@ def ajax_save_annotations(request, annotationForm):
         return simplejson.dumps("Image id error")
 
     # Get stuff from the DB in advance, see if it saves time
-    #points = Point.objects.filter(image=image)
+    pointsList = list(Point.objects.filter(image=image))
+    points = dict([ (p.point_number, p) for p in pointsList ])
+
+    annotationsList = list(Annotation.objects.filter(user=user, image=image, source=source))
+    annotations = dict([ (a.point_id, a) for a in annotationsList ])
 
     for name, value in formDict.iteritems():
 
@@ -39,8 +42,7 @@ def ajax_save_annotations(request, annotationForm):
 
             # Get this annotation's point
             pointNum = name[len('label_'):]   # The part after 'label_'
-            pointNum = int(pointNum)
-            point = Point.objects.get(image=image, point_number=pointNum)
+            point = points[int(pointNum)]
 
             # Get the label that the form field value refers to.
             # Anticipate errors, even if we plan to check input with JS.
@@ -56,15 +58,14 @@ def ajax_save_annotations(request, annotationForm):
                 if label not in sourceLabels:
                     return simplejson.dumps("The labelset has no label with code %s." % labelCode)
 
-            try:
-                existingAnno = Annotation.objects.get(point=point, user=user, image=image, source=source)
+            if annotations.has_key(point.id):
+                anno = annotations[point.id]
                 if label is None:
-                    existingAnno.delete()
-                elif label != existingAnno.label:
-                    existingAnno.label = label
-                    existingAnno.save()
-
-            except Annotation.DoesNotExist:
+                    anno.delete()
+                elif label != anno.label:
+                    anno.label = label
+                    anno.save()
+            else:
                 if label is not None:
                     newAnno = Annotation(point=point, user=user, image=image, source=source, label=label)
                     newAnno.save()
