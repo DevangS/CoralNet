@@ -367,6 +367,7 @@ def annotation_tool(request, image_id, source_id):
         'source': source,
         'image': image,
         'metadata': metadata,
+        'labelCodes': labelCodes,
         'labelCodesJSON': simplejson.dumps(labelCodes),
         'form': form,
         'location_values': ', '.join(image.get_location_value_str_list()),

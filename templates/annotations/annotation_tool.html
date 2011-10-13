@@ -25,8 +25,6 @@
 
 #annotationArea {
     position: relative;
-    float: left;
-    height: 1000px; /* TODO: Make sure this doesn't conflict with the JavaScript setting of div heights */
 }
 
 #coralImage {
@@ -35,6 +33,20 @@
 
 #pointsCanvas {
     position: absolute;
+}
+
+#labelButtons button {
+    width: 80px;
+}
+
+#mainColumn {
+    float: left;
+
+    /* Spilling beyond 1000px height is fine, but we define as 1000px
+       so this takes up space, thus forcing the rightSidebar to
+       stay on the right. */
+    width: 850px;
+    height: 1000px;
 }
 
 #rightSidebar {
@@ -50,15 +62,22 @@
 #annotationList {
     /* scrollbars will appear if they're necessary */
     overflow: auto;
+    height: 800px;
 }
 
 #annotationForm {
     width: auto;
+    margin: auto;
+    padding: 0;
 }
 
 #annotationForm input {
     margin: 1px 0;
     padding: 1px 1px;
+}
+
+#annotationForm input.selected {
+    background-color: #CCCCFF
 }
 
 #annotationForm input.error {
@@ -85,13 +104,21 @@ td.annotationFormLabelCell {
 <p>Annotation progress: {{ num_of_annotations }} of {{ num_of_points }} points done</p>
 
 <div>
-    <div id="annotationArea">
+    <div id="mainColumn">
+      <div id="annotationArea">
 
         <!-- The coral image  -->
         <img id="coralImage" src="{{ image.original_file.url }}" />
 
         <!-- HTML5 canvas element for drawing points -->
         <canvas id="pointsCanvas"></canvas>
+      </div>
+
+      <div id="labelButtons">
+        {% for code in labelCodes %}
+            <button>{{ code }}</button>
+        {% endfor %}
+      </div>
     </div>
 
     {% if num_of_annotations > 0 %}

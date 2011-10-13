@@ -1,12 +1,17 @@
 var AnnotationToolHelper = {
 
+    // HTML elements
     annotationArea: null,
     annotationList: null,
+    annotationFields: [],
     coralImage: null,
-    labelCodes: null,
     pointsCanvas: null,
     saveButton: null,
 
+    // Annotation related
+    labelCodes: null,
+
+    // Canvas related
 	context: null,
     points: null, imagePoints: null,
 	POINT_RADIUS: 16,
@@ -45,6 +50,8 @@ var AnnotationToolHelper = {
         t.pointsCanvas = $("#pointsCanvas")[0];
         t.saveButton = $("#saveButton")[0];
 
+        t.labelCodes = labelCodes;
+
         // Initialize styling for everything
 
         $(t.annotationArea).css({
@@ -53,9 +60,9 @@ var AnnotationToolHelper = {
             "background-color": t.CANVAS_GUTTER_COLOR
         });
 
-        $(t.annotationList).css({
+/*        $(t.annotationList).css({
             "height": $(t.annotationArea).css("height")
-        });
+        });*/
 
         $(t.coralImage).css({
             "height": t.IMAGE_DISPLAY_HEIGHT + "px",
@@ -97,15 +104,38 @@ var AnnotationToolHelper = {
             AnnotationToolHelper.saveAnnotations();
         });
 
-        // On-change listener for annotation form's fields
-        t.labelCodes = labelCodes;
+        // Label button handler
+        $('#labelButtons').find('button').each( function() {
+            $(this).click( function() {
+                // The button's text is the label code
+                AnnotationToolHelper.labelSelected($(this).text());
+            });
+        });
+
         var annotationFieldsJQ = $(t.annotationList).find('input');
+
+        // Create array that maps point numbers to annotation form fields:
+        // annotationFields[1] = field with name "label_1", etc.
+        // (It's used like an associative array, but it's really a regular array
+        // because it has numeric indices.)
+        annotationFieldsJQ.each( function() {
+            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
+            AnnotationToolHelper.annotationFields[pointNum] = this;
+        });
+
+        // Listeners for annotation form's fields
+        annotationFieldsJQ.focus(function() {
+            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
+            AnnotationToolHelper.unselectAll();
+            AnnotationToolHelper.select([pointNum]);
+        });
+
         annotationFieldsJQ.change(function() {
 
             var labelCode = this.value;
 
             // Label is not empty string, and not in the labelset
-            if (labelCode != '' && labelCodes.indexOf(labelCode) == -1) {
+            if (labelCode != '' && AnnotationToolHelper.labelCodes.indexOf(labelCode) == -1) {
                 $(this).addClass('error');
                 $(this).attr('title', 'Label not in labelset');
                 $(AnnotationToolHelper.saveButton).attr('disabled', 'disabled');
@@ -278,5 +308,38 @@ var AnnotationToolHelper = {
 
     setSaveButtonText: function(buttonText) {
         $(this.saveButton).text(buttonText);
+    },
+
+    getPointNumOfAnnoField: function(annoField) {
+        // Assuming the annotation field's name attribute is "label_<pointnumber>"
+        return parseInt(annoField.name.substring(6));
+    },
+
+    getSelectedFieldsJQ: function() {
+        return $(this.annotationList).find('input.selected');
+    },
+
+    select: function(points) {
+        for (var i = 0; i < points.length; i++) {
+            $(this.annotationFields[points[i]]).addClass('selected');
+        }
+    },
+
+    unselect: function(points) {
+        for (var i = 0; i < points.length; i++) {
+            $(this.annotationFields[points[i]]).removeClass('selected');
+        }
+    },
+
+    unselectAll: function() {
+        this.getSelectedFieldsJQ().each( function() {
+            $(this).removeClass('selected');
+        });
+    },
+
+    labelSelected: function(labelCode) {
+        this.getSelectedFieldsJQ().each( function() {
+            this.value = labelCode;
+        });
     }
 };
