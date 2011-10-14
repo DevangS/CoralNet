@@ -35,6 +35,10 @@
     position: absolute;
 }
 
+#listenerElmt {
+    position: absolute;
+}
+
 #labelButtons button {
     width: 80px;
 }
@@ -77,7 +81,7 @@
 }
 
 #annotationForm input.selected {
-    background-color: #CCCCFF
+    background-color: #DDFFDD
 }
 
 #annotationForm input.error {
@@ -112,6 +116,9 @@ td.annotationFormLabelCell {
 
         <!-- HTML5 canvas element for drawing points -->
         <canvas id="pointsCanvas"></canvas>
+
+        <!-- Dummy element for listening to mouseclicks, etc. -->
+        <div id="listenerElmt"></div>
       </div>
 
       <div id="labelButtons">
@@ -120,8 +127,6 @@ td.annotationFormLabelCell {
         {% endfor %}
       </div>
     </div>
-
-    {% if num_of_annotations > 0 %}
 
     <div id="rightSidebar">
 
@@ -157,8 +162,6 @@ td.annotationFormLabelCell {
      </form>
 
     </div>
-
-    {% endif %}
 
     <!--
     Column layouts work best when each column can float left - but at the same time,
