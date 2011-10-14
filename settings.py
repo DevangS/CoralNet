@@ -2,6 +2,8 @@
 import settings_2
 import os, sys
 from django.conf.locale import en
+import djcelery
+djcelery.setup_loader()
 
 abspath = lambda *p: os.path.abspath(os.path.join(*p))
 PROJECT_ROOT = abspath(os.path.dirname(__file__))
@@ -163,6 +165,7 @@ INSTALLED_APPS = (
     'sentry.client',
     'dajaxice',
     'dajax',
+    'djcelery',
     'CoralNet.accounts',
     'CoralNet.images',
     'CoralNet.annotations',
@@ -229,6 +232,14 @@ SENTRY_TESTING = True
 
 # Dajaxice settings
 DAJAXICE_MEDIA_PREFIX = "dajaxice"
+
+#RabbitMQ hosts
+BROKER_HOST = "localhost"
+BROKER_PORT = 5672
+BROKER_USER = settings_2.BROKER_USER
+BROKER_PASSWORD = settings_2.BROKER_PASSWORD
+BROKER_VHOST = settings_2.BROKER_VHOST
+
 
 # App URL bases
 IMAGES_URL = '/images/'
