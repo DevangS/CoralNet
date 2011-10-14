@@ -90,7 +90,7 @@ def Classify(image):
         #builds args for matlab script
         now = datetime.datetime.now()
         featureFile = FEATURES_DIR + image.id + "_" + now.year + now.month + now.day + ".dat"
-        modelFile = #TODO: ask Oscar about where to get coralnet_train's output
+        #modelFile = #TODO: ask Oscar about where to get coralnet_train's output
         labelFile = CLASSIFY_DIR + image.id + "_" + now.year + now.month + now.day + ".txt"
 
         #call matlab script coralnet_classify
