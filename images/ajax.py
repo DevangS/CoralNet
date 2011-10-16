@@ -1,7 +1,6 @@
 from django.core.urlresolvers import reverse
 from django.utils import simplejson
 from dajaxice.decorators import dajaxice_register
-from os.path import splitext
 from images.models import Source
 from images.models import find_dupe_image
 from images.utils import filename_to_metadata
@@ -22,10 +21,9 @@ def ajax_assess_file_status(request, filenames, sourceId, checkDupes):
     source = Source.objects.get(id=sourceId)
 
     for filename in filenames:
-        filenameWithoutExt = splitext(filename)[0]
 
         try:
-            fileMetadata = filename_to_metadata(filenameWithoutExt, source)
+            fileMetadata = filename_to_metadata(filename, source)
         except ValueError:
             # Failed to parse the filename for metadata
             statusList.append({'status': 'Filename error'})

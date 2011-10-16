@@ -195,8 +195,11 @@ class ImageUploadOptionsForm(Form):
         filenameExampleStr = metadata_to_filename(**filenameExampleArgs) + ".jpg"
 
         self.fields['specify_metadata'].help_text = \
-            "Required filename format: %s" % filenameFormatStr + '\n' + \
-            "(Example: %s)" % filenameExampleStr
+            "Required filename format: %s" % filenameFormatStr
+
+        # Use JavaScript to show/hide this additional help text
+        # TODO: Fill in this additional help text
+        self.metadata_additional_help_text = ""
 
         # TODO: For correctness, make sure this only applies to the
         # regular image upload form, not the image+annotation import form.

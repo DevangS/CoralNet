@@ -20,8 +20,6 @@ from images.models import get_location_value_objs
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm
 from images.utils import filename_to_metadata, PointGen
 
-from os.path import splitext
-
 
 def source_list(request):
     """
@@ -619,19 +617,19 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
     for imageFile in imageFiles:
 
-        filenameWithoutExtension = splitext(imageFile.name)[0]
+        filename = imageFile.name
         metadataDict = None
 
         if optionsForm.cleaned_data['specify_metadata'] == 'filenames':
 
             try:
-                metadataDict = filename_to_metadata(filenameWithoutExtension, source)
+                metadataDict = filename_to_metadata(filename, source)
 
             # Filename parse error.
             # TODO: check for validity of the file type and contents, too.
             except (ValueError, StopIteration):
                 return dict(error=True,
-                    message='Upload failed - Error when parsing the filename %s for metadata.' % imageFile.name,
+                    message='Upload failed - Error when parsing the filename %s for metadata.' % filename,
                 )
 
             # Detect duplicate images and handle them
@@ -650,12 +648,12 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
             photoDate = datetime.date(year = int(metadataDict['year']),
                              month = int(metadataDict['month']),
                              day = int(metadataDict['day']))
-            metadata = Metadata(name=filenameWithoutExtension,
+            metadata = Metadata(name=metadataDict['name'],
                                 photo_date=photoDate,
                                 **valueDict)
 
         else:
-            metadata = Metadata(name=filenameWithoutExtension)
+            metadata = Metadata(name=filename)
 
         metadata.save()
 

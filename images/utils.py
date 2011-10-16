@@ -1,5 +1,6 @@
 import datetime
 import math, random
+from os.path import splitext
 
 # This file contains general utility methods that do NOT directly reference model classes.
 # (models.py may use these utility methods, so having this file reference model classes
@@ -201,7 +202,7 @@ class PointGen():
         return points
 
 
-def filename_to_metadata(filenameWithoutExt, source):
+def filename_to_metadata(filename, source):
     """
     Takes an image filename without the extension.
 
@@ -212,7 +213,7 @@ def filename_to_metadata(filenameWithoutExt, source):
 
     metadataDict = dict()
 
-    parseError = ValueError('Could not properly extract metadata from the filename "%s".' % filenameWithoutExt)
+    parseError = ValueError('Could not properly extract metadata from the filename "%s".' % filename)
     dateError = ValueError('Invalid date format or values.')
     numOfKeys = source.num_of_keys()
 
@@ -222,12 +223,21 @@ def filename_to_metadata(filenameWithoutExt, source):
     numTokensExpected = len(tokensFormat)
 
     # Make a list of the metadata 'tokens' from the filename
+    filenameWithoutExt, extension = splitext(filename)
     tokens = filenameWithoutExt.split('_')
-    if len(tokens) != numTokensExpected:
+
+    dataTokens = tokens[:numTokensExpected]
+    if len(dataTokens) != numTokensExpected:
         raise parseError
 
+    extraTokens = tokens[numTokensExpected:]
+    if len(extraTokens) > 0:
+        name = '_'.join(extraTokens) + extension
+    else:
+        name = filename
+
     # Encode the filename data into a dictionary: {'value1':'Shore2', 'date':'2008-12-18', ...}
-    filenameData = dict(zip(tokensFormat, tokens))
+    filenameData = dict(zip(tokensFormat, dataTokens))
 
     valueList = [filenameData['value'+str(i)] for i in range(1, numOfKeys+1)]
     dateToken = filenameData['date']
@@ -253,6 +263,8 @@ def filename_to_metadata(filenameWithoutExt, source):
     metadataDict['year'] = year
     metadataDict['month'] = month
     metadataDict['day'] = day
+
+    metadataDict['name'] = name
 
     return metadataDict
 
