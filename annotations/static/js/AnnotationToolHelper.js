@@ -3,6 +3,7 @@ var AnnotationToolHelper = {
     // HTML elements
     annotationArea: null,
     annotationList: null,
+    annotationFieldRows: [],
     annotationFields: [],
     coralImage: null,
     pointsCanvas: null,
@@ -133,13 +134,17 @@ var AnnotationToolHelper = {
         });
 
         var annotationFieldsJQ = $(t.annotationList).find('input');
+        var annotationFieldRowsJQ = $(t.annotationList).find('tr');
 
-        // Create array that maps point numbers to annotation form fields:
-        // annotationFields[1] = field with name "label_1", etc.
+        // Create array that maps point numbers to annotation form entries:
+        // annotationFields[1].field = field with name "label_1"
+        // annotationFields[1].label = number label for field "label_1"
         // (It's used like an associative array.)
-        annotationFieldsJQ.each( function() {
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            AnnotationToolHelper.annotationFields[pointNum] = this;
+        annotationFieldRowsJQ.each( function() {
+            var field = $(this).find('input')[0];
+            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(field);
+            AnnotationToolHelper.annotationFieldRows[pointNum] = this;
+            AnnotationToolHelper.annotationFields[pointNum] = field;
         });
 
         // Listeners for annotation form's fields
@@ -151,21 +156,25 @@ var AnnotationToolHelper = {
 
         annotationFieldsJQ.change(function() {
 
-            var labelCode = this.value;
+            var labelCode = $(this).value;
+
+            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
+            var row = AnnotationToolHelper.annotationFieldRows[pointNum]
+//            $(this).addClass('error');
 
             // Label is not empty string, and not in the labelset
             if (labelCode != '' && AnnotationToolHelper.labelCodes.indexOf(labelCode) == -1) {
-                $(this).addClass('error');
                 $(this).attr('title', 'Label not in labelset');
                 $(AnnotationToolHelper.saveButton).attr('disabled', 'disabled');
                 AnnotationToolHelper.setSaveButtonText("Error");
+                $(row).addClass('error');
             }
             // Label is in the labelset
             else {
-                if ($(this).hasClass('error')) {
-                    $(this).removeClass('error');
+                if ($(row).hasClass('error')) {
+                    $(row).removeClass('error');
                 }
-                if ($(this).hasClass('title')) {
+                if ($(this).hasAttr('title')) {
                     $(this).removeAttr('title');
                 }
 
@@ -395,13 +404,13 @@ var AnnotationToolHelper = {
     },
 
     getSelectedFieldsJQ: function() {
-        return $(this.annotationList).find('input.selected');
+        return $(this.annotationList).find('tr.selected').find('input');
     },
 
     select: function(points) {
 
         for (var i = 0; i < points.length; i++) {
-            $(this.annotationFields[points[i]]).addClass('selected');
+            $(this.annotationFieldRows[points[i]]).addClass('selected');
             this.drawPointSelected(points[i]);
         }
     },
@@ -409,14 +418,14 @@ var AnnotationToolHelper = {
     unselect: function(points) {
 
         for (var i = 0; i < points.length; i++) {
-            $(this.annotationFields[points[i]]).removeClass('selected');
+            $(this.annotationFieldRows[points[i]]).removeClass('selected');
             this.drawPointUnannotated(points[i]);
         }
     },
 
     toggle: function(points) {
         for (var i = 0; i < points.length; i++) {
-            if ($(this.annotationFields[points[i]]).hasClass('selected'))
+            if ($(this.annotationFieldRows[points[i]]).hasClass('selected'))
                 this.unselect([points[i]]);
             else
                 this.select([points[i]]);
