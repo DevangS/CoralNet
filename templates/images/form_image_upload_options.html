@@ -1,0 +1,22 @@
+{{ form.non_field_errors }}
+{% for field in form %}
+    <div class="form_item_wrapper" id="id_{{ field.name }}_wrapper">
+        <label for="{{ field.id_for_label }}">
+            {% if field.field.required and not dont_mark_required %} <span style="color:red;"> * </span> {% endif %}
+            {{ field.label }}:
+        </label>
+
+        <div class="field_wrapper">
+            {{ field }}
+            <div class="errorlist_wrapper">{{ field.errors|safe }}</div>  {# Allow HTML; some error messages may have links, etc. #}
+            {% if field.help_text %}
+              {% if field.name == "specify_metadata" %}
+                <div class="helptext" id="metadata_short_helptext">{{ field.help_text|linebreaksbr }}</div>
+                <div class="helptext" id="metadata_extra_helptext" style="display: none;">{{ form.metadata_extra_help_text|linebreaksbr }}</div>
+              {% else %}
+                <div class="helptext">{{ field.help_text|linebreaksbr }}</div>
+              {% endif %}
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}

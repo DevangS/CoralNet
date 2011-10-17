@@ -34,7 +34,7 @@
     <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
         {% include "form_generic.html" with form=annotationForm %}
         {% include "form_generic.html" with form=imageForm %}
-        {% include "form_generic.html" with form=optionsForm %}
+        {% include "images/form_image_upload_options.html" with form=optionsForm %}
 
         <div class="submit_button_wrapper">
             <input type="submit" id="id_upload_submit" value="To be filled in with JS" />
@@ -49,7 +49,7 @@
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
 
-        ImageUploadFormHelper.initForm("previewArea", {{ source.id }}, true);
+        ImageUploadFormHelper.initForm({{ source.id }}, true);
 
     </script>
 

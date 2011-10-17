@@ -9,10 +9,10 @@ var ImageUploadFormHelper = {
     numOfDupes: 0,
     numOfErrors: 0,
 
-    initForm: function(previewAreaId, sourceId, hasAnnotations){
+    initForm: function(sourceId, hasAnnotations){
 
         // Initializing.
-        this.previewArea = $('#' + previewAreaId);
+        this.previewArea = $('#previewArea');
         this.sourceId = sourceId;
         this.hasAnnotations = hasAnnotations;
 
@@ -33,6 +33,29 @@ var ImageUploadFormHelper = {
             ImageUploadFormHelper.previewUpload();
             ImageUploadFormHelper.updateFormFields();
         });*/
+
+        // "(More info)" link on the 'specify metadata' field
+        var metadataHelptextJQ = $("#metadata_short_helptext");
+        var metadataExtraHelptextLinkJQ = $("<a>").text("(More info)");
+        metadataHelptextJQ.append(" ");
+        metadataHelptextJQ.append($("<span>").append(metadataExtraHelptextLinkJQ));
+
+        // Extra help text is initially hidden
+        $("#metadata_extra_helptext").hide();
+
+        // (More info) shows the extra help text, (Less info) hides it
+        metadataExtraHelptextLinkJQ.click(function() {
+            var extraHelptextJQ = $("#metadata_extra_helptext");
+            
+            if (extraHelptextJQ.is(':hidden')) {
+                extraHelptextJQ.show();
+                $(this).text("(Less info)");
+            }
+            else {
+                extraHelptextJQ.hide();
+                $(this).text("(More info)");
+            }
+        });
     },
 
     filesizeDisplay: function(bytes) {

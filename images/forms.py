@@ -138,6 +138,7 @@ class ImageUploadForm(Form):
     files = ImageField(
         label='Image files',
         widget=FileInput(attrs={'multiple': 'multiple'}))
+    #TODO: Add helptext saying which file formats are acceptable.
 
 
 class ImageUploadOptionsForm(Form):
@@ -198,8 +199,25 @@ class ImageUploadOptionsForm(Form):
             "Required filename format: %s" % filenameFormatStr
 
         # Use JavaScript to show/hide this additional help text
-        # TODO: Fill in this additional help text
-        self.metadata_additional_help_text = ""
+        self.metadata_extra_help_text = (
+            "\n"
+            "For example, let's say your source has the following location keys: "
+            "Site, Depth, Transect Line and Quadrant. "
+            "If you want to upload a .jpg image that was taken at "
+            "Site: sharkPoint, Depth: 10m, Transect Line: 3, and Quadrant: qu4, "
+            "on 14 January 2010, the filename for upload should be:\n\n"
+
+            "sharkPoint_10m_3_qu4_2010-01-14.jpg\n\n"
+
+            "Alternatively, if you also want to store the original filename - say it's "
+            "IMG_0032.jpg - you can use:\n\n"
+
+            "sharkPoint_10m_3_qu4_2010-01-14_IMG_0032.jpg\n\n"
+
+            "The original file name is not used by CoralNet, but could be "
+            "useful for your own reference."
+        )
+
 
         # TODO: For correctness, make sure this only applies to the
         # regular image upload form, not the image+annotation import form.
