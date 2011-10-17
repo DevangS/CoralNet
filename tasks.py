@@ -4,20 +4,22 @@ from celery.decorators import task
 import os
 from django.contrib.auth.models import User
 from annotations.models import Label, Annotation
-from images.models import Point
+from images.models import Point, Image, Source
 
-PREPROCESS_ERROR_LOG = "preprocess_error.txt"
-FEATURES_ERROR_LOG = "features_error.txt"
-CLASSIFY_ERROR_LOG = "classify_error.txt"
+PREPROCESS_ERROR_LOG = "/cnhome/errorlogs/preprocess_error.txt"
+FEATURE_ERROR_LOG = "/cnhome/errorlogs/features_error.txt"
+CLASSIFY_ERROR_LOG = "/cnhome/errorlogs/classify_error.txt"
 
-PREPROCESS_DIR = "/images/preprocess/"
-FEATURES_DIR = "/images/features/"
-CLASSIFY_DIR = "/images/classify/"
+ORIGINALIMAGES_DIR = "/cnhome/media/"
+PREPROCESS_DIR = "/cnhome/images/preprocess/"
+FEATURES_DIR = "/cnhome/images/features/"
+CLASSIFY_DIR = "/cnhome/images/classify/"
+MODEL_DIR = "/cnhome/images/models/"
 
-PREPROCESS_PARAM_FILE = "/images/preprocess/preProcessParameters.mat"
-FEATURE_PARAM_FILE = "/images/features/featuresExtractionParameters.mat"
+PREPROCESS_PARAM_FILE = "/cnhome/images/preprocess/preProcessParameters.mat"
+FEATURE_PARAM_FILE = "/cnhome/images/features/featureExtractionParameters.mat"
 
-ALGORITHM_USERID = '0' #TODO: create new user for this and put userid here
+ALGORITHM_USERID = '-3' 
 
 #Tasks that get processed by Celery
 #Possible future problems include that each task relies on it being the same day to continue processing an image,
@@ -25,17 +27,22 @@ ALGORITHM_USERID = '0' #TODO: create new user for this and put userid here
 #the algorithm against it
 
 @task()
+def dummyTask():
+    print("dummy task output")
+
+@task()
 def PreprocessImages(image):
-    print("Start pre-processing image id %r", image.id)
+    print 'Start pre-processing image id {}'.format(image.id)
 
     #gets current date to append to file name
-    now = datetime.datetime.now()
+    now = datetime.now()
     #matlab will output image.id_YearMonthDay.mat file
-    preprocessedImageFile = PREPROCESS_DIR + image.id + "_" + now.year + now.month + now.day + ".mat"
+    preprocessedImageFile = PREPROCESS_DIR + str(image.id) + "_" + str(now.year) + str(now.month) + str(now.day) + ".mat"
+
+    matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_preprocessImage(\'' + ORIGINALIMAGES_DIR + str(image.original_file) + '\', \'' + preprocessedImageFile + '\', \'' + PREPROCESS_PARAM_FILE + '\', \'' + PREPROCESS_ERROR_LOG + '\'); exit;"'
 
     #call coralnet_preprocessImage(matlab script) to process a single image
-    call(['coralnet_preprocessImage', "/" + str(image.original_file),   preprocessedImageFile, PREPROCESS_PARAM_FILE,
-          PREPROCESS_ERROR_LOG])
+    os.system(matlabCallString);
 
     #error occurred in matlab
     if os.path.isfile(PREPROCESS_ERROR_LOG):
@@ -44,23 +51,23 @@ def PreprocessImages(image):
     else:
         image.status = '1'
         image.save()
-        print("Finished pre-processing image id %r", image.id)
+        print 'Finished pre-processing image id {}'.format(image.id)
 
 @task()
 def MakeFeatures(image):
-    print("Start feature extraction for  image id %r", image.id)
+    print 'Start feature extraction for  image id {}'.format(image.id)
     
     #if error had occurred in preprocess, don't let them go further
     if os.path.isfile(PREPROCESS_ERROR_LOG):
         print("Sorry error detected in preprocessing, halting feature extraction!")
     else:
         #builds args for matlab script
-        now = datetime.datetime.now()
-        preProcessedImageFile = PREPROCESS_DIR + image.id + "_" + now.year + now.month + now.day + ".mat"
-        featureFile = FEATURES_DIR + image.id + "_" + now.year + now.month + now.day + ".dat"
+        now = datetime.now()
 
+        preprocessedImageFile = PREPROCESS_DIR + str(image.id) + "_" + str(now.year) + str(now.month) + str(now.day) + ".mat"
+        featureFile = FEATURES_DIR + str(image.id) + "_" + str(now.year) + str(now.month) + str(now.day) + ".dat"
         #creates rowColFile
-        rowColFile = FEATURES_DIR + image.id + "_rowCol.txt"
+        rowColFile = FEATURES_DIR + str(image.id) + "_rowCol.txt"
         file = open(rowColFile, 'w')
         points = Point.objects.filter(image=image)
         for point in points:
@@ -68,41 +75,44 @@ def MakeFeatures(image):
             file.write(str(point.row) + "," + str(point.column) + "\n")
         file.close()
         
+        matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_makeFeatures(\'' + preprocessedImageFile + '\', \'' + featureFile + '\', \'' + rowColFile + '\', \'' + FEATURE_PARAM_FILE+ '\', \'' + FEATURE_ERROR_LOG + '\'); exit;"'
         #call matlab script coralnet_makeFeatures
-        call(['coralnet_makeFeatures', preProcessedImageFile, featureFile, rowColFile, FEATURE_PARAM_FILE,
-              FEATURES_ERROR_LOG])
+        os.system(matlabCallString);
 
-        if os.path.isfile(FEATURES_ERROR_LOG):
+        if os.path.isfile(FEATURE_ERROR_LOG):
             print("Sorry error detected in feature extraction!")
         else:
             image.status = '2'
             image.save()
-            print("Finished feature extraction for  image id %r", image.id)
+            print 'Finished feature extraction for image id {}'.format(image.id)
         
 @task()
 def Classify(image):
-    print("Start classify image id %r", image.id)
+    print 'Start classify image id {}'.format(image.id)
 
     #if error occurred in feature extraction, don't let them go further
-    if os.path.isfile(FEATURES_ERROR_LOG):
+    if os.path.isfile(FEATURE_ERROR_LOG):
         print("Sorry error detected in feature extraction, halting classification!")
     else:
         #builds args for matlab script
-        now = datetime.datetime.now()
-        featureFile = FEATURES_DIR + image.id + "_" + now.year + now.month + now.day + ".dat"
-        #modelFile = #TODO: ask Oscar about where to get coralnet_train's output
-        labelFile = CLASSIFY_DIR + image.id + "_" + now.year + now.month + now.day + ".txt"
+        now = datetime.now()
+        featureFile = FEATURES_DIR + str(image.id) + "_" + str(now.year) + str(now.month) + str(now.day) + ".dat"
+	#get the source id for this file
+        modelFile = MODEL_DIR + str(image.source.labelset.id) + "_model.txt"
+        labelFile = CLASSIFY_DIR + str(image.id) + "_" + str(now.year) + str(now.month) + str(now.day) + ".txt"
+        
+        matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_classify(\'' + featureFile + '\', \'' + modelFile + '\', \'' + labelFile + '\', \'' + CLASSIFY_ERROR_LOG + '\'); exit;"'
 
         #call matlab script coralnet_classify
-        call(['coralnet_classify', featureFile, modelFile, labelFile])
-        if os.path.isfile(CLASSIFY_ERROR_LOG):
+        os.system(matlabCallString);
+	if os.path.isfile(CLASSIFY_ERROR_LOG):
             print("Sorry error detected in classification!")
         else:
             #get algorithm user object
             user = User.objects.get(id=ALGORITHM_USERID)
 
             #open the labelFile and rowColFile to process labels
-            rowColFile = FEATURES_DIR + image.id + "_rowCol.txt"
+            rowColFile = FEATURES_DIR + str(image.id) + "_rowCol.txt"
             label_file = open(labelFile, 'r')
             row_file = open(rowColFile, 'r')
 
@@ -119,11 +129,11 @@ def Classify(image):
                 label = Label.objects.filter(id=label_id)
 
                 #create the annotation object and save it
-                annotation = Annotation(image=image, label=label, point=point, user=user, source=image.source)
+                annotation = Annotation(image=image, label=label[0], point=point, user=user, source=image.source)
                 annotation.save()
 
             #update image status
             image.status = '3'
             image.save()
-            print("Finished classification for  image id %r", image.id)
+            print 'Finished classification of image id {}'.format(image.id)
 
