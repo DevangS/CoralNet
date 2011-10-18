@@ -33,7 +33,7 @@ def ajax_save_annotations(request, annotationForm):
     pointsList = list(Point.objects.filter(image=image))
     points = dict([ (p.point_number, p) for p in pointsList ])
 
-    annotationsList = list(Annotation.objects.filter(user=user, image=image, source=source))
+    annotationsList = list(Annotation.objects.filter(image=image, source=source))
     annotations = dict([ (a.point_id, a) for a in annotationsList ])
 
     for name, value in formDict.iteritems():

@@ -141,7 +141,7 @@ class AnnotationForm(forms.Form):
             labelFieldName = 'label_' + str(pointNum)
 
             try:
-                existingAnnotation = Annotation.objects.get(point=point, user=user).label.code
+                existingAnnotation = Annotation.objects.get(point=point).label.code
             except Annotation.DoesNotExist:
                 existingAnnotation = ''
 
