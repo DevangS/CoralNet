@@ -208,6 +208,10 @@ AUTHENTICATION_BACKENDS = (
 #Django-guardian settings
 ANONYMOUS_USER_ID = -1
 
+# Other special user ids
+IMPORTED_USER_ID = settings_2.IMPORTED_USER_ID
+ROBOT_USER_ID = settings_2.ROBOT_USER_ID
+
 #Userena settings
 LOGIN_REDIRECT_URL = '/accounts/%(username)s/'
 LOGIN_URL = '/accounts/signin/'

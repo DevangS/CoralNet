@@ -24,13 +24,17 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'coralnet',                      # Or path to database file if using sqlite3.
-        'USER': 'django',                      # Not used with sqlite3.
-        'PASSWORD': 'djangor0cks',                  # Not used with sqlite3.
+        'NAME': 'databaseNameGoesHere',                      # Or path to database file if using sqlite3.
+        'USER': 'usernameGoesHere',                      # Not used with sqlite3.
+        'PASSWORD': 'passwordGoesHere',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
 }
+
+# Special user ids
+IMPORTED_USER_ID = -2
+ROBOT_USER_ID = -3
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 
@@ -39,6 +43,11 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
 STATIC_ROOT = ''
+
+#RabbitMQ hidden configs
+BROKER_USER = "usernameGoesHere"
+BROKER_PASSWORD = "passwordGoesHere"
+BROKER_VHOST = "vhostGoesHere"
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'tg5t&4x9f8edmnhe)d55tkk$e-djc4m_q%=^xo%n-jipn&v&8j'

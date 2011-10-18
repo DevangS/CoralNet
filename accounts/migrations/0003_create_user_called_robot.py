@@ -7,27 +7,27 @@ from django.conf import settings
 
 class Migration(DataMigration):
 
-    # Create a dummy user called "Imported".  This will be assigned as the
-    # user who annotated any annotations that were imported from outside
-    # the site.
+    # Create a dummy user called "robot".
+    # This is the user under which computer-generated annotations
+    # will be added.
 
     def forwards(self, orm):
-        username = "Imported"
+        username = "robot"
 
         print "-----"
 
         try:
             orm['auth.User'].objects.get(username=username)
         except orm['auth.User'].DoesNotExist:
-            importedUser = orm['auth.User'](id=settings.IMPORTED_USER_ID,
+            robotUser = orm['auth.User'](id=settings.ROBOT_USER_ID,
                                     username=username,
                                     first_name="",
                                     last_name="",
                                     email="",
                                     password="",
                                     )
-            importedUser.save()
-
+            robotUser.save()
+            
             print "Created user with username %s." % username
         else:
             print "User with username %s already exists; nothing needs to be done." % username
@@ -36,11 +36,12 @@ class Migration(DataMigration):
 
 
     def backwards(self, orm):
-        username = "Imported"
+        username = "robot"
+
         print (
             "-----\n"
             "NOTE: This migration rollback does nothing.  "
-            "Deleting the %s user would delete all imported annotations, "
+            "Deleting the %s user would delete all robot-made annotations, "
             "which would be very bad to do accidentally."
             "\n-----" % username
         )
