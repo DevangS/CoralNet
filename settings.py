@@ -240,6 +240,8 @@ BROKER_USER = settings_2.BROKER_USER
 BROKER_PASSWORD = settings_2.BROKER_PASSWORD
 BROKER_VHOST = settings_2.BROKER_VHOST
 
+#Celery configuration
+CELERYD_CONCURRENCY = 2
 
 # App URL bases
 IMAGES_URL = '/images/'
