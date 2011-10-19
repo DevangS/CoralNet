@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
-from django.db import transaction
+from django.db import transaction, models
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.utils import simplejson
@@ -18,7 +18,7 @@ def image_search_args_to_queryset_args(searchDict):
     Image.objects.filter().
 
     Only the value1, ... valuen and the year in cleaned_data are processed.  label and
-    page are ignored and not included in the returned dict.
+    page, if present, are ignored and not included in the returned dict.
     """
 
     searchArgs = dict([(k, searchDict[k]) for k in searchDict if searchDict[k] != ''])
@@ -34,10 +34,26 @@ def image_search_args_to_queryset_args(searchDict):
 
 
 def image_search_args_to_url_arg_str(searchDict):
-    return '&'.join(['%s=%s' % (paramName, searchDict[paramName])
-                     for paramName in searchDict
-                     if searchDict[paramName]    # Don't include the arg if it's None or ''
-                        and paramName != 'page'])
+    """
+    Take: the image search arguments directly from the visualization search form's
+    form.cleaned_data.
+    Return: the search arguments in URL get-parameter format.  This is used for
+    the next/previous page links.
+    """
+    argsList = []
+
+    for paramName in searchDict:
+
+        # If a model object (probably coming from a ModelChoiceField in the
+        # search form), then set the URL arg to be the primary key
+        if isinstance(searchDict[paramName], models.Model):
+            argsList.append('%s=%s' % (paramName, searchDict[paramName].pk))
+
+        # Don't include the arg if it's None or '', or 'page'
+        elif searchDict[paramName] and paramName != 'page':
+            argsList.append('%s=%s' % (paramName, searchDict[paramName]))
+
+    return '&'.join(argsList)
 
 
 @transaction.commit_on_success
@@ -64,9 +80,9 @@ def visualize_source(request, source_id):
         if form.is_valid():
 
             urlArgsStr = image_search_args_to_url_arg_str(form.cleaned_data)
-            imageArgs = image_search_args_to_queryset_args(form.cleaned_data)
 
-            label = form.cleaned_data['labels']
+            label = form.cleaned_data.pop('labels')
+            imageArgs = image_search_args_to_queryset_args(form.cleaned_data)
 
         else:
             searchFormErrors = True
