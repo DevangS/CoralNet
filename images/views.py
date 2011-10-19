@@ -16,7 +16,7 @@ from annotations.models import LabelGroup, Label, Annotation, LabelSet
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from CoralNet.exceptions import FileContentError
 
-from images.models import Source, Image, Metadata, Point, find_dupe_image, SourceInvite
+from images.models import Source, Image, Metadata, Point, find_dupe_image, SourceInvite, ImageStatus
 from images.models import get_location_value_objs
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm
 from images.utils import filename_to_metadata, PointGen
@@ -675,6 +675,9 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
             imageAnnotations = annotationData[imageIdentifier]
 
+            status = ImageStatus(hasRandomPoints=True, annotatedByHuman=True)
+            status.save()
+
             img = Image(original_file=imageFile,
                     uploaded_by=currentUser,
                     point_generation_method=PointGen.args_to_db_format(
@@ -682,7 +685,9 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
                         imported_number_of_points=len(imageAnnotations)
                     ),
                     metadata=metadata,
-                    source=source)
+                    source=source,
+                    status=status,
+                  )
             img.save()
 
             # Iterate over this image's annotations and save them if the .
@@ -708,13 +713,18 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
         else:
 
             point_generation_method = source.default_point_generation_method
+            
+            status = ImageStatus(hasRandomPoints=True)
+            status.save()
 
             # Save the image into the DB
             img = Image(original_file=imageFile,
                     uploaded_by=currentUser,
                     point_generation_method=point_generation_method,
                     metadata=metadata,
-                    source=source)
+                    source=source,
+                    status=status,
+                  )
             img.save()
 
             # Generate points
