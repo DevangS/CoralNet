@@ -32,10 +32,6 @@ DATABASES = {
     }
 }
 
-# Special user ids
-IMPORTED_USER_ID = -2
-ROBOT_USER_ID = -3
-
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 
 # Absolute path to the directory static files should be collected to.

@@ -209,8 +209,8 @@ AUTHENTICATION_BACKENDS = (
 ANONYMOUS_USER_ID = -1
 
 # Other special user ids
-IMPORTED_USER_ID = settings_2.IMPORTED_USER_ID
-ROBOT_USER_ID = settings_2.ROBOT_USER_ID
+IMPORTED_USER_ID = -2
+ROBOT_USER_ID = -3
 
 #Userena settings
 LOGIN_REDIRECT_URL = '/accounts/%(username)s/'

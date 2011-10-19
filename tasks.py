@@ -3,6 +3,7 @@ from subprocess import call
 from celery.decorators import task
 import os
 from django.contrib.auth.models import User
+from accounts.utils import get_robot_user
 from annotations.models import Label, Annotation
 from images.models import Point, Image, Source
 
@@ -19,7 +20,6 @@ MODEL_DIR = "/cnhome/images/models/"
 PREPROCESS_PARAM_FILE = "/cnhome/images/preprocess/preProcessParameters.mat"
 FEATURE_PARAM_FILE = "/cnhome/images/features/featureExtractionParameters.mat"
 
-ALGORITHM_USERID = '-3' 
 
 #Tasks that get processed by Celery
 #Possible future problems include that each task relies on it being the same day to continue processing an image,
@@ -109,7 +109,7 @@ def Classify(image):
             print("Sorry error detected in classification!")
         else:
             #get algorithm user object
-            user = User.objects.get(id=ALGORITHM_USERID)
+            user = get_robot_user()
 
             #open the labelFile and rowColFile to process labels
             rowColFile = FEATURES_DIR + str(image.id) + "_rowCol.txt"

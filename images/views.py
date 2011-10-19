@@ -11,6 +11,7 @@ from django.http import HttpResponseRedirect
 from django.template import RequestContext
 
 from userena.models import User
+from accounts.utils import get_imported_user
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from CoralNet.exceptions import FileContentError
@@ -604,7 +605,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
     annotationsImported = 0
 
     dupeOption = optionsForm.cleaned_data['skip_or_replace_duplicates']
-    importedUser = User.objects.get(username="Imported")
+    importedUser = get_imported_user()
 
     annotationData = None
     if annoFile:
