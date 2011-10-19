@@ -258,6 +258,24 @@ class SourceInvite(models.Model):
                 return permType.verbose
 
 
+class Robot(models.Model):
+    # Later, may tie robots to labelsets instead of sources
+    source = models.ForeignKey(Source)
+    
+    version = models.IntegerField(unique=True)
+    path_to_model = models.CharField(max_length=500)
+    time_to_train = models.BigIntegerField()
+
+    # Automatically set to the date and time of creation.
+    create_date = models.DateTimeField('Date created', auto_now_add=True, editable=False)
+
+    def __unicode__(self):
+        """
+        To-string method.
+        """
+        return "Version %s for %s" % (self.version, self.source.name)
+
+
 class LocationValue(models.Model):
     class Meta:
         # An abstract base class; no table will be created for
@@ -368,6 +386,12 @@ class Image(models.Model):
     
     metadata = models.ForeignKey(Metadata)
     source = models.ForeignKey(Source)
+
+    # To be set by the preprocessing task
+    process_date = models.DateTimeField("Date processed", editable=False, null=True)
+
+    latest_robot_annotator = models.ForeignKey(Robot, editable=False, null=True)
+
 
     def __unicode__(self):
         return self.metadata.name
