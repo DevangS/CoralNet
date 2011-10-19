@@ -319,6 +319,14 @@ class Metadata(models.Model):
         return "Metadata of " + self.name
 
 
+class ImageStatus(models.Model):
+    preprocessed = models.BooleanField(default=False)
+    featuresExtracted = models.BooleanField(default=False)
+    hasRandomPoints = models.BooleanField(default=False)
+    annotatedByRobot = models.BooleanField(default=False)
+    annotatedByHuman = models.BooleanField(default=False)
+
+
 def get_original_image_upload_path(instance, filename):
     """
     Generate a destination path (on the server filesystem) for
@@ -343,7 +351,8 @@ class Image(models.Model):
 
     upload_date = models.DateTimeField('Upload date', auto_now_add=True, editable=False)
     uploaded_by = models.ForeignKey(User, editable=False)
-    status = models.CharField(max_length=1, blank=True)
+
+    status = models.ForeignKey(ImageStatus, editable=False)
 
     POINT_GENERATION_CHOICES = (
         (PointGen.Types.SIMPLE, PointGen.Types.SIMPLE_VERBOSE),
