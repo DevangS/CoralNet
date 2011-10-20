@@ -1,12 +1,14 @@
 from itertools import chain
 from django.core.urlresolvers import reverse
-from django.forms.fields import CharField
+from django.forms.fields import CharField, BooleanField
 from django.forms.widgets import TextInput, HiddenInput
+from django.utils import simplejson
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
 from django import forms
 from django.forms.models import ModelForm
+from accounts.utils import is_robot_user
 from annotations.models import Label, LabelSet, Annotation
 from CoralNet.forms import FormHelper
 
@@ -134,23 +136,43 @@ class AnnotationForm(forms.Form):
 
         labelFieldMaxLength = Label._meta.get_field('code').max_length
 
-        # Create the text fields for annotating points with label codes.
-        # Labels are named label_1 for point 1, label_23 for point 23, etc.
+
         for point in Point.objects.filter(image=image):
-            pointNum = point.point_number
-            labelFieldName = 'label_' + str(pointNum)
 
             try:
-                existingAnnotation = Annotation.objects.get(point=point).label.code
+                existingAnnotation = Annotation.objects.get(point=point)
             except Annotation.DoesNotExist:
-                existingAnnotation = ''
+                existingAnnotation = None
+
+            if existingAnnotation:
+                existingAnnoCode = existingAnnotation.label.code
+                isRobotAnnotation = is_robot_user(existingAnnotation.user)
+            else:
+                existingAnnoCode = ''
+                isRobotAnnotation = None
+
+            pointNum = point.point_number
+
+            # Create the text field for annotating a point with a label code.
+            # label_1 for point 1, label_23 for point 23, etc.
+            labelFieldName = 'label_' + str(pointNum)
 
             self.fields[labelFieldName] = CharField(
-                widget=TextInput(attrs={
-                    'size': 6,
-                }),
+                widget=TextInput(attrs=dict(
+                    size=6,
+                )),
                 max_length=labelFieldMaxLength,
                 label=str(pointNum),
                 required=False,
-                initial=existingAnnotation,
+                initial=existingAnnoCode,
+            )
+
+            # Create a hidden field to indicate whether a point is robot-annotated or not.
+            # robot_1 for point 1, robot_23 for point 23, etc.
+            robotFieldName = 'robot_' + str(pointNum)
+
+            self.fields[robotFieldName] = BooleanField(
+                widget=HiddenInput(),
+                required=False,
+                initial=simplejson.dumps(isRobotAnnotation),
             )

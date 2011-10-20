@@ -1,6 +1,7 @@
 from dajaxice.decorators import dajaxice_register
 from django.contrib.auth.models import User
 from django.utils import simplejson
+from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation
 from images.models import Image, Point, Source
 
@@ -29,7 +30,7 @@ def ajax_save_annotations(request, annotationForm):
     if not user.has_perm(Source.PermTypes.EDIT.code, image.source):
         return simplejson.dumps("Image id error")
 
-    # Get stuff from the DB in advance, see if it saves time
+    # Get stuff from the DB in advance, should save time
     pointsList = list(Point.objects.filter(image=image))
     points = dict([ (p.point_number, p) for p in pointsList ])
 
@@ -43,6 +44,9 @@ def ajax_save_annotations(request, annotationForm):
             # Get this annotation's point
             pointNum = name[len('label_'):]   # The part after 'label_'
             point = points[int(pointNum)]
+
+            # Does the form field have a non-human-confirmed robot annotation?
+            isFormRobotAnnotation = simplejson.loads(formDict['robot_' + pointNum])
 
             # Get the label that the form field value refers to.
             # Anticipate errors, even if we plan to check input with JS.
@@ -58,13 +62,23 @@ def ajax_save_annotations(request, annotationForm):
                 if label not in sourceLabels:
                     return simplejson.dumps("The labelset has no label with code %s." % labelCode)
 
+            # An annotation of this point number exists in the database
             if annotations.has_key(point.id):
                 anno = annotations[point.id]
+                # Label field is now blank
                 if label is None:
                     anno.delete()
+                # Label was robot annotated, and then the human user confirmed or changed it
+                elif is_robot_user(anno.user) and not isFormRobotAnnotation:
+                    anno.label = label
+                    anno.user = user
+                    anno.save()
+                # Label was otherwise changed
                 elif label != anno.label:
                     anno.label = label
                     anno.save()
+
+            # No annotation of this point number in the database yet
             else:
                 if label is not None:
                     newAnno = Annotation(point=point, user=user, image=image, source=source, label=label)

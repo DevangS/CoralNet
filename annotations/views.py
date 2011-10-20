@@ -344,20 +344,27 @@ def annotation_tool(request, image_id, source_id):
     annotationValues = Annotation.objects.filter(image=image).values(
         'point__point_number', 'label__name', 'label__code')
 
-    annotations = dict()
+    # annotationsDict
+    # keys: point numbers
+    # values: dicts containing the values in pointValues and
+    #         annotationValues (if the point has an annotation) above
+    annotationsDict = dict()
     for p in pointValues:
-        annotations[p['point_number']] = p
+        annotationsDict[p['point_number']] = p
     for a in annotationValues:
-        annotations[a['point__point_number']].update(a)
+        annotationsDict[a['point__point_number']].update(a)
 
-    annotations = list(annotations.values())
+    # Get a list of the annotationsDict values (the keys are discarded)
+    # Sort by point_number
+    annotations = list(annotationsDict.values())
     annotations.sort(key=lambda x:x['point_number'])
 
     # Now we've gotten all the relevant points and annotations
     # from the database, in a list of dicts:
-    # [{'point_number':1, 'row':294, 'column':749, 'label__name':'Porites', 'label__code':'Porit'},
+    # [{'point_number':1, 'row':294, 'column':749, 'label__name':'Porites', 'label__code':'Porit', 'user_is_robot':False},
     #  {'point_number':2, ...},
     #  ...]
+    # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
 
     # Scale the image so it fits with the webpage layout.
     initial_display_width = 800    # Change this according to how it looks on the page

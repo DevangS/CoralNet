@@ -5,6 +5,7 @@ var AnnotationToolHelper = {
     annotationList: null,
     annotationFieldRows: [],
     annotationFields: [],
+    annotationRobotFields: [],
     coralImage: null,
     pointsCanvas: null,
     listenerElmt: null,
@@ -16,6 +17,7 @@ var AnnotationToolHelper = {
     // Canvas related
 	context: null,
     canvasPoints: [], imagePoints: null,
+    numOfPoints: null,
 	POINT_RADIUS: 16,
     NUMBER_FONT: "bold 24px sans-serif",
 
@@ -116,6 +118,7 @@ var AnnotationToolHelper = {
 
         // Initialize points
         t.imagePoints = imagePoints;
+        t.numOfPoints = imagePoints.length;
         t.getCanvasPoints();
         t.drawAllPoints();
 
@@ -145,6 +148,12 @@ var AnnotationToolHelper = {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(field);
             AnnotationToolHelper.annotationFieldRows[pointNum] = this;
             AnnotationToolHelper.annotationFields[pointNum] = field;
+
+            var robotField = $('#id_robot_' + pointNum)[0];
+            AnnotationToolHelper.annotationRobotFields[pointNum] = robotField;
+            if (robotField.value === "true") {
+                $(this).addClass('robot');
+            }
         });
 
         // Listeners for annotation form's fields
@@ -155,36 +164,58 @@ var AnnotationToolHelper = {
         });
 
         annotationFieldsJQ.change(function() {
+            AnnotationToolHelper.onLabelFieldChange(this);
+        });
 
-            var labelCode = $(this).value;
+        annotationFieldsJQ.keyup(function(e) {
+            var ENTER = 13;
+            
+            if(e.keyCode === ENTER) {
+                // Un-robot the current field
+                var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
+                AnnotationToolHelper.unrobot(pointNum);
 
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            var row = AnnotationToolHelper.annotationFieldRows[pointNum]
-//            $(this).addClass('error');
-
-            // Label is not empty string, and not in the labelset
-            if (labelCode != '' && AnnotationToolHelper.labelCodes.indexOf(labelCode) == -1) {
-                $(this).attr('title', 'Label not in labelset');
-                $(AnnotationToolHelper.saveButton).attr('disabled', 'disabled');
-                AnnotationToolHelper.setSaveButtonText("Error");
-                $(row).addClass('error');
-            }
-            // Label is in the labelset
-            else {
-                if ($(row).hasClass('error')) {
-                    $(row).removeClass('error');
-                }
-                if ($(this).hasAttr('title')) {
-                    $(this).removeAttr('title');
-                }
-
-                // Allow the user to save again
-                if ($(AnnotationToolHelper.saveButton).attr('disabled')) {
-                    $(AnnotationToolHelper.saveButton).removeAttr('disabled');
-                    AnnotationToolHelper.setSaveButtonText("Save progress");
+                // Switch focus to next point's field
+                var lastPoint = AnnotationToolHelper.numOfPoints;
+                if (pointNum != lastPoint) {
+                    $(AnnotationToolHelper.annotationFields[pointNum+1]).focus();
                 }
             }
         });
+    },
+
+    onLabelFieldChange: function(field) {
+        var t = this;
+        var labelCode = field.value;
+
+        var pointNum = t.getPointNumOfAnnoField(field);
+        var row = t.annotationFieldRows[pointNum];
+
+        // No longer a robot annotation if we've changed it
+        t.unrobot(pointNum);
+
+        // Label is not empty string, and not in the labelset
+        if (labelCode != '' && t.labelCodes.indexOf(labelCode) == -1) {
+            $(field).attr('title', 'Label not in labelset');
+            $(t.saveButton).attr('disabled', 'disabled');
+            t.setSaveButtonText("Error");
+            $(row).addClass('error');
+        }
+        // Label is in the labelset
+        else {
+            if ($(row).hasClass('error')) {
+                $(row).removeClass('error');
+            }
+            if ($(field).attr('title')) {
+                $(field).removeAttr('title');
+            }
+
+            // If no errors in the form, allow the user to save again
+            if ($(t.annotationList).find('tr.error').length === 0  &&  $(t.saveButton).attr('disabled')) {
+                $(t.saveButton).removeAttr('disabled');
+                t.setSaveButtonText("Save progress");
+            }
+        }
     },
 
     /* Get the mouse position in the canvas element:
@@ -215,7 +246,7 @@ var AnnotationToolHelper = {
             elmt = elmt.offsetParent;
         }
 
-	    return [x,y];  // Return an array
+	    return [x,y];
 	},
 
     getImagePosition: function(e) {
@@ -252,7 +283,7 @@ var AnnotationToolHelper = {
             }
         }
 
-        return closestPoint;  //TODO: Change
+        return closestPoint;
     },
 
     /*
@@ -432,6 +463,17 @@ var AnnotationToolHelper = {
         }
     },
 
+    unrobot: function(pointNum) {
+        var robotField = this.annotationRobotFields[pointNum];
+
+        if (robotField.value === "true") {
+            robotField.value = "false";
+
+            var row = this.annotationFieldRows[pointNum];
+            $(row).removeClass('robot');
+        }
+    },
+
     unselectAll: function() {
         this.getSelectedFieldsJQ().each( function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
@@ -441,7 +483,12 @@ var AnnotationToolHelper = {
 
     labelSelected: function(labelCode) {
         this.getSelectedFieldsJQ().each( function() {
+            var oldValue = this.value;
             this.value = labelCode;
+            
+            if (oldValue != this.value) {
+                AnnotationToolHelper.onLabelFieldChange(this);
+            }
         });
     }
 };
