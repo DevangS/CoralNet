@@ -156,17 +156,19 @@ var AnnotationToolHelper = {
             }
         });
 
-        // Listeners for annotation form's fields
+        // Runs when label field gains focus
         annotationFieldsJQ.focus(function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
             AnnotationToolHelper.unselectAll();
             AnnotationToolHelper.select([pointNum]);
         });
 
+        // Runs when label field is typed into and changed, and then unfocused
         annotationFieldsJQ.change(function() {
             AnnotationToolHelper.onLabelFieldChange(this);
         });
 
+        // Runs when label field is focused and a keyboard key is released
         annotationFieldsJQ.keyup(function(e) {
             var ENTER = 13;
             
@@ -181,6 +183,13 @@ var AnnotationToolHelper = {
                     $(AnnotationToolHelper.annotationFields[pointNum+1]).focus();
                 }
             }
+        });
+
+        // Click the number next to a form field to select/unselect that point
+        $(".annotationFormLabel").click(function() {
+            //var pointNum = parseInt($(this).children(".annotationFormLabel").text());
+            var pointNum = parseInt($(this).text());
+            AnnotationToolHelper.toggle([pointNum]);
         });
     },
 
