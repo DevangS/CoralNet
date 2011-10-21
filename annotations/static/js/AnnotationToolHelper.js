@@ -95,7 +95,7 @@ var AnnotationToolHelper = {
         });
 
         $(t.annotationList).css({
-            "height": t.ANNOTATION_AREA_HEIGHT + "px"
+            "max-height": t.ANNOTATION_AREA_HEIGHT + "px"
         });
 
         $(t.annotationArea).css({
@@ -601,7 +601,9 @@ var AnnotationToolHelper = {
     },
 
     labelSelected: function(labelCode) {
-        this.getSelectedFieldsJQ().each( function() {
+        var selectedFieldsJQ = this.getSelectedFieldsJQ();
+
+        selectedFieldsJQ.each( function() {
             var oldValue = this.value;
             this.value = labelCode;
             
@@ -609,5 +611,11 @@ var AnnotationToolHelper = {
                 AnnotationToolHelper.onLabelFieldChange(this);
             }
         });
+
+        // If just 1 field is selected, focus the next field automatically
+        if (selectedFieldsJQ.length === 1) {
+            var pointNum = this.getPointNumOfAnnoField(selectedFieldsJQ[0]);
+            this.focusNextField(pointNum);
+        }
     }
 };
