@@ -604,12 +604,9 @@ var AnnotationToolHelper = {
         var selectedFieldsJQ = this.getSelectedFieldsJQ();
 
         selectedFieldsJQ.each( function() {
-            var oldValue = this.value;
             this.value = labelCode;
             
-            if (oldValue !== this.value) {
-                AnnotationToolHelper.onLabelFieldChange(this);
-            }
+            AnnotationToolHelper.onLabelFieldChange(this);
         });
 
         // If just 1 field is selected, focus the next field automatically
