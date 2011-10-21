@@ -4,6 +4,7 @@ from django.db import transaction, models
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.utils import simplejson
+from accounts.utils import get_robot_user
 from annotations.models import Annotation, Label
 from CoralNet.decorators import visibility_required
 from images.models import Source, Image
@@ -129,7 +130,7 @@ def visualize_source(request, source_id):
             patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
             #get all annotations for the source that contain the label
-            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs)
+            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).exclude(user=get_robot_user())
 
             # Placeholder the image patches with the annotation objects for now.
             # We'll actually get the patches when we know which page we're showing.

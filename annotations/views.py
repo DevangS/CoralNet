@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from django.utils import simplejson
+from accounts.utils import get_robot_user
 from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm
 from annotations.models import Label, LabelSet, Annotation
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
@@ -244,7 +245,7 @@ def label_main(request, label_id):
 
     # Example patches.
     # TODO: don't hardcode the patch path
-    example_annotations = Annotation.objects.filter(label=label, image__source__visibility=Source.VisibilityTypes.PUBLIC).order_by('?')[:5]
+    example_annotations = Annotation.objects.filter(label=label, image__source__visibility=Source.VisibilityTypes.PUBLIC).exclude(user=get_robot_user()).order_by('?')[:5]
     patches = [dict(
                   annotation=a,
                   fullImage=a.image,
