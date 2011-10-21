@@ -21,6 +21,8 @@ from images.models import get_location_value_objs
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm
 from images.utils import filename_to_metadata, PointGen
 
+from CoralNet.images.tasks import processImageAll
+
 
 def source_list(request):
     """
@@ -136,6 +138,9 @@ def source_main(request, source_id):
 
     stats = dict(
         num_images=all_images.count(),
+        need_comp_anno_images=all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=False).count(),
+        need_human_anno_images=all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=True).count(),
+        anno_completed_images=all_images.filter(status__annotatedByHuman=True).count(),
         num_annotations=Annotation.objects.filter(image__source=source).count(),
     )
 
@@ -738,6 +743,11 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
                           point_number=pt['point_number'],
                           image=img,
                     ).save()
+
+            # For 2011 Oct 21 demonstration purposes:
+            # If the source id is 15 or 16, then queue the images for robot annotation
+            if source.id == 15 or source.id == 16:
+                processImageAll.delay(img)
 
         # Up to 5 uploaded images will be shown
         # upon successful upload.

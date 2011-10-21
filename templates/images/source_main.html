@@ -54,7 +54,7 @@
     </div>
 
     <hr />
-    <div id="latest_images">
+    <div id="images">
         <h2>Latest images</h2>
         {% if latest_images %}
             {% for image in latest_images %}
@@ -66,7 +66,22 @@
                 </a>
                 </span>
             {% endfor %}
+
             <p>Total images: {{ stats.num_images }}</p>
+            <table class="detail_table">
+                <tr>
+                    <td>Not annotated</td>
+                    <td>{{ stats.need_comp_anno_images }}</td>
+                </tr>
+                <tr>
+                    <td>Computer annotated, needs human annotation</td>
+                    <td>{{ stats.need_human_anno_images }}</td>
+                </tr>
+                <tr>
+                    <td>Completed (human annotated)</td>
+                    <td>{{ stats.anno_completed_images }}</td>
+                </tr>
+            </table>
         {% else %}
             <p>(No images yet)</p>
         {% endif %}
@@ -85,8 +100,6 @@
         {% else %}
         <p>Labelset: <a href="{% url labelset_main source.id %}">View labelset</a></p>
         {% endif %}
-
-        <p>Total annotations: {{ stats.num_annotations }}</p>
     </div>
 
     {% if members %}
