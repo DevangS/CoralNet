@@ -137,7 +137,7 @@ class AnnotationForm(forms.Form):
         labelFieldMaxLength = Label._meta.get_field('code').max_length
 
 
-        for point in Point.objects.filter(image=image):
+        for point in Point.objects.filter(image=image).order_by('point_number'):
 
             try:
                 existingAnnotation = Annotation.objects.get(point=point)
