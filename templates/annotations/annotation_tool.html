@@ -27,14 +27,15 @@
     position: relative;
 }
 
+#imageArea {
+    position: absolute;
+}
 #coralImage {
     position: absolute;
 }
-
 #pointsCanvas {
     position: absolute;
 }
-
 #listenerElmt {
     position: absolute;
 }
@@ -46,27 +47,24 @@
 #mainColumn {
     float: left;
 
-    /* Spilling beyond 1000px height is fine, but we define as 1000px
-       so this takes up space, thus forcing the rightSidebar to
-       stay on the right. */
-    width: 850px;
-    height: 1000px;
+    /* width and height are set dynamically. */
 }
 
 #rightSidebar {
     float: left;
-    width: 130px;
-    height: 1000px;
+
+    /* width and height are set dynamically. */
 }
 
 #dummyColumn {
-    height: 1000px;
+    /* height is set dynamically. */
 }
 
 #annotationList {
-    /* scrollbars will appear if they're necessary */
+    /* scrollbars will appear only if they're necessary */
     overflow: auto;
-    height: 800px;
+    
+    /* height is set dynamically. */
 }
 
 #annotationForm {
@@ -75,32 +73,43 @@
     padding: 0;
 }
 
+/* Label fields */
 #annotationForm input {
     margin: 1px 0;
     padding: 1px 1px;
 }
 
+/* Currently selected points */
 #annotationForm tr.selected span.annotationFormLabel {
     background-color: #CCFFCC;
 }
 
+/* Robot annotated, not human confirmed yet */
 #annotationForm tr.robot input {
     color: #888888;
 }
 
+/* Label field has an invalid label code */
 #annotationForm tr.error input {
     background-color: #FFCCCC;
 }
 
+/* Numbers next to the label fields */
 .annotationFormLabel {
-    padding: 0 3px;
+    padding: 1px 3px;
     margin: 0 2px;
     border: 1px solid #D7D7D7;
+
+    /* Use the regular arrow cursor, not the text highlight cursor */
     cursor: default;
+
+    /* Make the number's clickable box take up the whole table cell */
+    display: block;
 }
 
+/* Table cell containing an annotationFormLabel */
 td.annotationFormLabelCell {
-    text-align: right;
+    text-align: center;
 }
 
 </style>
@@ -118,14 +127,19 @@ td.annotationFormLabelCell {
     <div id="mainColumn">
       <div id="annotationArea">
 
-        <!-- The coral image  -->
-        <img id="coralImage" src="{{ image.original_file.url }}" />
-
         <!-- HTML5 canvas element for drawing points -->
         <canvas id="pointsCanvas"></canvas>
 
-        <!-- Dummy element for listening to mouseclicks, etc. -->
-        <div id="listenerElmt"></div>
+        <div id="imageArea">
+
+          <!-- The coral image  -->
+          <img id="coralImage" src="{{ image.original_file.url }}" />
+
+          <!-- Dummy element for listening to mouseclicks, etc. -->
+          <div id="listenerElmt"></div>
+
+        </div>
+          
       </div>
 
       <div id="labelButtons">
@@ -182,9 +196,7 @@ td.annotationFormLabelCell {
 
 <!-- Script in the body will run on page load. -->
 <script type="text/javascript">
-    AnnotationToolHelper.init({{ initial_display_height }},
-                              {{ initial_display_width }},
-                              {{ image.original_height }},
+    AnnotationToolHelper.init({{ image.original_height }},
                               {{ image.original_width }},
                               {{ annotationsJSON|safe }},
                               {{ labelCodesJSON|safe }});

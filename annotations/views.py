@@ -366,10 +366,6 @@ def annotation_tool(request, image_id, source_id):
     #  ...]
     # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
 
-    # Scale the image so it fits with the webpage layout.
-    initial_display_width = 800    # Change this according to how it looks on the page
-    initial_display_height = (initial_display_width * image.original_height) / image.original_width
-
     return render_to_response('annotations/annotation_tool.html', {
         'source': source,
         'image': image,
@@ -382,8 +378,6 @@ def annotation_tool(request, image_id, source_id):
         'annotationsJSON': simplejson.dumps(annotations),
         'num_of_points': len(annotations),
         'num_of_annotations': len(annotationValues),
-        'initial_display_width': initial_display_width,
-        'initial_display_height': initial_display_height,
         },
         context_instance=RequestContext(request)
     )
