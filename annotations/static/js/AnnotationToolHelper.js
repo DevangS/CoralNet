@@ -153,10 +153,9 @@ var AnnotationToolHelper = {
 		// Mouse button is pressed and un-pressed
 		$(t.listenerElmt).mouseup( function(e) {
             
-            // Ctrl-click on the canvas selects the nearest point.
-            // TODO: Also support Cmd-click for Mac.
+            // Ctrl-click/Cmd-click on the canvas selects the nearest point.
             // TODO: This shouldn't happen if the points display is toggled off
-            if(e.ctrlKey) {
+            if(e.ctrlKey || e.metaKey) {
                 var nearestPoint = AnnotationToolHelper.getNearestPoint(e);
                 AnnotationToolHelper.toggle(nearestPoint);
             }
