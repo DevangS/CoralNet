@@ -150,14 +150,19 @@ var AnnotationToolHelper = {
         t.context.translate(t.CANVAS_GUTTER + imageLeftOffset,
                             t.CANVAS_GUTTER + imageTopOffset);
 
-		// Mouse button is pressed and un-pressed
+		// Mouse button is pressed and un-pressed on the canvas
 		$(t.listenerElmt).mouseup( function(e) {
             
             // Ctrl-click/Cmd-click on the canvas selects the nearest point.
             // TODO: This shouldn't happen if the points display is toggled off
-            if(e.ctrlKey || e.metaKey) {
+            if (e.ctrlKey || e.metaKey) {
                 var nearestPoint = AnnotationToolHelper.getNearestPoint(e);
                 AnnotationToolHelper.toggle(nearestPoint);
+            }
+
+            // TODO: Clicking zooms in
+            else {
+
             }
         });
 
@@ -171,6 +176,12 @@ var AnnotationToolHelper = {
         $(t.saveButton).click(function() {
             AnnotationToolHelper.saveAnnotations();
         });
+
+        // Initialize all_done state
+        Dajaxice.CoralNet.annotations.ajax_is_all_done(
+            this.setAllDoneIndicator,
+            {'image_id': $('#id_image_id')[0].value}
+        );
 
         // Label button handler
         $('#labelButtons').find('button').each( function() {
@@ -314,6 +325,15 @@ var AnnotationToolHelper = {
             // Disable save button
             $(t.saveButton).attr('disabled', 'disabled');
             t.setSaveButtonText("Error");
+        }
+    },
+
+    setAllDoneIndicator: function(allDone) {
+        if (allDone) {
+            $('#allDone').append('<span>').text("ALL DONE");
+        }
+        else {
+            $('#allDone').empty();
         }
     },
 
@@ -548,21 +568,27 @@ var AnnotationToolHelper = {
         $(this.saveButton).attr('disabled', 'disabled');
         $(this.saveButton).text("Now saving...");
         Dajaxice.CoralNet.annotations.ajax_save_annotations(
-            this.ajaxStatusToSaved,    // JS callback that the ajax.py method returns to.
+            this.ajaxSaveButtonCallback,    // JS callback that the ajax.py method returns to.
             {'annotationForm': $("#annotationForm").serializeArray()}    // Args to the ajax.py method.
         );
     },
 
     // AJAX callback: cannot use "this" to refer to AnnotationToolHelper
-    ajaxStatusToSaved: function(errorMsg) {
-        if (errorMsg) {
+    ajaxSaveButtonCallback: function(returnDict) {
+        
+        if (returnDict.hasOwnProperty('error')) {
+            var errorMsg = returnDict['error'];
             AnnotationToolHelper.setSaveButtonText("Error");
+
             // TODO: Handle error cases more elegantly?  Alerts are lame.
             // Though, these errors aren't really supposed to happen unless the annotation tool behavior is flawed.
             alert("Sorry, an error occurred when trying to save your annotations:\n{0}".format(errorMsg));
         }
         else {
             AnnotationToolHelper.setSaveButtonText("Saved");
+
+            // Add or remove ALL DONE indicator
+            AnnotationToolHelper.setAllDoneIndicator(returnDict.hasOwnProperty('all_done'));
         }
     },
 
