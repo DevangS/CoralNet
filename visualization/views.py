@@ -238,7 +238,7 @@ def generate_statistics(request, source_id):
                 #TODO: pick easily distinguishable colours from
                 # http://search.cpan.org/~rokr/Color-Library-0.021/lib/Color/Library/Dictionary/WWW.pm
                 # and add them to bucket to be picked randomly
-                bucket = ['aqua', 'green', 'brown', 'red']
+                bucket = ['aqua', 'limegreen', 'brown', 'crimson', 'mediumpurple']
                 colors = []
                 legends = []
 
