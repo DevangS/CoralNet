@@ -256,7 +256,7 @@ def generate_statistics(request, source_id):
                     #get yearly counts that become y values for the label's line
                     for year in years:
                         #get the most recent for each point for every label specified
-                        annotations =  annotations.filter(image__metadata__photo_date__year=year, label__id=label).distinct()
+                        annotations =  annotations.filter(image__metadata__photo_date__year=year, label__id=int(label)).distinct()
 
                         #add up # of annotations and store
                         yearly_counts.append(len(annotations))
