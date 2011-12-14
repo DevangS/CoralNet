@@ -256,14 +256,14 @@ def generate_statistics(request, source_id):
                     #get yearly counts that become y values for the label's line
                     for year in years:
                         #get the most recent for each point for every label specified
-                        annotations =  annotations.filter(image__metadata__photo_date__year=year, label=label).distinct()
+                        annotations =  annotations.filter(image__metadata__photo_date__year=year, label__id=label).distinct()
 
                         #add up # of annotations and store
                         yearly_counts.append(len(annotations))
                         
                     data.append(yearly_counts)
                     #add label name to legends
-                    legends.append(str(label.name))
+                    legends.append(Label.objects.get(id=int(label)).name) #TODO: so unoptimized it hurts
 
                     #randomly select colour from the bucket to assign to the line drawn for each label
                     colors.append(bucket[random.randint(0, len(bucket)-1)])
