@@ -234,6 +234,14 @@ def generate_statistics(request, source_id):
                 data = []
                 years = []
 
+                #Format computed data for the graph API to use
+                #TODO: pick easily distinguishable colours from
+                # http://search.cpan.org/~rokr/Color-Library-0.021/lib/Color/Library/Dictionary/WWW.pm
+                # and add them to bucket to be picked randomly
+                bucket = ['aqua', 'green', 'brown', 'red']
+                colors = []
+                legends = []
+
                 #gets the years we have data for from the specified set of images
                 for image in images:
                     date = image.metadata.photo_date
@@ -254,17 +262,8 @@ def generate_statistics(request, source_id):
                         yearly_counts.append(len(annotations))
                         
                     data.append(yearly_counts)
-
-                #Format computed data for the graph API to use
-                #TODO: pick easily distinguishable colours from
-                # http://search.cpan.org/~rokr/Color-Library-0.021/lib/Color/Library/Dictionary/WWW.pm
-                # and add them to bucket to be picked randomly
-                bucket = ['aqua', 'green', 'brown', 'red']
-                colors = []
-                legends = []
-                for label in labels:
                     #add label name to legends
-                    legends.append(label.name)
+                    legends.append(str(label.name))
 
                     #randomly select colour from the bucket to assign to the line drawn for each label
                     colors.append(bucket[random.randint(0, len(bucket)-1)])
