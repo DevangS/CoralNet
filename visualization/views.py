@@ -263,7 +263,10 @@ def generate_statistics(request, source_id):
                         
                     data.append(yearly_counts)
                     #add label name to legends
-                    legends.append(str((Label.objects.get(id=int(label))).name)) #TODO: really need to optimize
+                    label_id = int(label)
+                    label_temp = Label.objects.get(id=label_id)
+                    name = label_temp.name
+                    legends.append(str(name)) #TODO: really need to optimize
 
                     #randomly select colour from the bucket to assign to the line drawn for each label
                     colors.append(bucket[random.randint(0, len(bucket)-1)])
