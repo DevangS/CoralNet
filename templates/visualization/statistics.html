@@ -1,0 +1,30 @@
+{% extends "visualization/base_visualize.html" %}
+
+{% block title %}{{ source.name }} - Statistics | CoralNet{% endblock %}
+
+{% block content %}
+
+    <h2>Statistics</h2>
+
+    <p>Pick a set of images and labels to generate statistics for using the form below. This will generate
+    a line graph that shows the coverage for each chosen label from the specified set of images over all the years
+    that there exists data for</p>
+
+    <form action="" method="get">
+    <table>
+    {{ form.as_table }}
+    </table>
+    <input type='submit' value="Search">
+    </form>
+
+    {% if errors %}
+        <ul>
+            {% for error in errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+       <img height="300" src={{ graph }} />
+    {% endif %}
+
+{% endblock %}

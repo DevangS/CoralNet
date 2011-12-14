@@ -17,6 +17,7 @@
       <ul class="nav nav_right" id="nav_source">
         <li><a href="{% url source_main source.id %}"><span>{% trans 'Main Page' %}</span></a></li>
         <li><a href="{% url visualize_source source.id %}"><span>{% trans 'Browse Images' %}</span></a></li>
+        <li><a href="{% url statistics source.id %}"><span>{% trans 'Statistics' %}</span></a></li>
       
         {% get_obj_perms user for source as "source_perms" %}
         {% if "source_edit" in source_perms %}

@@ -1,3 +1,4 @@
+import random
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.db import transaction, models
@@ -7,10 +8,11 @@ from django.utils import simplejson
 from accounts.utils import get_robot_user
 from annotations.models import Annotation, Label
 from CoralNet.decorators import visibility_required
-from images.models import Source, Image
-from visualization.forms import VisualizationSearchForm, ImageBatchActionForm
+from images.models import Source, Image, Point
+from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
 from visualization.utils import generate_patch_if_doesnt_exist
-
+from pygooglechart import SimpleLineChart
+from GChartWrapper import *
 
 def image_search_args_to_queryset_args(searchDict):
     """
@@ -122,10 +124,13 @@ def visualize_source(request, source_id):
         images = []
         showPatches = False
     else:
+        #if user did not specify a label to generate patches for, assume they want to view whole images
         if not label:
             showPatches = False
             allSearchResults = Image.objects.filter(source=source, **imageArgs).order_by('-upload_date')
+
         else:
+            #since user specified a label, generate patches to show instead of whole images
             showPatches = True
             patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
@@ -188,3 +193,108 @@ def visualize_source(request, source_id):
         },
         context_instance=RequestContext(request)
     )
+
+@visibility_required('source_id')
+def generate_statistics(request, source_id):
+    errors = []
+
+    #default graph to show, gets overwritten later if sanity checks passed
+    graph = Line([0]).title('Specify some data to view the statistics')
+
+    #generate form to select images to compute statistics for
+    source = get_object_or_404(Source, id=source_id)
+
+    #get image search filters
+    if request.GET:
+
+        #form to select descriptors to sort images
+        form = StatisticsSearchForm(source_id, request.GET)
+
+        if form.is_valid():
+            labels = form.cleaned_data['labels']
+            imageArgs = image_search_args_to_queryset_args(form.cleaned_data)
+
+            #Check that the specified set of images and/or labels was found
+            if not imageArgs:
+                errors.append("Sorry, no images matched your search parameters")
+            if not labels:
+                errors.append("Sorry, the labels you selected could not be found")
+
+            #if no errors found, get data needed to plot line graph with
+            # coverage on the y axis, and year on the x axis
+            if not errors:
+
+                images = Image.objects.filter(source=source, **imageArgs).order_by('-upload_date')
+                patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
+
+                #get all non-robot annotations for the source
+                annotations = Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user())
+
+                #holds the data that gets passed to the graphing code
+                data = []
+                years = []
+
+                #gets the years we have data for from the specified set of images
+                for image in images:
+                    date = image.metadata.photo_date
+                    if not date is None:
+                        if not years.count(date.year):
+                           years.append(date.year)
+                years.sort()
+
+                for label in labels:
+                    yearly_counts = []
+
+                    #get yearly counts that become y values for the label's line
+                    for year in years:
+                        #get the most recent for each point for every label specified
+                        annotations =  annotations.filter(image__metadata__photo_date__year=year, label=label).distinct()
+
+                        #add up # of annotations and store
+                        yearly_counts.append(len(annotations))
+                        
+                    data.append(yearly_counts)
+
+                #Format computed data for the graph API to use
+                #TODO: pick easily distinguishable colours from
+                # http://search.cpan.org/~rokr/Color-Library-0.021/lib/Color/Library/Dictionary/WWW.pm
+                # and add them to bucket to be picked randomly
+                bucket = ['aqua', 'green', 'brown', 'red']
+                colors = []
+                legends = []
+                for label in labels:
+                    #add label name to legends
+                    legends.append(label.name)
+
+                    #randomly select colour from the bucket to assign to the line drawn for each label
+                    colors.append(bucket[random.randint(0, len(bucket)-1)])
+
+                #Calculate the highest y value so we can determine what to label y axis
+                max_y = max(map(max,data))
+
+                #Actually generate the graph now
+                graph = GChart('lc', data, encoding='text', chxt='x,y')
+                #color lines and put them on legend
+                graph.color(colors).legend(legends)
+                #create x and y axises
+                graph.axes('xy')
+                #draw x axis values from lowest to highest year stepping by 1 year
+                graph.axes.range(0,min(years),max(years),1)
+                #draw y axis values from 0 to highest y value stepping with highest y divided by 10
+                graph.axes.range(1,0,max_y,max_y/10)
+
+        else:
+            errors.append("Your specified search parameters were invalid!")
+
+    else:
+        form = StatisticsSearchForm(source_id)
+    
+    return render_to_response('visualization/statistics.html', {
+        'errors': errors,
+        'form': form,
+        'source': source,
+        'graph': graph
+        },
+        context_instance=RequestContext(request)
+    )
+

@@ -171,6 +171,7 @@ INSTALLED_APPS = (
     'CoralNet.annotations',
     'CoralNet.visualization',
     'CoralNet.bug_reporting',
+    'GChartWrapper.charts',
 )
 
 
