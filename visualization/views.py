@@ -215,10 +215,8 @@ def generate_statistics(request, source_id):
             imageArgs = image_search_args_to_queryset_args(form.cleaned_data)
 
             #Check that the specified set of images and/or labels was found
-            if not imageArgs:
-                errors.append("Sorry, no images matched your search parameters")
             if not labels:
-                errors.append("Sorry, the labels you selected could not be found")
+                errors.append("Sorry you didn't specify any labels!")
 
             #if no errors found, get data needed to plot line graph with
             # coverage on the y axis, and year on the x axis
