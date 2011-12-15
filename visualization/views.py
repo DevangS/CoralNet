@@ -281,7 +281,7 @@ def generate_statistics(request, source_id):
                 max_y = max(map(max,data))
 
                 #Actually generate the graph now
-                graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdld=legends_string)
+                graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdl=legends_string)
                 #create x and y axises
                 graph.axes('xy')
                 #draw x axis values from lowest to highest year stepping by 1 year
