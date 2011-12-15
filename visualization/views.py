@@ -238,7 +238,7 @@ def generate_statistics(request, source_id):
                 # and add them to bucket to be picked randomly
                 #bucket = ['aqua', 'limegreen', 'brown', 'crimson', 'mediumpurple']
                 bucket = ['00FFFF','32CD32','A52A2A','DC143C','9370DB']
-                #colors = []
+                #colors = [
                 legends = []
 
                 #gets the years we have data for from the specified set of images
@@ -271,7 +271,7 @@ def generate_statistics(request, source_id):
                     #colors.append(bucket[random.randint(0, len(bucket)-1)])
 
                 #Create string of colors
-                colors_string = str(bucket[0:len(labels)-1]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
+                colors_string = str(bucket[0:len(labels)]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
 
                 #Create string of labels to put on legend
                 legends_string = str(legends).replace('[', '').replace(']','').replace(' ','').replace('\'', '').replace(',', '|')
