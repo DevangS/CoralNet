@@ -229,16 +229,14 @@ def generate_statistics(request, source_id):
                 annotations = Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user())
 
                 #holds the data that gets passed to the graphing code
-                data = []
+                data = [] #TODO: figure out why data isn't being generated correctly
                 years = []
 
                 #Format computed data for the graph API to use
                 #TODO: pick easily distinguishable colours from
                 # http://search.cpan.org/~rokr/Color-Library-0.021/lib/Color/Library/Dictionary/WWW.pm
                 # and add them to bucket to be picked randomly
-                #bucket = ['aqua', 'limegreen', 'brown', 'crimson', 'mediumpurple']
                 bucket = ['00FFFF','32CD32','A52A2A','DC143C','9370DB']
-                #colors = [
                 legends = []
 
                 #gets the years we have data for from the specified set of images
@@ -267,14 +265,12 @@ def generate_statistics(request, source_id):
                     name = label_temp.name
                     legends.append(str(name)) #TODO: really need to optimize
 
-                    #randomly select colour from the bucket to assign to the line drawn for each label
-                    #colors.append(bucket[random.randint(0, len(bucket)-1)])
-
                 #Create string of colors
                 colors_string = str(bucket[0:len(labels)]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
 
                 #Create string of labels to put on legend
                 legends_string = str(legends).replace('[', '').replace(']','').replace(' ','').replace('\'', '').replace(',', '|')
+
                 #Calculate the highest y value so we can determine what to label y axis
                 max_y = max(map(max,data))
 
@@ -286,6 +282,8 @@ def generate_statistics(request, source_id):
                 graph.axes.range(0,min(years),max(years),1)
                 #draw y axis values from 0 to highest y value stepping with highest y divided by 10
                 graph.axes.range(1,0,max_y,max_y/10)
+                #Define pixel size to draw graph
+                graph.size(300,300)
 
         else:
             errors.append("Your specified search parameters were invalid!")
