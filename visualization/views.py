@@ -281,9 +281,9 @@ def generate_statistics(request, source_id):
                 #draw x axis values from lowest to highest year stepping by 1 year
                 graph.axes.range(0,min(years),max(years),1)
                 #draw y axis values from 0 to highest y value stepping with highest y divided by 10
-                graph.axes.range(1,0,max_y,max_y/10)
+                graph.axes.range(1,0,max_y,max_y/50)
                 #Define pixel size to draw graph
-                graph.size(300,300)
+                graph.size(500,500)
 
         else:
             errors.append("Your specified search parameters were invalid!")
