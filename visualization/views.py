@@ -226,7 +226,7 @@ def generate_statistics(request, source_id):
                 patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
                 #get all non-robot annotations for the source
-                annotations = Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user())
+                all_annotations = Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user())
 
                 #holds the data that gets passed to the graphing code
                 data = [] #TODO: figure out why data isn't being generated correctly
@@ -253,10 +253,10 @@ def generate_statistics(request, source_id):
                     #get yearly counts that become y values for the label's line
                     for year in years:
                         #get the most recent for each point for every label specified
-                        annotations =  annotations.filter(image__metadata__photo_date__year=year, label__id=int(label)).distinct()
+                        year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year, label__id=int(label)).distinct()
 
                         #add up # of annotations and store
-                        yearly_counts.append(len(annotations))
+                        yearly_counts.append(len(year_annotations))
 
                     data.append(yearly_counts)
                     #add label name to legends
