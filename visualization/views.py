@@ -253,10 +253,12 @@ def generate_statistics(request, source_id):
                     #get yearly counts that become y values for the label's line
                     for year in years:
                         #get the most recent for each point for every label specified
-                        year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year, label__id=int(label)).distinct()
+                        total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year).distinct()
+                        label_year_annotations = total_year_annotations.filter(label__id=int(label)).distinct()
 
-                        #add up # of annotations and store
-                        yearly_counts.append(len(year_annotations))
+                        #add up # of annotations, divide by total annotations, and times 100 to get % coverage
+                        percent_coverage = (len(label_year_annotations)/len(total_year_annotations))*100
+                        yearly_counts.append(percent_coverage)
 
                     data.append(yearly_counts)
                     #add label name to legends
@@ -271,17 +273,14 @@ def generate_statistics(request, source_id):
                 #Create string of labels to put on legend
                 legends_string = str(legends).replace('[', '').replace(']','').replace(' ','').replace('\'', '').replace(',', '|')
 
-                #Calculate the highest y value so we can determine what to label y axis
-                max_y = max(map(max,data))
-
                 #Actually generate the graph now
                 graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdl=legends_string)
                 #create x and y axises
                 graph.axes('xy')
                 #draw x axis values from lowest to highest year stepping by 1 year
                 graph.axes.range(0,min(years),max(years),1)
-                #draw y axis values from 0 to highest y value stepping with highest y divided by 10
-                graph.axes.range(1,0,max_y,max_y/50)
+                #draw y axis values from 0 to 100 stepping by 10
+                graph.axes.range(1,0,100,10)
                 #Define pixel size to draw graph
                 graph.size(500,500)
 
