@@ -7,15 +7,19 @@
     <h2>Statistics</h2>
 
     <p>Pick a set of images and labels to generate statistics for using the form below. This will generate
-    a line graph that shows the coverage for each chosen label from the specified set of images over all the years
-    that there exists data for</p>
+    a line graph that shows the yearly percent coverage for each chosen label from the specified set of images over all the years
+    that there exists data for. </p>
+    <br/>
+    <p>Large queries may take a while so please be patient! Also note that choosing too many labels may cause some lines to have the same colour.</p>
 
+    <div style="text-align: center;">
     <form action="" method="get">
-    <table>
-    {{ form.as_table }}
-    </table>
-    <input type='submit' value="Search">
+        <table>
+            {{ form.as_table }}
+        </table>
+        <input type='submit' value="Search">
     </form>
+
 
     {% if errors %}
         <ul>
@@ -26,5 +30,5 @@
     {% else %}
        <img src={{ graph }} />
     {% endif %}
-
+    </div>
 {% endblock %}
