@@ -257,7 +257,10 @@ def generate_statistics(request, source_id):
                         label_year_annotations = total_year_annotations.filter(label__id=int(label)).distinct()
 
                         #add up # of annotations, divide by total annotations, and times 100 to get % coverage
-                        percent_coverage = (len(label_year_annotations)/len(total_year_annotations))*100
+                        try:
+                            percent_coverage = (len(label_year_annotations)/len(total_year_annotations))*100
+                        except ZeroDivisionError:
+                            percent_coverage = 0
                         yearly_counts.append(percent_coverage)
 
                     data.append(yearly_counts)
