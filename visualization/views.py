@@ -288,8 +288,10 @@ def generate_statistics(request, source_id):
                 graph.size(500,500)
                 #Adds the title to the graph
                 graph.title('% Coverage over Years')
-                #Increase line thickness
-                graph.line(5,0,0)
+                #Set the line thickness for each dataset
+                count = len(data)
+                while count > 0:
+                    graph.line(5,0,0)
 
         else:
             errors.append("Your specified search parameters were invalid!")
