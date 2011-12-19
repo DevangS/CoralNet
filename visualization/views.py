@@ -291,7 +291,7 @@ def generate_statistics(request, source_id):
                 #Set the line thickness for each dataset
                 count = len(data)
                 while count > 0:
-                    graph.line(5,0,0)
+                    graph.line(3,0,0)
                     count -= 1
                     
         else:
