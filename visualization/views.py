@@ -278,17 +278,16 @@ def generate_statistics(request, source_id):
                 #Create string of labels to put on legend
                 legends_string = str(legends).replace('[', '').replace(']','').replace(' ','').replace('\'', '').replace(',', '|')
 
-                #Calculated highest used percentage and add 5 to it to make the y axis look more dynamic
-                max_y = (max(map(max,data)) + 5)
-
                 #Actually generate the graph now
                 graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdl=legends_string)
                 #draw x axis values from lowest to highest year stepping by 1 year
                 graph.axes.range(0,min(years),max(years),1)
                 #draw y axis values from 0 to (max percent coverage + 5) stepping by 5
-                graph.axes.range(1,0,max_y,5)
+                graph.axes.range(1,0,100,5)
                 #Define pixel size to draw graph
                 graph.size(500,500)
+                #Adds the title to the graph
+                graph.title('% Coverage over Years')
 
         else:
             errors.append("Your specified search parameters were invalid!")

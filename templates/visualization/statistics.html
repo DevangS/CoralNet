@@ -26,13 +26,16 @@
             {% else %}
               <img src={{ graph }} />
             {% endif %}
-            </br><br/>
+            <br/><br/><br/>
+            Specify some image search parameters<i>(optional)</i>:
+            <br/><br/>
             {{ form.value1.label }}&nbsp;{{ form.value1 }}&nbsp;
             {{ form.value2.label }}&nbsp;{{ form.value2 }}&nbsp;
             {{ form.value3.label }}&nbsp;{{ form.value3 }}&nbsp;
             {{ form.value4.label }}&nbsp;{{ form.value4 }}&nbsp;
             <br/><br/>
-            Labels: {{ form.labels }}
+
+            Choose some labels<i>(required)</i>: {{ form.labels }}
         </fieldset>
 
 
