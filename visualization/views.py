@@ -279,7 +279,7 @@ def generate_statistics(request, source_id):
                 legends_string = str(legends).replace('[', '').replace(']','').replace(' ','').replace('\'', '').replace(',', '|')
 
                 #Calculated highest used percentage and add 5 to it to make the y axis look more dynamic
-                max_y = max(map(max,data)) + 5
+                max_y = (max(map(max,data)) + 5)
 
                 #Actually generate the graph now
                 graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdl=legends_string)
