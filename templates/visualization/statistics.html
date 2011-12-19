@@ -13,22 +13,33 @@
     <p>Large queries may take a while so please be patient! Also note that choosing too many labels may cause some lines to have the same colour.</p>
 
     <div style="text-align: center;">
+    <!-- This is the menu to select descriptors to sort through the images -->
     <form action="" method="get">
-        <table>
-            {{ form.as_table }}
-        </table>
-        <input type='submit' value="Search">
+
+        <fieldset class="fieldset_statistics">
+            {% if errors %}
+                <ul>
+                    {% for error in errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+              <img src={{ graph }} />
+            {% endif %}
+            </br><br/>
+            {{ form.value1.label }}&nbsp;{{ form.value1 }}&nbsp;
+            {{ form.value2.label }}&nbsp;{{ form.value2 }}&nbsp;
+            {{ form.value3.label }}&nbsp;{{ form.value3 }}&nbsp;
+            {{ form.value4.label }}&nbsp;{{ form.value4 }}&nbsp;
+            <br/><br/>
+            Labels: {{ form.labels }}
+        </fieldset>
+
+
+        <div class="submit_button_wrapper">
+           <input type='submit' value="Search">
+        </div>
+    
     </form>
-
-
-    {% if errors %}
-        <ul>
-            {% for error in errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-       <img src={{ graph }} />
-    {% endif %}
     </div>
 {% endblock %}

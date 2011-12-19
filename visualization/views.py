@@ -283,8 +283,6 @@ def generate_statistics(request, source_id):
 
                 #Actually generate the graph now
                 graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdl=legends_string)
-                #create x and y axises
-                graph.axes('xy')
                 #draw x axis values from lowest to highest year stepping by 1 year
                 graph.axes.range(0,min(years),max(years),1)
                 #draw y axis values from 0 to (max percent coverage + 5) stepping by 5

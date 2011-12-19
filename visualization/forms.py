@@ -87,19 +87,6 @@ class StatisticsSearchForm(forms.Form):
         source = Source.objects.filter(id=source_id)[0]
         labelset = LabelSet.objects.filter(source=source)[0]
 
-        #gets all the labels
-        labels = labelset.labels.all().order_by('group__id', 'name')
-
-        # Put the label choices in order
-        choices = \
-            [(label.id, label) for label in labels]
-
-        # Custom widget for label selection
-        #self.fields['labels'].widget = CustomCheckboxSelectMultiple(choices=self.fields['labels'].choices)
-        self.fields['labels']= forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
-                                                         choices=choices)
-
-
         # Get the location keys
         for key, valueField, valueClass in [
                 (source.key1, 'value1', Value1),
@@ -115,5 +102,17 @@ class StatisticsSearchForm(forms.Form):
                     choices.append((valueObj.id, valueObj.name))
 
                 self.fields[valueField] = ChoiceField(choices, label=key, required=False)
+
+        #gets all the labels
+        labels = labelset.labels.all().order_by('group__id', 'name')
+
+        # Put the label choices in order
+        choices = \
+            [(label.id, label.name) for label in labels]
+
+        # Custom widget for label selection
+        #self.fields['labels'].widget = CustomCheckboxSelectMultiple(choices=self.fields['labels'].choices)
+        self.fields['labels']= forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
+                                                         choices=choices)
 
 
