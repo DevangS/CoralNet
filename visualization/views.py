@@ -285,7 +285,7 @@ def generate_statistics(request, source_id):
                 #draw y axis values from 0 to (max percent coverage + 5) stepping by 5
                 graph.axes.range(1,0,100,5)
                 #Define pixel size to draw graph
-                graph.size(500,500)
+                graph.size(400,400)
                 #Adds the title to the graph
                 graph.title('% Coverage over Years')
                 #Set the line thickness for each dataset
