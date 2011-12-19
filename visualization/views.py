@@ -292,7 +292,8 @@ def generate_statistics(request, source_id):
                 count = len(data)
                 while count > 0:
                     graph.line(5,0,0)
-
+                    count -= 1
+                    
         else:
             errors.append("Your specified search parameters were invalid!")
 
