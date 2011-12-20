@@ -8,10 +8,9 @@ from django.utils import simplejson
 from accounts.utils import get_robot_user
 from annotations.models import Annotation, Label
 from CoralNet.decorators import visibility_required
-from images.models import Source, Image, Point
+from images.models import Source, Image
 from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
 from visualization.utils import generate_patch_if_doesnt_exist
-from pygooglechart import SimpleLineChart
 from GChartWrapper import *
 
 def image_search_args_to_queryset_args(searchDict):
@@ -278,12 +277,18 @@ def generate_statistics(request, source_id):
                 #Create string of labels to put on legend
                 legends_string = str(legends).replace('[', '').replace(']','').replace(' ','').replace('\'', '').replace(',', '|')
 
+                #Get max y value and add 5 to it
+                max_y = max(map(max,data)) + 5
+
+                #Calculate new data proportional to max_y to scale graph
+                data[:] = [x*(100/max_y) for x in data]
+                
                 #Actually generate the graph now
                 graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdl=legends_string)
                 #draw x axis values from lowest to highest year stepping by 1 year
                 graph.axes.range(0,min(years),max(years),1)
                 #draw y axis values from 0 to (max percent coverage + 5) stepping by 5
-                graph.axes.range(1,0,100,5)
+                graph.axes.range(1,0,max_y,5)
                 #Define pixel size to draw graph
                 graph.size(400,400)
                 #Adds the title to the graph
