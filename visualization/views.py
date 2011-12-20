@@ -281,7 +281,8 @@ def generate_statistics(request, source_id):
                 max_y = max(map(max,data)) + 5
 
                 #Calculate new data proportional to max_y to scale graph
-                data[:] = [x*(100/max_y) for x in data]
+                for elem in data:
+                    elem[:] = [x*(100/max_y) for x in elem]
                 
                 #Actually generate the graph now
                 graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdl=legends_string)
