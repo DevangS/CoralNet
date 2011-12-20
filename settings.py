@@ -22,6 +22,10 @@ MANAGERS = settings_2.MANAGERS
 
 DATABASES = settings_2.DATABASES
 
+# Default e-mail address to use for various automated correspondence from
+# the site managers.
+DEFAULT_FROM_EMAIL = settings_2.DEFAULT_FROM_EMAIL
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
