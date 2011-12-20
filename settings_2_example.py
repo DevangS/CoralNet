@@ -32,6 +32,10 @@ DATABASES = {
     }
 }
 
+# Default e-mail address to use for various automated correspondence from
+# the site managers.
+DEFAULT_FROM_EMAIL = 'webmaster@yourdomainhere'
+
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 
 # Absolute path to the directory static files should be collected to.

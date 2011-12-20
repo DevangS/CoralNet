@@ -1,8 +1,9 @@
 from dajaxice.decorators import dajaxice_register
 from django.contrib.auth.models import User
 from django.utils import simplejson
-from accounts.utils import is_robot_user
+from accounts.utils import is_robot_user, get_robot_user
 from annotations.models import Label, Annotation
+from annotations.utils import image_annotation_all_done
 from images.models import Image, Point, Source
 
 @dajaxice_register
@@ -26,9 +27,9 @@ def ajax_save_annotations(request, annotationForm):
 
     # Sanity checks
     if user != request.user:
-        return simplejson.dumps("User id error")
+        return simplejson.dumps(dict(error="User id error"))
     if not user.has_perm(Source.PermTypes.EDIT.code, image.source):
-        return simplejson.dumps("Image id error")
+        return simplejson.dumps(dict(error="Image id error"))
 
     # Get stuff from the DB in advance, should save time
     pointsList = list(Point.objects.filter(image=image))
@@ -56,11 +57,11 @@ def ajax_save_annotations(request, annotationForm):
             else:
                 labels = Label.objects.filter(code=labelCode)
                 if len(labels) == 0:
-                    return simplejson.dumps("No label with code %s." % labelCode)
+                    return simplejson.dumps(dict(error="No label with code %s." % labelCode))
 
                 label = labels[0]
                 if label not in sourceLabels:
-                    return simplejson.dumps("The labelset has no label with code %s." % labelCode)
+                    return simplejson.dumps(dict(error="The labelset has no label with code %s." % labelCode))
 
             # An annotation of this point number exists in the database
             if annotations.has_key(point.id):
@@ -84,4 +85,22 @@ def ajax_save_annotations(request, annotationForm):
                     newAnno = Annotation(point=point, user=user, image=image, source=source, label=label)
                     newAnno.save()
 
-    return simplejson.dumps(False)
+    if image_annotation_all_done(image.id):
+        # Image annotation is all done
+        if not image.status.annotatedByHuman:
+            image.status.annotatedByHuman = True
+            image.status.save()
+        # (Need simplejson.dumps() to convert the Python True to a JS true)
+        return simplejson.dumps(dict(all_done=True))
+    else:
+        # Not done
+        if image.status.annotatedByHuman:
+            image.status.annotatedByHuman = False
+            image.status.save()
+        return dict()
+
+    
+@dajaxice_register
+def ajax_is_all_done(request, image_id):
+    return simplejson.dumps(image_annotation_all_done(image_id))
+

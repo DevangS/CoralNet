@@ -112,6 +112,14 @@ td.annotationFormLabelCell {
     text-align: center;
 }
 
+#allDone {
+    color: blue;
+    display: block;
+    font-size: 1.3em;
+    font-weight: bold;
+    margin: 5px;
+}
+
 </style>
 {% endblock %}
 
@@ -178,6 +186,8 @@ td.annotationFormLabelCell {
 
       <!-- type="button" ensures that the button doesn't do a non-Ajax form submit -->
       <button id="saveButton" type="button">Save progress</button>
+
+      <div id="allDone"></div>
 
      </form>
 
