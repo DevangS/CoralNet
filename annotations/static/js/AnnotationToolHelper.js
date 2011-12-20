@@ -59,6 +59,7 @@ var AnnotationToolHelper = {
         t.IMAGE_FULL_WIDTH = fullWidth;
         t.IMAGE_FULL_HEIGHT = fullHeight;
 
+        // Initialize image scale so the whole image is shown
         var widthScaleRatio = t.IMAGE_FULL_WIDTH / t.IMAGE_AREA_WIDTH;
         var heightScaleRatio = t.IMAGE_FULL_HEIGHT / t.IMAGE_AREA_HEIGHT;
 
@@ -76,7 +77,9 @@ var AnnotationToolHelper = {
 
         t.labelCodes = labelCodes;
 
-        // Initialize styling for everything
+        /*
+         * Initialize styling for everything
+         */
 
         $('#mainColumn').css({
             "width": t.ANNOTATION_AREA_WIDTH + "px",
@@ -143,6 +146,10 @@ var AnnotationToolHelper = {
             "z-index": 1
         });
 
+        /*
+         * Draw annotation points
+         */
+
 		t.context = t.pointsCanvas.getContext("2d");
 
         // Be able to specify all x,y coordinates in (scaled) image coordinates,
@@ -150,46 +157,10 @@ var AnnotationToolHelper = {
         t.context.translate(t.CANVAS_GUTTER + imageLeftOffset,
                             t.CANVAS_GUTTER + imageTopOffset);
 
-		// Mouse button is pressed and un-pressed on the canvas
-		$(t.listenerElmt).mouseup( function(e) {
-            
-            // Ctrl-click/Cmd-click on the canvas selects the nearest point.
-            // TODO: This shouldn't happen if the points display is toggled off
-            if (e.ctrlKey || e.metaKey) {
-                var nearestPoint = AnnotationToolHelper.getNearestPoint(e);
-                AnnotationToolHelper.toggle(nearestPoint);
-            }
-
-            // TODO: Clicking zooms in
-            else {
-
-            }
-        });
-
         // Initialize points
         t.imagePoints = imagePoints;
         t.numOfPoints = imagePoints.length;
         t.getCanvasPoints();
-
-        // Initialize save button
-        $(t.saveButton).removeAttr('disabled');  // Firefox might cache this attribute between page loads
-        $(t.saveButton).click(function() {
-            AnnotationToolHelper.saveAnnotations();
-        });
-
-        // Initialize all_done state
-        Dajaxice.CoralNet.annotations.ajax_is_all_done(
-            this.setAllDoneIndicator,
-            {'image_id': $('#id_image_id')[0].value}
-        );
-
-        // Label button handler
-        $('#labelButtons').find('button').each( function() {
-            $(this).click( function() {
-                // The button's text is the label code
-                AnnotationToolHelper.labelSelected($(this).text());
-            });
-        });
 
         var annotationFieldsJQ = $(t.annotationList).find('input');
         var annotationFieldRowsJQ = $(t.annotationList).find('tr');
@@ -207,12 +178,6 @@ var AnnotationToolHelper = {
             AnnotationToolHelper.annotationFieldRows[pointNum] = this;
             AnnotationToolHelper.annotationFields[pointNum] = field;
             AnnotationToolHelper.annotationRobotFields[pointNum] = robotField;
-
-            // Add robot-annotation styling.
-            // After this, a point's robot status can be checked with isRobot()
-            if (robotField.value === "true") {
-                $(this).addClass('robot');
-            }
         });
 
         // Set point annotation statuses,
@@ -223,20 +188,62 @@ var AnnotationToolHelper = {
             AnnotationToolHelper.drawPoint(pointNum);
         });
 
-        // Runs when label field gains focus
+        // Initialize save button
+        $(t.saveButton).removeAttr('disabled');  // Firefox might cache this attribute between page loads
+
+        // Initialize all_done state
+        Dajaxice.CoralNet.annotations.ajax_is_all_done(
+            this.setAllDoneIndicator,
+            {'image_id': $('#id_image_id')[0].value}
+        );
+
+        /*
+         * Set event handlers
+         */
+
+        // Mouse button is pressed and un-pressed on the canvas
+		$(t.listenerElmt).mouseup( function(e) {
+
+            // Ctrl-click/Cmd-click on the canvas selects the nearest point.
+            // TODO: This shouldn't happen if the points display is toggled off
+            if (e.ctrlKey || e.metaKey) {
+                var nearestPoint = AnnotationToolHelper.getNearestPoint(e);
+                AnnotationToolHelper.toggle(nearestPoint);
+            }
+
+            // TODO: Clicking zooms in
+            else {
+
+            }
+        });
+
+        // Save button is clicked
+        $(t.saveButton).click(function() {
+            AnnotationToolHelper.saveAnnotations();
+        });
+
+        // A label button is clicked
+        $('#labelButtons').find('button').each( function() {
+            $(this).click( function() {
+                // The button's text is the label code
+                AnnotationToolHelper.labelSelected($(this).text());
+            });
+        });
+
+        // Label field gains focus
         annotationFieldsJQ.focus(function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
             AnnotationToolHelper.unselectAll();
             AnnotationToolHelper.select(pointNum);
         });
 
-        // Runs when a label field is typed into and changed, and then unfocused.
-        // This does NOT run when a click of a label button changes the label field.
+        // Label field is typed into and changed, and then unfocused.
+        // (This does NOT run when a click of a label button changes the label field.)
         annotationFieldsJQ.change(function() {
             AnnotationToolHelper.onLabelFieldChange(this);
         });
 
-        // Runs when a label field is focused and a keyboard key is released
+        // Label field is focused and a keyboard key is released
         annotationFieldsJQ.keyup(function(e) {
             var ENTER = 13;
             
@@ -245,7 +252,6 @@ var AnnotationToolHelper = {
 
                 // Unrobot the current field, if needed
                 if (AnnotationToolHelper.isRobot(pointNum)) {
-                    AnnotationToolHelper.unrobot(pointNum);
                     AnnotationToolHelper.onPointUpdate(pointNum);
                 }
 
@@ -254,22 +260,23 @@ var AnnotationToolHelper = {
             }
         });
 
-        // Click the number next to a form field to select/unselect that point
+        // Number next to a label field is clicked.
         $(".annotationFormLabel").click(function() {
             //var pointNum = parseInt($(this).children(".annotationFormLabel").text());
             var pointNum = parseInt($(this).text());
             AnnotationToolHelper.toggle(pointNum);
         });
     },
-
+    
     /* Look at a label field, and based on the label, mark the point
-     * as annotated, unannotated, or errored.
+     * as (human) annotated, robot annotated, unannotated, or errored.
      */
     setPointAnnotationStatus: function(pointNum) {
         var t = this;
 
         var field = t.annotationFields[pointNum];
         var row = t.annotationFieldRows[pointNum];
+        var robotField = t.annotationRobotFields[pointNum];
         var labelCode = field.value;
 
         // Error: label is not empty string, and not in the labelset
@@ -281,11 +288,27 @@ var AnnotationToolHelper = {
         }
         // No error
         else {
-            // Label is empty or robot annotated
+            // Set as robot annotation or not
+            if (robotField.value === "true" && !$(row).hasClass('robot')) {
+                // The underlying form says its a robot annotation, but the
+                // robot style class isn't set.
+                // This inconsistency signals that we're calling this function
+                // to INITIALIZE the annotation tool.  Therefore, set the
+                // robot style class as part of the initialization process.
+                $(row).addClass('robot');
+            }
+            else if (robotField.value === "true") {
+                // If we're not initializing the annotation
+                // tool, then we're updating due to a USER ACTION.
+                // Therefore, this robot annotation should be un-roboted.
+                t.unrobot(pointNum);
+            }
+
+            // Set as (human) annotated or not
             if (labelCode === '' || t.isRobot(pointNum)) {
+                // No label, or robot annotated
                 $(row).removeClass('annotated');
             }
-            // Label is in the labelset
             else {
                 $(row).addClass('annotated');
             }
@@ -304,10 +327,6 @@ var AnnotationToolHelper = {
 
     onLabelFieldChange: function(field) {
         var pointNum = this.getPointNumOfAnnoField(field);
-
-        if (this.isRobot(pointNum)) {
-            this.unrobot(pointNum);
-        }
         this.onPointUpdate(pointNum);
     },
 
@@ -378,30 +397,13 @@ var AnnotationToolHelper = {
     labelSelected: function(labelButtonCode) {
         var selectedFieldsJQ = this.getSelectedFieldsJQ();
 
-        // Iterate over selected fields:
-        // Set the field's label to be the label of the
-        // clicked button.  Un-robot the field if needed.
-        // If changed or un-roboted, update the point's status.
+        // Iterate over selected points' fields.
         selectedFieldsJQ.each( function() {
-            var oldValue = this.value;
-            var updated = false;
+            // Set the point's label.
+            this.value = labelButtonCode;
 
-            // Set the field's label.
-            if (oldValue !== labelButtonCode) {
-                this.value = labelButtonCode;
-                updated = true;
-            }
-
-            // Un-robot if necessary.
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            if (AnnotationToolHelper.isRobot(pointNum)) {
-                AnnotationToolHelper.unrobot(pointNum);
-                updated = true;
-            }
-
-            if (updated) {
-                AnnotationToolHelper.onPointUpdate(pointNum);
-            }
+            // Update the point's annotation status (including unroboting).
+            AnnotationToolHelper.onPointUpdate(pointNum);
         });
 
         // If just 1 field is selected, focus the next field automatically
