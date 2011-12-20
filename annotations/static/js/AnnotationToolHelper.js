@@ -26,7 +26,8 @@ var AnnotationToolHelper = {
 	CANVAS_GUTTER: 25,
     CANVAS_GUTTER_COLOR: "#BBBBBB",
 
-    drawnPointStates: [],
+    pointContentStates: [],
+    pointGraphicStates: [],
     STATE_UNANNOTATED: 0,
     STATE_ANNOTATED: 1,
     STATE_SELECTED: 2,
@@ -147,9 +148,11 @@ var AnnotationToolHelper = {
         });
 
         /*
-         * Draw annotation points
+         * Initialize and draw annotation points,
+         * and initialize some variables and elements
          */
 
+        // Create a canvas context
 		t.context = t.pointsCanvas.getContext("2d");
 
         // Be able to specify all x,y coordinates in (scaled) image coordinates,
@@ -157,7 +160,7 @@ var AnnotationToolHelper = {
         t.context.translate(t.CANVAS_GUTTER + imageLeftOffset,
                             t.CANVAS_GUTTER + imageTopOffset);
 
-        // Initialize points
+        // Initialize point coordinates
         t.imagePoints = imagePoints;
         t.numOfPoints = imagePoints.length;
         t.getCanvasPoints();
@@ -165,18 +168,18 @@ var AnnotationToolHelper = {
         var annotationFieldsJQ = $(t.annotationList).find('input');
         var annotationFieldRowsJQ = $(t.annotationList).find('tr');
 
+        // Create arrays that map point numbers to HTML elements.
+        // For example, for point 1:
+        // annotationFields = form field with point 1's label code
+        // annotationFieldRows = table row containing form field 1
+        // annotationRobotFields = hidden form element of value true/false saying whether point 1 is robot annotated
         annotationFieldRowsJQ.each( function() {
             var field = $(this).find('input')[0];
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(field);
             var robotField = $('#id_robot_' + pointNum)[0];
 
-            // Create arrays that map point numbers to HTML elements.
-            // For example, for point 1:
-            // annotationFields = form field with point 1's label code
-            // annotationFieldRows = table row containing form field 1
-            // annotationRobotFields = hidden form element of value true/false saying whether point 1 is robot annotated
-            AnnotationToolHelper.annotationFieldRows[pointNum] = this;
             AnnotationToolHelper.annotationFields[pointNum] = field;
+            AnnotationToolHelper.annotationFieldRows[pointNum] = this;
             AnnotationToolHelper.annotationRobotFields[pointNum] = robotField;
         });
 
@@ -184,12 +187,13 @@ var AnnotationToolHelper = {
         // and draw the points
         annotationFieldsJQ.each( function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            AnnotationToolHelper.setPointAnnotationStatus(pointNum);
-            AnnotationToolHelper.drawPoint(pointNum);
+            AnnotationToolHelper.updatePointState(pointNum, true);
+            AnnotationToolHelper.updatePointGraphic(pointNum);
         });
 
         // Initialize save button
-        $(t.saveButton).removeAttr('disabled');  // Firefox might cache this attribute between page loads
+        $(t.saveButton).attr('disabled', 'disabled');
+        $(t.saveButton).text('Saved');
 
         // Initialize all_done state
         Dajaxice.CoralNet.annotations.ajax_is_all_done(
@@ -225,7 +229,8 @@ var AnnotationToolHelper = {
         // A label button is clicked
         $('#labelButtons').find('button').each( function() {
             $(this).click( function() {
-                // The button's text is the label code
+                // Label the selected points with this button's label code
+                // (which is the button's text).
                 AnnotationToolHelper.labelSelected($(this).text());
             });
         });
@@ -250,10 +255,8 @@ var AnnotationToolHelper = {
             if(e.keyCode === ENTER) {
                 var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
 
-                // Unrobot the current field, if needed
-                if (AnnotationToolHelper.isRobot(pointNum)) {
-                    AnnotationToolHelper.onPointUpdate(pointNum);
-                }
+                // Unrobot/update the field
+                AnnotationToolHelper.onPointUpdate(pointNum);
 
                 // Switch focus to next point's field
                 AnnotationToolHelper.focusNextField(pointNum);
@@ -271,7 +274,7 @@ var AnnotationToolHelper = {
     /* Look at a label field, and based on the label, mark the point
      * as (human) annotated, robot annotated, unannotated, or errored.
      */
-    setPointAnnotationStatus: function(pointNum) {
+    updatePointState: function(pointNum, initializing) {
         var t = this;
 
         var field = t.annotationFields[pointNum];
@@ -279,27 +282,28 @@ var AnnotationToolHelper = {
         var robotField = t.annotationRobotFields[pointNum];
         var labelCode = field.value;
 
+        /*
+         * Update style elements and robot statuses accordingly
+         */
+
         // Error: label is not empty string, and not in the labelset
         if (labelCode !== '' && t.labelCodes.indexOf(labelCode) === -1) {
             // Error styling
             $(field).attr('title', 'Label not in labelset');
             $(row).addClass('error');
             $(row).removeClass('annotated');
+            $(row).removeClass('robot');
         }
         // No error
         else {
             // Set as robot annotation or not
-            if (robotField.value === "true" && !$(row).hasClass('robot')) {
-                // The underlying form says its a robot annotation, but the
-                // robot style class isn't set.
-                // This inconsistency signals that we're calling this function
-                // to INITIALIZE the annotation tool.  Therefore, set the
-                // robot style class as part of the initialization process.
+            if (robotField.value === "true" && initializing) {
+                // Initializing the page, need to add robot styles as appropriate.
                 $(row).addClass('robot');
             }
             else if (robotField.value === "true") {
-                // If we're not initializing the annotation
-                // tool, then we're updating due to a USER ACTION.
+                // If we're not initializing the page,
+                // then we're updating due to a USER ACTION.
                 // Therefore, this robot annotation should be un-roboted.
                 t.unrobot(pointNum);
             }
@@ -317,12 +321,40 @@ var AnnotationToolHelper = {
             $(row).removeClass('error');
             $(field).removeAttr('title');
         }
+
+        /*
+         * See if content has changed (label name and robot status)
+         */
+
+        // Possible states:
+        // Human annotated (and as what), robot annotated (and as what),
+        // empty, errored, selected+any of previous
+        
+        var contentChanged = false;
+        var oldState = t.pointContentStates[pointNum];
+        var newState = {'label': labelCode, 'robot': robotField.value};
+
+        if (initializing) {
+            // Initializing this point at page load time
+            t.pointContentStates[pointNum] = newState;
+        }
+        else if (oldState['label'] !== newState['label']
+                 || oldState['robot'] !== newState['robot']) {
+            // Content has changed
+            contentChanged = true;
+            t.pointContentStates[pointNum] = newState;
+        }
+
+        return contentChanged;
     },
 
     onPointUpdate: function(pointNum) {
-        this.setPointAnnotationStatus(pointNum);
-        this.drawPoint(pointNum);
-        this.updateSaveButton();
+        var contentChanged = this.updatePointState(pointNum, false);
+        
+        this.updatePointGraphic(pointNum);
+        
+        if (contentChanged)
+            this.updateSaveButton();
     },
 
     onLabelFieldChange: function(field) {
@@ -358,12 +390,12 @@ var AnnotationToolHelper = {
 
     select: function(pointNum) {
         $(this.annotationFieldRows[pointNum]).addClass('selected');
-        this.drawPoint(pointNum);
+        this.updatePointGraphic(pointNum);
     },
 
     unselect: function(pointNum) {
         $(this.annotationFieldRows[pointNum]).removeClass('selected');
-        this.drawPoint(pointNum);
+        this.updatePointGraphic(pointNum);
     },
 
     toggle: function(pointNum) {
@@ -403,6 +435,7 @@ var AnnotationToolHelper = {
             this.value = labelButtonCode;
 
             // Update the point's annotation status (including unroboting).
+            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
             AnnotationToolHelper.onPointUpdate(pointNum);
         });
 
@@ -536,10 +569,10 @@ var AnnotationToolHelper = {
         this.drawPointHelper(pointNum, this.SELECTED_COLOR, this.SELECTED_OUTLINE_COLOR);
     },
 
-    /* Draw a point on the canvas in the correct color.
-     * If we're redrawing a point, draw over that point's previous graphic.
+    /* Update a point's graphics on the canvas in the correct color.
+     * Don't redraw a point unless necessary.
      */
-    drawPoint: function(pointNum) {
+    updatePointGraphic: function(pointNum) {
         var t = this;
         var row = this.annotationFieldRows[pointNum];
         var newState;
@@ -551,11 +584,11 @@ var AnnotationToolHelper = {
         else
             newState = t.STATE_UNANNOTATED;
 
-        var oldState = t.drawnPointStates[pointNum];
+        var oldState = t.pointGraphicStates[pointNum];
 
         // Only redraw when we have to
         if (oldState !== newState) {
-            t.drawnPointStates[pointNum] = newState;
+            t.pointGraphicStates[pointNum] = newState;
 
             if (newState === t.STATE_SELECTED)
                 t.drawPointSelected(pointNum);
