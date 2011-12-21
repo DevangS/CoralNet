@@ -29,6 +29,7 @@
 
 #imageArea {
     position: absolute;
+    overflow: hidden;
 }
 #coralImage {
     position: absolute;
@@ -38,6 +39,14 @@
 }
 #listenerElmt {
     position: absolute;
+
+    /* Disable "selecting" this element by double-clicking it;
+       that can get in the way while trying to zoom. */
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -o-user-select: none;
+    user-select: none;
 }
 
 #labelButtons button {

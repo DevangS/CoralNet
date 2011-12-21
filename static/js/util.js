@@ -26,6 +26,25 @@ var util = {
     },
 
     /*
+    Take a mouse event and return "LEFT", "MIDDLE", or "RIGHT" depending
+    on which mouse button was clicked.
+
+    From http://unixpapa.com/js/mouse.html
+    "The following test works for all browsers except Opera 7."
+    As of Aug 17, 2011
+    */
+    identifyMouseButton: function(event) {
+        if (event.which == null)
+           /* IE case */
+           return (event.button < 2) ? "LEFT" :
+                     ((event.button == 4) ? "MIDDLE" : "RIGHT");
+        else
+           /* All others */
+           return (event.which < 2) ? "LEFT" :
+                     ((event.which == 2) ? "MIDDLE" : "RIGHT");
+    },
+
+    /*
     Trim leading and trailing spaces from a string.
 
     From http://blog.stevenlevithan.com/archives/faster-trim-javascript
