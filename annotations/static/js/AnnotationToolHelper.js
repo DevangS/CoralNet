@@ -6,6 +6,7 @@ var AnnotationToolHelper = {
     annotationFieldRows: [],
     annotationFields: [],
     annotationRobotFields: [],
+    annotationFieldsJQ: null,
     coralImage: null,
     pointsCanvas: null,
     listenerElmt: null,
@@ -26,6 +27,7 @@ var AnnotationToolHelper = {
 	CANVAS_GUTTER: 25,
     CANVAS_GUTTER_COLOR: "#BBBBBB",
 
+    // Related to possible states of each annotation point
     pointContentStates: [],
     pointGraphicStates: [],
     STATE_UNANNOTATED: 0,
@@ -38,17 +40,36 @@ var AnnotationToolHelper = {
 	SELECTED_COLOR: "#00FF00",
     SELECTED_OUTLINE_COLOR: "#000000",
 
+    // Entire annotation tool (including buttons, text fields, etc.)
     ANNOTATION_TOOL_WIDTH: 980,
     ANNOTATION_TOOL_HEIGHT: 800, // TODO: Make this dynamic according to how many label buttons there are
+    // The canvas area, where drawing is allowed
     ANNOTATION_AREA_WIDTH: 850,
     ANNOTATION_AREA_HEIGHT: 650,
-
+    // The area that the image is permitted to fill
     IMAGE_AREA_WIDTH: null,
     IMAGE_AREA_HEIGHT: null,
-    IMAGE_DISPLAY_HEIGHT: null,
-    IMAGE_DISPLAY_WIDTH: null,
-    IMAGE_FULL_HEIGHT: null,
+    // The original image dimensions
 	IMAGE_FULL_WIDTH: null,
+    IMAGE_FULL_HEIGHT: null,
+    // Display parameters of the image.
+    // > 1 zoomFactor means larger than original image
+    // zoom levels start at 0 (fully zoomed out) and go up like 1,2,3,etc.
+    imageDisplayWidth: null,
+    imageDisplayHeight: null,
+    zoomFactor: null,
+    zoomLevel: null,
+    ZOOM_FACTORS: {},
+    ZOOM_INCREMENT: 1.5,
+    HIGHEST_ZOOM_LEVEL: 4,
+    // Current display position of the image.
+    // centerOfZoom is in terms of raw-image coordinates.
+    // < 0 offset means top left corner is not visible.
+    centerOfZoomX: null,
+    centerOfZoomY: null,
+    imageLeftOffset: null,
+    imageTopOffset: null,
+
 
     init: function(fullHeight, fullWidth,
                    imagePoints, labelCodes) {
@@ -60,27 +81,16 @@ var AnnotationToolHelper = {
         t.IMAGE_FULL_WIDTH = fullWidth;
         t.IMAGE_FULL_HEIGHT = fullHeight;
 
-        // Initialize image scale so the whole image is shown
-        var widthScaleRatio = t.IMAGE_FULL_WIDTH / t.IMAGE_AREA_WIDTH;
-        var heightScaleRatio = t.IMAGE_FULL_HEIGHT / t.IMAGE_AREA_HEIGHT;
+        /*
+         * Initialize styling and sizing for everything
+         */
 
-        // Note that for small images, the scaleDownFactor may be < 1; in that case, the image is scaled up
-        var scaleDownFactor = Math.max(widthScaleRatio, heightScaleRatio);
-        t.IMAGE_DISPLAY_WIDTH = t.IMAGE_FULL_WIDTH / scaleDownFactor;
-        t.IMAGE_DISPLAY_HEIGHT = t.IMAGE_FULL_HEIGHT / scaleDownFactor;
-        
         t.annotationArea = $("#annotationArea")[0];
         t.annotationList = $("#annotationList")[0];
         t.coralImage = $("#coralImage")[0];
         t.pointsCanvas = $("#pointsCanvas")[0];
         t.listenerElmt = $("#listenerElmt")[0];
         t.saveButton = $("#saveButton")[0];
-
-        t.labelCodes = labelCodes;
-
-        /*
-         * Initialize styling for everything
-         */
 
         $('#mainColumn').css({
             "width": t.ANNOTATION_AREA_WIDTH + "px",
@@ -115,30 +125,32 @@ var AnnotationToolHelper = {
             "top": t.CANVAS_GUTTER + "px"
         });
 
-        var imageLeftOffset = (t.IMAGE_AREA_WIDTH - t.IMAGE_DISPLAY_WIDTH) / 2;
-        var imageTopOffset = (t.IMAGE_AREA_HEIGHT - t.IMAGE_DISPLAY_HEIGHT) / 2;
+        /*
+         * Set initial image scaling so the whole image is shown.
+         * Also set the allowable zoom factors.
+         */
 
-        $(t.coralImage).css({
-            "height": t.IMAGE_DISPLAY_HEIGHT + "px",
-            "left": imageLeftOffset + "px",
-            "top": imageTopOffset + "px",
-            "z-index": 0
-        });
+        var widthScaleRatio = t.IMAGE_FULL_WIDTH / t.IMAGE_AREA_WIDTH;
+        var heightScaleRatio = t.IMAGE_FULL_HEIGHT / t.IMAGE_AREA_HEIGHT;
+        var scaleDownFactor = Math.max(widthScaleRatio, heightScaleRatio);
 
-        // Invisible element that goes over the coral image
-        // and listens for mouseclicks.
-        // z-index should be above everything else.
-        $(t.listenerElmt).css({
-            "width": t.IMAGE_DISPLAY_WIDTH + "px",
-            "height": t.IMAGE_DISPLAY_HEIGHT + "px",
-            "left": imageLeftOffset + "px",
-            "top": imageTopOffset + "px",
-            "z-index": 100
-        });
+        // If the scaleDownFactor is < 1, then it's scaled up (meaning the image is really small).
+        t.zoomFactor = 1.0 / scaleDownFactor;
 
-        // Note that the canvas's width and height elements are different from the
-        // canvas style's width and height. We're interested in the canvas width and height,
-        // so the canvas contents don't stretch.
+        // Allowable zoom factors/levels:
+        // Start with the most zoomed out level, 0.  Level 1 is ZOOM_INCREMENT * level 0.
+        // Level 2 is ZOOM_INCREMENT * level 1, etc.  Goes up to level HIGHEST_ZOOM_LEVEL.
+        t.zoomLevel = 0;
+        for (var i = 0; i <= t.HIGHEST_ZOOM_LEVEL; i++) {
+            t.ZOOM_FACTORS[i] = t.zoomFactor * Math.pow(t.ZOOM_INCREMENT, i);
+        }
+
+        // Based on the zoom level, set up the image area.
+        // (No need to define centerOfZoom since we're not zooming in to start with.)
+        t.setupImageArea();
+
+        // Set the canvas's width and height properties so the canvas contents don't stretch.
+        // Note that this is different from CSS width and height properties.
         t.pointsCanvas.width = t.ANNOTATION_AREA_WIDTH;
         t.pointsCanvas.height = t.ANNOTATION_AREA_HEIGHT;
         $(t.pointsCanvas).css({
@@ -149,23 +161,27 @@ var AnnotationToolHelper = {
 
         /*
          * Initialize and draw annotation points,
-         * and initialize some variables and elements
+         * and initialize some other variables and elements
          */
 
         // Create a canvas context
 		t.context = t.pointsCanvas.getContext("2d");
 
-        // Be able to specify all x,y coordinates in (scaled) image coordinates,
-        // instead of the coordinates of the entire canvas (which includes the gutter).
-        t.context.translate(t.CANVAS_GUTTER + imageLeftOffset,
-                            t.CANVAS_GUTTER + imageTopOffset);
+        // Save this fresh context so we can restore it later as needed.
+        t.context.save();
+
+        // Translate the canvas context to compensate for the gutter and the image offset.
+        t.resetCanvas();
 
         // Initialize point coordinates
         t.imagePoints = imagePoints;
         t.numOfPoints = imagePoints.length;
         t.getCanvasPoints();
 
-        var annotationFieldsJQ = $(t.annotationList).find('input');
+        // Possible label codes
+        t.labelCodes = labelCodes;
+
+        t.annotationFieldsJQ = $(t.annotationList).find('input');
         var annotationFieldRowsJQ = $(t.annotationList).find('tr');
 
         // Create arrays that map point numbers to HTML elements.
@@ -185,7 +201,7 @@ var AnnotationToolHelper = {
 
         // Set point annotation statuses,
         // and draw the points
-        annotationFieldsJQ.each( function() {
+        t.annotationFieldsJQ.each( function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
             AnnotationToolHelper.updatePointState(pointNum, true);
             AnnotationToolHelper.updatePointGraphic(pointNum);
@@ -208,18 +224,82 @@ var AnnotationToolHelper = {
         // Mouse button is pressed and un-pressed on the canvas
 		$(t.listenerElmt).mouseup( function(e) {
 
-            // Ctrl-click/Cmd-click on the canvas selects the nearest point.
+            var ATH = AnnotationToolHelper;
+            var mouseButton = util.identifyMouseButton(e);
+            var imagePos;
+
+            // Ctrl + left-click / Cmd + left-click on the image:
+            // Selects the nearest point.
             // TODO: This shouldn't happen if the points display is toggled off
-            if (e.ctrlKey || e.metaKey) {
-                var nearestPoint = AnnotationToolHelper.getNearestPoint(e);
-                AnnotationToolHelper.toggle(nearestPoint);
+            if ((e.ctrlKey || e.metaKey) && mouseButton === "LEFT") {
+                var nearestPoint = ATH.getNearestPoint(e);
+                ATH.toggle(nearestPoint);
             }
 
-            // TODO: Clicking zooms in
-            else {
+            // Left-click / right-click:
+            // Zooms in or out on the image display.
+            else if (mouseButton === "LEFT" || mouseButton === "RIGHT") {
 
+                // Left-click to zoom in.
+                if (mouseButton === "LEFT") {
+                    if (ATH.zoomLevel === ATH.HIGHEST_ZOOM_LEVEL)
+                        return;
+
+                    // Zoom into the part that was clicked
+                    // (Make sure to use the old zoom factor for calculating this)
+                    imagePos = ATH.getImagePosition(e);
+                    ATH.centerOfZoomX = imagePos[0];
+                    ATH.centerOfZoomY = imagePos[1];
+
+                    ATH.zoomLevel += 1;
+                }
+                // Right-click to zoom out.
+                else if (mouseButton === "RIGHT") {
+                    // 0 is the lowest zoom level.
+                    if (ATH.zoomLevel === 0)
+                        return;
+
+                    // Zoom out toward the part that was clicked
+                    // (Make sure to use the old zoom factor for calculating this)
+                    imagePos = ATH.getImagePosition(e);
+                    ATH.centerOfZoomX = imagePos[0];
+                    ATH.centerOfZoomY = imagePos[1];
+
+                    ATH.zoomLevel -= 1;
+                }
+
+                ATH.zoomFactor = ATH.ZOOM_FACTORS[ATH.zoomLevel];
+
+                // Adjust the image and point coordinates.
+                ATH.setupImageArea();
+                ATH.getCanvasPoints();
+                // Clear the canvas and re-translate the context
+                // according to the new image offsets.
+                ATH.resetCanvas();
+
+                // Redraw the points.
+                // Make sure to clear pointGraphicStates so
+                // updatePointGraphic() ends up redrawing all points.
+                ATH.pointGraphicStates = [];
+                ATH.annotationFieldsJQ.each( function() {
+                    var pointNum = ATH.getPointNumOfAnnoField(this);
+                    ATH.updatePointGraphic(pointNum);
+                });
             }
         });
+
+        // Disable the context menu on the listener element.
+        // The menu just gets in the way while trying to zoom out, etc.
+        $(t.listenerElmt).bind('contextmenu', function(e){
+            return false;
+        });
+        // Same goes for the canvas element, which is sometimes what we end up
+        // right clicking on if the image is no longer over that part of the canvas.
+        $(t.pointsCanvas).bind('contextmenu', function(e){
+            return false;
+        });
+        // Also note that the listener element uses CSS to disable
+        // double-click-to-select (it makes the image turn blue, which is annoying).
 
         // Save button is clicked
         $(t.saveButton).click(function() {
@@ -236,7 +316,7 @@ var AnnotationToolHelper = {
         });
 
         // Label field gains focus
-        annotationFieldsJQ.focus(function() {
+        t.annotationFieldsJQ.focus(function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
             AnnotationToolHelper.unselectAll();
             AnnotationToolHelper.select(pointNum);
@@ -244,12 +324,12 @@ var AnnotationToolHelper = {
 
         // Label field is typed into and changed, and then unfocused.
         // (This does NOT run when a click of a label button changes the label field.)
-        annotationFieldsJQ.change(function() {
+        t.annotationFieldsJQ.change(function() {
             AnnotationToolHelper.onLabelFieldChange(this);
         });
 
         // Label field is focused and a keyboard key is released
-        annotationFieldsJQ.keyup(function(e) {
+        t.annotationFieldsJQ.keyup(function(e) {
             var ENTER = 13;
             
             if(e.keyCode === ENTER) {
@@ -265,10 +345,105 @@ var AnnotationToolHelper = {
 
         // Number next to a label field is clicked.
         $(".annotationFormLabel").click(function() {
-            //var pointNum = parseInt($(this).children(".annotationFormLabel").text());
             var pointNum = parseInt($(this).text());
             AnnotationToolHelper.toggle(pointNum);
         });
+    },
+
+    /*
+     * Based on the current zoom level and focus of the zoom, position and
+     * set up the image and on-image listener elements.
+     */
+    setupImageArea: function() {
+        var t = this;
+
+        t.imageDisplayWidth = t.IMAGE_FULL_WIDTH * t.zoomFactor;
+        t.imageDisplayHeight = t.IMAGE_FULL_HEIGHT * t.zoomFactor;
+
+        // Round off imprecision, so that if the display width is supposed to be
+        // equal to the image area width, then they will actually be equal.
+        t.imageDisplayWidth = parseFloat(t.imageDisplayWidth.toFixed(3));
+        t.imageDisplayHeight = parseFloat(t.imageDisplayHeight.toFixed(3));
+
+        // Position the image within the image area.
+        // Negative offsets means the top-left corner is offscreen.
+        // Positive offsets means there's extra space around the image
+        // (should prevent this unless the image display is smaller than the image area).
+
+        if (t.imageDisplayWidth <= t.IMAGE_AREA_WIDTH)
+            t.imageLeftOffset = (t.IMAGE_AREA_WIDTH - t.imageDisplayWidth) / 2;
+        else {
+            var centerOfZoomInDisplayX = t.centerOfZoomX * t.zoomFactor;
+            var leftEdgeInDisplayX = centerOfZoomInDisplayX - (t.IMAGE_AREA_WIDTH / 2);
+            var rightEdgeInDisplayX = centerOfZoomInDisplayX + (t.IMAGE_AREA_WIDTH / 2);
+            
+            if (leftEdgeInDisplayX < 0)
+                t.imageLeftOffset = 0;
+            else if (rightEdgeInDisplayX > t.imageDisplayWidth)
+                t.imageLeftOffset = -(t.imageDisplayWidth - t.IMAGE_AREA_WIDTH);
+            else
+                t.imageLeftOffset = -leftEdgeInDisplayX;
+        }
+
+        if (t.imageDisplayHeight <= t.IMAGE_AREA_HEIGHT)
+            t.imageTopOffset = (t.IMAGE_AREA_HEIGHT - t.imageDisplayHeight) / 2;
+        else {
+            var centerOfZoomInDisplayY = t.centerOfZoomY * t.zoomFactor;
+            var topEdgeInDisplayY = centerOfZoomInDisplayY - (t.IMAGE_AREA_HEIGHT / 2);
+            var bottomEdgeInDisplayY = centerOfZoomInDisplayY + (t.IMAGE_AREA_HEIGHT / 2);
+
+            if (topEdgeInDisplayY < 0)
+                t.imageTopOffset = 0;
+            else if (bottomEdgeInDisplayY > t.imageDisplayHeight)
+                t.imageTopOffset = -(t.imageDisplayHeight - t.IMAGE_AREA_HEIGHT);
+            else
+                t.imageTopOffset = -topEdgeInDisplayY;
+        }
+
+        // Round off imprecision, so that we don't have any extremely small offsets
+        // that get expressed in scientific notation (that confuses jQuery's number parsing).
+        t.imageLeftOffset = parseFloat(t.imageLeftOffset.toFixed(3));
+        t.imageTopOffset = parseFloat(t.imageTopOffset.toFixed(3));
+
+        // Set styling properties for the image.
+        $(t.coralImage).css({
+            "height": t.imageDisplayHeight,
+            "left": t.imageLeftOffset,
+            "top": t.imageTopOffset,
+            "z-index": 0
+        });
+
+        // Set styling properties for the listener element:
+        // An invisible element that goes over the coral image
+        // and listens for mouse events.
+        // Since it has to be on top to listen for mouse events,
+        // the z-index should be above every other element's z-index.
+        $(t.listenerElmt).css({
+            "width": t.imageDisplayWidth,
+            "height": t.imageDisplayHeight,
+            "left": t.imageLeftOffset,
+            "top": t.imageTopOffset,
+            "z-index": 100
+        });
+    },
+
+    /*
+     * Clear the canvas and reset the context.
+     */
+    resetCanvas: function() {
+        var t = this;
+
+        // Get the original (untranslated) context back.
+        t.context.restore();
+        // And save the context again for the next time we have to translate.
+        t.context.save();
+
+        // Clear the entire canvas.
+        t.context.clearRect(0, 0, t.pointsCanvas.width, t.pointsCanvas.height);
+
+        // Translate the canvas context to compensate for the gutter.
+        // This'll allow us to pretend that canvas coordinates = image area coordinates.
+        t.context.translate(t.CANVAS_GUTTER, t.CANVAS_GUTTER);
     },
     
     /* Look at a label field, and based on the label, mark the point
@@ -499,8 +674,8 @@ var AnnotationToolHelper = {
         var imageElmtX = imageElmtPosition[0];
         var imageElmtY = imageElmtPosition[1];
 
-        var x = imageElmtX * (t.IMAGE_FULL_WIDTH / t.IMAGE_DISPLAY_WIDTH);
-        var y = imageElmtY * (t.IMAGE_FULL_HEIGHT / t.IMAGE_DISPLAY_HEIGHT);
+        var x = imageElmtX / t.zoomFactor;
+        var y = imageElmtY / t.zoomFactor;
 
         return [x,y];
     },
@@ -531,21 +706,20 @@ var AnnotationToolHelper = {
     },
 
     /*
-    To get the points in canvas coordinates,
-    scale the coordinates to match the scaling of the image.
+    Raw image coordinates -> Canvas coordinates:
+    (1) Scale the raw image coordinates by the image zoom factor.
+    (2) Account for image position offset.
+    (3) Don't account for gutter offset (translating the canvas context already takes care of this).
      */
     getCanvasPoints: function() {
         var t = this;
-
-        // Apparently JavaScript uses decimal division by default, which we want in this case.
-        var scaleFactor = t.IMAGE_DISPLAY_WIDTH / t.IMAGE_FULL_WIDTH;
 
         for (var i = 0; i < t.imagePoints.length; i++) {
 
             t.canvasPoints[t.imagePoints[i].point_number] = {
                 num: t.imagePoints[i].point_number,
-                row: t.imagePoints[i].row * scaleFactor,
-                col: t.imagePoints[i].column * scaleFactor
+                row: (t.imagePoints[i].row * t.zoomFactor) + t.imageTopOffset,
+                col: (t.imagePoints[i].column * t.zoomFactor) + t.imageLeftOffset
             };
         }
     },
@@ -574,6 +748,17 @@ var AnnotationToolHelper = {
      */
     updatePointGraphic: function(pointNum) {
         var t = this;
+
+        // If the point coordinates are not within the image area,
+        // then don't bother drawing the point
+        if (t.canvasPoints[pointNum].row < 0
+            || t.canvasPoints[pointNum].row > t.IMAGE_AREA_HEIGHT
+            || t.canvasPoints[pointNum].col < 0
+            || t.canvasPoints[pointNum].col > t.IMAGE_AREA_WIDTH
+            ) {
+            return;
+        }
+
         var row = this.annotationFieldRows[pointNum];
         var newState;
 
@@ -632,7 +817,8 @@ var AnnotationToolHelper = {
     },
 
     getPointNumOfAnnoField: function(annoField) {
-        // Assuming the annotation field's name attribute is "label_<pointnumber>"
+        // Assuming the annotation field's name attribute is "label_<pointnumber>".
+        // "label_" is 6 characters.
         return parseInt(annoField.name.substring(6));
     },
 
