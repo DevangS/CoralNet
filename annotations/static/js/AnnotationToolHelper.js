@@ -692,13 +692,19 @@ var AnnotationToolHelper = {
         var closestPoint = null;
 
         for (var i = 0; i < t.imagePoints.length; i++) {
-            var xDiff = x - t.imagePoints[i].column;
-            var yDiff = y - t.imagePoints[i].row;
+            var currPoint = t.imagePoints[i];
+
+            // Don't count points that are offscreen.
+            if (t.pointIsOffscreen(currPoint.point_number))
+                continue;
+
+            var xDiff = x - currPoint.column;
+            var yDiff = y - currPoint.row;
             var distance = Math.sqrt((xDiff*xDiff) + (yDiff*yDiff));
 
             if (distance < minDistance) {
                 minDistance = distance;
-                closestPoint = t.imagePoints[i].point_number;
+                closestPoint = currPoint.point_number;
             }
         }
 
@@ -749,15 +755,10 @@ var AnnotationToolHelper = {
     updatePointGraphic: function(pointNum) {
         var t = this;
 
-        // If the point coordinates are not within the image area,
+        // If the point is offscreen,
         // then don't bother drawing the point
-        if (t.canvasPoints[pointNum].row < 0
-            || t.canvasPoints[pointNum].row > t.IMAGE_AREA_HEIGHT
-            || t.canvasPoints[pointNum].col < 0
-            || t.canvasPoints[pointNum].col > t.IMAGE_AREA_WIDTH
-            ) {
+        if (t.pointIsOffscreen(pointNum))
             return;
-        }
 
         var row = this.annotationFieldRows[pointNum];
         var newState;
@@ -782,6 +783,19 @@ var AnnotationToolHelper = {
             else if (newState === t.STATE_UNANNOTATED)
                 t.drawPointUnannotated(pointNum);
         }
+    },
+
+    /*
+     * Return true if the given point's coordinates
+     * are not within the image area
+     */
+    pointIsOffscreen: function(pointNum) {
+        var t = this;
+        return (t.canvasPoints[pointNum].row < 0
+                || t.canvasPoints[pointNum].row > t.IMAGE_AREA_HEIGHT
+                || t.canvasPoints[pointNum].col < 0
+                || t.canvasPoints[pointNum].col > t.IMAGE_AREA_WIDTH
+                )
     },
 
     saveAnnotations: function() {
