@@ -259,4 +259,5 @@ ANNOTATIONS_URL = '/annotations/'
 VISUALIZATION_URL = '/visualization/'
 BUG_REPORTING_URL = '/feedback/'
 
-
+#Default FROM to use when sending emails
+SERVER_EMAIL = 'noreply@coralnet.ucsd.edu'

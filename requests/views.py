@@ -23,7 +23,7 @@ def request_invite(request):
                       'Reason: ' + reason + '\n'
 
             try:
-               mail_admins('[CoralNet] Invite Requested', DEFAULT_FROM_EMAIL, message )
+               mail_admins('[CoralNet] Invite Requested', message )
             except BadHeaderError:
                 messages.append('Invalid header found.')
 
