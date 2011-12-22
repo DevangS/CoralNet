@@ -9,7 +9,8 @@
 {% block content %}
 
     <h2>Request an account</h2>
-    <form action="{% url request_invite %}" method="post">{% csrf_token %}
+    <form action="{% url request_account %}" method="post">
+        {% csrf_token %}
         {{ form.as_p }}
         <input type="submit" value="Submit" />
     </form>
