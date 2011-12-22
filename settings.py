@@ -25,7 +25,8 @@ DATABASES = settings_2.DATABASES
 # Default configurations to use when sending email
 DEFAULT_FROM_EMAIL = settings_2.DEFAULT_FROM_EMAIL
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
-EMAIL_SUBJECT_PREFIX = '[Coralnet]'
+#Default string to append in front of the subject of emails sent by the server
+EMAIL_SUBJECT_PREFIX = '[CoralNet] '
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
