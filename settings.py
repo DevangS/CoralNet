@@ -22,9 +22,10 @@ MANAGERS = settings_2.MANAGERS
 
 DATABASES = settings_2.DATABASES
 
-# Default e-mail address to use for various automated correspondence from
-# the site managers.
+# Default configurations to use when sending email
 DEFAULT_FROM_EMAIL = settings_2.DEFAULT_FROM_EMAIL
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+EMAIL_SUBJECT_PREFIX = '[Coralnet]'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -258,6 +259,3 @@ IMAGES_URL = '/images/'
 ANNOTATIONS_URL = '/annotations/'
 VISUALIZATION_URL = '/visualization/'
 BUG_REPORTING_URL = '/feedback/'
-
-#Default FROM to use when sending emails
-SERVER_EMAIL = 'noreply@coralnet.ucsd.edu'
