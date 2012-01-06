@@ -3,7 +3,15 @@
 {% block title %}{{ source.name }} - Statistics | CoralNet{% endblock %}
 
 {% block content %}
-
+    <script type='text/javascript' src='http://code.jquery.com/jquery-1.4.2.js'></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.0/jquery-ui.js"></script>
+    <script type="text/javascript">
+       $(document).ready(function(){
+            $("#selectAll").change(function() {
+                $(".:checkbox").attr('checked', this.checked);
+            });
+       });
+    </script>
     <h2>Statistics</h2>
 
     <p>Pick a set of images and labels to generate statistics for using the form below. This will generate
@@ -35,7 +43,9 @@
             {{ form.value4.label }}&nbsp;{{ form.value4 }}&nbsp;
             <br/><br/>
 
-            Choose some labels<i>(required)</i>: {{ form.labels }}
+            Choose some labels<i>(required)</i>: <br/><br/>
+            <div style="text-align: center;">Select All Labels:<input type="checkbox" id="selectAll"><br /></div>
+            {{ form.labels }}
         </fieldset>
 
 
