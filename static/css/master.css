@@ -112,7 +112,7 @@ ul.nav li a{
 ul.nav li a span {
     display: block; 
     color: #686868; 
-    padding: 0.52em 1.6em 0.48em;
+    padding: 0.52em 1.4em 0.48em;
     text-shadow: rgba(255,254,255,0.45) 0 1px 0; 
     -webkit-box-shadow: rgba(33,33,33,0.45) 0px 0px 3px; 
     -moz-box-shadow: rgba(33,33,33,0.45) 0px 0px 3px; 
@@ -142,8 +142,7 @@ ul.nav li a:active span {
     -webkit-box-shadow: rgba(33,33,33,0.45) 0px 0px 1px; 
     -moz-box-shadow: rgba(33,33,33,0.45) 0px 0px 1px; 
     box-shadow: rgba(33,33,33,0.45) 0px 0px 1px;
-    padding: 0.58em 1.6em 0.30em;
-    line-height: 1.5em;
+    padding: 0.62em 1.4em 0.38em;
 }
 
 ul.nav li.button_prominent a{

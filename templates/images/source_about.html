@@ -20,7 +20,7 @@
     <p>You're not part of any Sources. <a href="{% url source_new %}">Create a new Source</a>, or ask to be invited to one.</p>
     {% endif %}
     {% if user_status == 'anonymous' %}
-    <p>You need an account to work with Sources. <a href="{% url userena_signin %}">Sign in</a> or <a href="{% url userena_signup %}">create an account</a>.</p>
+    <p>You need an account to work with Sources. <a href="{% url userena_signin %}">Sign in</a> or <a href="{% url request_account %}">request an account</a>.</p>
     {% endif %}
 
     <hr />
