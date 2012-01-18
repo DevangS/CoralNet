@@ -39,6 +39,12 @@ var AnnotationToolHelper = {
     ANNOTATED_OUTLINE_COLOR: "#000000",
 	SELECTED_COLOR: "#00FF00",
     SELECTED_OUTLINE_COLOR: "#000000",
+    
+    // Point viewing mode
+    pointViewMode: null,
+    POINTMODE_ALL: 0,
+    POINTMODE_SELECTED: 1,
+    POINTMODE_NONE: 2,
 
     // Entire annotation tool (including buttons, text fields, etc.)
     ANNOTATION_TOOL_WIDTH: 980,
@@ -108,8 +114,11 @@ var AnnotationToolHelper = {
             "height": t.ANNOTATION_TOOL_HEIGHT + "px"
         });
 
+        var annotationListMaxHeight =
+            t.ANNOTATION_AREA_HEIGHT
+            - (24 + (2*2) + (5*2) );    // pointModeButtonArea: buttons, borders, and margins
         $(t.annotationList).css({
-            "max-height": t.ANNOTATION_AREA_HEIGHT + "px"
+            "max-height": annotationListMaxHeight + "px"
         });
 
         $(t.annotationArea).css({
@@ -207,6 +216,10 @@ var AnnotationToolHelper = {
             AnnotationToolHelper.updatePointGraphic(pointNum);
         });
 
+        // Set the initial point view mode.  This'll trigger a redraw of the points, but that's okay;
+        // initialization slowness is a relatively minor worry.
+        t.changePointMode(t.POINTMODE_ALL);
+
         // Initialize save button
         $(t.saveButton).attr('disabled', 'disabled');
         $(t.saveButton).text('Saved');
@@ -230,8 +243,12 @@ var AnnotationToolHelper = {
 
             // Ctrl + left-click / Cmd + left-click on the image:
             // Selects the nearest point.
-            // TODO: This shouldn't happen if the points display is toggled off
             if ((e.ctrlKey || e.metaKey) && mouseButton === "LEFT") {
+
+                // This only works if we're displaying all points.
+                if (ATH.pointViewMode !== ATH.POINTMODE_ALL)
+                    return;
+
                 var nearestPoint = ATH.getNearestPoint(e);
                 ATH.toggle(nearestPoint);
             }
@@ -273,18 +290,9 @@ var AnnotationToolHelper = {
                 // Adjust the image and point coordinates.
                 ATH.setupImageArea();
                 ATH.getCanvasPoints();
-                // Clear the canvas and re-translate the context
-                // according to the new image offsets.
-                ATH.resetCanvas();
 
-                // Redraw the points.
-                // Make sure to clear pointGraphicStates so
-                // updatePointGraphic() ends up redrawing all points.
-                ATH.pointGraphicStates = [];
-                ATH.annotationFieldsJQ.each( function() {
-                    var pointNum = ATH.getPointNumOfAnnoField(this);
-                    ATH.updatePointGraphic(pointNum);
-                });
+                // Redraw all points.
+                ATH.redrawAllPoints();
             }
         });
 
@@ -347,6 +355,14 @@ var AnnotationToolHelper = {
         $(".annotationFormLabel").click(function() {
             var pointNum = parseInt($(this).text());
             AnnotationToolHelper.toggle(pointNum);
+        });
+
+        // A point mode button is clicked.
+        $("#pointModeButtonAll").click(function() {
+            AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_ALL);
+        });
+        $("#pointModeButtonNone").click(function() {
+            AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_NONE);
         });
     },
 
@@ -755,11 +771,14 @@ var AnnotationToolHelper = {
     updatePointGraphic: function(pointNum) {
         var t = this;
 
-        // If the point is offscreen,
-        // then don't bother drawing the point
+        // If point view mode is None, then don't draw the point
+        if (t.pointViewMode === t.POINTMODE_NONE)
+            return;
+        // If the point is offscreen, then don't draw
         if (t.pointIsOffscreen(pointNum))
             return;
 
+        // Get the current (graphical) state of this point
         var row = this.annotationFieldRows[pointNum];
         var newState;
 
@@ -770,9 +789,9 @@ var AnnotationToolHelper = {
         else
             newState = t.STATE_UNANNOTATED;
 
+        // Redraw if the (graphical) state has changed
         var oldState = t.pointGraphicStates[pointNum];
 
-        // Only redraw when we have to
         if (oldState !== newState) {
             t.pointGraphicStates[pointNum] = newState;
 
@@ -796,6 +815,43 @@ var AnnotationToolHelper = {
                 || t.canvasPoints[pointNum].col < 0
                 || t.canvasPoints[pointNum].col > t.IMAGE_AREA_WIDTH
                 )
+    },
+
+    redrawAllPoints: function() {
+        var t = this;
+
+        // Reset the canvas and re-translate the context
+        // to compensate for the gutters.
+        t.resetCanvas();
+
+        // Clear the pointGraphicStates.
+        t.pointGraphicStates = [];
+
+        // Draw all points.
+        t.annotationFieldsJQ.each( function() {
+            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
+            AnnotationToolHelper.updatePointGraphic(pointNum);
+        });
+    },
+
+    changePointMode: function(pointMode) {
+        var t = this;
+
+        // Outline this point mode button in red (and de-outline the other buttons).
+        $(".pointModeButton").removeClass("selected");
+        
+        if (pointMode == t.POINTMODE_ALL)
+            $("#pointModeButtonAll").addClass("selected");
+        else if (pointMode == t.POINTMODE_SELECTED)
+            $("#pointModeButtonSelected").addClass("selected");
+        else if (pointMode == t.POINTMODE_NONE)
+            $("#pointModeButtonNone").addClass("selected");
+
+        // Set the new point display mode.
+        t.pointViewMode = pointMode;
+
+        // Redraw all points.
+        t.redrawAllPoints();
     },
 
     saveAnnotations: function() {

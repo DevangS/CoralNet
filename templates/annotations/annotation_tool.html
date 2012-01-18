@@ -69,6 +69,17 @@
     /* height is set dynamically. */
 }
 
+#pointModeButtonArea {
+    margin: 5px 0;    /* top and bottom 5px */
+    text-align: center;
+}
+#pointModeButtonArea input[type="image"] {
+    border: 2px solid #888888;
+}
+#pointModeButtonArea input[type="image"].selected {
+    border: 2px solid #FF0000;
+}
+
 #annotationList {
     /* scrollbars will appear only if they're necessary */
     overflow: auto;
@@ -166,6 +177,13 @@ td.annotationFormLabelCell {
     </div>
 
     <div id="rightSidebar">
+
+     <div id="pointModeButtonArea">
+         <input class="pointModeButton" type="image"
+                id="pointModeButtonAll" src="/static/img/Icon_point-mode-all.png" title="Show points"/>
+         <input class="pointModeButton" type="image"
+                id="pointModeButtonNone" src="/static/img/Icon_point-mode-none.png" title="Hide points"/>
+     </div>
 
      <form id="annotationForm"
           action="" method="post">{% csrf_token %}
