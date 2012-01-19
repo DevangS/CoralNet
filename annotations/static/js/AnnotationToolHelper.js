@@ -1,5 +1,9 @@
 var AnnotationToolHelper = {
 
+    // Compatibility
+    // If the appVersion contains the substring "Mac", then it's probably a mac...
+    mac: (navigator.appVersion.indexOf("Mac") !== -1),
+
     // HTML elements
     annotationArea: null,
     annotationList: null,
@@ -244,11 +248,29 @@ var AnnotationToolHelper = {
 
             var ATH = AnnotationToolHelper;
             var mouseButton = util.identifyMouseButton(e);
+            var clickType;
             var imagePos;
 
-            // Ctrl + left-click / Cmd + left-click on the image:
-            // Selects the nearest point.
-            if ((e.ctrlKey || e.metaKey) && mouseButton === "LEFT") {
+            // Get the click type (in Windows terms)...
+
+            if ((!ATH.mac && e.ctrlKey && mouseButton === "LEFT")
+                || ATH.mac && e.metaKey && mouseButton === "LEFT")
+                // Ctrl-click non-Mac OR Cmd-click Mac
+                clickType = "ctrlClick";
+            else if (mouseButton === "RIGHT"
+                     || (ATH.mac && e.ctrlKey && mouseButton === "LEFT"))
+                // Right-click OR Ctrl-click Mac
+                clickType = "rightClick";
+            else if (mouseButton === "LEFT")
+                // Other left click
+                clickType = "leftClick";
+            else
+                // Middle or other click
+                clickType = "unknown";
+
+
+            // Select the nearest point.
+            if (clickType === "ctrlClick") {
 
                 // This only works if we're displaying all points.
                 if (ATH.pointViewMode !== ATH.POINTMODE_ALL)
@@ -258,12 +280,11 @@ var AnnotationToolHelper = {
                 ATH.toggle(nearestPoint);
             }
 
-            // Left-click / right-click:
-            // Zooms in or out on the image display.
-            else if (mouseButton === "LEFT" || mouseButton === "RIGHT") {
+            // Zoom in or out on the image display.
+            else if (clickType === "leftClick" || clickType === "rightClick") {
 
-                // Left-click to zoom in.
-                if (mouseButton === "LEFT") {
+                // Zoom in.
+                if (clickType === "leftClick") {
                     if (ATH.zoomLevel === ATH.HIGHEST_ZOOM_LEVEL)
                         return;
 
@@ -275,8 +296,8 @@ var AnnotationToolHelper = {
 
                     ATH.zoomLevel += 1;
                 }
-                // Right-click to zoom out.
-                else if (mouseButton === "RIGHT") {
+                // Zoom out.
+                else if (clickType === "rightClick") {
                     // 0 is the lowest zoom level.
                     if (ATH.zoomLevel === 0)
                         return;
