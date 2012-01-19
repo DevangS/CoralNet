@@ -351,9 +351,25 @@ var AnnotationToolHelper = {
 
         // Label field gains focus
         t.annotationFieldsJQ.focus(function() {
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            AnnotationToolHelper.unselectAll();
-            AnnotationToolHelper.select(pointNum);
+            var ATH = AnnotationToolHelper;
+            var pointNum = ATH.getPointNumOfAnnoField(this);
+            ATH.unselectAll();
+            ATH.select(pointNum);
+
+            if (ATH.zoomLevel > 0) {
+
+                // If we're zoomed in at all,
+                // shift the center of zoom to the focused point.
+                ATH.centerOfZoomX = ATH.imagePoints[pointNum-1].column;
+                ATH.centerOfZoomY = ATH.imagePoints[pointNum-1].row;
+
+                // Adjust the image and point coordinates.
+                ATH.setupImageArea();
+                ATH.getCanvasPoints();
+
+                // Redraw all points.
+                ATH.redrawAllPoints();
+            }
         });
 
         // Label field is typed into and changed, and then unfocused.
