@@ -33,6 +33,7 @@ var AnnotationToolHelper = {
     STATE_UNANNOTATED: 0,
     STATE_ANNOTATED: 1,
     STATE_SELECTED: 2,
+    STATE_NOTSHOWN: 3,
     UNANNOTATED_COLOR: "#FFFF00",
 	UNANNOTATED_OUTLINE_COLOR: "#000000",
 	ANNOTATED_COLOR: "#8888FF",
@@ -80,6 +81,7 @@ var AnnotationToolHelper = {
     init: function(fullHeight, fullWidth,
                    imagePoints, labelCodes) {
         var t = this;  // Alias for less typing
+        var i;    // Loop variable...
 
         t.IMAGE_AREA_WIDTH = t.ANNOTATION_AREA_WIDTH - (t.CANVAS_GUTTER * 2),
         t.IMAGE_AREA_HEIGHT = t.ANNOTATION_AREA_HEIGHT - (t.CANVAS_GUTTER * 2),
@@ -150,7 +152,7 @@ var AnnotationToolHelper = {
         // Start with the most zoomed out level, 0.  Level 1 is ZOOM_INCREMENT * level 0.
         // Level 2 is ZOOM_INCREMENT * level 1, etc.  Goes up to level HIGHEST_ZOOM_LEVEL.
         t.zoomLevel = 0;
-        for (var i = 0; i <= t.HIGHEST_ZOOM_LEVEL; i++) {
+        for (i = 0; i <= t.HIGHEST_ZOOM_LEVEL; i++) {
             t.ZOOM_FACTORS[i] = t.zoomFactor * Math.pow(t.ZOOM_INCREMENT, i);
         }
 
@@ -210,6 +212,9 @@ var AnnotationToolHelper = {
 
         // Set point annotation statuses,
         // and draw the points
+        for (i = 0; i < t.numOfPoints; i++) {
+            t.pointGraphicStates[i] = t.STATE_NOTSHOWN;
+        }
         t.annotationFieldsJQ.each( function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
             AnnotationToolHelper.updatePointState(pointNum, true);
@@ -360,6 +365,9 @@ var AnnotationToolHelper = {
         // A point mode button is clicked.
         $("#pointModeButtonAll").click(function() {
             AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_ALL);
+        });
+        $("#pointModeButtonSelected").click(function() {
+            AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_SELECTED);
         });
         $("#pointModeButtonNone").click(function() {
             AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_NONE);
@@ -609,11 +617,34 @@ var AnnotationToolHelper = {
         $(row).removeClass('robot');
     },
 
+    /* Optimization of unselect for multiple points.
+     */
+    unselectMultiple: function(pointList) {
+        var pointNum, i;
+
+        if (this.pointViewMode === this.POINTMODE_SELECTED) {
+
+            for (i = 0; i < pointList.length; i++) {
+                pointNum = pointList[i];
+                $(this.annotationFieldRows[pointNum]).removeClass('selected');
+            }
+            this.redrawAllPoints();
+        }
+        else {
+            for (i = 0; i < pointList.length; i++) {
+                pointNum = pointList[i];
+                this.unselect(pointNum);
+            }
+        }
+    },
+
     unselectAll: function() {
+        var selectedPointList = [];
         this.getSelectedFieldsJQ().each( function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            AnnotationToolHelper.unselect(pointNum);
+            selectedPointList.push(pointNum);
         });
+        this.unselectMultiple(selectedPointList);
     },
 
     // Label button is clicked
@@ -771,9 +802,6 @@ var AnnotationToolHelper = {
     updatePointGraphic: function(pointNum) {
         var t = this;
 
-        // If point view mode is None, then don't draw the point
-        if (t.pointViewMode === t.POINTMODE_NONE)
-            return;
         // If the point is offscreen, then don't draw
         if (t.pointIsOffscreen(pointNum))
             return;
@@ -789,6 +817,12 @@ var AnnotationToolHelper = {
         else
             newState = t.STATE_UNANNOTATED;
 
+        // Account for point view modes
+        if (t.pointViewMode === t.POINTMODE_SELECTED && newState !== t.STATE_SELECTED)
+            newState = t.STATE_NOTSHOWN;
+        if (t.pointViewMode === t.POINTMODE_NONE)
+            newState = t.STATE_NOTSHOWN;
+
         // Redraw if the (graphical) state has changed
         var oldState = t.pointGraphicStates[pointNum];
 
@@ -801,6 +835,13 @@ var AnnotationToolHelper = {
                 t.drawPointAnnotated(pointNum);
             else if (newState === t.STATE_UNANNOTATED)
                 t.drawPointUnannotated(pointNum);
+            else if (newState === t.STATE_NOTSHOWN)
+                // "Erase" this point.
+                // To do this, redraw the canvas with this point marked as not shown.
+                // For performance reasons, you'll want to avoid reaching this code whenever
+                // possible/reasonable.  One tip: remember to mark all points as NOTSHOWN
+                // whenever you clear the canvas of all points.
+                t.redrawAllPoints();
         }
     },
 
@@ -825,7 +866,9 @@ var AnnotationToolHelper = {
         t.resetCanvas();
 
         // Clear the pointGraphicStates.
-        t.pointGraphicStates = [];
+        for (var i = 0; i < t.pointGraphicStates.length; i++) {
+            t.pointGraphicStates[i] = t.STATE_NOTSHOWN;
+        }
 
         // Draw all points.
         t.annotationFieldsJQ.each( function() {
