@@ -122,7 +122,8 @@ var AnnotationToolHelper = {
 
         var annotationListMaxHeight =
             t.ANNOTATION_AREA_HEIGHT
-            - (24 + (2*2) + (5*2) );    // pointModeButtonArea: buttons, borders, and margins
+            - 2*(24+(2*2)+2)    // toolButtonArea: 2 rows of buttons - 24px buttons, each with 2px top and bottom borders, and another 2px of space below for some reason
+            - (5*2);            // toolButtonArea: 5px margins around the area
         $(t.annotationList).css({
             "max-height": annotationListMaxHeight + "px"
         });
@@ -400,6 +401,7 @@ var AnnotationToolHelper = {
         });
 
         // A point mode button is clicked.
+        
         $("#pointModeButtonAll").click(function() {
             AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_ALL);
         });
@@ -408,6 +410,48 @@ var AnnotationToolHelper = {
         });
         $("#pointModeButtonNone").click(function() {
             AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_NONE);
+        });
+
+        // A quick-select button is clicked.
+
+        $("#quickSelectButtonNone").click(function() {
+            // Un-select all points.
+
+            AnnotationToolHelper.unselectAll();
+        });
+        $("#quickSelectButtonUnannotated").click(function() {
+            // Select only unannotated points.
+
+            var ATH = AnnotationToolHelper;
+            var unannotatedPoints = [];
+
+            for (var n = 1; n <= ATH.numOfPoints; n++) {
+                var row = ATH.annotationFieldRows[n];
+                if (!$(row).hasClass('annotated'))
+                    unannotatedPoints.push(n);
+            }
+
+            ATH.unselectAll();
+            for (var i = 0; i < unannotatedPoints.length; i++) {
+                ATH.select(unannotatedPoints[i])
+            }
+        });
+        $("#quickSelectButtonInvert").click(function() {
+            // Invert selections. (selected -> unselected, unselected -> selected)
+
+            var ATH = AnnotationToolHelper;
+            var unselectedPoints = [];
+
+            for (var n = 1; n <= ATH.numOfPoints; n++) {
+                var row = ATH.annotationFieldRows[n];
+                if (!$(row).hasClass('selected'))
+                    unselectedPoints.push(n);
+            }
+
+            ATH.unselectAll();
+            for (var i = 0; i < unselectedPoints.length; i++) {
+                ATH.select(unselectedPoints[i])
+            }
         });
     },
 

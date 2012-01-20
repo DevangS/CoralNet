@@ -69,14 +69,14 @@
     /* height is set dynamically. */
 }
 
-#pointModeButtonArea {
+#toolButtonArea {
     margin: 5px 0;    /* top and bottom 5px */
     text-align: center;
 }
-#pointModeButtonArea input[type="image"] {
+#toolButtonArea input[type="image"] {
     border: 2px solid #888888;
 }
-#pointModeButtonArea input[type="image"].selected {
+#toolButtonArea input[type="image"].selected {
     border: 2px solid #FF0000;
 }
 
@@ -178,13 +178,21 @@ td.annotationFormLabelCell {
 
     <div id="rightSidebar">
 
-     <div id="pointModeButtonArea">
+     <div id="toolButtonArea">
          <input class="pointModeButton" type="image"
                 id="pointModeButtonAll" src="/static/img/Icon_point-mode-all.png" title="Show all points"/>
          <input class="pointModeButton" type="image"
                 id="pointModeButtonSelected" src="/static/img/Icon_point-mode-selected.png" title="Show selected points only"/>
          <input class="pointModeButton" type="image"
                 id="pointModeButtonNone" src="/static/img/Icon_point-mode-none.png" title="Hide all points"/>
+         <br/>
+
+         <input class="quickSelectButton" type="image"
+                id="quickSelectButtonNone" src="/static/img/Icon_select-none.png" title="Un-select all points"/>
+         <input class="quickSelectButton" type="image"
+                id="quickSelectButtonUnannotated" src="/static/img/Icon_select-unannotated.png" title="Select all unannotated points"/>
+         <input class="quickSelectButton" type="image"
+                id="quickSelectButtonInvert" src="/static/img/Icon_select-inversion.png" title="Invert current selections"/>
      </div>
 
      <form id="annotationForm"
