@@ -328,15 +328,19 @@ def export_statistics(request, source_id):
     source = get_object_or_404(Source, id=source_id)
     images = Image.objects.filter(source=source).select_related()
     all_annotations = Annotation.objects.filter(source=source).exclude(user=get_robot_user()).select_related()
-    labels = get_object_or_404(LabelSet, source=source).labels
-
+    labelset = get_object_or_404(LabelSet, source=source)
+    labels = Label.objects.filter(labelset=labelset)
+    
     #Adds table header which looks something as follows:
     #locKey1 locKey2 locKey3 locKey4 date label1 label2 label3 label4 .... labelEnd
     #Note: labe1, label2, etc corresponds to the percent coverage of that label on
     #a per IMAGE basis, not per source
     header = []
     header.extend(source.get_key_list())
-    header.append('date')
+    header.append('date_taken')
+    #header.append('date_annotated')
+    for label in labels:
+        header.append(str(label.name))
     writer.writerow(header)
 
     zeroed_labels_data = [0 for label in labels]
@@ -348,7 +352,7 @@ def export_statistics(request, source_id):
         image_labels_data = []
         image_labels_data.extend(zeroed_labels_data)
         image_annotations = [annotation for annotation in all_annotations if annotation.image == image]
-        total_annotations_count = len(image_annotations)
+        total_annotations_count = image_annotations.count()
 
         for label_index, label in enumerate(labels):
             label_percent_coverage = (image_annotations.filter(label=label).count()/total_annotations_count)*100
@@ -357,6 +361,7 @@ def export_statistics(request, source_id):
         row = []
         row.extend(locKeys)
         row.append(photo_date)
+        #row.append(annotated_date)
         row.extend(image_labels_data)
         writer.writerow(row)
 
@@ -372,8 +377,8 @@ def export_annotations(request, source_id):
     writer = csv.writer(response)
 
     source = get_object_or_404(Source, id=source_id)
-    images = list(Image.objects.filter(source=source))
-    all_annotations = list(Annotation.objects.filter(source=source))
+    images = Image.objects.filter(source=source)
+    all_annotations = Annotation.objects.filter(source=source)
 
     #Add table headings: locKey1 locKey2 locKey3 locKey4 photo_date anno_date row col label
     header = []
