@@ -222,11 +222,11 @@ def generate_statistics(request, source_id):
             # coverage on the y axis, and year on the x axis
             if not errors:
 
-                images = Image.objects.filter(source=source, **imageArgs).order_by('-upload_date')
+                images = Image.objects.filter(source=source, **imageArgs).order_by('-upload_date').select_related()
                 patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
                 #get all non-robot annotations for the source
-                all_annotations = list(Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user()))
+                all_annotations = Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user())
 
                 #holds the data that gets passed to the graphing code
                 data = [] #TODO: figure out why data isn't being generated correctly
@@ -254,7 +254,7 @@ def generate_statistics(request, source_id):
                     for year in years:
                         #get the most recent for each point for every label specified
                         total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year).distinct()
-                        label_year_annotations = total_year_annotations.filter(label__id=int(label)).distinct()
+                        label_year_annotations = [annotation for annotation in total_year_annotations if label == label]
 
                         #add up # of annotations, divide by total annotations, and times 100 to get % coverage
                         # done the way it is b/c we need to cast either num or denom as float to get float result,
