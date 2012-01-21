@@ -8,7 +8,10 @@
 
 {% block content %}
 
-    <h2>Request an account</h2>
+    <legend>Request an account</legend>
+    <span class="helptext">We don't have open registration yet, but you can use this form to request an account.
+                           In the Reason field below, please tell us a bit about yourself and why you're interested in using CoralNet.
+                           If we accept your request, we'll create an account for you and e-mail you with the info you need to log in.</span>
     <form action="{% url request_account %}" method="post">
         {% csrf_token %}
         {{ form.as_p }}

@@ -1,5 +1,9 @@
 var AnnotationToolHelper = {
 
+    // Compatibility
+    // If the appVersion contains the substring "Mac", then it's probably a mac...
+    mac: (navigator.appVersion.indexOf("Mac") !== -1),
+
     // HTML elements
     annotationArea: null,
     annotationList: null,
@@ -33,12 +37,19 @@ var AnnotationToolHelper = {
     STATE_UNANNOTATED: 0,
     STATE_ANNOTATED: 1,
     STATE_SELECTED: 2,
+    STATE_NOTSHOWN: 3,
     UNANNOTATED_COLOR: "#FFFF00",
 	UNANNOTATED_OUTLINE_COLOR: "#000000",
 	ANNOTATED_COLOR: "#8888FF",
     ANNOTATED_OUTLINE_COLOR: "#000000",
 	SELECTED_COLOR: "#00FF00",
     SELECTED_OUTLINE_COLOR: "#000000",
+    
+    // Point viewing mode
+    pointViewMode: null,
+    POINTMODE_ALL: 0,
+    POINTMODE_SELECTED: 1,
+    POINTMODE_NONE: 2,
 
     // Entire annotation tool (including buttons, text fields, etc.)
     ANNOTATION_TOOL_WIDTH: 980,
@@ -74,6 +85,7 @@ var AnnotationToolHelper = {
     init: function(fullHeight, fullWidth,
                    imagePoints, labelCodes) {
         var t = this;  // Alias for less typing
+        var i;    // Loop variable...
 
         t.IMAGE_AREA_WIDTH = t.ANNOTATION_AREA_WIDTH - (t.CANVAS_GUTTER * 2),
         t.IMAGE_AREA_HEIGHT = t.ANNOTATION_AREA_HEIGHT - (t.CANVAS_GUTTER * 2),
@@ -108,8 +120,12 @@ var AnnotationToolHelper = {
             "height": t.ANNOTATION_TOOL_HEIGHT + "px"
         });
 
+        var annotationListMaxHeight =
+            t.ANNOTATION_AREA_HEIGHT
+            - 2*(24+(2*2)+2)    // toolButtonArea: 2 rows of buttons - 24px buttons, each with 2px top and bottom borders, and another 2px of space below for some reason
+            - (5*2);            // toolButtonArea: 5px margins around the area
         $(t.annotationList).css({
-            "max-height": t.ANNOTATION_AREA_HEIGHT + "px"
+            "max-height": annotationListMaxHeight + "px"
         });
 
         $(t.annotationArea).css({
@@ -141,7 +157,7 @@ var AnnotationToolHelper = {
         // Start with the most zoomed out level, 0.  Level 1 is ZOOM_INCREMENT * level 0.
         // Level 2 is ZOOM_INCREMENT * level 1, etc.  Goes up to level HIGHEST_ZOOM_LEVEL.
         t.zoomLevel = 0;
-        for (var i = 0; i <= t.HIGHEST_ZOOM_LEVEL; i++) {
+        for (i = 0; i <= t.HIGHEST_ZOOM_LEVEL; i++) {
             t.ZOOM_FACTORS[i] = t.zoomFactor * Math.pow(t.ZOOM_INCREMENT, i);
         }
 
@@ -201,11 +217,18 @@ var AnnotationToolHelper = {
 
         // Set point annotation statuses,
         // and draw the points
+        for (i = 0; i < t.numOfPoints; i++) {
+            t.pointGraphicStates[i] = t.STATE_NOTSHOWN;
+        }
         t.annotationFieldsJQ.each( function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
             AnnotationToolHelper.updatePointState(pointNum, true);
             AnnotationToolHelper.updatePointGraphic(pointNum);
         });
+
+        // Set the initial point view mode.  This'll trigger a redraw of the points, but that's okay;
+        // initialization slowness is a relatively minor worry.
+        t.changePointMode(t.POINTMODE_ALL);
 
         // Initialize save button
         $(t.saveButton).attr('disabled', 'disabled');
@@ -226,22 +249,43 @@ var AnnotationToolHelper = {
 
             var ATH = AnnotationToolHelper;
             var mouseButton = util.identifyMouseButton(e);
+            var clickType;
             var imagePos;
 
-            // Ctrl + left-click / Cmd + left-click on the image:
-            // Selects the nearest point.
-            // TODO: This shouldn't happen if the points display is toggled off
-            if ((e.ctrlKey || e.metaKey) && mouseButton === "LEFT") {
+            // Get the click type (in Windows terms)...
+
+            if ((!ATH.mac && e.ctrlKey && mouseButton === "LEFT")
+                || ATH.mac && e.metaKey && mouseButton === "LEFT")
+                // Ctrl-click non-Mac OR Cmd-click Mac
+                clickType = "ctrlClick";
+            else if (mouseButton === "RIGHT"
+                     || (ATH.mac && e.ctrlKey && mouseButton === "LEFT"))
+                // Right-click OR Ctrl-click Mac
+                clickType = "rightClick";
+            else if (mouseButton === "LEFT")
+                // Other left click
+                clickType = "leftClick";
+            else
+                // Middle or other click
+                clickType = "unknown";
+
+
+            // Select the nearest point.
+            if (clickType === "ctrlClick") {
+
+                // This only works if we're displaying all points.
+                if (ATH.pointViewMode !== ATH.POINTMODE_ALL)
+                    return;
+
                 var nearestPoint = ATH.getNearestPoint(e);
                 ATH.toggle(nearestPoint);
             }
 
-            // Left-click / right-click:
-            // Zooms in or out on the image display.
-            else if (mouseButton === "LEFT" || mouseButton === "RIGHT") {
+            // Zoom in or out on the image display.
+            else if (clickType === "leftClick" || clickType === "rightClick") {
 
-                // Left-click to zoom in.
-                if (mouseButton === "LEFT") {
+                // Zoom in.
+                if (clickType === "leftClick") {
                     if (ATH.zoomLevel === ATH.HIGHEST_ZOOM_LEVEL)
                         return;
 
@@ -253,8 +297,8 @@ var AnnotationToolHelper = {
 
                     ATH.zoomLevel += 1;
                 }
-                // Right-click to zoom out.
-                else if (mouseButton === "RIGHT") {
+                // Zoom out.
+                else if (clickType === "rightClick") {
                     // 0 is the lowest zoom level.
                     if (ATH.zoomLevel === 0)
                         return;
@@ -273,18 +317,9 @@ var AnnotationToolHelper = {
                 // Adjust the image and point coordinates.
                 ATH.setupImageArea();
                 ATH.getCanvasPoints();
-                // Clear the canvas and re-translate the context
-                // according to the new image offsets.
-                ATH.resetCanvas();
 
-                // Redraw the points.
-                // Make sure to clear pointGraphicStates so
-                // updatePointGraphic() ends up redrawing all points.
-                ATH.pointGraphicStates = [];
-                ATH.annotationFieldsJQ.each( function() {
-                    var pointNum = ATH.getPointNumOfAnnoField(this);
-                    ATH.updatePointGraphic(pointNum);
-                });
+                // Redraw all points.
+                ATH.redrawAllPoints();
             }
         });
 
@@ -317,9 +352,25 @@ var AnnotationToolHelper = {
 
         // Label field gains focus
         t.annotationFieldsJQ.focus(function() {
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            AnnotationToolHelper.unselectAll();
-            AnnotationToolHelper.select(pointNum);
+            var ATH = AnnotationToolHelper;
+            var pointNum = ATH.getPointNumOfAnnoField(this);
+            ATH.unselectAll();
+            ATH.select(pointNum);
+
+            if (ATH.zoomLevel > 0) {
+
+                // If we're zoomed in at all,
+                // shift the center of zoom to the focused point.
+                ATH.centerOfZoomX = ATH.imagePoints[pointNum-1].column;
+                ATH.centerOfZoomY = ATH.imagePoints[pointNum-1].row;
+
+                // Adjust the image and point coordinates.
+                ATH.setupImageArea();
+                ATH.getCanvasPoints();
+
+                // Redraw all points.
+                ATH.redrawAllPoints();
+            }
         });
 
         // Label field is typed into and changed, and then unfocused.
@@ -347,6 +398,60 @@ var AnnotationToolHelper = {
         $(".annotationFormLabel").click(function() {
             var pointNum = parseInt($(this).text());
             AnnotationToolHelper.toggle(pointNum);
+        });
+
+        // A point mode button is clicked.
+        
+        $("#pointModeButtonAll").click(function() {
+            AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_ALL);
+        });
+        $("#pointModeButtonSelected").click(function() {
+            AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_SELECTED);
+        });
+        $("#pointModeButtonNone").click(function() {
+            AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_NONE);
+        });
+
+        // A quick-select button is clicked.
+
+        $("#quickSelectButtonNone").click(function() {
+            // Un-select all points.
+
+            AnnotationToolHelper.unselectAll();
+        });
+        $("#quickSelectButtonUnannotated").click(function() {
+            // Select only unannotated points.
+
+            var ATH = AnnotationToolHelper;
+            var unannotatedPoints = [];
+
+            for (var n = 1; n <= ATH.numOfPoints; n++) {
+                var row = ATH.annotationFieldRows[n];
+                if (!$(row).hasClass('annotated'))
+                    unannotatedPoints.push(n);
+            }
+
+            ATH.unselectAll();
+            for (var i = 0; i < unannotatedPoints.length; i++) {
+                ATH.select(unannotatedPoints[i])
+            }
+        });
+        $("#quickSelectButtonInvert").click(function() {
+            // Invert selections. (selected -> unselected, unselected -> selected)
+
+            var ATH = AnnotationToolHelper;
+            var unselectedPoints = [];
+
+            for (var n = 1; n <= ATH.numOfPoints; n++) {
+                var row = ATH.annotationFieldRows[n];
+                if (!$(row).hasClass('selected'))
+                    unselectedPoints.push(n);
+            }
+
+            ATH.unselectAll();
+            for (var i = 0; i < unselectedPoints.length; i++) {
+                ATH.select(unselectedPoints[i])
+            }
         });
     },
 
@@ -593,11 +698,34 @@ var AnnotationToolHelper = {
         $(row).removeClass('robot');
     },
 
+    /* Optimization of unselect for multiple points.
+     */
+    unselectMultiple: function(pointList) {
+        var pointNum, i;
+
+        if (this.pointViewMode === this.POINTMODE_SELECTED) {
+
+            for (i = 0; i < pointList.length; i++) {
+                pointNum = pointList[i];
+                $(this.annotationFieldRows[pointNum]).removeClass('selected');
+            }
+            this.redrawAllPoints();
+        }
+        else {
+            for (i = 0; i < pointList.length; i++) {
+                pointNum = pointList[i];
+                this.unselect(pointNum);
+            }
+        }
+    },
+
     unselectAll: function() {
+        var selectedPointList = [];
         this.getSelectedFieldsJQ().each( function() {
             var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            AnnotationToolHelper.unselect(pointNum);
+            selectedPointList.push(pointNum);
         });
+        this.unselectMultiple(selectedPointList);
     },
 
     // Label button is clicked
@@ -755,11 +883,11 @@ var AnnotationToolHelper = {
     updatePointGraphic: function(pointNum) {
         var t = this;
 
-        // If the point is offscreen,
-        // then don't bother drawing the point
+        // If the point is offscreen, then don't draw
         if (t.pointIsOffscreen(pointNum))
             return;
 
+        // Get the current (graphical) state of this point
         var row = this.annotationFieldRows[pointNum];
         var newState;
 
@@ -770,9 +898,15 @@ var AnnotationToolHelper = {
         else
             newState = t.STATE_UNANNOTATED;
 
+        // Account for point view modes
+        if (t.pointViewMode === t.POINTMODE_SELECTED && newState !== t.STATE_SELECTED)
+            newState = t.STATE_NOTSHOWN;
+        if (t.pointViewMode === t.POINTMODE_NONE)
+            newState = t.STATE_NOTSHOWN;
+
+        // Redraw if the (graphical) state has changed
         var oldState = t.pointGraphicStates[pointNum];
 
-        // Only redraw when we have to
         if (oldState !== newState) {
             t.pointGraphicStates[pointNum] = newState;
 
@@ -782,6 +916,13 @@ var AnnotationToolHelper = {
                 t.drawPointAnnotated(pointNum);
             else if (newState === t.STATE_UNANNOTATED)
                 t.drawPointUnannotated(pointNum);
+            else if (newState === t.STATE_NOTSHOWN)
+                // "Erase" this point.
+                // To do this, redraw the canvas with this point marked as not shown.
+                // For performance reasons, you'll want to avoid reaching this code whenever
+                // possible/reasonable.  One tip: remember to mark all points as NOTSHOWN
+                // whenever you clear the canvas of all points.
+                t.redrawAllPoints();
         }
     },
 
@@ -796,6 +937,45 @@ var AnnotationToolHelper = {
                 || t.canvasPoints[pointNum].col < 0
                 || t.canvasPoints[pointNum].col > t.IMAGE_AREA_WIDTH
                 )
+    },
+
+    redrawAllPoints: function() {
+        var t = this;
+
+        // Reset the canvas and re-translate the context
+        // to compensate for the gutters.
+        t.resetCanvas();
+
+        // Clear the pointGraphicStates.
+        for (var i = 0; i < t.pointGraphicStates.length; i++) {
+            t.pointGraphicStates[i] = t.STATE_NOTSHOWN;
+        }
+
+        // Draw all points.
+        t.annotationFieldsJQ.each( function() {
+            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
+            AnnotationToolHelper.updatePointGraphic(pointNum);
+        });
+    },
+
+    changePointMode: function(pointMode) {
+        var t = this;
+
+        // Outline this point mode button in red (and de-outline the other buttons).
+        $(".pointModeButton").removeClass("selected");
+        
+        if (pointMode == t.POINTMODE_ALL)
+            $("#pointModeButtonAll").addClass("selected");
+        else if (pointMode == t.POINTMODE_SELECTED)
+            $("#pointModeButtonSelected").addClass("selected");
+        else if (pointMode == t.POINTMODE_NONE)
+            $("#pointModeButtonNone").addClass("selected");
+
+        // Set the new point display mode.
+        t.pointViewMode = pointMode;
+
+        // Redraw all points.
+        t.redrawAllPoints();
     },
 
     saveAnnotations: function() {
