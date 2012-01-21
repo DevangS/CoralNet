@@ -254,7 +254,7 @@ def generate_statistics(request, source_id):
                     for year in years:
                         #get the most recent for each point for every label specified
                         total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year).distinct()
-                        label_year_annotations = [annotation for annotation in total_year_annotations if label == label]
+                        label_year_annotations = [annotation for annotation in total_year_annotations if annotation.label == label]
 
                         #add up # of annotations, divide by total annotations, and times 100 to get % coverage
                         # done the way it is b/c we need to cast either num or denom as float to get float result,
