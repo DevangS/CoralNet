@@ -1,12 +1,13 @@
-import random
+import csv
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.db import transaction, models
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.utils import simplejson
 from accounts.utils import get_robot_user
-from annotations.models import Annotation, Label
+from annotations.models import Annotation, Label, LabelSet
 from CoralNet.decorators import visibility_required
 from images.models import Source, Image
 from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
@@ -225,7 +226,7 @@ def generate_statistics(request, source_id):
                 patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
                 #get all non-robot annotations for the source
-                all_annotations = Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user())
+                all_annotations = list(Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user()))
 
                 #holds the data that gets passed to the graphing code
                 data = [] #TODO: figure out why data isn't being generated correctly
@@ -315,3 +316,103 @@ def generate_statistics(request, source_id):
         context_instance=RequestContext(request)
     )
 
+@visibility_required('source_id')
+def export_statistics(request, source_id):
+    # get the response object, this can be used as a stream.
+    response = HttpResponse(mimetype='text/csv')
+    # force download.
+    response['Content-Disposition'] = 'attachment;filename="statistics.csv"'
+    # the csv writer
+    writer = csv.writer(response)
+
+    source = get_object_or_404(Source, id=source_id)
+    images = list(Image.objects.filter(source=source).select_related())
+    all_annotations = list(Annotation.objects.filter(source=source).exclude(user=get_robot_user()))
+    labels = get_object_or_404(LabelSet, source=source).labels
+
+    #Adds table header which looks something as follows:
+    #locKey1 locKey2 locKey3 locKey4 date label1 label2 label3 label4 .... labelEnd
+    #Note: labe1, label2, etc corresponds to the percent coverage of that label on
+    #a per IMAGE basis, not per source
+    header = []
+    header.extend(source.get_key_list())
+    header.append('date')
+    writer.writerow(header)
+
+    zeroed_labels_data = [0 for label in labels]
+    #Adds data row which looks something as follows:
+    #lter1 out10m line1-2 qu1 20100427  10.2 12.1 0 0 13.2
+    for image in images:
+        locKeys = [str(i) for i in image.get_location_value_str_list()]
+        photo_date = str(image.metadata.photo_date)
+        image_labels_data = []
+        image_labels_data.extend(zeroed_labels_data)
+        image_annotations = all_annotations.filter(image=image)
+        total_annotations_count = len(image_annotations)
+
+        for label_index, label in enumerate(labels):
+            label_percent_coverage = (len(image_annotations.filter(label=label))/total_annotations_count)*100
+            image_labels_data[label_index] = str(label_percent_coverage)
+
+        row = []
+        row.extend(locKeys)
+        row.append(photo_date)
+        row.extend(image_labels_data)
+        writer.writerow(row)
+
+    return response
+
+@visibility_required('source_id')
+def export_annotations(request, source_id):
+    # get the response object, this can be used as a stream.
+    response = HttpResponse(mimetype='text/csv')
+    # force download.
+    response['Content-Disposition'] = 'attachment;filename="annotations.csv"'
+    # the csv writer
+    writer = csv.writer(response)
+
+    source = get_object_or_404(Source, id=source_id)
+    images = list(Image.objects.filter(source=source))
+    all_annotations = list(Annotation.objects.filter(source=source))
+
+    #Add table headings: locKey1 locKey2 locKey3 locKey4 photo_date anno_date row col label
+    header = []
+    header.extend(source.get_key_list())
+    header.extend(['photo_date','anno_date', 'row', 'col', 'label'])
+    writer.writerow(header)
+
+    #Adds the relevant annotation data in a row
+    #Example row: lter1 out10m line1-2 qu1 20100427 20110101 130 230 Porit
+    for image in images:
+        locKeys =  [str(i) for i in image.get_location_value_str_list()]
+        photo_date = str(image.metadata.photo_date)
+
+        annotations = all_annotations.filter(image=image).order_by('point').select_related()
+
+        for annotation in annotations:
+            label_name = str(annotation.label.name)
+            annotation_date = str(annotation.annotation_date)
+            point_row = str(annotation.point.row)
+            point_col = str(annotation.point.column)
+
+            row = []
+            row.extend(locKeys)
+            row.append(photo_date)
+            row.append(annotation_date)
+            row.append(point_row)
+            row.append(point_col)
+            row.append(label_name)
+            
+            writer.writerow(row)
+
+    return response
+
+
+def export_menu(request, source_id):
+    source = get_object_or_404(Source, id=source_id)
+
+    return render_to_response('visualization/export_menu.html', {
+        'source': source,
+        },
+        context_instance=RequestContext(request)
+    )

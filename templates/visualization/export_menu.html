@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load guardian_tags %}
+
+{% block title %}Export | CoralNet{% endblock %}
+
+{% block media-includes %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/visualization.css" />
+{% endblock %}
+
+{% block nav %}
+    {{ block.super }}
+
+    <h2><a href="{% url source_main source.id %}">{{ source.name }}</a></h2>
+
+    <div class="nav_container" id="nav_second_container">
+          <ul class="nav nav_right" id="nav_visualize">
+            <li><a href="{% url export_statistics source.id %}"><span>{% trans 'Export Statistics' %}</span></a></li>
+            <li><a href="{% url export_annotations source.id %}"><span>{% trans 'Export Annotations' %}</span></a></li>
+          </ul>
+    </div>
+
+{% endblock %}
+
+{% block content %}
+    <legend>Export Tool</legend>
+    <br/>
+     <p>Welcome to the export tool. You can export data related to your source in two ways, by exporting statistics
+    generated on a per image basis, and by export annotations directly. By choosing either export method, all the
+    data for the source will be collected and put into a .csv file for you to download. Please note that if your source
+    contains a large amount of data, then this export process will be very time consuming, so you may want to leave the
+    window open and go have a cup of coffee and a snack. </p><br/>
+
+{% endblock %}
