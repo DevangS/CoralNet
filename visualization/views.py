@@ -326,8 +326,8 @@ def export_statistics(request, source_id):
     writer = csv.writer(response)
 
     source = get_object_or_404(Source, id=source_id)
-    images = list(Image.objects.filter(source=source).select_related())
-    all_annotations = list(Annotation.objects.filter(source=source).exclude(user=get_robot_user()))
+    images = Image.objects.filter(source=source).select_related()
+    all_annotations = Annotation.objects.filter(source=source).exclude(user=get_robot_user()).select_related()
     labels = get_object_or_404(LabelSet, source=source).labels
 
     #Adds table header which looks something as follows:
@@ -347,11 +347,11 @@ def export_statistics(request, source_id):
         photo_date = str(image.metadata.photo_date)
         image_labels_data = []
         image_labels_data.extend(zeroed_labels_data)
-        image_annotations = all_annotations.filter(image=image)
+        image_annotations = [annotation for annotation in all_annotations if annotation.image == image]
         total_annotations_count = len(image_annotations)
 
         for label_index, label in enumerate(labels):
-            label_percent_coverage = (len(image_annotations.filter(label=label))/total_annotations_count)*100
+            label_percent_coverage = (image_annotations.filter(label=label).count()/total_annotations_count)*100
             image_labels_data[label_index] = str(label_percent_coverage)
 
         row = []
