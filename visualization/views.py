@@ -222,14 +222,14 @@ def generate_statistics(request, source_id):
             # coverage on the y axis, and year on the x axis
             if not errors:
 
-                images = Image.objects.filter(source=source, **imageArgs).order_by('-upload_date').select_related()
+                images = Image.objects.filter(source=source, **imageArgs).distinct().select_related()
                 patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
                 #get all non-robot annotations for the source
                 all_annotations = Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user())
 
                 #holds the data that gets passed to the graphing code
-                data = [] #TODO: figure out why data isn't being generated correctly
+                data = []
                 years = []
 
                 #Format computed data for the graph API to use
@@ -253,14 +253,14 @@ def generate_statistics(request, source_id):
                     #get yearly counts that become y values for the label's line
                     for year in years:
                         #get the most recent for each point for every label specified
-                        total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year).distinct()
-                        label_year_annotations = [annotation for annotation in total_year_annotations if annotation.label == label]
+                        total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year).count()
+                        label_year_annotations = total_year_annotations.filter(label=label).count()
 
                         #add up # of annotations, divide by total annotations, and times 100 to get % coverage
                         # done the way it is b/c we need to cast either num or denom as float to get float result,
                         # convert to %, round, then truncate by casting to int
                         try:
-                            percent_coverage = int(round((float(len(label_year_annotations))/len(total_year_annotations))*100))
+                            percent_coverage = int(round((float(label_year_annotations)/total_year_annotations)*100))
                         except ZeroDivisionError:
                             percent_coverage = 0
                         yearly_counts.append(percent_coverage)
@@ -351,11 +351,15 @@ def export_statistics(request, source_id):
         photo_date = str(image.metadata.photo_date)
         image_labels_data = []
         image_labels_data.extend(zeroed_labels_data)
-        image_annotations = [annotation for annotation in all_annotations if annotation.image == image]
+        image_annotations = all_annotations.filter(image=image)
         total_annotations_count = image_annotations.count()
 
         for label_index, label in enumerate(labels):
-            label_percent_coverage = (image_annotations.filter(label=label).count()/total_annotations_count)*100
+            label_annotations_count = image_annotations.filter(label=label).count()
+            try:
+                label_percent_coverage = int(round((float(label_annotations_count)/total_annotations_count)*100))
+            except ZeroDivisionError:
+                label_percent_coverage = 0
             image_labels_data[label_index] = str(label_percent_coverage)
 
         row = []
