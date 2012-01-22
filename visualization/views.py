@@ -253,14 +253,15 @@ def generate_statistics(request, source_id):
                     #get yearly counts that become y values for the label's line
                     for year in years:
                         #get the most recent for each point for every label specified
-                        total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year).count()
-                        label_year_annotations = total_year_annotations.filter(label=label).count()
+                        total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year)
+                        total_year_annotations_count = total_year_annotations.count()
+                        label_year_annotations_count = total_year_annotations.filter(label=label).count()
 
                         #add up # of annotations, divide by total annotations, and times 100 to get % coverage
                         # done the way it is b/c we need to cast either num or denom as float to get float result,
                         # convert to %, round, then truncate by casting to int
                         try:
-                            percent_coverage = int(round((float(label_year_annotations)/total_year_annotations)*100))
+                            percent_coverage = int(round((float(label_year_annotations_count)/total_year_annotations_count)*100))
                         except ZeroDivisionError:
                             percent_coverage = 0
                         yearly_counts.append(percent_coverage)
