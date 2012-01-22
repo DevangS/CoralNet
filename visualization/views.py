@@ -330,7 +330,7 @@ def export_statistics(request, source_id):
     images = Image.objects.filter(source=source).select_related()
     all_annotations = Annotation.objects.filter(source=source).exclude(user=get_robot_user()).select_related()
     labelset = get_object_or_404(LabelSet, source=source)
-    labels = Label.objects.filter(labelset=labelset)
+    labels = Label.objects.filter(labelset=labelset).order_by('name')
     
     #Adds table header which looks something as follows:
     #locKey1 locKey2 locKey3 locKey4 date label1 label2 label3 label4 .... labelEnd
