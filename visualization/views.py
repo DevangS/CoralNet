@@ -363,7 +363,7 @@ def export_statistics(request, source_id):
         for label_index, label in enumerate(labels):
             label_annotations_count = image_annotations.filter(label=label).count()
             try:
-                label_percent_coverage = round((float(label_annotations_count)/total_annotations_count)*100)
+                label_percent_coverage = (float(label_annotations_count)/total_annotations_count)*100
             except ZeroDivisionError:
                 label_percent_coverage = 0
             image_labels_data[label_index] = str(label_percent_coverage)
