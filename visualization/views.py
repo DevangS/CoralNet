@@ -382,7 +382,7 @@ def export_annotations(request, source_id):
     writer = csv.writer(response)
 
     source = get_object_or_404(Source, id=source_id)
-    images = Image.objects.filter(source=source)
+    images = Image.objects.filter(source=source).select_related()
     all_annotations = Annotation.objects.filter(source=source)
 
     #Add table headings: locKey1 locKey2 locKey3 locKey4 photo_date anno_date row col label
@@ -397,7 +397,7 @@ def export_annotations(request, source_id):
         locKeys =  [str(i) for i in image.get_location_value_str_list()]
         photo_date = str(image.metadata.photo_date)
 
-        annotations = all_annotations.filter(image=image).order_by('point').select_related()
+        annotations = all_annotations.filter(image=image).order_by('point').select_related().select_related()
 
         for annotation in annotations:
             label_name = str(annotation.label.name)
