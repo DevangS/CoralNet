@@ -271,7 +271,7 @@ def generate_statistics(request, source_id):
                     label_id = int(label)
                     label_temp = Label.objects.get(id=label_id)
                     name = label_temp.name
-                    legends.append(str(name)) #TODO: really need to optimize
+                    legends.append(str(name))
 
                 #Create string of colors
                 colors_string = str(bucket[0:len(labels)]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
@@ -339,7 +339,6 @@ def export_statistics(request, source_id):
     header = []
     header.extend(source.get_key_list())
     header.append('date_taken')
-    #header.append('date_annotated')
     for label in labels:
         header.append(str(label.name))
     writer.writerow(header)
@@ -348,7 +347,13 @@ def export_statistics(request, source_id):
     #Adds data row which looks something as follows:
     #lter1 out10m line1-2 qu1 20100427  10.2 12.1 0 0 13.2
     for image in images:
-        locKeys = [str(i) for i in image.get_location_value_str_list()]
+        locKeys = []
+        for field in image.get_location_value_str_list():
+            if field:
+                locKeys.append(str(field))
+            else:
+                locKeys.append("Unspecified")
+
         photo_date = str(image.metadata.photo_date)
         image_labels_data = []
         image_labels_data.extend(zeroed_labels_data)
@@ -358,7 +363,7 @@ def export_statistics(request, source_id):
         for label_index, label in enumerate(labels):
             label_annotations_count = image_annotations.filter(label=label).count()
             try:
-                label_percent_coverage = int(round((float(label_annotations_count)/total_annotations_count)*100))
+                label_percent_coverage = round((float(label_annotations_count)/total_annotations_count)*100)
             except ZeroDivisionError:
                 label_percent_coverage = 0
             image_labels_data[label_index] = str(label_percent_coverage)
@@ -366,7 +371,6 @@ def export_statistics(request, source_id):
         row = []
         row.extend(locKeys)
         row.append(photo_date)
-        #row.append(annotated_date)
         row.extend(image_labels_data)
         writer.writerow(row)
 
@@ -394,10 +398,15 @@ def export_annotations(request, source_id):
     #Adds the relevant annotation data in a row
     #Example row: lter1 out10m line1-2 qu1 20100427 20110101 130 230 Porit
     for image in images:
-        locKeys =  [str(i) for i in image.get_location_value_str_list()]
+        locKeys = []
+        for field in image.get_location_value_str_list():
+            if field:
+                locKeys.append(str(field))
+            else:
+                locKeys.append("Unspecified")
         photo_date = str(image.metadata.photo_date)
 
-        annotations = all_annotations.filter(image=image).order_by('point').select_related().select_related()
+        annotations = all_annotations.filter(image=image).order_by('point').select_related()
 
         for annotation in annotations:
             label_name = str(annotation.label.name)
