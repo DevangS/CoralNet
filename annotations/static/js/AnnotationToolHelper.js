@@ -16,10 +16,6 @@ var ATH = {
     listenerElmt: null,
     saveButton: null,
 
-    // Keymap arrays
-    mainKeymap: {},
-    annotationFieldKeymap: {},
-
     // Annotation related
     labelCodes: null,
 
@@ -252,7 +248,6 @@ var ATH = {
 
             var mouseButton = util.identifyMouseButton(e);
             var clickType;
-            var imagePos;
 
             // Get the click type (in Windows terms)...
 
@@ -352,21 +347,6 @@ var ATH = {
             ATH.onLabelFieldChange(this);
         });
 
-        // Label field is focused and a keyboard key is released
-        ATH.annotationFieldsJQ.keyup(function(e) {
-            var ENTER = 13;
-            
-            if(e.keyCode === ENTER) {
-                var pointNum = ATH.getPointNumOfAnnoField(this);
-
-                // Unrobot/update the field
-                ATH.onPointUpdate(pointNum);
-
-                // Switch focus to next point's field
-                ATH.focusNextField(pointNum);
-            }
-        });
-
         // Number next to a label field is clicked.
         $(".annotationFormLabel").click(function() {
             var pointNum = parseInt($(this).text());
@@ -426,23 +406,29 @@ var ATH = {
         });
 
         // Keymaps
-        var mainKeymap = {
-            'a': ATH.zoomIn,
-            's': ATH.zoomOut
+        var globalKeymap = {
+            'ctrl+up': ATH.zoomIn,
+            'ctrl+down': ATH.zoomOut
         };
-//        var annotationFieldKeymap = {
-//            'up': prevField,
-//            'down': nextField
-//        };
+        var annotationFieldKeymap = {
+            'return': ATH.confirmFieldAndFocusNext,
+            'up': ATH.focusPrevField,
+            'down': ATH.focusNextField
+        };
+        var outOfFieldKeymap = {
+        };
 
-        var key, fn;
-        for (key in mainKeymap) {
-            fn = mainKeymap[key];
-            $(document).bind('keyup', key, fn);
+        var key;
+        for (key in globalKeymap) {
+            $(document).bind('keyup', key, globalKeymap[key]);
+            ATH.annotationFieldsJQ.bind('keyup', key, globalKeymap[key]);
         }
-//        for (key in annotationFieldKeymap) {
-//            ATH.annotationFieldsJQ.bind('keyup', key, annotationFieldKeymap[key]);
-//        }
+        for (key in outOfFieldKeymap) {
+            $(document).bind('keyup', key, outOfFieldKeymap[key]);
+        }
+        for (key in annotationFieldKeymap) {
+            ATH.annotationFieldsJQ.bind('keyup', key, annotationFieldKeymap[key]);
+        }
     },
 
     /*
@@ -650,6 +636,16 @@ var ATH = {
         }
     },
 
+    /* Wrapper for event handler functions.
+     * Call e.preventDefault() and then call the event handler function.
+     * TODO: Once there's a use for this, actually make sure this function works. */
+    preventDefaultWrapper: function(fn) {
+        return function(e) {
+            e.preventDefault();
+            fn(e);
+        };
+    },
+
     zoomIn: function(e) {
         ATH.zoom('in', e);
     },
@@ -677,7 +673,7 @@ var ATH = {
         // (Make sure to use the old zoom factor for calculating the click position)
         // (2) Zoom with hotkey: don't change the center of zoom, just the zoom level.
         if (e.type === 'mouseup') {
-            imagePos = ATH.getImagePosition(e);
+            var imagePos = ATH.getImagePosition(e);
             ATH.centerOfZoomX = imagePos[0];
             ATH.centerOfZoomY = imagePos[1];
         }
@@ -691,6 +687,19 @@ var ATH = {
 
         // Redraw all points.
         ATH.redrawAllPoints();
+    },
+
+    /* Event listener callback: 'this' is an annotation field */
+    confirmFieldAndFocusNext: function() {
+        // The function is called with a field element as 'this'
+        var pointNum = ATH.getPointNumOfAnnoField(this);
+
+        // Unrobot/update the field
+        ATH.onPointUpdate(pointNum);
+
+        // Switch focus to next point's field.
+        // Call ATH.focusNextField() such that the current field becomes the object 'this'
+        ATH.focusNextField.call(this);
     },
 
     select: function(pointNum) {
@@ -769,19 +778,36 @@ var ATH = {
 
         // If just 1 field is selected, focus the next field automatically
         if (selectedFieldsJQ.length === 1) {
-            var pointNum = ATH.getPointNumOfAnnoField(selectedFieldsJQ[0]);
-            ATH.focusNextField(pointNum);
+            // Call ATH.focusNextField() such that the selected field becomes the object 'this'
+            ATH.focusNextField.call(selectedFieldsJQ[0]);
         }
     },
 
-    focusNextField: function(pointNum) {
-        // Last point numerically
+    /* Event listener callback: 'this' is an annotation field */
+    focusPrevField: function() {
+        var pointNum = ATH.getPointNumOfAnnoField(this);
+
+        // If first point numerically...
+        if (pointNum === 1) {
+            // Just un-focus from this point's field
+            $(this).blur();
+        }
+        // If not first point...
+        else {
+            // Focus the previous point's field
+            $(ATH.annotationFields[pointNum-1]).focus();
+        }
+    },
+
+    /* Event listener callback: 'this' is an annotation field */
+    focusNextField: function() {
+        var pointNum = ATH.getPointNumOfAnnoField(this);
         var lastPoint = ATH.numOfPoints;
 
-        // If last point...
+        // If last point (numerically)...
         if (pointNum === lastPoint) {
             // Just un-focus from this point's field
-            $(ATH.annotationFields[pointNum]).blur();
+            $(this).blur();
         }
         // If not last point...
         else {
