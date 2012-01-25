@@ -1,4 +1,4 @@
-var AnnotationToolHelper = {
+var ATH = {
 
     // Compatibility
     // If the appVersion contains the substring "Mac", then it's probably a mac...
@@ -15,6 +15,10 @@ var AnnotationToolHelper = {
     pointsCanvas: null,
     listenerElmt: null,
     saveButton: null,
+
+    // Keymap arrays
+    mainKeymap: {},
+    annotationFieldKeymap: {},
 
     // Annotation related
     labelCodes: null,
@@ -84,61 +88,60 @@ var AnnotationToolHelper = {
 
     init: function(fullHeight, fullWidth,
                    imagePoints, labelCodes) {
-        var t = this;  // Alias for less typing
         var i;    // Loop variable...
 
-        t.IMAGE_AREA_WIDTH = t.ANNOTATION_AREA_WIDTH - (t.CANVAS_GUTTER * 2),
-        t.IMAGE_AREA_HEIGHT = t.ANNOTATION_AREA_HEIGHT - (t.CANVAS_GUTTER * 2),
+        ATH.IMAGE_AREA_WIDTH = ATH.ANNOTATION_AREA_WIDTH - (ATH.CANVAS_GUTTER * 2),
+        ATH.IMAGE_AREA_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT - (ATH.CANVAS_GUTTER * 2),
 
-        t.IMAGE_FULL_WIDTH = fullWidth;
-        t.IMAGE_FULL_HEIGHT = fullHeight;
+        ATH.IMAGE_FULL_WIDTH = fullWidth;
+        ATH.IMAGE_FULL_HEIGHT = fullHeight;
 
         /*
          * Initialize styling and sizing for everything
          */
 
-        t.annotationArea = $("#annotationArea")[0];
-        t.annotationList = $("#annotationList")[0];
-        t.coralImage = $("#coralImage")[0];
-        t.pointsCanvas = $("#pointsCanvas")[0];
-        t.listenerElmt = $("#listenerElmt")[0];
-        t.saveButton = $("#saveButton")[0];
+        ATH.annotationArea = $("#annotationArea")[0];
+        ATH.annotationList = $("#annotationList")[0];
+        ATH.coralImage = $("#coralImage")[0];
+        ATH.pointsCanvas = $("#pointsCanvas")[0];
+        ATH.listenerElmt = $("#listenerElmt")[0];
+        ATH.saveButton = $("#saveButton")[0];
 
         $('#mainColumn').css({
-            "width": t.ANNOTATION_AREA_WIDTH + "px",
+            "width": ATH.ANNOTATION_AREA_WIDTH + "px",
 
             /* Spilling beyond this height is fine, but we define the height
                so this element takes up space, thus forcing the rightSidebar to
                stay on the right. */
-            "height": t.ANNOTATION_TOOL_HEIGHT + "px"
+            "height": ATH.ANNOTATION_TOOL_HEIGHT + "px"
         });
         $('#rightSidebar').css({
-            "width": (t.ANNOTATION_TOOL_WIDTH - t.ANNOTATION_AREA_WIDTH) + "px",
-            "height": t.ANNOTATION_TOOL_HEIGHT + "px"
+            "width": (ATH.ANNOTATION_TOOL_WIDTH - ATH.ANNOTATION_AREA_WIDTH) + "px",
+            "height": ATH.ANNOTATION_TOOL_HEIGHT + "px"
         });
         $('#dummyColumn').css({
-            "height": t.ANNOTATION_TOOL_HEIGHT + "px"
+            "height": ATH.ANNOTATION_TOOL_HEIGHT + "px"
         });
 
         var annotationListMaxHeight =
-            t.ANNOTATION_AREA_HEIGHT
+            ATH.ANNOTATION_AREA_HEIGHT
             - 2*(24+(2*2)+2)    // toolButtonArea: 2 rows of buttons - 24px buttons, each with 2px top and bottom borders, and another 2px of space below for some reason
             - (5*2);            // toolButtonArea: 5px margins around the area
-        $(t.annotationList).css({
+        $(ATH.annotationList).css({
             "max-height": annotationListMaxHeight + "px"
         });
 
-        $(t.annotationArea).css({
-            "width": t.ANNOTATION_AREA_WIDTH + "px",
-            "height": t.ANNOTATION_AREA_HEIGHT + "px",
-            "background-color": t.CANVAS_GUTTER_COLOR
+        $(ATH.annotationArea).css({
+            "width": ATH.ANNOTATION_AREA_WIDTH + "px",
+            "height": ATH.ANNOTATION_AREA_HEIGHT + "px",
+            "background-color": ATH.CANVAS_GUTTER_COLOR
         });
 
         $('#imageArea').css({
-            "width": t.IMAGE_AREA_WIDTH + "px",
-            "height": t.IMAGE_AREA_HEIGHT + "px",
-            "left": t.CANVAS_GUTTER + "px",
-            "top": t.CANVAS_GUTTER + "px"
+            "width": ATH.IMAGE_AREA_WIDTH + "px",
+            "height": ATH.IMAGE_AREA_HEIGHT + "px",
+            "left": ATH.CANVAS_GUTTER + "px",
+            "top": ATH.CANVAS_GUTTER + "px"
         });
 
         /*
@@ -146,30 +149,30 @@ var AnnotationToolHelper = {
          * Also set the allowable zoom factors.
          */
 
-        var widthScaleRatio = t.IMAGE_FULL_WIDTH / t.IMAGE_AREA_WIDTH;
-        var heightScaleRatio = t.IMAGE_FULL_HEIGHT / t.IMAGE_AREA_HEIGHT;
+        var widthScaleRatio = ATH.IMAGE_FULL_WIDTH / ATH.IMAGE_AREA_WIDTH;
+        var heightScaleRatio = ATH.IMAGE_FULL_HEIGHT / ATH.IMAGE_AREA_HEIGHT;
         var scaleDownFactor = Math.max(widthScaleRatio, heightScaleRatio);
 
         // If the scaleDownFactor is < 1, then it's scaled up (meaning the image is really small).
-        t.zoomFactor = 1.0 / scaleDownFactor;
+        ATH.zoomFactor = 1.0 / scaleDownFactor;
 
         // Allowable zoom factors/levels:
         // Start with the most zoomed out level, 0.  Level 1 is ZOOM_INCREMENT * level 0.
         // Level 2 is ZOOM_INCREMENT * level 1, etc.  Goes up to level HIGHEST_ZOOM_LEVEL.
-        t.zoomLevel = 0;
-        for (i = 0; i <= t.HIGHEST_ZOOM_LEVEL; i++) {
-            t.ZOOM_FACTORS[i] = t.zoomFactor * Math.pow(t.ZOOM_INCREMENT, i);
+        ATH.zoomLevel = 0;
+        for (i = 0; i <= ATH.HIGHEST_ZOOM_LEVEL; i++) {
+            ATH.ZOOM_FACTORS[i] = ATH.zoomFactor * Math.pow(ATH.ZOOM_INCREMENT, i);
         }
 
         // Based on the zoom level, set up the image area.
         // (No need to define centerOfZoom since we're not zooming in to start with.)
-        t.setupImageArea();
+        ATH.setupImageArea();
 
         // Set the canvas's width and height properties so the canvas contents don't stretch.
         // Note that this is different from CSS width and height properties.
-        t.pointsCanvas.width = t.ANNOTATION_AREA_WIDTH;
-        t.pointsCanvas.height = t.ANNOTATION_AREA_HEIGHT;
-        $(t.pointsCanvas).css({
+        ATH.pointsCanvas.width = ATH.ANNOTATION_AREA_WIDTH;
+        ATH.pointsCanvas.height = ATH.ANNOTATION_AREA_HEIGHT;
+        $(ATH.pointsCanvas).css({
             "left": 0,
 		    "top": 0,
             "z-index": 1
@@ -181,24 +184,24 @@ var AnnotationToolHelper = {
          */
 
         // Create a canvas context
-		t.context = t.pointsCanvas.getContext("2d");
+		ATH.context = ATH.pointsCanvas.getContext("2d");
 
         // Save this fresh context so we can restore it later as needed.
-        t.context.save();
+        ATH.context.save();
 
         // Translate the canvas context to compensate for the gutter and the image offset.
-        t.resetCanvas();
+        ATH.resetCanvas();
 
         // Initialize point coordinates
-        t.imagePoints = imagePoints;
-        t.numOfPoints = imagePoints.length;
-        t.getCanvasPoints();
+        ATH.imagePoints = imagePoints;
+        ATH.numOfPoints = imagePoints.length;
+        ATH.getCanvasPoints();
 
         // Possible label codes
-        t.labelCodes = labelCodes;
+        ATH.labelCodes = labelCodes;
 
-        t.annotationFieldsJQ = $(t.annotationList).find('input');
-        var annotationFieldRowsJQ = $(t.annotationList).find('tr');
+        ATH.annotationFieldsJQ = $(ATH.annotationList).find('input');
+        var annotationFieldRowsJQ = $(ATH.annotationList).find('tr');
 
         // Create arrays that map point numbers to HTML elements.
         // For example, for point 1:
@@ -207,36 +210,36 @@ var AnnotationToolHelper = {
         // annotationRobotFields = hidden form element of value true/false saying whether point 1 is robot annotated
         annotationFieldRowsJQ.each( function() {
             var field = $(this).find('input')[0];
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(field);
+            var pointNum = ATH.getPointNumOfAnnoField(field);
             var robotField = $('#id_robot_' + pointNum)[0];
 
-            AnnotationToolHelper.annotationFields[pointNum] = field;
-            AnnotationToolHelper.annotationFieldRows[pointNum] = this;
-            AnnotationToolHelper.annotationRobotFields[pointNum] = robotField;
+            ATH.annotationFields[pointNum] = field;
+            ATH.annotationFieldRows[pointNum] = this;
+            ATH.annotationRobotFields[pointNum] = robotField;
         });
 
         // Set point annotation statuses,
         // and draw the points
-        for (i = 0; i < t.numOfPoints; i++) {
-            t.pointGraphicStates[i] = t.STATE_NOTSHOWN;
+        for (i = 0; i < ATH.numOfPoints; i++) {
+            ATH.pointGraphicStates[i] = ATH.STATE_NOTSHOWN;
         }
-        t.annotationFieldsJQ.each( function() {
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            AnnotationToolHelper.updatePointState(pointNum, true);
-            AnnotationToolHelper.updatePointGraphic(pointNum);
+        ATH.annotationFieldsJQ.each( function() {
+            var pointNum = ATH.getPointNumOfAnnoField(this);
+            ATH.updatePointState(pointNum, true);
+            ATH.updatePointGraphic(pointNum);
         });
 
         // Set the initial point view mode.  This'll trigger a redraw of the points, but that's okay;
         // initialization slowness is a relatively minor worry.
-        t.changePointMode(t.POINTMODE_ALL);
+        ATH.changePointMode(ATH.POINTMODE_ALL);
 
         // Initialize save button
-        $(t.saveButton).attr('disabled', 'disabled');
-        $(t.saveButton).text('Saved');
+        $(ATH.saveButton).attr('disabled', 'disabled');
+        $(ATH.saveButton).text('Saved');
 
         // Initialize all_done state
         Dajaxice.CoralNet.annotations.ajax_is_all_done(
-            this.setAllDoneIndicator,
+            ATH.setAllDoneIndicator,
             {'image_id': $('#id_image_id')[0].value}
         );
 
@@ -245,9 +248,8 @@ var AnnotationToolHelper = {
          */
 
         // Mouse button is pressed and un-pressed on the canvas
-		$(t.listenerElmt).mouseup( function(e) {
+		$(ATH.listenerElmt).mouseup( function(e) {
 
-            var ATH = AnnotationToolHelper;
             var mouseButton = util.identifyMouseButton(e);
             var clickType;
             var imagePos;
@@ -286,59 +288,31 @@ var AnnotationToolHelper = {
 
                 // Zoom in.
                 if (clickType === "leftClick") {
-                    if (ATH.zoomLevel === ATH.HIGHEST_ZOOM_LEVEL)
-                        return;
-
-                    // Zoom into the part that was clicked
-                    // (Make sure to use the old zoom factor for calculating this)
-                    imagePos = ATH.getImagePosition(e);
-                    ATH.centerOfZoomX = imagePos[0];
-                    ATH.centerOfZoomY = imagePos[1];
-
-                    ATH.zoomLevel += 1;
+                    ATH.zoomIn(e);
                 }
                 // Zoom out.
                 else if (clickType === "rightClick") {
-                    // 0 is the lowest zoom level.
-                    if (ATH.zoomLevel === 0)
-                        return;
-
-                    // Zoom out toward the part that was clicked
-                    // (Make sure to use the old zoom factor for calculating this)
-                    imagePos = ATH.getImagePosition(e);
-                    ATH.centerOfZoomX = imagePos[0];
-                    ATH.centerOfZoomY = imagePos[1];
-
-                    ATH.zoomLevel -= 1;
+                    ATH.zoomOut(e);
                 }
-
-                ATH.zoomFactor = ATH.ZOOM_FACTORS[ATH.zoomLevel];
-
-                // Adjust the image and point coordinates.
-                ATH.setupImageArea();
-                ATH.getCanvasPoints();
-
-                // Redraw all points.
-                ATH.redrawAllPoints();
             }
         });
 
         // Disable the context menu on the listener element.
         // The menu just gets in the way while trying to zoom out, etc.
-        $(t.listenerElmt).bind('contextmenu', function(e){
+        $(ATH.listenerElmt).bind('contextmenu', function(e){
             return false;
         });
         // Same goes for the canvas element, which is sometimes what we end up
         // right clicking on if the image is no longer over that part of the canvas.
-        $(t.pointsCanvas).bind('contextmenu', function(e){
+        $(ATH.pointsCanvas).bind('contextmenu', function(e){
             return false;
         });
         // Also note that the listener element uses CSS to disable
         // double-click-to-select (it makes the image turn blue, which is annoying).
 
         // Save button is clicked
-        $(t.saveButton).click(function() {
-            AnnotationToolHelper.saveAnnotations();
+        $(ATH.saveButton).click(function() {
+            ATH.saveAnnotations();
         });
 
         // A label button is clicked
@@ -346,13 +320,12 @@ var AnnotationToolHelper = {
             $(this).click( function() {
                 // Label the selected points with this button's label code
                 // (which is the button's text).
-                AnnotationToolHelper.labelSelected($(this).text());
+                ATH.labelSelected($(this).text());
             });
         });
 
         // Label field gains focus
-        t.annotationFieldsJQ.focus(function() {
-            var ATH = AnnotationToolHelper;
+        ATH.annotationFieldsJQ.focus(function() {
             var pointNum = ATH.getPointNumOfAnnoField(this);
             ATH.unselectAll();
             ATH.select(pointNum);
@@ -375,41 +348,41 @@ var AnnotationToolHelper = {
 
         // Label field is typed into and changed, and then unfocused.
         // (This does NOT run when a click of a label button changes the label field.)
-        t.annotationFieldsJQ.change(function() {
-            AnnotationToolHelper.onLabelFieldChange(this);
+        ATH.annotationFieldsJQ.change(function() {
+            ATH.onLabelFieldChange(this);
         });
 
         // Label field is focused and a keyboard key is released
-        t.annotationFieldsJQ.keyup(function(e) {
+        ATH.annotationFieldsJQ.keyup(function(e) {
             var ENTER = 13;
             
             if(e.keyCode === ENTER) {
-                var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
+                var pointNum = ATH.getPointNumOfAnnoField(this);
 
                 // Unrobot/update the field
-                AnnotationToolHelper.onPointUpdate(pointNum);
+                ATH.onPointUpdate(pointNum);
 
                 // Switch focus to next point's field
-                AnnotationToolHelper.focusNextField(pointNum);
+                ATH.focusNextField(pointNum);
             }
         });
 
         // Number next to a label field is clicked.
         $(".annotationFormLabel").click(function() {
             var pointNum = parseInt($(this).text());
-            AnnotationToolHelper.toggle(pointNum);
+            ATH.toggle(pointNum);
         });
 
         // A point mode button is clicked.
         
         $("#pointModeButtonAll").click(function() {
-            AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_ALL);
+            ATH.changePointMode(ATH.POINTMODE_ALL);
         });
         $("#pointModeButtonSelected").click(function() {
-            AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_SELECTED);
+            ATH.changePointMode(ATH.POINTMODE_SELECTED);
         });
         $("#pointModeButtonNone").click(function() {
-            AnnotationToolHelper.changePointMode(AnnotationToolHelper.POINTMODE_NONE);
+            ATH.changePointMode(ATH.POINTMODE_NONE);
         });
 
         // A quick-select button is clicked.
@@ -417,12 +390,11 @@ var AnnotationToolHelper = {
         $("#quickSelectButtonNone").click(function() {
             // Un-select all points.
 
-            AnnotationToolHelper.unselectAll();
+            ATH.unselectAll();
         });
         $("#quickSelectButtonUnannotated").click(function() {
             // Select only unannotated points.
 
-            var ATH = AnnotationToolHelper;
             var unannotatedPoints = [];
 
             for (var n = 1; n <= ATH.numOfPoints; n++) {
@@ -439,7 +411,6 @@ var AnnotationToolHelper = {
         $("#quickSelectButtonInvert").click(function() {
             // Invert selections. (selected -> unselected, unselected -> selected)
 
-            var ATH = AnnotationToolHelper;
             var unselectedPoints = [];
 
             for (var n = 1; n <= ATH.numOfPoints; n++) {
@@ -453,6 +424,25 @@ var AnnotationToolHelper = {
                 ATH.select(unselectedPoints[i])
             }
         });
+
+        // Keymaps
+        var mainKeymap = {
+            'a': ATH.zoomIn,
+            's': ATH.zoomOut
+        };
+//        var annotationFieldKeymap = {
+//            'up': prevField,
+//            'down': nextField
+//        };
+
+        var key, fn;
+        for (key in mainKeymap) {
+            fn = mainKeymap[key];
+            $(document).bind('keyup', key, fn);
+        }
+//        for (key in annotationFieldKeymap) {
+//            ATH.annotationFieldsJQ.bind('keyup', key, annotationFieldKeymap[key]);
+//        }
     },
 
     /*
@@ -460,61 +450,59 @@ var AnnotationToolHelper = {
      * set up the image and on-image listener elements.
      */
     setupImageArea: function() {
-        var t = this;
-
-        t.imageDisplayWidth = t.IMAGE_FULL_WIDTH * t.zoomFactor;
-        t.imageDisplayHeight = t.IMAGE_FULL_HEIGHT * t.zoomFactor;
+        ATH.imageDisplayWidth = ATH.IMAGE_FULL_WIDTH * ATH.zoomFactor;
+        ATH.imageDisplayHeight = ATH.IMAGE_FULL_HEIGHT * ATH.zoomFactor;
 
         // Round off imprecision, so that if the display width is supposed to be
         // equal to the image area width, then they will actually be equal.
-        t.imageDisplayWidth = parseFloat(t.imageDisplayWidth.toFixed(3));
-        t.imageDisplayHeight = parseFloat(t.imageDisplayHeight.toFixed(3));
+        ATH.imageDisplayWidth = parseFloat(ATH.imageDisplayWidth.toFixed(3));
+        ATH.imageDisplayHeight = parseFloat(ATH.imageDisplayHeight.toFixed(3));
 
         // Position the image within the image area.
         // Negative offsets means the top-left corner is offscreen.
         // Positive offsets means there's extra space around the image
         // (should prevent this unless the image display is smaller than the image area).
 
-        if (t.imageDisplayWidth <= t.IMAGE_AREA_WIDTH)
-            t.imageLeftOffset = (t.IMAGE_AREA_WIDTH - t.imageDisplayWidth) / 2;
+        if (ATH.imageDisplayWidth <= ATH.IMAGE_AREA_WIDTH)
+            ATH.imageLeftOffset = (ATH.IMAGE_AREA_WIDTH - ATH.imageDisplayWidth) / 2;
         else {
-            var centerOfZoomInDisplayX = t.centerOfZoomX * t.zoomFactor;
-            var leftEdgeInDisplayX = centerOfZoomInDisplayX - (t.IMAGE_AREA_WIDTH / 2);
-            var rightEdgeInDisplayX = centerOfZoomInDisplayX + (t.IMAGE_AREA_WIDTH / 2);
+            var centerOfZoomInDisplayX = ATH.centerOfZoomX * ATH.zoomFactor;
+            var leftEdgeInDisplayX = centerOfZoomInDisplayX - (ATH.IMAGE_AREA_WIDTH / 2);
+            var rightEdgeInDisplayX = centerOfZoomInDisplayX + (ATH.IMAGE_AREA_WIDTH / 2);
             
             if (leftEdgeInDisplayX < 0)
-                t.imageLeftOffset = 0;
-            else if (rightEdgeInDisplayX > t.imageDisplayWidth)
-                t.imageLeftOffset = -(t.imageDisplayWidth - t.IMAGE_AREA_WIDTH);
+                ATH.imageLeftOffset = 0;
+            else if (rightEdgeInDisplayX > ATH.imageDisplayWidth)
+                ATH.imageLeftOffset = -(ATH.imageDisplayWidth - ATH.IMAGE_AREA_WIDTH);
             else
-                t.imageLeftOffset = -leftEdgeInDisplayX;
+                ATH.imageLeftOffset = -leftEdgeInDisplayX;
         }
 
-        if (t.imageDisplayHeight <= t.IMAGE_AREA_HEIGHT)
-            t.imageTopOffset = (t.IMAGE_AREA_HEIGHT - t.imageDisplayHeight) / 2;
+        if (ATH.imageDisplayHeight <= ATH.IMAGE_AREA_HEIGHT)
+            ATH.imageTopOffset = (ATH.IMAGE_AREA_HEIGHT - ATH.imageDisplayHeight) / 2;
         else {
-            var centerOfZoomInDisplayY = t.centerOfZoomY * t.zoomFactor;
-            var topEdgeInDisplayY = centerOfZoomInDisplayY - (t.IMAGE_AREA_HEIGHT / 2);
-            var bottomEdgeInDisplayY = centerOfZoomInDisplayY + (t.IMAGE_AREA_HEIGHT / 2);
+            var centerOfZoomInDisplayY = ATH.centerOfZoomY * ATH.zoomFactor;
+            var topEdgeInDisplayY = centerOfZoomInDisplayY - (ATH.IMAGE_AREA_HEIGHT / 2);
+            var bottomEdgeInDisplayY = centerOfZoomInDisplayY + (ATH.IMAGE_AREA_HEIGHT / 2);
 
             if (topEdgeInDisplayY < 0)
-                t.imageTopOffset = 0;
-            else if (bottomEdgeInDisplayY > t.imageDisplayHeight)
-                t.imageTopOffset = -(t.imageDisplayHeight - t.IMAGE_AREA_HEIGHT);
+                ATH.imageTopOffset = 0;
+            else if (bottomEdgeInDisplayY > ATH.imageDisplayHeight)
+                ATH.imageTopOffset = -(ATH.imageDisplayHeight - ATH.IMAGE_AREA_HEIGHT);
             else
-                t.imageTopOffset = -topEdgeInDisplayY;
+                ATH.imageTopOffset = -topEdgeInDisplayY;
         }
 
         // Round off imprecision, so that we don't have any extremely small offsets
         // that get expressed in scientific notation (that confuses jQuery's number parsing).
-        t.imageLeftOffset = parseFloat(t.imageLeftOffset.toFixed(3));
-        t.imageTopOffset = parseFloat(t.imageTopOffset.toFixed(3));
+        ATH.imageLeftOffset = parseFloat(ATH.imageLeftOffset.toFixed(3));
+        ATH.imageTopOffset = parseFloat(ATH.imageTopOffset.toFixed(3));
 
         // Set styling properties for the image.
-        $(t.coralImage).css({
-            "height": t.imageDisplayHeight,
-            "left": t.imageLeftOffset,
-            "top": t.imageTopOffset,
+        $(ATH.coralImage).css({
+            "height": ATH.imageDisplayHeight,
+            "left": ATH.imageLeftOffset,
+            "top": ATH.imageTopOffset,
             "z-index": 0
         });
 
@@ -523,11 +511,11 @@ var AnnotationToolHelper = {
         // and listens for mouse events.
         // Since it has to be on top to listen for mouse events,
         // the z-index should be above every other element's z-index.
-        $(t.listenerElmt).css({
-            "width": t.imageDisplayWidth,
-            "height": t.imageDisplayHeight,
-            "left": t.imageLeftOffset,
-            "top": t.imageTopOffset,
+        $(ATH.listenerElmt).css({
+            "width": ATH.imageDisplayWidth,
+            "height": ATH.imageDisplayHeight,
+            "left": ATH.imageLeftOffset,
+            "top": ATH.imageTopOffset,
             "z-index": 100
         });
     },
@@ -536,30 +524,26 @@ var AnnotationToolHelper = {
      * Clear the canvas and reset the context.
      */
     resetCanvas: function() {
-        var t = this;
-
         // Get the original (untranslated) context back.
-        t.context.restore();
+        ATH.context.restore();
         // And save the context again for the next time we have to translate.
-        t.context.save();
+        ATH.context.save();
 
         // Clear the entire canvas.
-        t.context.clearRect(0, 0, t.pointsCanvas.width, t.pointsCanvas.height);
+        ATH.context.clearRect(0, 0, ATH.pointsCanvas.width, ATH.pointsCanvas.height);
 
         // Translate the canvas context to compensate for the gutter.
         // This'll allow us to pretend that canvas coordinates = image area coordinates.
-        t.context.translate(t.CANVAS_GUTTER, t.CANVAS_GUTTER);
+        ATH.context.translate(ATH.CANVAS_GUTTER, ATH.CANVAS_GUTTER);
     },
     
     /* Look at a label field, and based on the label, mark the point
      * as (human) annotated, robot annotated, unannotated, or errored.
      */
     updatePointState: function(pointNum, initializing) {
-        var t = this;
-
-        var field = t.annotationFields[pointNum];
-        var row = t.annotationFieldRows[pointNum];
-        var robotField = t.annotationRobotFields[pointNum];
+        var field = ATH.annotationFields[pointNum];
+        var row = ATH.annotationFieldRows[pointNum];
+        var robotField = ATH.annotationRobotFields[pointNum];
         var labelCode = field.value;
 
         /*
@@ -567,7 +551,7 @@ var AnnotationToolHelper = {
          */
 
         // Error: label is not empty string, and not in the labelset
-        if (labelCode !== '' && t.labelCodes.indexOf(labelCode) === -1) {
+        if (labelCode !== '' && ATH.labelCodes.indexOf(labelCode) === -1) {
             // Error styling
             $(field).attr('title', 'Label not in labelset');
             $(row).addClass('error');
@@ -585,11 +569,11 @@ var AnnotationToolHelper = {
                 // If we're not initializing the page,
                 // then we're updating due to a USER ACTION.
                 // Therefore, this robot annotation should be un-roboted.
-                t.unrobot(pointNum);
+                ATH.unrobot(pointNum);
             }
 
             // Set as (human) annotated or not
-            if (labelCode === '' || t.isRobot(pointNum)) {
+            if (labelCode === '' || ATH.isRobot(pointNum)) {
                 // No label, or robot annotated
                 $(row).removeClass('annotated');
             }
@@ -611,51 +595,49 @@ var AnnotationToolHelper = {
         // empty, errored, selected+any of previous
         
         var contentChanged = false;
-        var oldState = t.pointContentStates[pointNum];
+        var oldState = ATH.pointContentStates[pointNum];
         var newState = {'label': labelCode, 'robot': robotField.value};
 
         if (initializing) {
             // Initializing this point at page load time
-            t.pointContentStates[pointNum] = newState;
+            ATH.pointContentStates[pointNum] = newState;
         }
         else if (oldState['label'] !== newState['label']
                  || oldState['robot'] !== newState['robot']) {
             // Content has changed
             contentChanged = true;
-            t.pointContentStates[pointNum] = newState;
+            ATH.pointContentStates[pointNum] = newState;
         }
 
         return contentChanged;
     },
 
     onPointUpdate: function(pointNum) {
-        var contentChanged = this.updatePointState(pointNum, false);
+        var contentChanged = ATH.updatePointState(pointNum, false);
         
-        this.updatePointGraphic(pointNum);
+        ATH.updatePointGraphic(pointNum);
         
         if (contentChanged)
-            this.updateSaveButton();
+            ATH.updateSaveButton();
     },
 
     onLabelFieldChange: function(field) {
-        var pointNum = this.getPointNumOfAnnoField(field);
-        this.onPointUpdate(pointNum);
+        var pointNum = ATH.getPointNumOfAnnoField(field);
+        ATH.onPointUpdate(pointNum);
     },
 
     updateSaveButton: function() {
-        var t = this;
-
         // No errors in annotation form
-        if ($(t.annotationList).find('tr.error').length === 0) {
+        if ($(ATH.annotationList).find('tr.error').length === 0) {
             // Enable save button
-            $(t.saveButton).removeAttr('disabled');
-            t.setSaveButtonText("Save progress");
+            $(ATH.saveButton).removeAttr('disabled');
+            ATH.setSaveButtonText("Save progress");
         }
         // Errors
         else {
             // Disable save button
-            $(t.saveButton).attr('disabled', 'disabled');
-            t.setSaveButtonText("Error");
+            $(ATH.saveButton).attr('disabled', 'disabled');
+            ATH.setSaveButtonText("Error");
         }
     },
 
@@ -668,33 +650,76 @@ var AnnotationToolHelper = {
         }
     },
 
+    zoomIn: function(e) {
+        ATH.zoom('in', e);
+    },
+    zoomOut: function(e) {
+        ATH.zoom('out', e);
+    },
+    zoom: function(direction, e) {
+        var zoomLevelChange;
+
+        if (direction === 'in') {
+            if (ATH.zoomLevel === ATH.HIGHEST_ZOOM_LEVEL)
+                return;
+
+            zoomLevelChange = 1;
+        }
+        else if (direction === 'out') {
+            // 0 is the lowest zoom level.
+            if (ATH.zoomLevel === 0)
+                return;
+
+            zoomLevelChange = -1;
+        }
+
+        // (1) Zoom on click: zoom into the part that was clicked.
+        // (Make sure to use the old zoom factor for calculating the click position)
+        // (2) Zoom with hotkey: don't change the center of zoom, just the zoom level.
+        if (e.type === 'mouseup') {
+            imagePos = ATH.getImagePosition(e);
+            ATH.centerOfZoomX = imagePos[0];
+            ATH.centerOfZoomY = imagePos[1];
+        }
+
+        ATH.zoomLevel += zoomLevelChange;
+        ATH.zoomFactor = ATH.ZOOM_FACTORS[ATH.zoomLevel];
+
+        // Adjust the image and point coordinates.
+        ATH.setupImageArea();
+        ATH.getCanvasPoints();
+
+        // Redraw all points.
+        ATH.redrawAllPoints();
+    },
+
     select: function(pointNum) {
-        $(this.annotationFieldRows[pointNum]).addClass('selected');
-        this.updatePointGraphic(pointNum);
+        $(ATH.annotationFieldRows[pointNum]).addClass('selected');
+        ATH.updatePointGraphic(pointNum);
     },
 
     unselect: function(pointNum) {
-        $(this.annotationFieldRows[pointNum]).removeClass('selected');
-        this.updatePointGraphic(pointNum);
+        $(ATH.annotationFieldRows[pointNum]).removeClass('selected');
+        ATH.updatePointGraphic(pointNum);
     },
 
     toggle: function(pointNum) {
-        if ($(this.annotationFieldRows[pointNum]).hasClass('selected'))
-            this.unselect(pointNum);
+        if ($(ATH.annotationFieldRows[pointNum]).hasClass('selected'))
+            ATH.unselect(pointNum);
         else
-            this.select(pointNum);
+            ATH.select(pointNum);
     },
 
     isRobot: function(pointNum) {
-        var robotField = this.annotationRobotFields[pointNum];
+        var robotField = ATH.annotationRobotFields[pointNum];
         return robotField.value === 'true';
     },
 
     unrobot: function(pointNum) {
-        var robotField = this.annotationRobotFields[pointNum];
+        var robotField = ATH.annotationRobotFields[pointNum];
         robotField.value = 'false';
 
-        var row = this.annotationFieldRows[pointNum];
+        var row = ATH.annotationFieldRows[pointNum];
         $(row).removeClass('robot');
     },
 
@@ -703,34 +728,34 @@ var AnnotationToolHelper = {
     unselectMultiple: function(pointList) {
         var pointNum, i;
 
-        if (this.pointViewMode === this.POINTMODE_SELECTED) {
+        if (ATH.pointViewMode === ATH.POINTMODE_SELECTED) {
 
             for (i = 0; i < pointList.length; i++) {
                 pointNum = pointList[i];
-                $(this.annotationFieldRows[pointNum]).removeClass('selected');
+                $(ATH.annotationFieldRows[pointNum]).removeClass('selected');
             }
-            this.redrawAllPoints();
+            ATH.redrawAllPoints();
         }
         else {
             for (i = 0; i < pointList.length; i++) {
                 pointNum = pointList[i];
-                this.unselect(pointNum);
+                ATH.unselect(pointNum);
             }
         }
     },
 
     unselectAll: function() {
         var selectedPointList = [];
-        this.getSelectedFieldsJQ().each( function() {
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
+        ATH.getSelectedFieldsJQ().each( function() {
+            var pointNum = ATH.getPointNumOfAnnoField(this);
             selectedPointList.push(pointNum);
         });
-        this.unselectMultiple(selectedPointList);
+        ATH.unselectMultiple(selectedPointList);
     },
 
     // Label button is clicked
     labelSelected: function(labelButtonCode) {
-        var selectedFieldsJQ = this.getSelectedFieldsJQ();
+        var selectedFieldsJQ = ATH.getSelectedFieldsJQ();
 
         // Iterate over selected points' fields.
         selectedFieldsJQ.each( function() {
@@ -738,30 +763,30 @@ var AnnotationToolHelper = {
             this.value = labelButtonCode;
 
             // Update the point's annotation status (including unroboting).
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            AnnotationToolHelper.onPointUpdate(pointNum);
+            var pointNum = ATH.getPointNumOfAnnoField(this);
+            ATH.onPointUpdate(pointNum);
         });
 
         // If just 1 field is selected, focus the next field automatically
         if (selectedFieldsJQ.length === 1) {
-            var pointNum = this.getPointNumOfAnnoField(selectedFieldsJQ[0]);
-            this.focusNextField(pointNum);
+            var pointNum = ATH.getPointNumOfAnnoField(selectedFieldsJQ[0]);
+            ATH.focusNextField(pointNum);
         }
     },
 
     focusNextField: function(pointNum) {
         // Last point numerically
-        var lastPoint = this.numOfPoints;
+        var lastPoint = ATH.numOfPoints;
 
         // If last point...
         if (pointNum === lastPoint) {
             // Just un-focus from this point's field
-            $(this.annotationFields[pointNum]).blur();
+            $(ATH.annotationFields[pointNum]).blur();
         }
         // If not last point...
         else {
             // Focus the next point's field
-            $(this.annotationFields[pointNum+1]).focus();
+            $(ATH.annotationFields[pointNum+1]).focus();
         }
     },
 
@@ -786,7 +811,7 @@ var AnnotationToolHelper = {
 		}
 
         // Get the x,y relative to the upper-left corner of the coral image
-        var elmt = this.coralImage;
+        var elmt = ATH.coralImage;
         while (elmt !== null) {
             x -= elmt.offsetLeft;
             y -= elmt.offsetTop;
@@ -797,33 +822,30 @@ var AnnotationToolHelper = {
 	},
 
     getImagePosition: function(e) {
-        var t = this;
-        var imageElmtPosition = t.getImageElmtPosition(e);
+        var imageElmtPosition = ATH.getImageElmtPosition(e);
         var imageElmtX = imageElmtPosition[0];
         var imageElmtY = imageElmtPosition[1];
 
-        var x = imageElmtX / t.zoomFactor;
-        var y = imageElmtY / t.zoomFactor;
+        var x = imageElmtX / ATH.zoomFactor;
+        var y = imageElmtY / ATH.zoomFactor;
 
         return [x,y];
     },
 
     getNearestPoint: function(e) {
-        var t = this;
-
         // Mouse's position in the canvas element
-        var imagePosition = this.getImagePosition(e);
+        var imagePosition = ATH.getImagePosition(e);
         var x = imagePosition[0];
         var y = imagePosition[1];
 
         var minDistance = Infinity;
         var closestPoint = null;
 
-        for (var i = 0; i < t.imagePoints.length; i++) {
-            var currPoint = t.imagePoints[i];
+        for (var i = 0; i < ATH.imagePoints.length; i++) {
+            var currPoint = ATH.imagePoints[i];
 
             // Don't count points that are offscreen.
-            if (t.pointIsOffscreen(currPoint.point_number))
+            if (ATH.pointIsOffscreen(currPoint.point_number))
                 continue;
 
             var xDiff = x - currPoint.column;
@@ -846,83 +868,79 @@ var AnnotationToolHelper = {
     (3) Don't account for gutter offset (translating the canvas context already takes care of this).
      */
     getCanvasPoints: function() {
-        var t = this;
+        for (var i = 0; i < ATH.imagePoints.length; i++) {
 
-        for (var i = 0; i < t.imagePoints.length; i++) {
-
-            t.canvasPoints[t.imagePoints[i].point_number] = {
-                num: t.imagePoints[i].point_number,
-                row: (t.imagePoints[i].row * t.zoomFactor) + t.imageTopOffset,
-                col: (t.imagePoints[i].column * t.zoomFactor) + t.imageLeftOffset
+            ATH.canvasPoints[ATH.imagePoints[i].point_number] = {
+                num: ATH.imagePoints[i].point_number,
+                row: (ATH.imagePoints[i].row * ATH.zoomFactor) + ATH.imageTopOffset,
+                col: (ATH.imagePoints[i].column * ATH.zoomFactor) + ATH.imageLeftOffset
             };
         }
     },
 
     drawPointHelper: function(pointNum, color, outlineColor) {
-        var canvasPoint = this.canvasPoints[pointNum];
+        var canvasPoint = ATH.canvasPoints[pointNum];
 
-        this.drawPointSymbol(canvasPoint.col, canvasPoint.row,
+        ATH.drawPointSymbol(canvasPoint.col, canvasPoint.row,
                              color);
-        this.drawPointNumber(canvasPoint.num.toString(), canvasPoint.col, canvasPoint.row,
+        ATH.drawPointNumber(canvasPoint.num.toString(), canvasPoint.col, canvasPoint.row,
                              color, outlineColor);
     },
 
     drawPointUnannotated: function(pointNum) {
-        this.drawPointHelper(pointNum, this.UNANNOTATED_COLOR, this.UNANNOTATED_OUTLINE_COLOR);
+        ATH.drawPointHelper(pointNum, ATH.UNANNOTATED_COLOR, ATH.UNANNOTATED_OUTLINE_COLOR);
     },
     drawPointAnnotated: function(pointNum) {
-        this.drawPointHelper(pointNum, this.ANNOTATED_COLOR, this.ANNOTATED_OUTLINE_COLOR);
+        ATH.drawPointHelper(pointNum, ATH.ANNOTATED_COLOR, ATH.ANNOTATED_OUTLINE_COLOR);
     },
     drawPointSelected: function(pointNum) {
-        this.drawPointHelper(pointNum, this.SELECTED_COLOR, this.SELECTED_OUTLINE_COLOR);
+        ATH.drawPointHelper(pointNum, ATH.SELECTED_COLOR, ATH.SELECTED_OUTLINE_COLOR);
     },
 
     /* Update a point's graphics on the canvas in the correct color.
      * Don't redraw a point unless necessary.
      */
     updatePointGraphic: function(pointNum) {
-        var t = this;
-
         // If the point is offscreen, then don't draw
-        if (t.pointIsOffscreen(pointNum))
+        if (ATH.pointIsOffscreen(pointNum))
             return;
 
         // Get the current (graphical) state of this point
-        var row = this.annotationFieldRows[pointNum];
+        var row = ATH.annotationFieldRows[pointNum];
         var newState;
 
         if ($(row).hasClass('selected'))
-            newState = t.STATE_SELECTED;
+            newState = ATH.STATE_SELECTED;
         else if ($(row).hasClass('annotated'))
-            newState = t.STATE_ANNOTATED;
+            newState = ATH.STATE_ANNOTATED;
         else
-            newState = t.STATE_UNANNOTATED;
+            newState = ATH.STATE_UNANNOTATED;
 
         // Account for point view modes
-        if (t.pointViewMode === t.POINTMODE_SELECTED && newState !== t.STATE_SELECTED)
-            newState = t.STATE_NOTSHOWN;
-        if (t.pointViewMode === t.POINTMODE_NONE)
-            newState = t.STATE_NOTSHOWN;
+        if (ATH.pointViewMode === ATH.POINTMODE_SELECTED && newState !== ATH.STATE_SELECTED)
+            newState = ATH.STATE_NOTSHOWN;
+        if (ATH.pointViewMode === ATH.POINTMODE_NONE)
+            newState = ATH.STATE_NOTSHOWN;
 
         // Redraw if the (graphical) state has changed
-        var oldState = t.pointGraphicStates[pointNum];
+        var oldState = ATH.pointGraphicStates[pointNum];
 
         if (oldState !== newState) {
-            t.pointGraphicStates[pointNum] = newState;
+            ATH.pointGraphicStates[pointNum] = newState;
 
-            if (newState === t.STATE_SELECTED)
-                t.drawPointSelected(pointNum);
-            else if (newState === t.STATE_ANNOTATED)
-                t.drawPointAnnotated(pointNum);
-            else if (newState === t.STATE_UNANNOTATED)
-                t.drawPointUnannotated(pointNum);
-            else if (newState === t.STATE_NOTSHOWN)
+            if (newState === ATH.STATE_SELECTED)
+                ATH.drawPointSelected(pointNum);
+            else if (newState === ATH.STATE_ANNOTATED)
+                ATH.drawPointAnnotated(pointNum);
+            else if (newState === ATH.STATE_UNANNOTATED)
+                ATH.drawPointUnannotated(pointNum);
+            else if (newState === ATH.STATE_NOTSHOWN)
                 // "Erase" this point.
                 // To do this, redraw the canvas with this point marked as not shown.
                 // For performance reasons, you'll want to avoid reaching this code whenever
                 // possible/reasonable.  One tip: remember to mark all points as NOTSHOWN
                 // whenever you clear the canvas of all points.
-                t.redrawAllPoints();
+                ATH.redrawAllPoints();
         }
     },
 
@@ -931,83 +949,78 @@ var AnnotationToolHelper = {
      * are not within the image area
      */
     pointIsOffscreen: function(pointNum) {
-        var t = this;
-        return (t.canvasPoints[pointNum].row < 0
-                || t.canvasPoints[pointNum].row > t.IMAGE_AREA_HEIGHT
-                || t.canvasPoints[pointNum].col < 0
-                || t.canvasPoints[pointNum].col > t.IMAGE_AREA_WIDTH
+        return (ATH.canvasPoints[pointNum].row < 0
+                || ATH.canvasPoints[pointNum].row > ATH.IMAGE_AREA_HEIGHT
+                || ATH.canvasPoints[pointNum].col < 0
+                || ATH.canvasPoints[pointNum].col > ATH.IMAGE_AREA_WIDTH
                 )
     },
 
     redrawAllPoints: function() {
-        var t = this;
-
         // Reset the canvas and re-translate the context
         // to compensate for the gutters.
-        t.resetCanvas();
+        ATH.resetCanvas();
 
         // Clear the pointGraphicStates.
-        for (var i = 0; i < t.pointGraphicStates.length; i++) {
-            t.pointGraphicStates[i] = t.STATE_NOTSHOWN;
+        for (var i = 0; i < ATH.pointGraphicStates.length; i++) {
+            ATH.pointGraphicStates[i] = ATH.STATE_NOTSHOWN;
         }
 
         // Draw all points.
-        t.annotationFieldsJQ.each( function() {
-            var pointNum = AnnotationToolHelper.getPointNumOfAnnoField(this);
-            AnnotationToolHelper.updatePointGraphic(pointNum);
+        ATH.annotationFieldsJQ.each( function() {
+            var pointNum = ATH.getPointNumOfAnnoField(this);
+            ATH.updatePointGraphic(pointNum);
         });
     },
 
     changePointMode: function(pointMode) {
-        var t = this;
-
         // Outline this point mode button in red (and de-outline the other buttons).
         $(".pointModeButton").removeClass("selected");
         
-        if (pointMode == t.POINTMODE_ALL)
+        if (pointMode == ATH.POINTMODE_ALL)
             $("#pointModeButtonAll").addClass("selected");
-        else if (pointMode == t.POINTMODE_SELECTED)
+        else if (pointMode == ATH.POINTMODE_SELECTED)
             $("#pointModeButtonSelected").addClass("selected");
-        else if (pointMode == t.POINTMODE_NONE)
+        else if (pointMode == ATH.POINTMODE_NONE)
             $("#pointModeButtonNone").addClass("selected");
 
         // Set the new point display mode.
-        t.pointViewMode = pointMode;
+        ATH.pointViewMode = pointMode;
 
         // Redraw all points.
-        t.redrawAllPoints();
+        ATH.redrawAllPoints();
     },
 
     saveAnnotations: function() {
-        $(this.saveButton).attr('disabled', 'disabled');
-        $(this.saveButton).text("Now saving...");
+        $(ATH.saveButton).attr('disabled', 'disabled');
+        $(ATH.saveButton).text("Now saving...");
         Dajaxice.CoralNet.annotations.ajax_save_annotations(
-            this.ajaxSaveButtonCallback,    // JS callback that the ajax.py method returns to.
+            ATH.ajaxSaveButtonCallback,    // JS callback that the ajax.py method returns to.
             {'annotationForm': $("#annotationForm").serializeArray()}    // Args to the ajax.py method.
         );
     },
 
-    // AJAX callback: cannot use "this" to refer to AnnotationToolHelper
+    // AJAX callback: cannot use "this" to refer to ATH
     ajaxSaveButtonCallback: function(returnDict) {
         
         if (returnDict.hasOwnProperty('error')) {
             var errorMsg = returnDict['error'];
-            AnnotationToolHelper.setSaveButtonText("Error");
+            ATH.setSaveButtonText("Error");
 
             // TODO: Handle error cases more elegantly?  Alerts are lame.
             // Though, these errors aren't really supposed to happen unless the annotation tool behavior is flawed.
             alert("Sorry, an error occurred when trying to save your annotations:\n{0}".format(errorMsg));
         }
         else {
-            AnnotationToolHelper.setSaveButtonText("Saved");
+            ATH.setSaveButtonText("Saved");
 
             // Add or remove ALL DONE indicator
-            AnnotationToolHelper.setAllDoneIndicator(returnDict.hasOwnProperty('all_done'));
+            ATH.setAllDoneIndicator(returnDict.hasOwnProperty('all_done'));
         }
     },
 
     setSaveButtonText: function(buttonText) {
-        $(this.saveButton).text(buttonText);
+        $(ATH.saveButton).text(buttonText);
     },
 
     getPointNumOfAnnoField: function(annoField) {
@@ -1017,7 +1030,7 @@ var AnnotationToolHelper = {
     },
 
     getSelectedFieldsJQ: function() {
-        return $(this.annotationList).find('tr.selected').find('input');
+        return $(ATH.annotationList).find('tr.selected').find('input');
     },
 
     /*
@@ -1025,9 +1038,7 @@ var AnnotationToolHelper = {
     which is centered at x,y.
      */
     drawPointSymbol: function(x, y, color) {
-        var t = this;
-
-		// Adjust x and y by 0.5 so that straight lines are centered
+        // Adjust x and y by 0.5 so that straight lines are centered
 		// at the halfway point of a pixel, not on a pixel boundary.
 		// This ensures that 1-pixel-wide lines are really 1 pixel wide,
 		// instead of 2 pixels wide.
@@ -1035,19 +1046,19 @@ var AnnotationToolHelper = {
 		x = x+0.5;
 		y = y+0.5;
 
-        t.context.strokeStyle = color;
-        t.context.lineWidth = 3;
+        ATH.context.strokeStyle = color;
+        ATH.context.lineWidth = 3;
 
-		t.context.beginPath();
+		ATH.context.beginPath();
 		//context.arc(x, y, POINT_RADIUS, 0, 2.0*Math.PI);    // A circle
 
-		t.context.moveTo(x, y + t.POINT_RADIUS);
-		t.context.lineTo(x, y - t.POINT_RADIUS);
+		ATH.context.moveTo(x, y + ATH.POINT_RADIUS);
+		ATH.context.lineTo(x, y - ATH.POINT_RADIUS);
 
-		t.context.moveTo(x - t.POINT_RADIUS, y);
-		t.context.lineTo(x + t.POINT_RADIUS, y);
+		ATH.context.moveTo(x - ATH.POINT_RADIUS, y);
+		ATH.context.lineTo(x + ATH.POINT_RADIUS, y);
 
-		t.context.stroke();
+		ATH.context.stroke();
 	},
 
     /*
@@ -1055,21 +1066,19 @@ var AnnotationToolHelper = {
     which is centered at x,y.
      */
 	drawPointNumber: function(num, x, y, color, outlineColor) {
-        var t = this;
-
-		t.context.textBaseline = "bottom";
-		t.context.textAlign = "left";
-		t.context.fillStyle = color;
-        t.context.strokeStyle = outlineColor;
-        t.context.lineWidth = 1;
-	    t.context.font = t.NUMBER_FONT;
+        ATH.context.textBaseline = "bottom";
+		ATH.context.textAlign = "left";
+		ATH.context.fillStyle = color;
+        ATH.context.strokeStyle = outlineColor;
+        ATH.context.lineWidth = 1;
+	    ATH.context.font = ATH.NUMBER_FONT;
 
 		// Offset the number's position a bit so it doesn't overlap with the annotation point.
 		// (Unlike the line drawing, 0.5 pixel adjustment doesn't seem to make a difference)
         x = x + 3, y = y - 3;
 
-        t.context.fillText(num, x, y);    // Color in the number
-		t.context.strokeText(num, x, y);    // Outline the number (make it easier to see)
+        ATH.context.fillText(num, x, y);    // Color in the number
+		ATH.context.strokeText(num, x, y);    // Outline the number (make it easier to see)
 	},
 
 	/*
@@ -1077,11 +1086,9 @@ var AnnotationToolHelper = {
 	TODO: Add a button that does this.
 	*/
 	togglePoints: function() {
-        var t = this;
-
-		if (t.pointsCanvas.style.visibility === 'hidden')
-			t.pointsCanvas.style.visibility = 'visible';
+        if (ATH.pointsCanvas.style.visibility === 'hidden')
+			ATH.pointsCanvas.style.visibility = 'visible';
 		else    // 'visible' or ''
-			t.pointsCanvas.style.visibility = 'hidden';
+			ATH.pointsCanvas.style.visibility = 'hidden';
 	}
 };
