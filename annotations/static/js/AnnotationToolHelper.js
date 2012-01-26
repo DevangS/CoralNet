@@ -465,6 +465,11 @@ var ATH = {
 
         var key;
         for (key in globalKeymap) {
+            // If Mac, replace ctrl with meta (which is Cmd).
+            // Remember to apply this to the other keymaps if necessary.
+            if (ATH.mac)
+                key = key.replace('ctrl','meta');
+
             $(document).bind('keyup', key, globalKeymap[key]);
             ATH.annotationFieldsJQ.bind('keyup', key, globalKeymap[key]);
         }
@@ -690,7 +695,7 @@ var ATH = {
     preventDefaultWrapper: function(fn) {
         return function(e) {
             e.preventDefault();
-            fn(e);
+            fn.call(this, e);
         };
     },
 
