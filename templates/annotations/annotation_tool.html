@@ -7,6 +7,7 @@
 
 {% block media-includes %}
     {{ block.super }}
+    {% include "jquery-hotkeys-include.html" %}
     {% dajaxice_js_import %}
     <script src="/static/js/util.js" type="text/javascript"></script>
     <script src="/static/js/AnnotationToolHelper.js" type="text/javascript"></script>
@@ -51,7 +52,23 @@
 
 #labelButtons button {
     width: 80px;
+    border: 2px solid transparent;
 }
+#labelButtons button.current {
+    border: 2px solid #000000;
+}
+
+/* TODO: Probably want to consider assigning a certain color for each functional group
+ * and using that color site-wide.  For example, always green for hard coral.
+ * (Maybe make the colors customizable too?) */
+#labelButtons button.group1{ background-color: #8888ff; }
+#labelButtons button.group2{ background-color: #ff8888; }
+#labelButtons button.group3{ background-color: #88ff88; }
+#labelButtons button.group4{ background-color: #88ffff; }
+#labelButtons button.group5{ background-color: #ff88ff; }
+#labelButtons button.group6{ background-color: #ffff88; }
+#labelButtons button.group7{ background-color: #888888; }
+#labelButtons button.group8{ background-color: #4499dd; }
 
 #mainColumn {
     float: left;
@@ -170,8 +187,8 @@ td.annotationFormLabelCell {
       </div>
 
       <div id="labelButtons">
-        {% for code in labelCodes %}
-            <button>{{ code }}</button>
+        {% for label in labels %}
+            <button name={{ label.code }}>{{ label.code }}</button>
         {% endfor %}
       </div>
     </div>
@@ -242,10 +259,11 @@ td.annotationFormLabelCell {
 
 <!-- Script in the body will run on page load. -->
 <script type="text/javascript">
-    AnnotationToolHelper.init({{ image.original_height }},
-                              {{ image.original_width }},
-                              {{ annotationsJSON|safe }},
-                              {{ labelCodesJSON|safe }});
+    // Initialize the Annotation Tool Helper (ATH) object.
+    ATH.init({{ image.original_height }},
+             {{ image.original_width }},
+             {{ annotationsJSON|safe }},
+             {{ labelsJSON|safe }});
 </script>
 
 {% endblock %}

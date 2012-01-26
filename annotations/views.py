@@ -336,7 +336,12 @@ def annotation_tool(request, image_id, source_id):
     image = get_object_or_404(Image, id=image_id)
     source = get_object_or_404(Source, id=source_id)
     metadata = image.metadata
-    labelCodes = [d['code'] for d in source.labelset.labels.all().values('code')]
+
+    # Get all labels, ordered first by functional group, then by short code.
+    labels = source.labelset.labels.all().order_by('group', 'code')
+    # Get labels in the form {'code': <short code>, 'group': <functional group>}.
+    # Convert from a ValuesQuerySet to a list to make the structure JSON-serializable.
+    labelValues = list(labels.values('code', 'group'))
 
     form = AnnotationForm(image=image, user=request.user)
 
@@ -371,8 +376,8 @@ def annotation_tool(request, image_id, source_id):
         'source': source,
         'image': image,
         'metadata': metadata,
-        'labelCodes': labelCodes,
-        'labelCodesJSON': simplejson.dumps(labelCodes),
+        'labels': labelValues,
+        'labelsJSON': simplejson.dumps(labelValues),
         'form': form,
         'location_values': ', '.join(image.get_location_value_str_list()),
         'annotations': annotations,
