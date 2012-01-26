@@ -18,6 +18,9 @@ var ATH = {
 
     // Annotation related
     labelCodes: null,
+    currentLabelButton: null,
+    BUTTON_GRID_MAX_X: null,
+    BUTTON_GRID_MAX_Y: null,
 
     // Canvas related
 	context: null,
@@ -83,7 +86,7 @@ var ATH = {
 
 
     init: function(fullHeight, fullWidth,
-                   imagePoints, labelCodes) {
+                   imagePoints, labels) {
         var i;    // Loop variable...
 
         ATH.IMAGE_AREA_WIDTH = ATH.ANNOTATION_AREA_WIDTH - (ATH.CANVAS_GUTTER * 2),
@@ -93,7 +96,7 @@ var ATH = {
         ATH.IMAGE_FULL_HEIGHT = fullHeight;
 
         /*
-         * Initialize styling and sizing for everything
+         * Initialize styling, sizing, and positioning for various elements
          */
 
         ATH.annotationArea = $("#annotationArea")[0];
@@ -139,6 +142,40 @@ var ATH = {
             "left": ATH.CANVAS_GUTTER + "px",
             "top": ATH.CANVAS_GUTTER + "px"
         });
+
+        // Styling label buttons
+        var uniqueGroups = [];
+        var groupStyles = {};
+        var nextStyleNumber = 1;
+        var labelButtonJQ;
+
+        for (i = 0; i < labels.length; i++) {
+            // Assign a style class for each functional group represented by the buttons.
+            if (uniqueGroups.indexOf(labels[i].group) === -1) {
+                uniqueGroups.push(labels[i].group);
+                groupStyles[labels[i].group] = 'group'+nextStyleNumber;
+                nextStyleNumber++;
+            }
+        }
+        for (i = 0; i < labels.length; i++) {
+            // Get the label button and assign the group style to it.
+            labelButtonJQ = $("#labelButtons button[name='" + labels[i].code + "']");
+            labelButtonJQ.addClass(groupStyles[labels[i].group]);
+        }
+
+        // Assigning 'grid positions' to label buttons
+        // TODO: Derive this magic number from the label-button space available, or vice versa.
+        ATH.BUTTONS_PER_ROW = 10;
+        ATH.BUTTON_GRID_MAX_Y = Math.floor(labels.length / ATH.BUTTONS_PER_ROW);
+        ATH.BUTTON_GRID_MAX_X = ATH.BUTTONS_PER_ROW - 1;
+
+        for (i = 0; i < labels.length; i++) {
+            // Get the label button and assign the group style to it.
+            labelButtonJQ = $("#labelButtons button[name='" + labels[i].code + "']");
+            // Assign a grid position, e.g. i=0 gets position [0,0], i=13 gets [1,3]
+            labelButtonJQ.attr('gridy', Math.floor(i / ATH.BUTTONS_PER_ROW));
+            labelButtonJQ.attr('gridx', i % ATH.BUTTONS_PER_ROW);
+        }
 
         /*
          * Set initial image scaling so the whole image is shown.
@@ -193,8 +230,10 @@ var ATH = {
         ATH.numOfPoints = imagePoints.length;
         ATH.getCanvasPoints();
 
-        // Possible label codes
-        ATH.labelCodes = labelCodes;
+        // Create array of available label codes
+        ATH.labelCodes = [];
+        for (i = 0; i < labels.length; i++)
+            ATH.labelCodes.push(labels[i].code);
 
         ATH.annotationFieldsJQ = $(ATH.annotationList).find('input');
         var annotationFieldRowsJQ = $(ATH.annotationList).find('tr');
@@ -314,8 +353,10 @@ var ATH = {
         $('#labelButtons').find('button').each( function() {
             $(this).click( function() {
                 // Label the selected points with this button's label code
-                // (which is the button's text).
-                ATH.labelSelected($(this).text());
+                // (which is the button's name).
+                ATH.labelSelected(this.name);
+                // Set the current label button.
+                ATH.setCurrentLabelButton(this);
             });
         });
 
@@ -413,7 +454,11 @@ var ATH = {
         var annotationFieldKeymap = {
             'return': ATH.confirmFieldAndFocusNext,
             'up': ATH.focusPrevField,
-            'down': ATH.focusNextField
+            'down': ATH.focusNextField,
+            'shift+left': ATH.moveCurrentLabelLeft,
+            'shift+right': ATH.moveCurrentLabelRight,
+            'shift+up': ATH.moveCurrentLabelUp,
+            'shift+down': ATH.moveCurrentLabelDown
         };
         var outOfFieldKeymap = {
         };
@@ -429,6 +474,9 @@ var ATH = {
         for (key in annotationFieldKeymap) {
             ATH.annotationFieldsJQ.bind('keyup', key, annotationFieldKeymap[key]);
         }
+
+        // Special case: keydown
+        ATH.annotationFieldsJQ.bind('keydown', 'shift', ATH.prepareForShiftLabeling);
     },
 
     /*
@@ -781,6 +829,83 @@ var ATH = {
             // Call ATH.focusNextField() such that the selected field becomes the object 'this'
             ATH.focusNextField.call(selectedFieldsJQ[0]);
         }
+    },
+
+    /* Event listener callback: 'this' is an annotation field */
+    labelWithCurrentLabel: function() {
+        if (ATH.currentLabelButton !== null)
+            this.value = $(ATH.currentLabelButton).attr('name');
+    },
+
+    setCurrentLabelButton: function(button) {
+        $('#labelButtons button').removeClass('current');
+        $(button).addClass('current');
+
+        ATH.currentLabelButton = button;
+    },
+
+    /* Event listener callback: 'this' is an annotation field */
+    prepareForShiftLabeling: function() {
+        // If this field already has a valid label code, then the
+        // current label button becomes the button with that label code.
+        if (ATH.labelCodes.indexOf(this.value) !== -1)
+            ATH.setCurrentLabelButton($("#labelButtons button[name='" + this.value + "']"));
+        // Otherwise, label the field with the current label.
+        else
+            ATH.labelWithCurrentLabel.call(this);
+    },
+
+    buttonIndexValid: function(gridX, gridY) {
+        var buttonIndex = gridY*ATH.BUTTONS_PER_ROW + gridX;
+        return (buttonIndex >= 0 && buttonIndex < ATH.labelCodes.length);
+    },
+
+    /* Event listener callback: 'this' is an annotation field */
+    moveCurrentLabel: function(dx, dy) {
+        if (ATH.currentLabelButton === null)
+            return;
+
+        // Start with current label button
+        var gridX = parseInt($(ATH.currentLabelButton).attr('gridx'));
+        var gridY = parseInt($(ATH.currentLabelButton).attr('gridy'));
+
+        // Move one step, check if valid grid position; repeat as needed
+        do {
+            gridX += dx;
+            gridY += dy;
+
+            // May need to wrap around to the other side of the grid
+            if (gridX < 0)
+                gridX = ATH.BUTTON_GRID_MAX_X;
+            if (gridX > ATH.BUTTON_GRID_MAX_X)
+                gridX = 0;
+            if (gridY < 0)
+                gridY = ATH.BUTTON_GRID_MAX_Y;
+            if (gridY > ATH.BUTTON_GRID_MAX_Y)
+                gridY = 0;
+            
+            // Need to check for a valid grid position, if the grid isn't a perfect rectangle
+        } while (!ATH.buttonIndexValid(gridX, gridY));
+
+        // Current label button is now the button with the x and y we calculated.
+        ATH.setCurrentLabelButton($("#labelButtons button[gridx='" + gridX + "'][gridy='" + gridY + "']")[0]);
+
+        // And make sure the current annotation field's
+        // label gets changed to the current button's label.
+        ATH.labelWithCurrentLabel.call(this);
+    },
+
+    moveCurrentLabelLeft: function() {
+        ATH.moveCurrentLabel.call(this, -1, 0);
+    },
+    moveCurrentLabelRight: function() {
+        ATH.moveCurrentLabel.call(this, 1, 0);
+    },
+    moveCurrentLabelUp: function() {
+        ATH.moveCurrentLabel.call(this, 0, -1);
+    },
+    moveCurrentLabelDown: function() {
+        ATH.moveCurrentLabel.call(this, 0, 1);
     },
 
     /* Event listener callback: 'this' is an annotation field */
