@@ -159,7 +159,7 @@ var ATH = {
         }
         for (i = 0; i < labels.length; i++) {
             // Get the label button and assign the group style to it.
-            labelButtonJQ = $("#labelButtons button[name='" + labels[i].code + "']");
+            labelButtonJQ = $("#labelButtons button:exactlycontains('" + labels[i].code + "')");
             labelButtonJQ.addClass(groupStyles[labels[i].group]);
         }
 
@@ -171,7 +171,7 @@ var ATH = {
 
         for (i = 0; i < labels.length; i++) {
             // Get the label button and assign the group style to it.
-            labelButtonJQ = $("#labelButtons button[name='" + labels[i].code + "']");
+            labelButtonJQ = $("#labelButtons button:exactlycontains('" + labels[i].code + "')");
             // Assign a grid position, e.g. i=0 gets position [0,0], i=13 gets [1,3]
             labelButtonJQ.attr('gridy', Math.floor(i / ATH.BUTTONS_PER_ROW));
             labelButtonJQ.attr('gridx', i % ATH.BUTTONS_PER_ROW);
@@ -353,8 +353,7 @@ var ATH = {
         $('#labelButtons').find('button').each( function() {
             $(this).click( function() {
                 // Label the selected points with this button's label code
-                // (which is the button's name).
-                ATH.labelSelected(this.name);
+                ATH.labelSelected($(this).text());
                 // Set the current label button.
                 ATH.setCurrentLabelButton(this);
             });
@@ -839,7 +838,7 @@ var ATH = {
     /* Event listener callback: 'this' is an annotation field */
     labelWithCurrentLabel: function() {
         if (ATH.currentLabelButton !== null)
-            this.value = $(ATH.currentLabelButton).attr('name');
+            this.value = $(ATH.currentLabelButton).text();
     },
 
     setCurrentLabelButton: function(button) {
@@ -853,8 +852,9 @@ var ATH = {
     prepareForShiftLabeling: function() {
         // If this field already has a valid label code, then the
         // current label button becomes the button with that label code.
-        if (ATH.labelCodes.indexOf(this.value) !== -1)
-            ATH.setCurrentLabelButton($("#labelButtons button[name='" + this.value + "']"));
+        if (ATH.labelCodes.indexOf(this.value) !== -1) {
+            ATH.setCurrentLabelButton($("#labelButtons button:exactlycontains('" + this.value + "')"));
+        }
         // Otherwise, label the field with the current label.
         else
             ATH.labelWithCurrentLabel.call(this);

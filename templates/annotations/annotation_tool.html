@@ -51,11 +51,14 @@
 }
 
 #labelButtons button {
-    width: 80px;
-    border: 2px solid transparent;
+    width: 75px;
+    border: 3px solid transparent;
+    margin: 2px;
+
+    cursor: pointer;
 }
 #labelButtons button.current {
-    border: 2px solid #000000;
+    border: 3px solid #000000;
 }
 
 /* TODO: Probably want to consider assigning a certain color for each functional group
@@ -188,7 +191,7 @@ td.annotationFormLabelCell {
 
       <div id="labelButtons">
         {% for label in labels %}
-            <button name={{ label.code }}>{{ label.code }}</button>
+            <button>{{ label.code }}</button>
         {% endfor %}
       </div>
     </div>

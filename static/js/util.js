@@ -115,3 +115,22 @@ String.prototype.format = function() {
     ;
   });
 };
+
+
+
+/*
+ * jQuery extensions can go here.
+ */
+
+/* Selector - exactlycontains
+ *
+ * Variation of the jQuery selector 'contains':
+ * 'exactlycontains' will match an element if its entire inner text is
+ * exactly what is specified in the argument, as opposed to simply
+ * finding the argument as a substring.
+ * 
+ * Source: http://api.jquery.com/contains-selector/ - see comment by Gibran
+ */
+$.expr[":"].exactlycontains = function(obj, index, meta, stack){
+    return (obj.textContent || obj.innerText || $(obj).text() || "").toLowerCase() == meta[3].toLowerCase();
+};
