@@ -365,12 +365,12 @@ var ATH = {
             ATH.unselectAll();
             ATH.select(pointNum);
 
-            if (ATH.zoomLevel > 0) {
+            // Shift the center of zoom to the focused point.
+            ATH.centerOfZoomX = ATH.imagePoints[pointNum-1].column;
+            ATH.centerOfZoomY = ATH.imagePoints[pointNum-1].row;
 
-                // If we're zoomed in at all,
-                // shift the center of zoom to the focused point.
-                ATH.centerOfZoomX = ATH.imagePoints[pointNum-1].column;
-                ATH.centerOfZoomY = ATH.imagePoints[pointNum-1].row;
+            // If we're zoomed in at all, complete the center-of-zoom-shift process.
+            if (ATH.zoomLevel > 0) {
 
                 // Adjust the image and point coordinates.
                 ATH.setupImageArea();
