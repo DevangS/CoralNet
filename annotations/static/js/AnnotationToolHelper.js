@@ -87,7 +87,7 @@ var ATH = {
 
     init: function(fullHeight, fullWidth,
                    imagePoints, labels) {
-        var i;    // Loop variable...
+        var i, j;    // Loop variables...
 
         ATH.IMAGE_AREA_WIDTH = ATH.ANNOTATION_AREA_WIDTH - (ATH.CANVAS_GUTTER * 2),
         ATH.IMAGE_AREA_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT - (ATH.CANVAS_GUTTER * 2),
@@ -446,41 +446,49 @@ var ATH = {
         });
 
         // Keymaps
-        var globalKeymap = {
-            'ctrl+up': ATH.zoomIn,
-            'ctrl+down': ATH.zoomOut
-        };
-        var annotationFieldKeymap = {
-            'return': ATH.confirmFieldAndFocusNext,
-            'up': ATH.focusPrevField,
-            'down': ATH.focusNextField,
-            'shift+left': ATH.moveCurrentLabelLeft,
-            'shift+right': ATH.moveCurrentLabelRight,
-            'shift+up': ATH.moveCurrentLabelUp,
-            'shift+down': ATH.moveCurrentLabelDown
-        };
-        var outOfFieldKeymap = {
-        };
+        var keymap = [
+            ['ctrl+up', ATH.zoomIn, 'all'],
+            ['ctrl+down', ATH.zoomOut, 'all'],
 
-        var key;
-        for (key in globalKeymap) {
+            ['return', ATH.confirmFieldAndFocusNext, 'field'],
+            ['up', ATH.focusPrevField, 'field'],
+            ['down', ATH.focusNextField, 'field'],
+            ['shift+left', ATH.moveCurrentLabelLeft, 'field'],
+            ['shift+right', ATH.moveCurrentLabelRight, 'field'],
+            ['shift+up', ATH.moveCurrentLabelUp, 'field'],
+            ['shift+down', ATH.moveCurrentLabelDown, 'field'],
+            ['shift', ATH.prepareForShiftLabeling, 'field', 'keydown']
+        ];
+
+        for (i = 0; i < keymap.length; i++) {
+            var keymapping = keymap[i];
+            
+            var key = keymapping[0];
+            var func = keymapping[1];
+            var scope = keymapping[2];
+            var elementsToBind;
+
+            // Event is keyup unless otherwise specified
+            var keyEvent = 'keyup';
+            if (keymapping.length >= 4)
+                keyEvent = keymapping[3];
+
             // If Mac, replace ctrl with meta (which is Cmd).
             // Remember to apply this to the other keymaps if necessary.
             if (ATH.mac)
-                key = key.replace('ctrl','meta');
+                key = key.replace('ctrl', 'meta');
 
-            $(document).bind('keyup', key, globalKeymap[key]);
-            ATH.annotationFieldsJQ.bind('keyup', key, globalKeymap[key]);
-        }
-        for (key in outOfFieldKeymap) {
-            $(document).bind('keyup', key, outOfFieldKeymap[key]);
-        }
-        for (key in annotationFieldKeymap) {
-            ATH.annotationFieldsJQ.bind('keyup', key, annotationFieldKeymap[key]);
-        }
+            // Bind the event listeners to the documents, the annotation fields, or both.
+            if (scope === 'all')
+                elementsToBind = [$(document), ATH.annotationFieldsJQ];
+            else if (scope === 'field')
+                elementsToBind = [ATH.annotationFieldsJQ];
 
-        // Special case: keydown
-        ATH.annotationFieldsJQ.bind('keydown', 'shift', ATH.prepareForShiftLabeling);
+            // Add the event listener.
+            for (j = 0; j < elementsToBind.length; j++) {
+                elementsToBind[j].bind(keyEvent, key, func);
+            }
+        }
     },
 
     /*
