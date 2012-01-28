@@ -87,7 +87,7 @@ var ATH = {
 
     init: function(fullHeight, fullWidth,
                    imagePoints, labels) {
-        var i, j;    // Loop variables...
+        var i, j, n;    // Loop variables...
 
         ATH.IMAGE_AREA_WIDTH = ATH.ANNOTATION_AREA_WIDTH - (ATH.CANVAS_GUTTER * 2),
         ATH.IMAGE_AREA_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT - (ATH.CANVAS_GUTTER * 2),
@@ -255,13 +255,12 @@ var ATH = {
 
         // Set point annotation statuses,
         // and draw the points
-        for (i = 0; i < ATH.numOfPoints; i++) {
-            ATH.pointGraphicStates[i] = ATH.STATE_NOTSHOWN;
+        for (n = 1; n <= ATH.numOfPoints; n++) {
+            ATH.pointContentStates[n] = {'label': undefined, 'robot': undefined};
+            ATH.pointGraphicStates[n] = ATH.STATE_NOTSHOWN;
         }
         ATH.annotationFieldsJQ.each( function() {
-            var pointNum = ATH.getPointNumOfAnnoField(this);
-            ATH.updatePointState(pointNum, true);
-            ATH.updatePointGraphic(pointNum);
+            ATH.onPointUpdate(this, 'initialize');
         });
 
         // Set the initial point view mode.  This'll trigger a redraw of the points, but that's okay;
@@ -382,9 +381,9 @@ var ATH = {
         });
 
         // Label field is typed into and changed, and then unfocused.
-        // (This does NOT run when a click of a label button changes the label field.)
+        // (This does NOT run when a label button changes the label field.)
         ATH.annotationFieldsJQ.change(function() {
-            ATH.onLabelFieldChange(this);
+            ATH.onLabelFieldTyping(this);
         });
 
         // Number next to a label field is clicked.
@@ -586,36 +585,44 @@ var ATH = {
     /* Look at a label field, and based on the label, mark the point
      * as (human) annotated, robot annotated, unannotated, or errored.
      */
-    updatePointState: function(pointNum, initializing) {
+    updatePointState: function(pointNum, robotStatusAction) {
         var field = ATH.annotationFields[pointNum];
         var row = ATH.annotationFieldRows[pointNum];
         var robotField = ATH.annotationRobotFields[pointNum];
         var labelCode = field.value;
 
+        // Has the label text changed?
+        var oldState = ATH.pointContentStates[pointNum];
+        var labelChanged = (oldState['label'] !== labelCode);
+
         /*
          * Update style elements and robot statuses accordingly
          */
 
-        // Error: label is not empty string, and not in the labelset
         if (labelCode !== '' && ATH.labelCodes.indexOf(labelCode) === -1) {
-            // Error styling
+            // Error: label is not empty string, and not in the labelset
             $(field).attr('title', 'Label not in labelset');
             $(row).addClass('error');
             $(row).removeClass('annotated');
-            $(row).removeClass('robot');
+            ATH.unrobot(pointNum);
         }
-        // No error
         else {
-            // Set as robot annotation or not
-            if (robotField.value === "true" && initializing) {
-                // Initializing the page, need to add robot styles as appropriate.
-                $(row).addClass('robot');
-            }
-            else if (robotField.value === "true") {
-                // If we're not initializing the page,
-                // then we're updating due to a USER ACTION.
-                // Therefore, this robot annotation should be un-roboted.
-                ATH.unrobot(pointNum);
+            // No error
+
+            if (robotField.value === 'true') {
+                if (robotStatusAction === 'initialize') {
+                    // Initializing the page, need to add robot styles as appropriate.
+                    $(row).addClass('robot');
+                }
+                else if (robotStatusAction === 'unrobotOnlyIfChanged') {
+                    // We're told to only unrobot the annotation if the label changed.
+                    if (labelChanged)
+                        ATH.unrobot(pointNum);
+                }
+                else {
+                    // Any other update results in this annotation being un-roboted.
+                    ATH.unrobot(pointNum);
+                }
             }
 
             // Set as (human) annotated or not
@@ -632,34 +639,17 @@ var ATH = {
             $(field).removeAttr('title');
         }
 
-        /*
-         * See if content has changed (label name and robot status)
-         */
+        var robotStatusChanged = (oldState['robot'] !== robotField.value);
+        var contentChanged = ((labelChanged || robotStatusChanged) && (robotStatusAction !== 'initialize'));
 
-        // Possible states:
-        // Human annotated (and as what), robot annotated (and as what),
-        // empty, errored, selected+any of previous
-        
-        var contentChanged = false;
-        var oldState = ATH.pointContentStates[pointNum];
-        var newState = {'label': labelCode, 'robot': robotField.value};
-
-        if (initializing) {
-            // Initializing this point at page load time
-            ATH.pointContentStates[pointNum] = newState;
-        }
-        else if (oldState['label'] !== newState['label']
-                 || oldState['robot'] !== newState['robot']) {
-            // Content has changed
-            contentChanged = true;
-            ATH.pointContentStates[pointNum] = newState;
-        }
-
+        // Done assessing change of state, so set the new state.
+        ATH.pointContentStates[pointNum] = {'label': labelCode, 'robot': robotField.value};
         return contentChanged;
     },
 
-    onPointUpdate: function(pointNum) {
-        var contentChanged = ATH.updatePointState(pointNum, false);
+    onPointUpdate: function(annoField, robotStatusAction) {
+        var pointNum = ATH.getPointNumOfAnnoField(annoField);
+        var contentChanged = ATH.updatePointState(pointNum, robotStatusAction);
         
         ATH.updatePointGraphic(pointNum);
         
@@ -667,9 +657,8 @@ var ATH = {
             ATH.updateSaveButton();
     },
 
-    onLabelFieldChange: function(field) {
-        var pointNum = ATH.getPointNumOfAnnoField(field);
-        ATH.onPointUpdate(pointNum);
+    onLabelFieldTyping: function(field) {
+        ATH.onPointUpdate(field);
     },
 
     updateSaveButton: function() {
@@ -751,11 +740,8 @@ var ATH = {
 
     /* Event listener callback: 'this' is an annotation field */
     confirmFieldAndFocusNext: function() {
-        // The function is called with a field element as 'this'
-        var pointNum = ATH.getPointNumOfAnnoField(this);
-
         // Unrobot/update the field
-        ATH.onPointUpdate(pointNum);
+        ATH.onPointUpdate(this);
 
         // Switch focus to next point's field.
         // Call ATH.focusNextField() such that the current field becomes the object 'this'
@@ -831,9 +817,8 @@ var ATH = {
             // Set the point's label.
             this.value = labelButtonCode;
 
-            // Update the point's annotation status (including unroboting).
-            var pointNum = ATH.getPointNumOfAnnoField(this);
-            ATH.onPointUpdate(pointNum);
+            // Update the point's annotation status (including unroboting as necessary).
+            ATH.onPointUpdate(this);
         });
 
         // If just 1 field is selected, focus the next field automatically
@@ -845,8 +830,10 @@ var ATH = {
 
     /* Event listener callback: 'this' is an annotation field */
     labelWithCurrentLabel: function() {
-        if (ATH.currentLabelButton !== null)
+        if (ATH.currentLabelButton !== null) {
             this.value = $(ATH.currentLabelButton).text();
+            ATH.onPointUpdate(this, 'unrobotOnlyIfChanged');
+        }
     },
 
     setCurrentLabelButton: function(button) {
@@ -1126,8 +1113,8 @@ var ATH = {
         ATH.resetCanvas();
 
         // Clear the pointGraphicStates.
-        for (var i = 0; i < ATH.pointGraphicStates.length; i++) {
-            ATH.pointGraphicStates[i] = ATH.STATE_NOTSHOWN;
+        for (var n = 1; n <= ATH.numOfPoints; n++) {
+            ATH.pointGraphicStates[n] = ATH.STATE_NOTSHOWN;
         }
 
         // Draw all points.
