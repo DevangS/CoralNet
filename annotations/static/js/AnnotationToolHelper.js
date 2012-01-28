@@ -1230,16 +1230,5 @@ var ATH = {
 
         ATH.context.fillText(num, x, y);    // Color in the number
 		ATH.context.strokeText(num, x, y);    // Outline the number (make it easier to see)
-	},
-
-	/*
-	Toggle the points on/off by bringing them in front of or behind the image.
-	TODO: Add a button that does this.
-	*/
-	togglePoints: function() {
-        if (ATH.pointsCanvas.style.visibility === 'hidden')
-			ATH.pointsCanvas.style.visibility = 'visible';
-		else    // 'visible' or ''
-			ATH.pointsCanvas.style.visibility = 'hidden';
 	}
 };
