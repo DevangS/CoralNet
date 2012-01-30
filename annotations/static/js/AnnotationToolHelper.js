@@ -89,15 +89,22 @@ var ATH = {
                    imagePoints, labels) {
         var i, j, n;    // Loop variables...
 
+        /*
+         * Instructions show/hide buttons
+         */
+
+        $('#id_button_show_instructions').click(ATH.showInstructions);
+        $('#id_button_hide_instructions').click(ATH.hideInstructions);
+
+        /*
+         * Initialize styling, sizing, and positioning for various elements
+         */
+
         ATH.IMAGE_AREA_WIDTH = ATH.ANNOTATION_AREA_WIDTH - (ATH.CANVAS_GUTTER * 2),
         ATH.IMAGE_AREA_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT - (ATH.CANVAS_GUTTER * 2),
 
         ATH.IMAGE_FULL_WIDTH = fullWidth;
         ATH.IMAGE_FULL_HEIGHT = fullHeight;
-
-        /*
-         * Initialize styling, sizing, and positioning for various elements
-         */
 
         ATH.annotationArea = $("#annotationArea")[0];
         ATH.annotationList = $("#annotationList")[0];
@@ -1230,5 +1237,19 @@ var ATH = {
 
         ATH.context.fillText(num, x, y);    // Color in the number
 		ATH.context.strokeText(num, x, y);    // Outline the number (make it easier to see)
-	}
+	},
+
+    
+    /*
+    Hiding/showing the annotation tool instructions.
+    */
+    hideInstructions: function() {
+        $("#id_instructions_wrapper").hide();
+        $("#id_button_show_instructions").show();
+    },
+
+    showInstructions: function() {
+        $("#id_instructions_wrapper").show();
+        $("#id_button_show_instructions").hide();
+    }
 };
