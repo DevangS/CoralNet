@@ -5,8 +5,10 @@
 {% endblock %}
 
 {% block content %}
+
 <div id="intro">
-  <h2><span>CoralNet</span><br/>A Web solution for coral reef analysis</h2>
+  <h1>CoralNet</h1>
+  <h2>A Web solution for coral reef analysis</h2>
 
   <p>Upload coral reef images, organize and annotate images, and view annotation statistics.</p>
 
@@ -15,7 +17,7 @@
 <br />
 
 <div id="start">
-  <h2><span>Getting Started</span></h2>
+  <h1>Getting Started</h1>
 
   <p>1. Create a <a href="{% url source_about %}">Source</a></p>
   <p>2. Create a labelset for your Source</p>
@@ -27,5 +29,7 @@
 {% endblock %}
 
 {% block footer_extra %}
-    <p class="small">Credit for front page image: <a href="http://www.flickr.com/photos/usfwspacific/5565696408/" target="_blank">Jim Maragos/U.S. Fish and Wildlife Service</a></p>
+    <p>Powered by <a href="https://www.djangoproject.com/" target="_blank">Django</a></p>
+    <p>Site theme adapted from <a href="http://django-userena.org/" target="_blank">Django-Userena</a></p>
+    <p>Credit for front page image: <a href="http://www.flickr.com/photos/usfwspacific/5565696408/" target="_blank">Jim Maragos/U.S. Fish and Wildlife Service</a></p>
 {% endblock %}
