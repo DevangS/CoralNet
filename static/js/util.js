@@ -148,7 +148,7 @@ $.expr[":"].exactlycontains = function(obj, index, meta, stack){
  * Dajaxice settings can go here.
  */
 
-if (Dajaxice) {
+if (window.Dajaxice) {
 
     /* Override Dajaxice's default exception behavior (the "Something goes wrong" alert).
      */
