@@ -45,6 +45,13 @@ var util = {
     },
 
     /*
+    Returns true if the user's OS is Mac, false otherwise.
+    */
+    osIsMac: function() {
+        return (navigator.appVersion.indexOf("Mac") !== -1);
+    },
+
+    /*
     Trim leading and trailing spaces from a string.
 
     From http://blog.stevenlevithan.com/archives/faster-trim-javascript

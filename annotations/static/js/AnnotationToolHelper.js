@@ -2,7 +2,7 @@ var ATH = {
 
     // Compatibility
     // If the appVersion contains the substring "Mac", then it's probably a mac...
-    mac: (navigator.appVersion.indexOf("Mac") !== -1),
+    mac: util.osIsMac(),
 
     // HTML elements
     annotationArea: null,
