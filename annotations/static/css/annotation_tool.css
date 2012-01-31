@@ -1,0 +1,174 @@
+/* CSS for the annotation tool. */
+
+
+/* For the image and canvas, use position:absolute
+ * and make their positions the same (default of 0,0).  This'll make
+ * them overlap.  Use z-index to determine which "layers" are on
+ * top or bottom.  Also, the surrounding div must have
+ * position:relative so that the image and canvas don't overlap
+ * the rest of the page elements.
+ */
+
+#annotationArea {
+    position: relative;
+}
+
+#imageArea {
+    position: absolute;
+    overflow: hidden;
+}
+#coralImage {
+    position: absolute;
+}
+#pointsCanvas {
+    position: absolute;
+}
+#listenerElmt {
+    position: absolute;
+
+    /* Disable "selecting" this element by double-clicking it;
+       that can get in the way while trying to zoom. */
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+}
+
+#labelButtons button {
+    width: 75px;
+    border: 3px solid transparent;
+    margin: 2px;
+
+    cursor: pointer;
+}
+#labelButtons button.current {
+    border: 3px solid #000000;
+}
+
+/* TODO: Probably want to consider assigning a certain color for each functional group
+ * and using that color site-wide.  For example, always green for hard coral.
+ * (Maybe make the colors customizable too?) */
+#labelButtons button.group1{ background-color: #8888ff; }
+#labelButtons button.group2{ background-color: #ff8888; }
+#labelButtons button.group3{ background-color: #88ff88; }
+#labelButtons button.group4{ background-color: #88ffff; }
+#labelButtons button.group5{ background-color: #ff88ff; }
+#labelButtons button.group6{ background-color: #ffff88; }
+#labelButtons button.group7{ background-color: #888888; }
+#labelButtons button.group8{ background-color: #4499dd; }
+
+#mainColumn {
+    float: left;
+
+    /* width and height are set dynamically. */
+}
+
+#rightSidebar {
+    float: left;
+
+    /* width and height are set dynamically. */
+}
+
+#dummyColumn {
+    /* height is set dynamically. */
+}
+
+#toolButtonArea {
+    margin: 5px 0;    /* top and bottom 5px */
+    text-align: center;
+}
+#toolButtonArea input[type="image"] {
+    border: 2px solid #888888;
+}
+#toolButtonArea input[type="image"].selected {
+    border: 2px solid #FF0000;
+}
+
+#annotationList {
+    /* scrollbars will appear only if they're necessary */
+    overflow: auto;
+
+    /* height is set dynamically. */
+}
+
+#annotationForm {
+    width: auto;
+    margin: auto;
+    padding: 0;
+}
+
+/* Label fields */
+#annotationForm input {
+    margin: 1px 0;
+    padding: 1px 1px;
+}
+
+/* Currently selected points */
+#annotationForm tr.selected span.annotationFormLabel {
+    background-color: #CCFFCC;
+}
+
+/* Robot annotated, not human confirmed yet */
+#annotationForm tr.robot input {
+    color: #888888;
+}
+
+/* Label field has an invalid label code */
+#annotationForm tr.error input {
+    background-color: #FFCCCC;
+}
+
+/* Numbers next to the label fields */
+.annotationFormLabel {
+    padding: 1px 3px;
+    margin: 0 2px;
+    border: 1px solid #D7D7D7;
+
+    /* Use the regular arrow cursor, not the text highlight cursor */
+    cursor: default;
+
+    /* Make the number's clickable box take up the whole table cell */
+    display: block;
+}
+
+/* Table cell containing an annotationFormLabel */
+td.annotationFormLabelCell {
+    text-align: center;
+}
+
+#allDone {
+    color: blue;
+    display: block;
+    font-size: 1.3em;
+    font-weight: bold;
+    margin: 5px;
+}
+
+/* Instructions */
+
+#id_instructions_wrapper div.help_section {
+    margin-bottom: 10px;
+}
+
+#id_instructions_wrapper div.help_section ul {
+    list-style: disc none inside;
+}
+#id_instructions_wrapper div.help_section ul li ul {
+    padding-left: 20px;
+}
+
+#id_instructions_wrapper div.help_section span.help_header {
+    font-weight: bold;
+    line-height: 2.0em;
+}
+
+/* Styling to indicate keyboard keys, such as Ctrl, arrow keys, etc. */
+kbd {
+    font: inherit;    /* No monospaced font, just the usual font */
+    font-size: 0.9em;
+    line-height: 1.4em;
+    padding: 0 2px;    /* 2px of horizontal padding */
+    background-color: #DDDDDD;
+    border: 2px solid black;
+}

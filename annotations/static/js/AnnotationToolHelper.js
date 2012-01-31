@@ -451,21 +451,22 @@ var ATH = {
             }
         });
 
-        // Keymaps
+        // Keymap.
         var keymap = [
-            ['ctrl+up', ATH.zoomIn, 'all'],
-            ['ctrl+down', ATH.zoomOut, 'all'],
+            ['shift+up', ATH.zoomIn, 'all'],
+            ['shift+down', ATH.zoomOut, 'all'],
 
             ['return', ATH.confirmFieldAndFocusNext, 'field'],
             ['up', ATH.focusPrevField, 'field'],
             ['down', ATH.focusNextField, 'field'],
-            ['shift+left', ATH.moveCurrentLabelLeft, 'field'],
-            ['shift+right', ATH.moveCurrentLabelRight, 'field'],
-            ['shift+up', ATH.moveCurrentLabelUp, 'field'],
-            ['shift+down', ATH.moveCurrentLabelDown, 'field'],
-            ['shift', ATH.prepareForShiftLabeling, 'field', 'keydown']
+            ['ctrl+left', ATH.moveCurrentLabelLeft, 'field'],
+            ['ctrl+right', ATH.moveCurrentLabelRight, 'field'],
+            ['ctrl+up', ATH.moveCurrentLabelUp, 'field'],
+            ['ctrl+down', ATH.moveCurrentLabelDown, 'field'],
+            ['ctrl', ATH.beginKeyboardLabelling, 'field', 'keydown']
         ];
 
+        // Bind event listeners according to the keymap.
         for (i = 0; i < keymap.length; i++) {
             var keymapping = keymap[i];
             
@@ -494,6 +495,26 @@ var ATH = {
             for (j = 0; j < elementsToBind.length; j++) {
                 elementsToBind[j].bind(keyEvent, key, func);
             }
+        }
+
+        // Adjust instructions if Mac is the OS...
+        // By using JS for HTML replacement.  Somehow it feels so wrong.
+        if (ATH.mac) {
+            // Ctrl -> Cmd
+            $("#id_instructions_wrapper kbd:exactlycontains('Ctrl')").each( function() {
+                $(this).text('Cmd');
+            });
+            // right-click -> Ctrl-click (do this AFTER Ctrl -> Cmd)
+            $("#id_instructions_wrapper span:exactlycontains('right-click')").each( function() {
+                $(this).text('-click');
+                $(this).prepend(
+                    $('<kbd></kbd>').text('Ctrl')
+                );
+            });
+            // Enter -> Return
+            $("#id_instructions_wrapper kbd:exactlycontains('Enter')").each( function() {
+                $(this).text('Return');
+            });
         }
     },
 
@@ -851,7 +872,7 @@ var ATH = {
     },
 
     /* Event listener callback: 'this' is an annotation field */
-    prepareForShiftLabeling: function() {
+    beginKeyboardLabelling: function() {
         // If this field already has a valid label code, then the
         // current label button becomes the button with that label code.
         if (ATH.labelCodes.indexOf(this.value) !== -1) {

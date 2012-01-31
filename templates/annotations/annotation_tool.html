@@ -7,176 +7,14 @@
 
 {% block media-includes %}
     {{ block.super }}
+
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/annotation_tool.css" />
+
     {% include "jquery-hotkeys-include.html" %}
     {% dajaxice_js_import %}
+
     <script src="/static/js/util.js" type="text/javascript"></script>
     <script src="/static/js/AnnotationToolHelper.js" type="text/javascript"></script>
-{% endblock %}
-
-{% block css-code %}
-<style type="text/css">
-
-/* For the image and canvas, use position:absolute
- * and make their positions the same (default of 0,0).  This'll make
- * them overlap.  Use z-index to determine which "layers" are on
- * top or bottom.  Also, the surrounding div must have
- * position:relative so that the image and canvas don't overlap
- * the rest of the page elements.
- */
-
-#annotationArea {
-    position: relative;
-}
-
-#imageArea {
-    position: absolute;
-    overflow: hidden;
-}
-#coralImage {
-    position: absolute;
-}
-#pointsCanvas {
-    position: absolute;
-}
-#listenerElmt {
-    position: absolute;
-
-    /* Disable "selecting" this element by double-clicking it;
-       that can get in the way while trying to zoom. */
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -o-user-select: none;
-    user-select: none;
-}
-
-#labelButtons button {
-    width: 75px;
-    border: 3px solid transparent;
-    margin: 2px;
-
-    cursor: pointer;
-}
-#labelButtons button.current {
-    border: 3px solid #000000;
-}
-
-/* TODO: Probably want to consider assigning a certain color for each functional group
- * and using that color site-wide.  For example, always green for hard coral.
- * (Maybe make the colors customizable too?) */
-#labelButtons button.group1{ background-color: #8888ff; }
-#labelButtons button.group2{ background-color: #ff8888; }
-#labelButtons button.group3{ background-color: #88ff88; }
-#labelButtons button.group4{ background-color: #88ffff; }
-#labelButtons button.group5{ background-color: #ff88ff; }
-#labelButtons button.group6{ background-color: #ffff88; }
-#labelButtons button.group7{ background-color: #888888; }
-#labelButtons button.group8{ background-color: #4499dd; }
-
-#mainColumn {
-    float: left;
-
-    /* width and height are set dynamically. */
-}
-
-#rightSidebar {
-    float: left;
-
-    /* width and height are set dynamically. */
-}
-
-#dummyColumn {
-    /* height is set dynamically. */
-}
-
-#toolButtonArea {
-    margin: 5px 0;    /* top and bottom 5px */
-    text-align: center;
-}
-#toolButtonArea input[type="image"] {
-    border: 2px solid #888888;
-}
-#toolButtonArea input[type="image"].selected {
-    border: 2px solid #FF0000;
-}
-
-#annotationList {
-    /* scrollbars will appear only if they're necessary */
-    overflow: auto;
-    
-    /* height is set dynamically. */
-}
-
-#annotationForm {
-    width: auto;
-    margin: auto;
-    padding: 0;
-}
-
-/* Label fields */
-#annotationForm input {
-    margin: 1px 0;
-    padding: 1px 1px;
-}
-
-/* Currently selected points */
-#annotationForm tr.selected span.annotationFormLabel {
-    background-color: #CCFFCC;
-}
-
-/* Robot annotated, not human confirmed yet */
-#annotationForm tr.robot input {
-    color: #888888;
-}
-
-/* Label field has an invalid label code */
-#annotationForm tr.error input {
-    background-color: #FFCCCC;
-}
-
-/* Numbers next to the label fields */
-.annotationFormLabel {
-    padding: 1px 3px;
-    margin: 0 2px;
-    border: 1px solid #D7D7D7;
-
-    /* Use the regular arrow cursor, not the text highlight cursor */
-    cursor: default;
-
-    /* Make the number's clickable box take up the whole table cell */
-    display: block;
-}
-
-/* Table cell containing an annotationFormLabel */
-td.annotationFormLabelCell {
-    text-align: center;
-}
-
-#allDone {
-    color: blue;
-    display: block;
-    font-size: 1.3em;
-    font-weight: bold;
-    margin: 5px;
-}
-
-#id_instructions_wrapper div.help_section {
-    margin-bottom: 10px;
-}
-
-#id_instructions_wrapper div.help_section ul {
-    list-style: disc none inside;
-}
-#id_instructions_wrapper div.help_section ul li ul {
-    padding-left: 20px;
-}
-
-#id_instructions_wrapper div.help_section span.help_header {
-    font-weight: bold;
-    line-height: 2.0em;
-}
-
-</style>
 {% endblock %}
 
 {% block content %}
@@ -208,14 +46,14 @@ td.annotationFormLabelCell {
       <span class="help_header">Choosing a point to label</span>
       <ul>
           <li>Click in one of the text fields on the right.</li>
-          <li>Move to the next or previous point's text field with the Down and Up arrow keys.</li>
+          <li>Move to the next or previous point's text field with the <kbd>↓</kbd> and <kbd>↑</kbd> arrow keys.</li>
       </ul>
   </div>
 
   <div class="help_section">
       <span class="help_header">Labelling the chosen point</span>
       <ul>
-          <li>Below the image are a grid of label buttons, one button for each label in your Source's labelset.
+          <li>Below the image is a grid of label buttons - there's one button for each label in your Source's labelset.
               Click the button corresponding to the label you want to use.</li>
           <li>You may also type the label code directly into the text field.</li>
       </ul>
@@ -224,8 +62,8 @@ td.annotationFormLabelCell {
   <div class="help_section">
       <span class="help_header">Confirming or changing a label</span>
       <ul>
-          <li>Press Enter to confirm a robot-annotated label and move onto the next point.</li>
-          <li>Hold Shift and use the arrow keys to quickly choose a different label from the button grid.</li>
+          <li>Press <kbd>Enter</kbd> to confirm a robot-annotated label and move onto the next point.</li>
+          <li>Hold <kbd>Ctrl</kbd> and use the arrow keys <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> to quickly choose a different label from the button grid.</li>
       </ul>
   </div>
 
@@ -245,7 +83,7 @@ td.annotationFormLabelCell {
   <div class="help_section">
       <span class="help_header">Selecting and labelling multiple points</span>
       <ul>
-          <li>Select multiple points by Ctrl-clicking the points on the image.</li>
+          <li>Select multiple points by <kbd>Ctrl</kbd>-clicking the points on the image.</li>
           <li>You may also click the numbers next to the text fields.</li>
           <li>For more multi-select options, use these buttons on the upper right:
               <img src="/static/img/Icon_select-none.png"/>,
@@ -258,8 +96,8 @@ td.annotationFormLabelCell {
   <div class="help_section">
       <span class="help_header">Getting a better look at a point</span>
       <ul>
-          <li>To zoom in, left-click on the image or press Ctrl+Up.</li>
-          <li>To zoom out, right-click on the image or press Ctrl+Down.</li>
+          <li>To zoom in, left-click on the image or press <kbd>Shift</kbd>+<kbd>↑</kbd>.</li>
+          <li>To zoom out, <span>right-click</span> on the image or press <kbd>Shift</kbd>+<kbd>↓</kbd>.</li>
           <li>To toggle between different point display modes, use these buttons on the upper right:
               <img src="/static/img/Icon_point-mode-all.png"/>,
               <img src="/static/img/Icon_point-mode-selected.png"/>,
