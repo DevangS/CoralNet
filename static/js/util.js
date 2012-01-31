@@ -134,3 +134,20 @@ String.prototype.format = function() {
 $.expr[":"].exactlycontains = function(obj, index, meta, stack){
     return (obj.textContent || obj.innerText || $(obj).text() || "").toLowerCase() == meta[3].toLowerCase();
 };
+
+
+
+/*
+ * Dajaxice settings can go here.
+ */
+
+if (Dajaxice) {
+
+    /* Override Dajaxice's default exception behavior (the "Something goes wrong" alert).
+     */
+    Dajaxice.setup({'default_exception_callback': function(){
+        if (console) {
+            console.error("A Dajaxice error occurred.  Are you having Internet connection problems?  If not, this may be a CoralNet bug.  Please let us know about it.");
+        }
+    }});
+}
