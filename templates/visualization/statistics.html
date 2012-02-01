@@ -57,11 +57,13 @@ table.sample td {
                     {% endfor %}
                 </ul>
             {% else %}
-              <table><tr>
-              <td><img src={{ graph }} /></td>
-              <td><table class="sample">
+              <div align="left">
+              <img src={{ graph }} />
+              </div>
+              <div align="right">
+              <table class="sample">
                   <tr>
-                      <td>&nbsp;</td>
+                      <td></td>
                       {% for year in years %}
                         <td>{{ year }}</td>
                       {% endfor %}
@@ -73,8 +75,8 @@ table.sample td {
                       {% endfor %}
                   </tr>
                 {% endfor %}
-              </table></td>
-              </tr></table>
+              </table>
+              </div>
             {% endif %}
             <br/><br/><br/>
             Specify some image search parameters<i>(optional)</i>:
