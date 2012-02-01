@@ -1,5 +1,16 @@
 {% extends "visualization/base_visualize.html" %}
-
+<head>
+<style type="text/css">
+table
+{
+border-collapse:collapse;
+}
+table, td, th
+{
+border:1px solid black;
+}
+</style>
+</head>
 {% block title %}{{ source.name }} - Statistics | CoralNet{% endblock %}
 
 {% block content %}
@@ -34,7 +45,6 @@
             {% else %}
               <table><tr>
               <td><img src={{ graph }} /></td>
-              <td></td>
               <td><table border="2">
                   <tr>
                       <td></td>
