@@ -57,25 +57,23 @@ table.sample td {
                     {% endfor %}
                 </ul>
             {% else %}
-              <div align="left">
-              <img src={{ graph }} />
-              </div>
-              <div align="right">
-              <table class="sample">
-                  <tr>
-                      <td></td>
-                      {% for year in years %}
-                        <td>{{ year }}</td>
-                      {% endfor %}
-                  </tr>
-                {% for row in table %}
-                  <tr>
-                      {% for cell in row %}
-                          <td>{{ cell }}</td>
-                      {% endfor %}
-                  </tr>
-                {% endfor %}
-              </table>
+              <div align="center">
+                  <div align="left"><img src={{ graph }} /></div>
+                  <div align="right"><table class="sample">
+                      <tr>
+                          <td></td>
+                          {% for year in years %}
+                            <td>{{ year }}</td>
+                          {% endfor %}
+                      </tr>
+                    {% for row in table %}
+                      <tr>
+                          {% for cell in row %}
+                              <td>{{ cell }}</td>
+                          {% endfor %}
+                      </tr>
+                    {% endfor %}
+                  </table></div>
               </div>
             {% endif %}
             <br/><br/><br/>
