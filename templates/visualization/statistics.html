@@ -32,8 +32,9 @@
                     {% endfor %}
                 </ul>
             {% else %}
-              <img src={{ graph }} />
-              <table>
+              <table><tr>
+              <td><img src={{ graph }} /></td>
+              <td><table border="1">
                   <tr>
                       <td></td>
                       {% for year in years %}
@@ -47,7 +48,8 @@
                       {% endfor %}
                   </tr>
                 {% endfor %}
-              </table>
+              </table></td>
+              </tr></table>
             {% endif %}
             <br/><br/><br/>
             Specify some image search parameters<i>(optional)</i>:
