@@ -197,7 +197,9 @@ def visualize_source(request, source_id):
 @visibility_required('source_id')
 def generate_statistics(request, source_id):
     errors = []
-
+    years = []
+    table = []
+    
     #default graph to show, gets overwritten later if sanity checks passed
     graph = Line([0]).title('Specify some data to view the statistics')
 
@@ -230,7 +232,7 @@ def generate_statistics(request, source_id):
 
                 #holds the data that gets passed to the graphing code
                 data = []
-                years = []
+
 
                 #Format computed data for the graph API to use
                 #TODO: pick easily distinguishable colours from
@@ -249,7 +251,6 @@ def generate_statistics(request, source_id):
 
                 for label in labels:
                     yearly_counts = []
-
                     #get yearly counts that become y values for the label's line
                     for year in years:
                         #get the most recent for each point for every label specified
@@ -267,11 +268,17 @@ def generate_statistics(request, source_id):
                         yearly_counts.append(percent_coverage)
 
                     data.append(yearly_counts)
+
                     #add label name to legends
                     label_id = int(label)
                     label_temp = Label.objects.get(id=label_id)
                     name = label_temp.name
                     legends.append(str(name))
+
+                    #create table row to display
+                    table_row = [name]
+                    table_row.extend(yearly_counts)
+                    table.append(table_row)
 
                 #Create string of colors
                 colors_string = str(bucket[0:len(labels)]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
@@ -312,6 +319,8 @@ def generate_statistics(request, source_id):
         'errors': errors,
         'form': form,
         'source': source,
+        'years': years,
+        'table': table,
         'graph': graph
         },
         context_instance=RequestContext(request)
