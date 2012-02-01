@@ -2,7 +2,7 @@ var ATH = {
 
     // Compatibility
     // If the appVersion contains the substring "Mac", then it's probably a mac...
-    mac: (navigator.appVersion.indexOf("Mac") !== -1),
+    mac: util.osIsMac(),
 
     // HTML elements
     annotationArea: null,
@@ -87,17 +87,24 @@ var ATH = {
 
     init: function(fullHeight, fullWidth,
                    imagePoints, labels) {
-        var i;    // Loop variable...
+        var i, j, n;    // Loop variables...
+
+        /*
+         * Instructions show/hide buttons
+         */
+
+        $('#id_button_show_instructions').click(ATH.showInstructions);
+        $('#id_button_hide_instructions').click(ATH.hideInstructions);
+
+        /*
+         * Initialize styling, sizing, and positioning for various elements
+         */
 
         ATH.IMAGE_AREA_WIDTH = ATH.ANNOTATION_AREA_WIDTH - (ATH.CANVAS_GUTTER * 2),
         ATH.IMAGE_AREA_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT - (ATH.CANVAS_GUTTER * 2),
 
         ATH.IMAGE_FULL_WIDTH = fullWidth;
         ATH.IMAGE_FULL_HEIGHT = fullHeight;
-
-        /*
-         * Initialize styling, sizing, and positioning for various elements
-         */
 
         ATH.annotationArea = $("#annotationArea")[0];
         ATH.annotationList = $("#annotationList")[0];
@@ -159,7 +166,7 @@ var ATH = {
         }
         for (i = 0; i < labels.length; i++) {
             // Get the label button and assign the group style to it.
-            labelButtonJQ = $("#labelButtons button[name='" + labels[i].code + "']");
+            labelButtonJQ = $("#labelButtons button:exactlycontains('" + labels[i].code + "')");
             labelButtonJQ.addClass(groupStyles[labels[i].group]);
         }
 
@@ -171,7 +178,7 @@ var ATH = {
 
         for (i = 0; i < labels.length; i++) {
             // Get the label button and assign the group style to it.
-            labelButtonJQ = $("#labelButtons button[name='" + labels[i].code + "']");
+            labelButtonJQ = $("#labelButtons button:exactlycontains('" + labels[i].code + "')");
             // Assign a grid position, e.g. i=0 gets position [0,0], i=13 gets [1,3]
             labelButtonJQ.attr('gridy', Math.floor(i / ATH.BUTTONS_PER_ROW));
             labelButtonJQ.attr('gridx', i % ATH.BUTTONS_PER_ROW);
@@ -255,13 +262,12 @@ var ATH = {
 
         // Set point annotation statuses,
         // and draw the points
-        for (i = 0; i < ATH.numOfPoints; i++) {
-            ATH.pointGraphicStates[i] = ATH.STATE_NOTSHOWN;
+        for (n = 1; n <= ATH.numOfPoints; n++) {
+            ATH.pointContentStates[n] = {'label': undefined, 'robot': undefined};
+            ATH.pointGraphicStates[n] = ATH.STATE_NOTSHOWN;
         }
         ATH.annotationFieldsJQ.each( function() {
-            var pointNum = ATH.getPointNumOfAnnoField(this);
-            ATH.updatePointState(pointNum, true);
-            ATH.updatePointGraphic(pointNum);
+            ATH.onPointUpdate(this, 'initialize');
         });
 
         // Set the initial point view mode.  This'll trigger a redraw of the points, but that's okay;
@@ -353,8 +359,7 @@ var ATH = {
         $('#labelButtons').find('button').each( function() {
             $(this).click( function() {
                 // Label the selected points with this button's label code
-                // (which is the button's name).
-                ATH.labelSelected(this.name);
+                ATH.labelSelected($(this).text());
                 // Set the current label button.
                 ATH.setCurrentLabelButton(this);
             });
@@ -366,12 +371,12 @@ var ATH = {
             ATH.unselectAll();
             ATH.select(pointNum);
 
-            if (ATH.zoomLevel > 0) {
+            // Shift the center of zoom to the focused point.
+            ATH.centerOfZoomX = ATH.imagePoints[pointNum-1].column;
+            ATH.centerOfZoomY = ATH.imagePoints[pointNum-1].row;
 
-                // If we're zoomed in at all,
-                // shift the center of zoom to the focused point.
-                ATH.centerOfZoomX = ATH.imagePoints[pointNum-1].column;
-                ATH.centerOfZoomY = ATH.imagePoints[pointNum-1].row;
+            // If we're zoomed in at all, complete the center-of-zoom-shift process.
+            if (ATH.zoomLevel > 0) {
 
                 // Adjust the image and point coordinates.
                 ATH.setupImageArea();
@@ -383,9 +388,9 @@ var ATH = {
         });
 
         // Label field is typed into and changed, and then unfocused.
-        // (This does NOT run when a click of a label button changes the label field.)
+        // (This does NOT run when a label button changes the label field.)
         ATH.annotationFieldsJQ.change(function() {
-            ATH.onLabelFieldChange(this);
+            ATH.onLabelFieldTyping(this);
         });
 
         // Number next to a label field is clicked.
@@ -446,42 +451,71 @@ var ATH = {
             }
         });
 
-        // Keymaps
-        var globalKeymap = {
-            'ctrl+up': ATH.zoomIn,
-            'ctrl+down': ATH.zoomOut
-        };
-        var annotationFieldKeymap = {
-            'return': ATH.confirmFieldAndFocusNext,
-            'up': ATH.focusPrevField,
-            'down': ATH.focusNextField,
-            'shift+left': ATH.moveCurrentLabelLeft,
-            'shift+right': ATH.moveCurrentLabelRight,
-            'shift+up': ATH.moveCurrentLabelUp,
-            'shift+down': ATH.moveCurrentLabelDown
-        };
-        var outOfFieldKeymap = {
-        };
+        // Keymap.
+        var keymap = [
+            ['shift+up', ATH.zoomIn, 'all'],
+            ['shift+down', ATH.zoomOut, 'all'],
 
-        var key;
-        for (key in globalKeymap) {
+            ['return', ATH.confirmFieldAndFocusNext, 'field'],
+            ['up', ATH.focusPrevField, 'field'],
+            ['down', ATH.focusNextField, 'field'],
+            ['ctrl+left', ATH.moveCurrentLabelLeft, 'field'],
+            ['ctrl+right', ATH.moveCurrentLabelRight, 'field'],
+            ['ctrl+up', ATH.moveCurrentLabelUp, 'field'],
+            ['ctrl+down', ATH.moveCurrentLabelDown, 'field'],
+            ['ctrl', ATH.beginKeyboardLabelling, 'field', 'keydown']
+        ];
+
+        // Bind event listeners according to the keymap.
+        for (i = 0; i < keymap.length; i++) {
+            var keymapping = keymap[i];
+            
+            var key = keymapping[0];
+            var func = keymapping[1];
+            var scope = keymapping[2];
+            var elementsToBind;
+
+            // Event is keyup unless otherwise specified
+            var keyEvent = 'keyup';
+            if (keymapping.length >= 4)
+                keyEvent = keymapping[3];
+
             // If Mac, replace ctrl with meta (which is Cmd).
             // Remember to apply this to the other keymaps if necessary.
             if (ATH.mac)
-                key = key.replace('ctrl','meta');
+                key = key.replace('ctrl', 'meta');
 
-            $(document).bind('keyup', key, globalKeymap[key]);
-            ATH.annotationFieldsJQ.bind('keyup', key, globalKeymap[key]);
-        }
-        for (key in outOfFieldKeymap) {
-            $(document).bind('keyup', key, outOfFieldKeymap[key]);
-        }
-        for (key in annotationFieldKeymap) {
-            ATH.annotationFieldsJQ.bind('keyup', key, annotationFieldKeymap[key]);
+            // Bind the event listeners to the documents, the annotation fields, or both.
+            if (scope === 'all')
+                elementsToBind = [$(document), ATH.annotationFieldsJQ];
+            else if (scope === 'field')
+                elementsToBind = [ATH.annotationFieldsJQ];
+
+            // Add the event listener.
+            for (j = 0; j < elementsToBind.length; j++) {
+                elementsToBind[j].bind(keyEvent, key, func);
+            }
         }
 
-        // Special case: keydown
-        ATH.annotationFieldsJQ.bind('keydown', 'shift', ATH.prepareForShiftLabeling);
+        // Adjust instructions if Mac is the OS...
+        // By using JS for HTML replacement.  Somehow it feels so wrong.
+        if (ATH.mac) {
+            // Ctrl -> Cmd
+            $("#id_instructions_wrapper kbd:exactlycontains('Ctrl')").each( function() {
+                $(this).text('Cmd');
+            });
+            // right-click -> Ctrl-click (do this AFTER Ctrl -> Cmd)
+            $("#id_instructions_wrapper span:exactlycontains('right-click')").each( function() {
+                $(this).text('-click');
+                $(this).prepend(
+                    $('<kbd></kbd>').text('Ctrl')
+                );
+            });
+            // Enter -> Return
+            $("#id_instructions_wrapper kbd:exactlycontains('Enter')").each( function() {
+                $(this).text('Return');
+            });
+        }
     },
 
     /*
@@ -579,36 +613,44 @@ var ATH = {
     /* Look at a label field, and based on the label, mark the point
      * as (human) annotated, robot annotated, unannotated, or errored.
      */
-    updatePointState: function(pointNum, initializing) {
+    updatePointState: function(pointNum, robotStatusAction) {
         var field = ATH.annotationFields[pointNum];
         var row = ATH.annotationFieldRows[pointNum];
         var robotField = ATH.annotationRobotFields[pointNum];
         var labelCode = field.value;
 
+        // Has the label text changed?
+        var oldState = ATH.pointContentStates[pointNum];
+        var labelChanged = (oldState['label'] !== labelCode);
+
         /*
          * Update style elements and robot statuses accordingly
          */
 
-        // Error: label is not empty string, and not in the labelset
         if (labelCode !== '' && ATH.labelCodes.indexOf(labelCode) === -1) {
-            // Error styling
+            // Error: label is not empty string, and not in the labelset
             $(field).attr('title', 'Label not in labelset');
             $(row).addClass('error');
             $(row).removeClass('annotated');
-            $(row).removeClass('robot');
+            ATH.unrobot(pointNum);
         }
-        // No error
         else {
-            // Set as robot annotation or not
-            if (robotField.value === "true" && initializing) {
-                // Initializing the page, need to add robot styles as appropriate.
-                $(row).addClass('robot');
-            }
-            else if (robotField.value === "true") {
-                // If we're not initializing the page,
-                // then we're updating due to a USER ACTION.
-                // Therefore, this robot annotation should be un-roboted.
-                ATH.unrobot(pointNum);
+            // No error
+
+            if (robotField.value === 'true') {
+                if (robotStatusAction === 'initialize') {
+                    // Initializing the page, need to add robot styles as appropriate.
+                    $(row).addClass('robot');
+                }
+                else if (robotStatusAction === 'unrobotOnlyIfChanged') {
+                    // We're told to only unrobot the annotation if the label changed.
+                    if (labelChanged)
+                        ATH.unrobot(pointNum);
+                }
+                else {
+                    // Any other update results in this annotation being un-roboted.
+                    ATH.unrobot(pointNum);
+                }
             }
 
             // Set as (human) annotated or not
@@ -625,34 +667,17 @@ var ATH = {
             $(field).removeAttr('title');
         }
 
-        /*
-         * See if content has changed (label name and robot status)
-         */
+        var robotStatusChanged = (oldState['robot'] !== robotField.value);
+        var contentChanged = ((labelChanged || robotStatusChanged) && (robotStatusAction !== 'initialize'));
 
-        // Possible states:
-        // Human annotated (and as what), robot annotated (and as what),
-        // empty, errored, selected+any of previous
-        
-        var contentChanged = false;
-        var oldState = ATH.pointContentStates[pointNum];
-        var newState = {'label': labelCode, 'robot': robotField.value};
-
-        if (initializing) {
-            // Initializing this point at page load time
-            ATH.pointContentStates[pointNum] = newState;
-        }
-        else if (oldState['label'] !== newState['label']
-                 || oldState['robot'] !== newState['robot']) {
-            // Content has changed
-            contentChanged = true;
-            ATH.pointContentStates[pointNum] = newState;
-        }
-
+        // Done assessing change of state, so set the new state.
+        ATH.pointContentStates[pointNum] = {'label': labelCode, 'robot': robotField.value};
         return contentChanged;
     },
 
-    onPointUpdate: function(pointNum) {
-        var contentChanged = ATH.updatePointState(pointNum, false);
+    onPointUpdate: function(annoField, robotStatusAction) {
+        var pointNum = ATH.getPointNumOfAnnoField(annoField);
+        var contentChanged = ATH.updatePointState(pointNum, robotStatusAction);
         
         ATH.updatePointGraphic(pointNum);
         
@@ -660,9 +685,8 @@ var ATH = {
             ATH.updateSaveButton();
     },
 
-    onLabelFieldChange: function(field) {
-        var pointNum = ATH.getPointNumOfAnnoField(field);
-        ATH.onPointUpdate(pointNum);
+    onLabelFieldTyping: function(field) {
+        ATH.onPointUpdate(field);
     },
 
     updateSaveButton: function() {
@@ -744,11 +768,8 @@ var ATH = {
 
     /* Event listener callback: 'this' is an annotation field */
     confirmFieldAndFocusNext: function() {
-        // The function is called with a field element as 'this'
-        var pointNum = ATH.getPointNumOfAnnoField(this);
-
         // Unrobot/update the field
-        ATH.onPointUpdate(pointNum);
+        ATH.onPointUpdate(this);
 
         // Switch focus to next point's field.
         // Call ATH.focusNextField() such that the current field becomes the object 'this'
@@ -824,9 +845,8 @@ var ATH = {
             // Set the point's label.
             this.value = labelButtonCode;
 
-            // Update the point's annotation status (including unroboting).
-            var pointNum = ATH.getPointNumOfAnnoField(this);
-            ATH.onPointUpdate(pointNum);
+            // Update the point's annotation status (including unroboting as necessary).
+            ATH.onPointUpdate(this);
         });
 
         // If just 1 field is selected, focus the next field automatically
@@ -838,8 +858,10 @@ var ATH = {
 
     /* Event listener callback: 'this' is an annotation field */
     labelWithCurrentLabel: function() {
-        if (ATH.currentLabelButton !== null)
-            this.value = $(ATH.currentLabelButton).attr('name');
+        if (ATH.currentLabelButton !== null) {
+            this.value = $(ATH.currentLabelButton).text();
+            ATH.onPointUpdate(this, 'unrobotOnlyIfChanged');
+        }
     },
 
     setCurrentLabelButton: function(button) {
@@ -850,11 +872,12 @@ var ATH = {
     },
 
     /* Event listener callback: 'this' is an annotation field */
-    prepareForShiftLabeling: function() {
+    beginKeyboardLabelling: function() {
         // If this field already has a valid label code, then the
         // current label button becomes the button with that label code.
-        if (ATH.labelCodes.indexOf(this.value) !== -1)
-            ATH.setCurrentLabelButton($("#labelButtons button[name='" + this.value + "']"));
+        if (ATH.labelCodes.indexOf(this.value) !== -1) {
+            ATH.setCurrentLabelButton($("#labelButtons button:exactlycontains('" + this.value + "')"));
+        }
         // Otherwise, label the field with the current label.
         else
             ATH.labelWithCurrentLabel.call(this);
@@ -1118,8 +1141,8 @@ var ATH = {
         ATH.resetCanvas();
 
         // Clear the pointGraphicStates.
-        for (var i = 0; i < ATH.pointGraphicStates.length; i++) {
-            ATH.pointGraphicStates[i] = ATH.STATE_NOTSHOWN;
+        for (var n = 1; n <= ATH.numOfPoints; n++) {
+            ATH.pointGraphicStates[n] = ATH.STATE_NOTSHOWN;
         }
 
         // Draw all points.
@@ -1237,14 +1260,17 @@ var ATH = {
 		ATH.context.strokeText(num, x, y);    // Outline the number (make it easier to see)
 	},
 
-	/*
-	Toggle the points on/off by bringing them in front of or behind the image.
-	TODO: Add a button that does this.
-	*/
-	togglePoints: function() {
-        if (ATH.pointsCanvas.style.visibility === 'hidden')
-			ATH.pointsCanvas.style.visibility = 'visible';
-		else    // 'visible' or ''
-			ATH.pointsCanvas.style.visibility = 'hidden';
-	}
+    
+    /*
+    Hiding/showing the annotation tool instructions.
+    */
+    hideInstructions: function() {
+        $("#id_instructions_wrapper").hide();
+        $("#id_button_show_instructions").show();
+    },
+
+    showInstructions: function() {
+        $("#id_instructions_wrapper").show();
+        $("#id_button_show_instructions").hide();
+    }
 };

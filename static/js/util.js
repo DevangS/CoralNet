@@ -45,6 +45,13 @@ var util = {
     },
 
     /*
+    Returns true if the user's OS is Mac, false otherwise.
+    */
+    osIsMac: function() {
+        return (navigator.appVersion.indexOf("Mac") !== -1);
+    },
+
+    /*
     Trim leading and trailing spaces from a string.
 
     From http://blog.stevenlevithan.com/archives/faster-trim-javascript
@@ -115,3 +122,39 @@ String.prototype.format = function() {
     ;
   });
 };
+
+
+
+/*
+ * jQuery extensions can go here.
+ */
+
+/* Selector - exactlycontains
+ *
+ * Variation of the jQuery selector 'contains':
+ * 'exactlycontains' will match an element if its entire inner text is
+ * exactly what is specified in the argument, as opposed to simply
+ * finding the argument as a substring.
+ * 
+ * Source: http://api.jquery.com/contains-selector/ - see comment by Gibran
+ */
+$.expr[":"].exactlycontains = function(obj, index, meta, stack){
+    return (obj.textContent || obj.innerText || $(obj).text() || "").toLowerCase() == meta[3].toLowerCase();
+};
+
+
+
+/*
+ * Dajaxice settings can go here.
+ */
+
+if (window.Dajaxice) {
+
+    /* Override Dajaxice's default exception behavior (the "Something goes wrong" alert).
+     */
+    Dajaxice.setup({'default_exception_callback': function(){
+        if (console) {
+            console.error("A Dajaxice error occurred.  Are you having Internet connection problems?  If not, this may be a CoralNet bug.  Please let us know about it.");
+        }
+    }});
+}

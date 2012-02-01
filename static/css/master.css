@@ -247,13 +247,8 @@ h1, h2, h3, h4, h5, h6 { font-family: 'Droid Sans', helvetica, arial, Geneva, sa
 p{
     font-size: 1.0em;
     line-height: 1.5em;
-    color: #444;
     margin: 0 0 0.9em 0;
     text-shadow: #ffffff 1px 1px 0;
-}
-
-p.small{
-    font-size: 0.9em;
 }
 
 .white-box p{
@@ -262,13 +257,13 @@ p.small{
 }
 
 h1{
-    margin: 25px 0 0 ;
     font-size: 2.2em;
+    margin-bottom: 0.6em;
 }
 
 h2{
-    margin: 0 0 1.0em 0;
     font-size: 1.4em;
+    margin-bottom: 1.0em;
 }
 
 h2.content-title{
@@ -285,9 +280,10 @@ h2.content-title{
     color: #ab292a;
 }
 
-h2 span{
-    font-size: 1.8em;
-    color: #ac1500;
+/* Smaller text on the same line as the main h2 text. */
+h2 span.subheader{
+    font-size: 0.7em;
+    text-transform: none;
 }
 
 .white-box h2{
@@ -712,8 +708,8 @@ ul.blocks li{
 }
 
 #footer p{
-    text-align: right;
     font-size: 0.7em;
+    margin-bottom: 0.5em;
 }   
 
 #footer p a{

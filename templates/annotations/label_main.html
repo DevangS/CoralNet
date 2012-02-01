@@ -35,9 +35,9 @@
         {% endif %}
 
         {% if user.is_authenticated %}
-        <p>Used in these sources (only including your sources and public sources):</p>
+        <p>Used in these sources (only your sources and public sources are shown):</p>
         {% else %}
-        <p>Used in these sources (only including public sources):</p>
+        <p>Used in these sources (only public sources are shown):</p>
         {% endif %}
 
         <p>
@@ -54,9 +54,11 @@
 
         <p>Create Date: {{ label.create_date|default:"(Unknown)" }}</p>
         <p>Created By: {{ label.created_by|default:"(Unknown)" }}</p>
+
+        <br/>
     
         <div id="example_patches">
-            <h2>Example patches</h2>
+            <h2>Example patches <span class="subheader">(Only patches from public sources are shown)</span> </h2>
             {% if patches %}
                 {% for patch in patches %}
                   <span class="thumb_wrapper">
