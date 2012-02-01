@@ -1,19 +1,33 @@
 {% extends "visualization/base_visualize.html" %}
-<head>
-<style type="text/css">
-table
-{
-border-collapse:collapse;
-}
-table, td, th
-{
-border:1px solid black;
-}
-</style>
-</head>
 {% block title %}{{ source.name }} - Statistics | CoralNet{% endblock %}
 
 {% block content %}
+    <style type="text/css">
+table.sample {
+	border-width: 1px;
+	border-spacing: 0px;
+	border-style: outset;
+	border-color: gray;
+	border-collapse: separate;
+	background-color: white;
+}
+table.sample th {
+	border-width: 1px;
+	padding: 1px;
+	border-style: inset;
+	border-color: gray;
+	background-color: white;
+	-moz-border-radius: ;
+}
+table.sample td {
+	border-width: 1px;
+	padding: 1px;
+	border-style: inset;
+	border-color: gray;
+	background-color: white;
+	-moz-border-radius: ;
+}
+</style>
     <script type='text/javascript' src='http://code.jquery.com/jquery-1.4.2.js'></script>
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.0/jquery-ui.js"></script>
     <script type="text/javascript">
@@ -45,7 +59,7 @@ border:1px solid black;
             {% else %}
               <table><tr>
               <td><img src={{ graph }} /></td>
-              <td><table border="2">
+              <td><table class="sample">
                   <tr>
                       <td></td>
                       {% for year in years %}
