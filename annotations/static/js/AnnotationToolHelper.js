@@ -480,11 +480,6 @@ var ATH = {
             if (keymapping.length >= 4)
                 keyEvent = keymapping[3];
 
-            // If Mac, replace ctrl with meta (which is Cmd).
-            // Remember to apply this to the other keymaps if necessary.
-            if (ATH.mac)
-                key = key.replace('ctrl', 'meta');
-
             // Bind the event listeners to the documents, the annotation fields, or both.
             if (scope === 'all')
                 elementsToBind = [$(document), ATH.annotationFieldsJQ];
@@ -497,24 +492,14 @@ var ATH = {
             }
         }
 
-        // Adjust instructions if Mac is the OS...
-        // By using JS for HTML replacement.  Somehow it feels so wrong.
+        // Show/hide certain key instructions depending on whether Mac is the OS.
         if (ATH.mac) {
-            // Ctrl -> Cmd
-            $("#id_instructions_wrapper kbd:exactlycontains('Ctrl')").each( function() {
-                $(this).text('Cmd');
-            });
-            // right-click -> Ctrl-click (do this AFTER Ctrl -> Cmd)
-            $("#id_instructions_wrapper span:exactlycontains('right-click')").each( function() {
-                $(this).text('-click');
-                $(this).prepend(
-                    $('<kbd></kbd>').text('Ctrl')
-                );
-            });
-            // Enter -> Return
-            $("#id_instructions_wrapper kbd:exactlycontains('Enter')").each( function() {
-                $(this).text('Return');
-            });
+            $('span.key_mac').show();
+            $('span.key_non_mac').hide();
+        }
+        else {
+            $('span.key_non_mac').show();
+            $('span.key_mac').hide();
         }
     },
 
