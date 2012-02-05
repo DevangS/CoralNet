@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.utils import simplejson
 from accounts.utils import get_robot_user
-from annotations.models import Annotation, Label, LabelSet
+from annotations.models import Annotation, Label, LabelSet, LabelGroup
 from CoralNet.decorators import visibility_required
 from images.models import Source, Image
 from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
@@ -300,7 +300,7 @@ def generate_statistics(request, source_id):
                     data.append(yearly_counts)
 
                     #add group name to legends
-                    name = Label.objects.get(id=int(group)).name
+                    name = LabelGroup.objects.get(id=int(group)).name
                     legends.append(str(name))
 
                     #create table row to display
