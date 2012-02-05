@@ -2,7 +2,7 @@ from django import forms
 from django.forms.fields import ChoiceField, CharField
 from django.forms.widgets import HiddenInput
 from annotations.forms import CustomCheckboxSelectMultiple
-from annotations.models import LabelSet, Label
+from annotations.models import LabelSet, Label, LabelGroup
 from images.models import Source, Value1, Value2, Value3, Value4, Value5, Metadata
 
 class YearModelChoiceField(forms.ModelChoiceField):
@@ -78,7 +78,7 @@ class ImageBatchActionForm(forms.Form):
 class StatisticsSearchForm(forms.Form):
     class Meta:
         fields = ('value1', 'value2', 'value3',
-              'value4', 'value5', 'labels')
+              'value4', 'value5', 'labels', 'groups')
 
     def __init__(self,source_id,*args,**kwargs):
         super(StatisticsSearchForm,self).__init__(*args,**kwargs)
@@ -86,6 +86,7 @@ class StatisticsSearchForm(forms.Form):
         # Grab the source and it's labelset
         source = Source.objects.filter(id=source_id)[0]
         labelset = LabelSet.objects.filter(source=source)[0]
+        groups = LabelGroup.objects.all().distinct()
 
         # Get the location keys
         for key, valueField, valueClass in [
@@ -107,12 +108,18 @@ class StatisticsSearchForm(forms.Form):
         labels = labelset.labels.all().order_by('group__id', 'name')
 
         # Put the label choices in order
-        choices = \
+        label_choices = \
             [(label.id, label.name) for label in labels]
 
+        group_choices = \
+            [(group.id, group.name) for group in groups]
+        
         # Custom widget for label selection
         #self.fields['labels'].widget = CustomCheckboxSelectMultiple(choices=self.fields['labels'].choices)
         self.fields['labels']= forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
-                                                         choices=choices)
+                                                         choices=label_choices)
+
+        self.fields['groups']= forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
+                                                         choices=group_choices)
 
 

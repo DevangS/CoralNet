@@ -214,11 +214,12 @@ def generate_statistics(request, source_id):
 
         if form.is_valid():
             labels = form.cleaned_data['labels']
+            groups = form.cleaned_data['groups']
             imageArgs = image_search_args_to_queryset_args(form.cleaned_data)
 
             #Check that the specified set of images and/or labels was found
-            if not labels:
-                errors.append("Sorry you didn't specify any labels!")
+            if not labels and not groups:
+                errors.append("Sorry you didn't specify any labels or groups!")
 
             #if no errors found, get data needed to plot line graph with
             # coverage on the y axis, and year on the x axis
@@ -270,9 +271,36 @@ def generate_statistics(request, source_id):
                     data.append(yearly_counts)
 
                     #add label name to legends
-                    label_id = int(label)
-                    label_temp = Label.objects.get(id=label_id)
-                    name = label_temp.name
+                    name = Label.objects.get(id=int(label)).name
+                    legends.append(str(name))
+
+                    #create table row to display
+                    table_row = [name]
+                    table_row.extend(yearly_counts)
+                    table.append(table_row)
+
+                for group in groups:
+                    yearly_counts = []
+                    #get yearly counts that become y values for the label's line
+                    for year in years:
+                        #get the most recent for each point for every label specified
+                        total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year)
+                        total_year_annotations_count = total_year_annotations.count()
+                        label_year_annotations_count = total_year_annotations.filter(label__group=group).count()
+
+                        #add up # of annotations, divide by total annotations, and times 100 to get % coverage
+                        # done the way it is b/c we need to cast either num or denom as float to get float result,
+                        # convert to %, round, then truncate by casting to int
+                        try:
+                            percent_coverage = int(round((float(label_year_annotations_count)/total_year_annotations_count)*100))
+                        except ZeroDivisionError:
+                            percent_coverage = 0
+                        yearly_counts.append(percent_coverage)
+
+                    data.append(yearly_counts)
+
+                    #add group name to legends
+                    name = Label.objects.get(id=int(group)).name
                     legends.append(str(name))
 
                     #create table row to display
@@ -281,7 +309,7 @@ def generate_statistics(request, source_id):
                     table.append(table_row)
 
                 #Create string of colors
-                colors_string = str(bucket[0:len(labels)]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
+                colors_string = str(bucket[0: (len(labels)+len(groups))]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
 
                 #Create string of labels to put on legend
                 legends_string = str(legends).replace('[', '').replace(']','').replace(' ','').replace('\'', '').replace(',', '|')

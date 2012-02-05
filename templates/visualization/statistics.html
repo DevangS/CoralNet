@@ -89,13 +89,18 @@ table.sample td {
             {{ form.value4.label }}&nbsp;{{ form.value4 }}&nbsp;
             <br/><br/>
 
-            Choose some labels<i>(required)</i>: <br/><br/>
-            <div style="text-align: center;">Select All Labels:<input type="checkbox" id="selectAll"><br /></div>
+            Choose some labels or functional groups<i>(required)</i>: <br/><br/>
+            <div style="text-align: center;">Select All:<input type="checkbox" id="selectAll"><br /><br/></div>
+            <div style="text-align: center;"><br/>Groups<br/><br/>
+            {{ form.groups }}</div><br/><br/><br/><br/><br/><br/><br/>
+            <div style="text-align: center;"><br/><br/><br/>Labels<br/><br/></div>
             {{ form.labels }}
 
 
 
 
+
+                
         <div class="submit_button_wrapper">
            <input type='submit' value="Search">
         </div>
