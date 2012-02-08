@@ -98,6 +98,10 @@
       <ul>
           <li>To zoom in, left-click on the image or press <kbd>Shift</kbd>+<kbd>&uarr;</kbd>.</li>
           <li>To zoom out, <span class='key_non_mac'>right-click</span><span class='key_mac'><kbd>Ctrl</kbd>-click</span> on the image or press <kbd>Shift</kbd>+<kbd>&darr;</kbd>.</li>
+          <li>You can also zoom with these buttons on the upper right:
+              <img src="/static/img/Icon_zoom-in.png"/>,
+              <img src="/static/img/Icon_zoom-out.png"/>,
+              and <img src="/static/img/Icon_zoom-fit.png"/>.</li>
           <li>To toggle between different point display modes, use these buttons on the upper right:
               <img src="/static/img/Icon_point-mode-all.png"/>,
               <img src="/static/img/Icon_point-mode-selected.png"/>,
@@ -137,6 +141,14 @@
     <div id="rightSidebar">
 
      <div id="toolButtonArea">
+         <input class="zoomButton" type="image"
+                id="zoomInButton" src="/static/img/Icon_zoom-in.png" title="Zoom in"/>
+         <input class="zoomButton" type="image"
+                id="zoomOutButton" src="/static/img/Icon_zoom-out.png" title="Zoom out"/>
+         <input class="zoomButton" type="image"
+                id="zoomFitButton" src="/static/img/Icon_zoom-fit.png" title="Zoom all the way out"/>
+         <br/>
+         
          <input class="pointModeButton" type="image"
                 id="pointModeButtonAll" src="/static/img/Icon_point-mode-all.png" title="Show all points"/>
          <input class="pointModeButton" type="image"

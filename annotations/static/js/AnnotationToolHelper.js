@@ -131,7 +131,7 @@ var ATH = {
 
         var annotationListMaxHeight =
             ATH.ANNOTATION_AREA_HEIGHT
-            - 2*(24+(2*2)+2)    // toolButtonArea: 2 rows of buttons - 24px buttons, each with 2px top and bottom borders, and another 2px of space below for some reason
+            - 3*(24+(2*2)+2)    // toolButtonArea: 2 rows of buttons - 24px buttons, each with 2px top and bottom borders, and another 2px of space below for some reason
             - (5*2);            // toolButtonArea: 5px margins around the area
         $(ATH.annotationList).css({
             "max-height": annotationListMaxHeight + "px"
@@ -397,6 +397,18 @@ var ATH = {
         $(".annotationFormLabel").click(function() {
             var pointNum = parseInt($(this).text());
             ATH.toggle(pointNum);
+        });
+
+        // A zoom button is clicked.
+
+        $("#zoomInButton").click(function() {
+            ATH.zoomIn();
+        });
+        $("#zoomOutButton").click(function() {
+            ATH.zoomOut();
+        });
+        $("#zoomFitButton").click(function() {
+            ATH.zoomFit();
         });
 
         // A point mode button is clicked.
@@ -714,27 +726,37 @@ var ATH = {
     zoomOut: function(e) {
         ATH.zoom('out', e);
     },
-    zoom: function(direction, e) {
+    zoomFit: function(e) {
+        ATH.zoom('fit', e);
+    },
+    zoom: function(zoomType, e) {
         var zoomLevelChange;
 
-        if (direction === 'in') {
+        if (zoomType === 'in') {
             if (ATH.zoomLevel === ATH.HIGHEST_ZOOM_LEVEL)
                 return;
 
             zoomLevelChange = 1;
         }
-        else if (direction === 'out') {
+        else if (zoomType === 'out') {
             // 0 is the lowest zoom level.
             if (ATH.zoomLevel === 0)
                 return;
 
             zoomLevelChange = -1;
         }
+        else if (zoomType === 'fit') {
+            // Zoom all the way out, i.e. get the zoom level to 0.
+            if (ATH.zoomLevel === 0)
+                return;
+
+            zoomLevelChange = -ATH.zoomLevel;
+        }
 
         // (1) Zoom on click: zoom into the part that was clicked.
         // (Make sure to use the old zoom factor for calculating the click position)
         // (2) Zoom with hotkey: don't change the center of zoom, just the zoom level.
-        if (e.type === 'mouseup') {
+        if (e !== undefined && e.type === 'mouseup') {
             var imagePos = ATH.getImagePosition(e);
             ATH.centerOfZoomX = imagePos[0];
             ATH.centerOfZoomY = imagePos[1];
