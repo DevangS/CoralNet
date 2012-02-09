@@ -18,6 +18,9 @@ class ImageSourceForm(ModelForm):
             'key3': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'key4': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'key5': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
+            'image_height_in_cm': TextInput(attrs={'size': 3}),
+            'longitude': TextInput(attrs={'size': 10}),
+            'latitude': TextInput(attrs={'size': 10}),
         }
 
     class Media:
@@ -38,6 +41,7 @@ class ImageSourceForm(ModelForm):
         # For use in templates.  Can iterate over fieldsets instead of the entire form.
         self.fieldsets = {'general_info': [self[name] for name in ['name', 'visibility', 'description']],
                           'keys': [self[name] for name in ['key1', 'key2', 'key3', 'key4', 'key5']],
+                          'image_annotation': [self[name] for name in ['image_height_in_cm']],
                           'world_location': [self[name] for name in ['latitude', 'longitude']]}
 
 
@@ -289,8 +293,9 @@ class ImageDetailForm(ModelForm):
 
         # For use in templates.  Can iterate over fieldsets instead of the entire form.
         self.fieldsets = {'keys': [self[name] for name in (['photo_date'] + valueFields)],
+                          'annotation_related': [self[name] for name in ['height_in_cm']],
                           'other_info': [self[name] for name in ['name', 'latitude', 'longitude', 'depth',
-                                                                 'pixel_cm_ratio', 'camera', 'photographer',
+                                                                 'camera', 'photographer',
                                                                  'water_quality', 'strobes', 'framing',
                                                                  'balance', 'comments']] }
 
@@ -376,22 +381,26 @@ class PointGenForm(Form):
     simple_number_of_points = IntegerField(
         label='Number of annotation points', required=True,
         min_value=1, max_value=MAX_NUM_POINTS,
+        widget=TextInput(attrs={'size': 3}),
     )
 
     # For stratified random and uniform grid
     number_of_cell_rows = IntegerField(
         label='Number of cell rows', required=True,
         min_value=1, max_value=MAX_NUM_POINTS,
+        widget=TextInput(attrs={'size': 3}),
     )
     number_of_cell_columns = IntegerField(
         label='Number of cell columns', required=True,
         min_value=1, max_value=MAX_NUM_POINTS,
+        widget=TextInput(attrs={'size': 3}),
     )
 
     # For stratified random
     stratified_points_per_cell = IntegerField(
         label='Points per cell', required=True,
         min_value=1, max_value=MAX_NUM_POINTS,
+        widget=TextInput(attrs={'size': 3}),
     )
 
     def __init__(self, *args, **kwargs):

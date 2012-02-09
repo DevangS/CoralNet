@@ -18,6 +18,12 @@
         <span class="helptext">This information can be used as search keys when you browse through your Source's images.</span>
         {% include "form_generic.html" with form=imageDetailForm.fieldsets.keys %}
       </fieldset>
+
+      <fieldset>
+        <legend class="small">Annotation Related</legend>
+        <span class="helptext">This information is needed before the robot annotation system can annotate your images.</span>
+        {% include "form_generic.html" with form=imageDetailForm.fieldsets.annotation_related %}
+      </fieldset>
         
       <fieldset>
         <legend class="small">Other Information</legend>

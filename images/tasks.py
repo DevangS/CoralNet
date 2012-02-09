@@ -35,11 +35,14 @@ def dummyTask():
 def PreprocessImages(image):
 
     # check if already preprocessed
-    if(image.status.preprocessed):
-	print 'Image {} is already preprocessed'.format(image.id)
-	return 1
+    if image.status.preprocessed:
+        print 'Image {} is already preprocessed'.format(image.id)
+        return 1
 
-    # TODO: check if pixel-cm ratio field is set. If not return.
+    # TODO: use the cm height when calling the Matlab function.
+    if not image.metadata.height_in_cm:
+        print "Image {} doesn't have a cm height set yet. Can not preprocess".format(image.id)
+        return
 
     print 'Start pre-processing image id {}'.format(image.id)
 

@@ -541,13 +541,17 @@ ul.errorlist li {
     display: table-cell;
 }
 
-/* Help text for a field: "No more than 20 characters", etc. */
+/* Help text for a field (e.g. "No more than 20 characters") */
 .helptext {
     /* left margin is label's width + label's margin-right */
     margin: 3px 0;    /* top/bottom left/right */
     display: block;
 
     line-height: 120%;
+}
+
+.helptext_small {
+    font-size: 0.9em;
 }
 
 /* For groups of fields */

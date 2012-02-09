@@ -55,12 +55,19 @@
     </div>
 
     <div>
+    {% if metadata.height_in_cm %}
+      <p>Height coverage: {{ metadata.height_in_cm }} centimeters</p>
+    {% else %}
+      <p>Height coverage: (Not specified)</p>
+    {% endif %}
+    
     <p>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</p>
-    <p>Upload date: {{ image.upload_date }}</p>
-    <p>Uploaded by: {{ image.uploaded_by|default:"(Unknown)" }}</p>
     </div>
 
     <div>
+    <p>Upload date: {{ image.upload_date }}</p>
+    <p>Uploaded by: {{ image.uploaded_by|default:"(Unknown)" }}</p>
+    
     {% for detail in detailsets.other_info %}
         {% if detail.value %}
             {% if detail.name == 'comments' %}

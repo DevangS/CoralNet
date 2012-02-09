@@ -37,12 +37,19 @@
 
         <div>
         <p>Location keys: {{ loc_keys }}</p>
+
+        {% if source.image_height_in_cm %}
+          <p>Default image height coverage: {{ source.image_height_in_cm }} centimeters</p>
+        {% else %}
+          <p>Default image height coverage: (Not specified)</p>
+        {% endif %}
+
         <p>Annotation point generation: {{ source.point_gen_method_display }}</p>
         </div>
 
         <div>
-        <p>Longitude: {{ source.longitude|default:"(None)" }}</p>
-        <p>Latitude: {{ source.latitude|default:"(None)" }}</p>
+        <p>Longitude: {{ source.longitude|default:"(Not specified)" }}</p>
+        <p>Latitude: {{ source.latitude|default:"(Not specified)" }}</p>
         </div>
 
         <div>

@@ -661,6 +661,10 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
         else:
             metadata = Metadata(name=filename)
 
+        # Set the cm height to the source-level image cm height, if there is one.
+        if source.image_height_in_cm:
+            metadata.height_in_cm = source.image_height_in_cm
+
         metadata.save()
 
         # Image + annotation import form

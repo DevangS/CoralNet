@@ -1,4 +1,6 @@
+from decimal import Decimal
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from django.contrib.auth.models import User
@@ -6,6 +8,12 @@ from easy_thumbnails.fields import ThumbnailerImageField
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign
 from images.utils import PointGen
 from CoralNet.utils import generate_random_filename
+
+# Constants that don't really belong to a particular model
+class ImageModelConstants():
+    MIN_IMAGE_CM_HEIGHT = 1
+    MAX_IMAGE_CM_HEIGHT = 100000
+
 
 class Source(models.Model):
 
@@ -51,6 +59,14 @@ class Source(models.Model):
         default=PointGen.args_to_db_format(
                     point_generation_type=PointGen.Types.SIMPLE,
                     simple_number_of_points=200)
+    )
+
+    image_height_in_cm = models.IntegerField(
+        "Default image height coverage (centimeters)",
+        help_text="The automatic annotation system needs to know how much space is covered by each image.\nIf you set this default value, it will be used for all images you upload.",
+        validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
+                    MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
+        null=True, blank=True
     )
 
     longitude = models.CharField(max_length=20, blank=True)
@@ -308,8 +324,13 @@ class Metadata(models.Model):
     longitude = models.CharField(max_length=20, blank=True)
     depth = models.CharField(max_length=45, blank=True)
 
-    # Do we need any input checking on pixel_cm_ratio?
-    pixel_cm_ratio = models.CharField('Pixel/cm ratio', max_length=45, null=True, blank=True)
+    height_in_cm = models.IntegerField(
+        "Height covered (centimeters)",
+        validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
+                    MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
+        null=True, blank=True
+    )
+    
     camera = models.CharField(max_length=200, blank=True)
     photographer = models.CharField(max_length=45, blank=True)
     water_quality = models.CharField(max_length=45, blank=True)

@@ -14,7 +14,7 @@ This form template is meant to be used with the "include" template tag.
             {{ field }}
             <div class="errorlist_wrapper">{{ field.errors|safe }}</div>  {# Allow HTML; some error messages may have links, etc. #}
             {% if field.help_text %}
-              <div class="helptext">{{ field.help_text|linebreaksbr }}</div>
+              <div class="helptext_small">{{ field.help_text|linebreaksbr }}</div>
             {% endif %}
         </div>
     </div>
