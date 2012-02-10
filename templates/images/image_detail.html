@@ -58,7 +58,11 @@
     {% if metadata.height_in_cm %}
       <p>Height coverage: {{ metadata.height_in_cm }} centimeters</p>
     {% else %}
-      <p>Height coverage: (Not specified)</p>
+        {% if source.image_height_in_cm %}
+          <p>Height coverage: {{ source.image_height_in_cm }} centimeters (Source default)</p>
+        {% else %}
+          <p>Height coverage: (Not specified)</p>
+        {% endif %}
     {% endif %}
     
     <p>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</p>

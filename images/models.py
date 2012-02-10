@@ -66,7 +66,7 @@ class Source(models.Model):
         help_text="The automatic annotation system needs to know how much space is covered by each image.\nIf you set this default value, it will be used for all images you upload.",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
-        null=True, blank=True
+        null=True
     )
 
     longitude = models.CharField(max_length=20, blank=True)

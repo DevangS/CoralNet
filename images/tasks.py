@@ -40,8 +40,8 @@ def PreprocessImages(image):
         return 1
 
     # TODO: use the cm height when calling the Matlab function.
-    if not image.metadata.height_in_cm:
-        print "Image {} doesn't have a cm height set yet. Can not preprocess".format(image.id)
+    if not (image.metadata.height_in_cm or image.source.image_height_in_cm):
+        print "Can't get a cm height for image {}. Can not preprocess".format(image.id)
         return
 
     print 'Start pre-processing image id {}'.format(image.id)
