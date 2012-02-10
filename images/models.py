@@ -63,7 +63,8 @@ class Source(models.Model):
 
     image_height_in_cm = models.IntegerField(
         "Default image height coverage (centimeters)",
-        help_text="The automatic annotation system needs to know how much space is covered by each image.\nIf you set this default value, it will be used for all images you upload.",
+        help_text="The automatic annotation system needs to know how much space is covered by each image.\n"
+                  "You can also set this on a per-image basis; for images that don't have a specific value set, this default value will be used.",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
         null=True
@@ -326,6 +327,8 @@ class Metadata(models.Model):
 
     height_in_cm = models.IntegerField(
         "Height covered (centimeters)",
+        help_text="The automatic annotation system needs to know how much space is covered by the image.\n"
+                  "If you don't set this value, the source's default value will be used.",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
         null=True, blank=True
