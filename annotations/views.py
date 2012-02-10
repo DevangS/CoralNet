@@ -326,8 +326,8 @@ def label_list(request):
     )
 
 
-@labelset_required('source_id', 'You need to create a labelset for your source before you can annotate images.')
 @permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
+@labelset_required('source_id', 'You need to create a labelset for your source before you can annotate images.')
 def annotation_tool(request, image_id, source_id):
     """
     View for the annotation tool.

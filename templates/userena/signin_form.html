@@ -1,0 +1,47 @@
+{% extends 'userena/base_userena.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Signin" %}{% endblock %}
+
+{% block content %}
+
+<form action="" method="post">
+  {% csrf_token %}
+
+  <fieldset>
+    <legend>{% trans "Signin" %}</legend>
+
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {% comment %} Very ugly hack for displaying the checkbox field differently. Really need a generic way of displaying checkbox fields differently {% endcomment %}
+      {% if field.name == 'remember_me' %}
+        <div class="checkbox_field_wrapper">
+            {{ field }}
+            <label for="{{ field.id_for_label }}" class="no_style">
+                {{ field.label }}
+            </label>
+        </div>
+      {% else %}
+        <label for="{{ field.id_for_label }}">
+            {{ field.label }}:
+        </label>
+
+        <div class="field_wrapper">
+            {{ field }}
+            <div class="errorlist_wrapper">{{ field.errors|safe }}</div>  {# Allow HTML; some error messages may have links, etc. #}
+            {% if field.help_text %}
+              <div class="helptext_small">{{ field.help_text|linebreaksbr }}</div>
+            {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </fieldset>
+
+  <div class="submit_button_wrapper">
+    <input type="submit" value="{% trans "Signin" %}" />
+  </div>
+
+  <p><a href="{% url userena_password_reset %}">{% trans "Forgot your password?" %}</a></p>
+</form>
+
+{% endblock %}

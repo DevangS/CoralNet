@@ -16,10 +16,14 @@ urlpatterns = patterns('',
     (r'^requests/', include('requests.urls')),
     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
     (r'^admin/', include(admin.site.urls)),
-    (r'^accounts/', include('userena.urls')),
+
+    (r'^accounts/', include('accounts.urls')),
     (r'^messages/', include('userena.contrib.umessages.urls')),
+
     (r'^sentry/', include('sentry.web.urls')),
+
     (r'^%s/' % settings.DAJAXICE_MEDIA_PREFIX, include('dajaxice.urls')),
+
     url(r'^$',
         direct_to_template,
         {'template': 'static/index.html'},

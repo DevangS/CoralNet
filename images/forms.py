@@ -177,9 +177,7 @@ class ImageUploadOptionsForm(Form):
 
     def __init__(self, *args, **kwargs):
         """
-        (1) Dynamically generate help text.
-        (2) If the source doesn't have a point generation method specified, then remove the
-        "will_generate_points" checkbox from the form.
+        Dynamically generate help text.
         """
         source = kwargs.pop('source')
         super(ImageUploadOptionsForm, self).__init__(*args, **kwargs)

@@ -1,11 +1,15 @@
 # Much of this decorator code is based on the Guardian decorator code.
+from django.conf import settings
+from django.contrib.auth import REDIRECT_FIELD_NAME
 
 from django.db.models import Model, get_model
 from django.db.models.base import ModelBase
 from django.db.models.query import QuerySet
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.utils.functional import wraps
+from django.utils.http import urlquote
 from guardian.exceptions import GuardianError
 
 from images.models import Source
@@ -53,10 +57,14 @@ def labelset_required(source_id_view_arg, message):
 
 def permission_required(perm, lookup_variables=None, **kwargs):
     """
+    Generic decorator for views that require permissions.
+
     Near-carbon copy of Guardian's permission_required, except this
     redirects to our custom template.  (Yes, the code duplication
     is awful, sorry)
     """
+    login_url = kwargs.pop('login_url', settings.LOGIN_URL)
+    redirect_field_name = kwargs.pop('redirect_field_name', REDIRECT_FIELD_NAME)
 
     # Check if perm is given as string in order not to decorate
     # view function itself which makes debugging harder
@@ -96,14 +104,20 @@ def permission_required(perm, lookup_variables=None, **kwargs):
                     lookup_dict[lookup] = kwargs[view_arg]
                 obj = get_object_or_404(model, **lookup_dict)
 
-
-            # Handles both original and with object provided permission check
-            # as ``obj`` defaults to None
-            if not request.user.has_perm(perm, obj):
+            # Check if the user is logged in
+            if not request.user.is_authenticated():
+                path = urlquote(request.get_full_path())
+                tup = login_url, redirect_field_name, path
+                return HttpResponseRedirect("%s?%s=%s" % tup)
+            # Check if the user has any permissions in this source
+            # Handles both permission checks--original and with object provided--
+            # because ``obj`` defaults to None
+            elif not request.user.has_perm(perm, obj):
                 return render_to_response('permission_denied.html', {
                     },
                     context_instance=RequestContext(request)
                     )
+            # User has permission, so show the requested page.
             return view_func(request, *args, **kwargs)
         return wraps(view_func)(_wrapped_view)
     return decorator

@@ -434,6 +434,11 @@ label.no_style {
     display: table-cell;
 }
 
+.checkbox_field_wrapper {
+    /* Wrap the checkbox and label in here. */
+    margin-left: 260px;  /* 250px label width + 10px label right margin */
+}
+
 input[type=text],input[type=password], input[type=file], textarea, span.editable {
     border: 1px solid #d7d7d7;
     font-size: 14px;
@@ -588,21 +593,6 @@ legend.small {
 .checkbox_row.selected.disabled td.clickable_cell{
     cursor: default;
     background-color: #aaaaaa;
-}
-
-#signin input[type=checkbox] {
-    display: block;
-    float: left;
-    padding: 0;
-    margin: 3px;
-    width: 10px;
-}
-
-p.forgot-password{
-    padding: 10px 0 10px 180px;
-    margin: 30px 0 10px;
-    border-bottom: 1px solid #f1edeb;
-    border-top: 1px solid #f1edeb;
 }
 
 /*	Nav

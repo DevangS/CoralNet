@@ -840,8 +840,8 @@ def image_upload(request, source_id):
 
 
 @transaction.commit_on_success
-@labelset_required('source_id', 'You need to create a labelset for your source before you can import annotations.')
 @permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
+@labelset_required('source_id', 'You need to create a labelset for your source before you can import annotations.')
 def annotation_import(request, source_id):
     """
     Upload images and import their annotations from a text file.
