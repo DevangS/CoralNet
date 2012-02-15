@@ -1,17 +1,33 @@
+from decimal import Decimal
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm, TextInput, FileInput, CharField
-from django.forms.fields import ChoiceField, BooleanField, ImageField, FileField, IntegerField
+from django.forms.fields import ChoiceField, BooleanField, ImageField, FileField, IntegerField, DecimalField
 from django.forms.widgets import Select
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
-from images.utils import PointGen, metadata_to_filename
+from images.utils import PointGen, metadata_to_filename, AnnotationAreaUtils
 
 class ImageSourceForm(ModelForm):
 
+    # Fields other than the ones auto-generated from the Source model.
+    annotation_min_x = DecimalField(label="Left boundary X",
+                                    required=True, min_value=Decimal(0), max_value=Decimal(100),
+                                    decimal_places=3, widget=TextInput(attrs={'size': 4}))
+    annotation_max_x = DecimalField(label="Right boundary X",
+                                    required=True, min_value=Decimal(0), max_value=Decimal(100),
+                                    decimal_places=3, widget=TextInput(attrs={'size': 4}))
+    annotation_min_y = DecimalField(label="Top boundary Y",
+                                    required=True, min_value=Decimal(0), max_value=Decimal(100),
+                                    decimal_places=3, widget=TextInput(attrs={'size': 4}))
+    annotation_max_y = DecimalField(label="Bottom boundary Y",
+                                    required=True, min_value=Decimal(0), max_value=Decimal(100),
+                                    decimal_places=3, widget=TextInput(attrs={'size': 4}))
+
     class Meta:
         model = Source
-        exclude = ('default_point_generation_method', 'labelset')
+        exclude = ('default_point_generation_method', 'labelset',
+                   'image_annotation_area')
         widgets = {
             'key1': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'key2': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
@@ -41,18 +57,63 @@ class ImageSourceForm(ModelForm):
         # For use in templates.  Can iterate over fieldsets instead of the entire form.
         self.fieldsets = {'general_info': [self[name] for name in ['name', 'visibility', 'description']],
                           'keys': [self[name] for name in ['key1', 'key2', 'key3', 'key4', 'key5']],
-                          'image_annotation': [self[name] for name in ['image_height_in_cm']],
+                          'image_height_in_cm': [self[name] for name in ['image_height_in_cm']],
+                          'annotation_area': [self[name] for name in ['annotation_min_x', 'annotation_max_x', 'annotation_min_y', 'annotation_max_y']],
                           'world_location': [self[name] for name in ['latitude', 'longitude']]}
 
+        # We're not using the model field image_annotation_area, but its
+        # helptext will still come in handy.
+        self.image_annotation_area_helptext = Source._meta.get_field('image_annotation_area').help_text
+        self.point_generation_method_helptext = Source._meta.get_field('default_point_generation_method').help_text
+
+
+    def clean_annotation_area_percentages(self):
+        data = self.cleaned_data
+
+        if 'annotation_min_x' in data and \
+           'annotation_max_x' in data and \
+           data['annotation_min_x'] > data['annotation_max_x']:
+
+            msg = "The maximum x must be greater than or equal to the minimum x."
+            self._errors['annotation_max_x'] = self.error_class([msg])
+            del data['annotation_min_x']
+            del data['annotation_max_x']
+            #raise ValidationError(msg)
+
+        if 'annotation_min_y' in data and \
+           'annotation_max_y' in data and \
+           data['annotation_min_y'] > data['annotation_max_y']:
+
+            msg = "The maximum y must be greater than or equal to the minimum y."
+            self._errors['annotation_max_y'] = self.error_class([msg])
+            del data['annotation_min_y']
+            del data['annotation_max_y']
+            #raise ValidationError(msg)
+
+        if 'annotation_min_x' in data and \
+            'annotation_max_x' in data and \
+            'annotation_min_y' in data and \
+            'annotation_max_y' in data:
+
+            # No errors, so set the image_annotation_area field for the model.
+            data['image_annotation_area'] = AnnotationAreaUtils.percentage_decimals_to_string(
+                min_x=data['annotation_min_x'],
+                max_x=data['annotation_max_x'],
+                min_y=data['annotation_min_y'],
+                max_y=data['annotation_max_y'],
+            )
+
+        self.cleaned_data = data
 
     def clean(self):
         """
         1. Strip spaces from character fields.
         2. Location key processing: keep key n only if 1 through n-1
         are also specified.
-        3. Call the parent's clean() to finish up with the default behavior.
+        3. Call the parent's clean() to run the default behavior.
+        4. Clean the annotation-area fields.
+        5. Default return behavior of clean() is to return self.cleaned_data.
         """
-
         data = FormHelper.stripSpacesFromFields(
             self.cleaned_data, self.fields)
 
@@ -67,7 +128,10 @@ class ImageSourceForm(ModelForm):
 
         self.cleaned_data = data
 
-        return super(ImageSourceForm, self).clean()
+        super(ImageSourceForm, self).clean()
+        self.clean_annotation_area_percentages()
+
+        return self.cleaned_data
 
 
 class SourceInviteForm(Form):
@@ -291,7 +355,7 @@ class ImageDetailForm(ModelForm):
 
         # For use in templates.  Can iterate over fieldsets instead of the entire form.
         self.fieldsets = {'keys': [self[name] for name in (['photo_date'] + valueFields)],
-                          'annotation_related': [self[name] for name in ['height_in_cm']],
+                          'annotation_related': [self[name] for name in ['height_in_cm', 'annotation_area']],
                           'other_info': [self[name] for name in ['name', 'latitude', 'longitude', 'depth',
                                                                  'camera', 'photographer',
                                                                  'water_quality', 'strobes', 'framing',
@@ -452,6 +516,54 @@ class PointGenForm(Form):
 
         self.cleaned_data = data
         return super(PointGenForm, self).clean()
+
+
+#class AnnotationAreaPercentsForm(Form):
+#    min_x = DecimalField(required=True, min_value=Decimal(0), max_value=Decimal(100), widget=TextInput(attrs={'size': 3}))
+#    max_x = DecimalField(required=True, min_value=Decimal(0), max_value=Decimal(100), widget=TextInput(attrs={'size': 3}))
+#    min_y = DecimalField(required=True, min_value=Decimal(0), max_value=Decimal(100), widget=TextInput(attrs={'size': 3}))
+#    max_y = DecimalField(required=True, min_value=Decimal(0), max_value=Decimal(100), widget=TextInput(attrs={'size': 3}))
+#
+#    def clean(self):
+#        data = self.cleaned_data
+#
+#        if data['min_x'] > data['max_x']:
+#            raise ValidationError("The maximum x must be greater than or equal to the minimum x.")
+#        if data['min_y'] > data['max_y']:
+#            raise ValidationError("The maximum y must be greater than or equal to the minimum y.")
+#
+#        self.cleaned_data = data
+#        return super(AnnotationAreaPercentsForm, self).clean()
+
+
+class AnnotationAreaPixelsForm(Form):
+    min_x = IntegerField(required=True, min_value=1, widget=TextInput(attrs={'size': 4}))
+    max_x = IntegerField(required=True, min_value=1, widget=TextInput(attrs={'size': 4}))
+    min_y = IntegerField(required=True, min_value=1, widget=TextInput(attrs={'size': 4}))
+    max_y = IntegerField(required=True, min_value=1, widget=TextInput(attrs={'size': 4}))
+
+    def __init__(self, *args, **kwargs):
+
+        if kwargs.has_key('image'):
+            self.image = kwargs.pop('image')
+
+        super(AnnotationAreaPixelsForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        data = self.cleaned_data
+
+        if data['min_x'] > data['max_x']:
+            raise ValidationError("The maximum x must be greater than or equal to the minimum x.")
+        if data['min_y'] > data['max_y']:
+            raise ValidationError("The maximum y must be greater than or equal to the maximum y.")
+
+        if data['max_x'] > self.image.original_width:
+            raise ValidationError("The maximum x must be less than or equal to the image width.")
+        if data['max_y'] > self.image.original_height:
+            raise ValidationError("The maximum y must be less than or equal to the image height.")
+
+        self.cleaned_data = data
+        return super(AnnotationAreaPixelsForm, self).clean()
 
 
 class AnnotationImportForm(Form):

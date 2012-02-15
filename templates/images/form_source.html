@@ -17,8 +17,21 @@ This form template is meant to be used with the "include" template tag.
 
 <fieldset>
     <legend class="small">Image Annotation</legend>
-    {% include "form_generic.html" with form=sourceForm.fieldsets.image_annotation %}
 
+    <legend class="smaller">Default image height</legend>
+    <span class="helptext">{{ sourceForm.image_height_in_cm.help_text }}</span>
+    {% include "form_generic_one_field.html" with field=sourceForm.image_height_in_cm dont_show_help_text="True" %}
+
+    <hr class="light"/>
+
+    <legend class="smaller">Default image annotation area</legend>
+    <span class="helptext">{{ sourceForm.image_annotation_area_helptext }}</span>
+    {% include "images/form_annotation_area.html" with form=sourceForm type="percent" %}
+
+    <hr class="light"/>
+
+    <legend class="smaller">Point generation method</legend>
+    <span class="helptext">{{ sourceForm.point_generation_method_helptext }}</span>
     {% include "form_generic.html" with form=pointGenForm %}
 </fieldset>
 

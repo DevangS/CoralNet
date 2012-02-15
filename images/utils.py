@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 import math, random
 from os.path import splitext
 
@@ -21,9 +22,9 @@ class PointGen():
     """
     class Types():
         SIMPLE = 'm'
-        SIMPLE_VERBOSE = 'Simple Random (Each point position is random within the entire image)'
+        SIMPLE_VERBOSE = 'Simple Random (Random within the entire annotation area)'
         STRATIFIED = 't'
-        STRATIFIED_VERBOSE = 'Stratified Random (Each point position is random within a cell of the image)'
+        STRATIFIED_VERBOSE = 'Stratified Random (Random within a cell of the annotation area)'
         UNIFORM = 'u'
         UNIFORM_VERBOSE = 'Uniform Grid'
         IMPORTED = 'i'
@@ -200,6 +201,44 @@ class PointGen():
                     point_num += 1
 
         return points
+
+
+class AnnotationAreaUtils():
+
+    @staticmethod
+    def percentage_decimals_to_string(min_x, max_x, min_y, max_y):
+        return ','.join([
+            str(min_x), str(max_x), str(min_y), str(max_y)
+        ])
+
+    @staticmethod
+    def percentage_string_to_decimals(s):
+        d = dict()
+        d['min_x'], d['max_x'], d['min_y'], d['max_y'] = [Decimal(dec_str) for dec_str in s.split(',')]
+        return d
+
+    @staticmethod
+    def pixel_integers_to_string(min_x, max_x, min_y, max_y):
+        return ','.join([
+            str(min_x), str(max_x), str(min_y), str(max_y)
+        ])
+
+    @staticmethod
+    def pixel_string_to_integers(s):
+        d = dict()
+        d['min_x'], d['max_x'], d['min_y'], d['max_y'] = [int(int_str) for int_str in s.split(',')]
+        return d
+
+    @staticmethod
+    def percentages_to_pixels(min_x, max_x, min_y, max_y, width, height):
+        d = dict()
+
+        # The percentages are Decimals, so this will do decimal division (not integer division)
+        d['min_x'] = (min_x/100) * width
+        d['max_x'] = (max_x/100) * width
+        d['min_y'] = (min_y/100) * height
+        d['max_y'] = (max_y/100) * height
+        return d
 
 
 def filename_to_metadata(filename, source):

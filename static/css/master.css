@@ -378,6 +378,12 @@ a.button:active span {
     margin: 0 10px;
 }
 
+hr.light {
+    background-color: #dddddd;
+    border: none;
+    height: 1px;
+}
+
 
 
 /*	Forms
@@ -393,7 +399,6 @@ form {
 form p, .form_item_wrapper {
     padding: 3px 0;  /* vertical horizontal*/
     margin: 0;
-    border-bottom: 1px solid #ddd;
     overflow: auto;  /* This allows the element to expand for multi-line labels and such */
 }
 
@@ -424,7 +429,7 @@ label.no_style {
     line-height: 1em;
     margin: 0;
     font-size: 1em;
-    color: #000;
+    /* ...inherit color from the regular label rule, though. */
 }
 
 .field_wrapper {
@@ -535,8 +540,9 @@ ul.errorlist {
 }
 ul.errorlist li {
     font-size: 0.8em;
-    padding: 5px 5px 4px 5px;
     font-weight: bold;
+    padding: 5px 5px 4px 5px;
+    max-width: 250px;
 }
 
 .errorlist_wrapper {
@@ -548,10 +554,7 @@ ul.errorlist li {
 
 /* Help text for a field (e.g. "No more than 20 characters") */
 .helptext {
-    /* left margin is label's width + label's margin-right */
-    margin: 3px 0;    /* top/bottom left/right */
     display: block;
-
     line-height: 120%;
 }
 
@@ -562,22 +565,31 @@ ul.errorlist li {
 /* For groups of fields */
 fieldset {
     margin: 0 0 20px 0;
+    border-bottom: 1px solid #ddd;
 }
 /* A special header, conventionally for fieldsets */
 legend {
     width: auto;
     padding: 5px 0 6px 0;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 5px;
     font-size: 1.3em;
     color: #ab292a;
     font-weight: bold;
-    border-bottom: 1px solid #ddd;
 	text-transform: uppercase;
 }
-
 legend.small {
     font-size: 1.2em;
     text-transform: none;
 }
+legend.smaller {
+    padding: 0;
+    border: none;
+    font-size: inherit;
+    color: inherit;
+    text-transform: none;
+}
+
 
 /* Special cases */
 

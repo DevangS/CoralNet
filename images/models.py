@@ -1,4 +1,3 @@
-from decimal import Decimal
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -54,7 +53,8 @@ class Source(models.Model):
         (PointGen.Types.UNIFORM, PointGen.Types.UNIFORM_VERBOSE),
     )
     default_point_generation_method = models.CharField(
-        'Point generation method',
+        "Point generation method",
+        help_text="When we create annotation points for uploaded images, this is how we'll generate the point locations.",
         max_length=50,
         default=PointGen.args_to_db_format(
                     point_generation_type=PointGen.Types.SIMPLE,
@@ -67,6 +67,14 @@ class Source(models.Model):
                   "You can also set this on a per-image basis; for images that don't have a specific value set, this default value will be used.",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
+        null=True
+    )
+
+    image_annotation_area = models.CharField(
+        "Default image annotation area",
+        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.\n"
+                  "You can also set this on a per-image basis; for images that don't have a specific value set, this default value will be used.",
+        max_length=50,
         null=True
     )
 
@@ -331,6 +339,13 @@ class Metadata(models.Model):
                   "If you don't set this value, the source's default value will be used.",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
+        null=True, blank=True
+    )
+
+    annotation_area = models.CharField(
+        "Annotation area",
+        help_text="This is a rectangle of the image where annotation points are allowed to be generated.",
+        max_length=50,
         null=True, blank=True
     )
     

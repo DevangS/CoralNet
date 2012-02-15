@@ -1,0 +1,26 @@
+{% comment %}
+This form template is meant to be used with the "include" template tag.
+
+dont_mark_required and dont_show_help_text are parameters that can be passed
+in with the "with" template tag.
+These parameters are evaluated as booleans, but Django templates don't have
+True/False literals.  So just don't pass in the parameter if you want
+it to be False, and pass in anything that'll evaluate to True
+(such as the string "True") if you want it to be True.
+{% endcomment %}
+
+<div class="form_item_wrapper" id="id_{{ field.name }}_wrapper">
+    <label for="{{ field.id_for_label }}">
+        {% if field.field.required and not dont_mark_required %} <span style="color:red;"> * </span> {% endif %}
+        {{ field.label }}:
+    </label>
+
+    <div class="field_wrapper">
+        {{ field }}
+        <div class="errorlist_wrapper">{{ field.errors|safe }}</div>  {# Allow HTML; some error messages may have links, etc. #}
+
+        {% if field.help_text and not dont_show_help_text %}
+          <div class="helptext_small">{{ field.help_text|linebreaksbr }}</div>
+        {% endif %}
+    </div>
+</div>
