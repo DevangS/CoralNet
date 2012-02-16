@@ -18,8 +18,8 @@ from CoralNet.exceptions import FileContentError
 
 from images.models import Source, Image, Metadata, Point, find_dupe_image, SourceInvite, ImageStatus
 from images.models import get_location_value_objs
-from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm
-from images.utils import filename_to_metadata, PointGen
+from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationAreaPercentsForm, AnnotationAreaPixelsForm
+from images.utils import filename_to_metadata, PointGen, AnnotationAreaUtils
 
 from CoralNet.images.tasks import processImageAll
 
@@ -81,16 +81,19 @@ def source_new(request):
         # A form bound to the POST data
         sourceForm = ImageSourceForm(request.POST)
         pointGenForm = PointGenForm(request.POST)
+        annotationAreaForm = AnnotationAreaPercentsForm(request.POST)
 
         # is_valid() calls our ModelForm's clean() and checks validity
         source_form_is_valid = sourceForm.is_valid()
         point_gen_form_is_valid = pointGenForm.is_valid()
+        annotation_area_form_is_valid = annotationAreaForm.is_valid()
 
-        if source_form_is_valid and point_gen_form_is_valid:
+        if source_form_is_valid and point_gen_form_is_valid and annotation_area_form_is_valid:
             # After calling a ModelForm's is_valid(), an instance is created.
             # We can get this instance and add a bit more to it before saving to the DB.
             newSource = sourceForm.instance
             newSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
+            newSource.image_annotation_area = AnnotationAreaUtils.percentage_decimals_to_string(**annotationAreaForm.cleaned_data)
             newSource.labelset = LabelSet.getEmptyLabelset()
             newSource.save()
 
@@ -109,12 +112,14 @@ def source_new(request):
         # An unbound form (empty form)
         sourceForm = ImageSourceForm()
         pointGenForm = PointGenForm()
+        annotationAreaForm = AnnotationAreaPercentsForm()
 
     # RequestContext needed for CSRF verification of POST form,
     # and to correctly get the path of the CSS file being used.
     return render_to_response('images/source_new.html', {
         'sourceForm': sourceForm,
         'pointGenForm': pointGenForm,
+        'annotationAreaForm': annotationAreaForm,
         },
         context_instance=RequestContext(request)
         )
@@ -175,13 +180,18 @@ def source_edit(request, source_id):
         # Submit
         sourceForm = ImageSourceForm(request.POST, instance=source)
         pointGenForm = PointGenForm(request.POST)
+        annotationAreaForm = AnnotationAreaPercentsForm(request.POST)
 
+        # Make sure is_valid() is called for all forms, so all forms are checked and
+        # all relevant error messages appear.
         source_form_is_valid = sourceForm.is_valid()
         point_gen_form_is_valid = pointGenForm.is_valid()
+        annotation_area_form_is_valid = annotationAreaForm.is_valid()
 
-        if source_form_is_valid and point_gen_form_is_valid:
+        if source_form_is_valid and point_gen_form_is_valid and annotation_area_form_is_valid:
             editedSource = sourceForm.instance
             editedSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
+            editedSource.image_annotation_area = AnnotationAreaUtils.percentage_decimals_to_string(**annotationAreaForm.cleaned_data)
             editedSource.save()
             messages.success(request, 'Source successfully edited.')
             return HttpResponseRedirect(reverse('source_main', args=[source_id]))
@@ -191,11 +201,13 @@ def source_edit(request, source_id):
         # Just reached this form page
         sourceForm = ImageSourceForm(instance=source)
         pointGenForm = PointGenForm(source=source)
+        annotationAreaForm = AnnotationAreaPercentsForm(source=source)
 
     return render_to_response('images/source_edit.html', {
         'source': source,
         'editSourceForm': sourceForm,
         'pointGenForm': pointGenForm,
+        'annotationAreaForm': annotationAreaForm,
         },
         context_instance=RequestContext(request)
         )
@@ -323,12 +335,25 @@ def image_detail(request, image_id, source_id):
     # Feel free to change the constant according to the page layout.
     scaled_width = min(image.original_width, 1000)
 
+    # Annotation area.
+    if metadata.annotation_area:
+        annotation_area_string = AnnotationAreaUtils.pixel_string_to_readable_format(
+            metadata.annotation_area
+        )
+    elif source.image_annotation_area:
+        annotation_area_string = AnnotationAreaUtils.percentage_string_to_pixels_readable_format(
+            source.image_annotation_area, image.original_width, image.original_height
+        )
+    else:
+        annotation_area_string = ''
+
     return render_to_response('images/image_detail.html', {
         'source': source,
         'image': image,
         'metadata': metadata,
         'detailsets': detailsets,
         'scaled_width': scaled_width,
+        'annotation_area_string': annotation_area_string,
         },
         context_instance=RequestContext(request)
     )
@@ -353,10 +378,19 @@ def image_detail_edit(request, image_id, source_id):
             return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
 
         # Submit
-        form = ImageDetailForm(request.POST, instance=metadata, source=source)
+        imageDetailForm = ImageDetailForm(request.POST, instance=metadata, source=source)
+        annotationAreaForm = AnnotationAreaPixelsForm(request.POST, image=image)
 
-        if form.is_valid():
-            form.save()
+        # Make sure is_valid() is called for all forms, so all forms are checked and
+        # all relevant error messages appear.
+        image_detail_form_is_valid = imageDetailForm.is_valid()
+        annotation_area_form_is_valid = annotationAreaForm.is_valid()
+
+        if image_detail_form_is_valid and annotation_area_form_is_valid:
+            editedMetadata = imageDetailForm.instance
+            editedMetadata.annotation_area = AnnotationAreaUtils.pixel_integers_to_string(**annotationAreaForm.cleaned_data)
+            editedMetadata.save()
+
             messages.success(request, 'Image successfully edited.')
             return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
         else:
@@ -364,12 +398,14 @@ def image_detail_edit(request, image_id, source_id):
             messages.error(request, 'Please correct the errors below.')
     else:
         # Just reached this form page
-        form = ImageDetailForm(instance=metadata, source=source)
+        imageDetailForm = ImageDetailForm(instance=metadata, source=source)
+        annotationAreaForm = AnnotationAreaPixelsForm(image=image)
 
     return render_to_response('images/image_detail_edit.html', {
         'source': source,
         'image': image,
-        'imageDetailForm': form,
+        'imageDetailForm': imageDetailForm,
+        'annotationAreaForm': annotationAreaForm,
         },
         context_instance=RequestContext(request)
         )

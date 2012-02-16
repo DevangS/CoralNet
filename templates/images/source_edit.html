@@ -13,7 +13,7 @@
     <legend>Edit Source</legend>
     
     <form action="" method="post">{% csrf_token %}
-      {% include "images/form_source.html" with sourceForm=editSourceForm pointGenForm=pointGenForm %}
+      {% include "images/form_source.html" with sourceForm=editSourceForm pointGenForm=pointGenForm annotationAreaForm=annotationAreaForm %}
 
       <div class="submit_button_wrapper">
         <input type="submit" value="Save Changes" />

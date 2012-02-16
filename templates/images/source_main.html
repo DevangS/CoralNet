@@ -44,6 +44,12 @@
           <p>Default image height coverage: (Not specified)</p>
         {% endif %}
 
+        {% if source.image_annotation_area %}
+          <p>Default image annotation area: {{ source.image_annotation_area_display }}</p>
+        {% else %}
+          <p>Default image annotation area: (Not specified)</p>
+        {% endif %}
+
         <p>Annotation point generation: {{ source.point_gen_method_display }}</p>
         </div>
 

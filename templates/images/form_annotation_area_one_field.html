@@ -1,7 +1,8 @@
 {# TODO: Make sure the table still displays reasonably with field errors. #}
 
 <label for="{{ field.id_for_label }}" class="no_style">
-  <span style="color:red;"> * </span>{{ field.label }}:
+  {% if field.field.required and not dont_mark_required %} <span style="color:red;"> * </span> {% endif %}
+  {{ field.label }}:
 </label>
 {{ field }}{% if type == "percent" %} % {% endif %}
 <div class="errorlist_wrapper">{{ field.errors|safe }}</div>

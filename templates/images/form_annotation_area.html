@@ -2,28 +2,23 @@
 This form template is meant to be used with the "include" template tag.
 {% endcomment %}
 
+<div class="errorlist_wrapper">{{ form.non_field_errors|safe }}</div>
+
 <table style="border-collapse: separate; border-spacing: 50px 0;">
     <tr>
         <td>
-          {% include "images/form_annotation_area_one_field.html" with field=form.annotation_min_x %}
-{% comment %}          {% with field=form.annotation_min_x %}
-            <label for="{{ field.id_for_label }}" class="no_style">
-              <span style="color:red;"> * </span>{{ field.label }}:
-            </label>
-            {{ field }}
-          {% endwith %}
-          {% if type == "percent" %} % {% endif %}{% endcomment %}
+          {% include "images/form_annotation_area_one_field.html" with field=form.min_x %}
         </td>
         <td>
-            {% include "images/form_annotation_area_one_field.html" with field=form.annotation_max_x %}
+            {% include "images/form_annotation_area_one_field.html" with field=form.max_x %}
         </td>
     </tr>
     <tr>
         <td>
-            {% include "images/form_annotation_area_one_field.html" with field=form.annotation_min_y %}
+            {% include "images/form_annotation_area_one_field.html" with field=form.min_y %}
         </td>
         <td>
-            {% include "images/form_annotation_area_one_field.html" with field=form.annotation_max_y %}
+            {% include "images/form_annotation_area_one_field.html" with field=form.max_y %}
         </td>
     </tr>
 </table>

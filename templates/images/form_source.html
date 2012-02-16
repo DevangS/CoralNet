@@ -19,19 +19,19 @@ This form template is meant to be used with the "include" template tag.
     <legend class="small">Image Annotation</legend>
 
     <legend class="smaller">Default image height</legend>
-    <span class="helptext">{{ sourceForm.image_height_in_cm.help_text }}</span>
+    <span class="helptext">{{ sourceForm.image_height_in_cm.help_text|linebreaksbr }}</span>
     {% include "form_generic_one_field.html" with field=sourceForm.image_height_in_cm dont_show_help_text="True" %}
 
     <hr class="light"/>
 
     <legend class="smaller">Default image annotation area</legend>
-    <span class="helptext">{{ sourceForm.image_annotation_area_helptext }}</span>
-    {% include "images/form_annotation_area.html" with form=sourceForm type="percent" %}
+    <span class="helptext">{{ annotationAreaForm.form_help_text|linebreaksbr }}</span>
+    {% include "images/form_annotation_area.html" with form=annotationAreaForm type="percent" %}
 
     <hr class="light"/>
 
     <legend class="smaller">Point generation method</legend>
-    <span class="helptext">{{ sourceForm.point_generation_method_helptext }}</span>
+    <span class="helptext">{{ pointGenForm.form_help_text|linebreaksbr }}</span>
     {% include "form_generic.html" with form=pointGenForm %}
 </fieldset>
 

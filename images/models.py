@@ -5,7 +5,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign
-from images.utils import PointGen
+from images.utils import PointGen, AnnotationAreaUtils
 from CoralNet.utils import generate_random_filename
 
 # Constants that don't really belong to a particular model
@@ -73,7 +73,8 @@ class Source(models.Model):
     image_annotation_area = models.CharField(
         "Default image annotation area",
         help_text="This defines a rectangle of the image where annotation points are allowed to be generated.\n"
-                  "You can also set this on a per-image basis; for images that don't have a specific value set, this default value will be used.",
+                  "For example, X boundaries of 10% and 95% mean that the leftmost 10% and the rightmost 5% of the image will not have any points.\n"
+                  "You can also set these boundaries as pixel counts on a per-image basis; for images that don't have a specific value set, these percentages will be used.",
         max_length=50,
         null=True
     )
@@ -248,6 +249,13 @@ class Source(models.Model):
         """
         return len(self.get_key_list())
 
+    def image_annotation_area_display(self):
+        """
+        Display the annotation-area parameters in templates.
+        Usage: {{ mysource.annotation_area_display }}
+        """
+        return AnnotationAreaUtils.percentage_string_to_readable_format(self.image_annotation_area)
+
     def point_gen_method_display(self):
         """
         Display the point generation method in templates.
@@ -344,7 +352,9 @@ class Metadata(models.Model):
 
     annotation_area = models.CharField(
         "Annotation area",
-        help_text="This is a rectangle of the image where annotation points are allowed to be generated.",
+        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.\n"
+                  "For example, X boundaries of 150 and 1800 mean that points are only generated within the X-pixel values 150 through 1800.\n"
+                  "If you don't set these values, the source's default annotation area (defined with percentages, not pixels) will be used.",
         max_length=50,
         null=True, blank=True
     )

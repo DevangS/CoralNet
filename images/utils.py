@@ -207,6 +207,11 @@ class AnnotationAreaUtils():
 
     @staticmethod
     def percentage_decimals_to_string(min_x, max_x, min_y, max_y):
+        # Handle the case where the field is not filled at all.
+        if min_x is None and max_x is None and \
+           min_y is None and max_y is None:
+            return ''
+        
         return ','.join([
             str(min_x), str(max_x), str(min_y), str(max_y)
         ])
@@ -219,6 +224,11 @@ class AnnotationAreaUtils():
 
     @staticmethod
     def pixel_integers_to_string(min_x, max_x, min_y, max_y):
+        # Handle the case where the field is not filled at all.
+        if min_x is None and max_x is None and \
+           min_y is None and max_y is None:
+            return ''
+
         return ','.join([
             str(min_x), str(max_x), str(min_y), str(max_y)
         ])
@@ -233,12 +243,48 @@ class AnnotationAreaUtils():
     def percentages_to_pixels(min_x, max_x, min_y, max_y, width, height):
         d = dict()
 
-        # The percentages are Decimals, so this will do decimal division (not integer division)
-        d['min_x'] = (min_x/100) * width
-        d['max_x'] = (max_x/100) * width
-        d['min_y'] = (min_y/100) * height
-        d['max_y'] = (max_y/100) * height
+        # The percentages are Decimals.
+        # Decimal / int = Decimal, and Decimal * int = Decimal
+        d['min_x'] = (min_x / 100) * width
+        d['max_x'] = (max_x / 100) * width
+        d['min_y'] = (min_y / 100) * height
+        d['max_y'] = (max_y / 100) * height
+
+        for key in d.keys():
+            # Convert to integer pixel values.
+            # Round up (could just as well round down, need to pick one or the other).
+            d[key] = int(math.ceil(d[key]))
+
+            # Corner case
+            if d[key] == 0:
+                d[key] = 1
+
         return d
+
+    @staticmethod
+    def percentage_string_to_readable_format(s):
+        d = AnnotationAreaUtils.percentage_string_to_decimals(s)
+        return "X: %s - %s%% / Y: %s - %s%%" % (
+            d['min_x'], d['max_x'], d['min_y'], d['max_y']
+            )
+
+    @staticmethod
+    def pixel_string_to_readable_format(s):
+        d = AnnotationAreaUtils.pixel_string_to_integers(s)
+        return "X: %s - %s pixels / Y: %s - %s pixels" % (
+            d['min_x'], d['max_x'], d['min_y'], d['max_y']
+            )
+
+    @staticmethod
+    def percentage_string_to_pixels_readable_format(s, width, height):
+        percent_d = AnnotationAreaUtils.percentage_string_to_decimals(s)
+        pixel_d = AnnotationAreaUtils.percentages_to_pixels(width=width, height=height, **percent_d)
+        return "X: %s - %s pixels (%s - %s%%) / Y: %s - %s pixels (%s - %s%%)" % (
+            pixel_d['min_x'], pixel_d['max_x'],
+            percent_d['min_x'], percent_d['max_x'],
+            pixel_d['min_y'], pixel_d['max_y'],
+            percent_d['min_y'], percent_d['max_y']
+            )
 
 
 def filename_to_metadata(filename, source):
