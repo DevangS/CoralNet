@@ -1056,10 +1056,13 @@ var ATH = {
     getCanvasPoints: function() {
         for (var i = 0; i < ATH.imagePoints.length; i++) {
 
+            // ATH.imagePoints[num].row: which image pixel it is, from 1 to height
+            // ATH.canvasPoints[num].row: offset on the canvas, starting from 0 if the point is visible.
+            // Subtract 0.5 so the canvasPoint is in the middle of the point's pixel instead of the bottom-right edge.  Typically won't make much of a difference, but still.
             ATH.canvasPoints[ATH.imagePoints[i].point_number] = {
                 num: ATH.imagePoints[i].point_number,
-                row: (ATH.imagePoints[i].row * ATH.zoomFactor) + ATH.imageTopOffset,
-                col: (ATH.imagePoints[i].column * ATH.zoomFactor) + ATH.imageLeftOffset
+                row: ((ATH.imagePoints[i].row - 0.5) * ATH.zoomFactor) + ATH.imageTopOffset,
+                col: ((ATH.imagePoints[i].column - 0.5) * ATH.zoomFactor) + ATH.imageLeftOffset
             };
         }
     },

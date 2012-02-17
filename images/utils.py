@@ -133,31 +133,53 @@ class PointGen():
 
         points = []
 
+        if img.metadata.annotation_area:
+            d = AnnotationAreaUtils.pixel_string_to_integers(img.metadata.annotation_area)
+            annoarea_min_col = d['min_x']
+            annoarea_max_col = d['max_x']
+            annoarea_min_row = d['min_y']
+            annoarea_max_row = d['max_y']
+        elif img.source.image_annotation_area:
+            d = AnnotationAreaUtils.percentage_string_to_decimals(img.source.image_annotation_area)
+            d2 = AnnotationAreaUtils.percentages_to_pixels(width=img.original_width, height=img.original_height, **d)
+            annoarea_min_col = d2['min_x']
+            annoarea_max_col = d2['max_x']
+            annoarea_min_row = d2['min_y']
+            annoarea_max_row = d2['max_y']
+        else:
+            raise ValueError("Can't generate points without an annotation area.")
+
+        annoarea_height = annoarea_max_row - annoarea_min_row + 1
+        annoarea_width = annoarea_max_col - annoarea_min_col + 1
+
+
         if point_generation_type == PointGen.Types.SIMPLE:
 
             simple_random_points = []
 
             for i in range(simple_number_of_points):
-                row = int(math.floor(random.random()*(img.original_height+1)))  # 0 to img.original_height
-                column = int(math.floor(random.random()*(img.original_width+1)))  # 0 to img.original_width
-
+                row = random.randint(annoarea_min_row, annoarea_max_row)
+                column = random.randint(annoarea_min_col, annoarea_max_col)
+                
                 simple_random_points.append({'row': row, 'column': column})
 
-            # For ease of finding consecutive points, impose cell rows and cols, then
-            # make consecutive points fill the cells one by one.
+            # To make consecutive points appear reasonably close to each other, impose cell rows
+            # and cols, then make consecutive points fill the cells one by one.
             NUM_OF_CELL_ROWS = 5
             NUM_OF_CELL_COLUMNS = 5
-            cell = {}
+            cell = dict()
             for r in range(NUM_OF_CELL_ROWS):
-                cell[r] = {}
+                cell[r] = dict()
                 for c in range(NUM_OF_CELL_COLUMNS):
                     cell[r][c] = []
 
             for p in simple_random_points:
-                r = int(math.floor( (p['row'] * NUM_OF_CELL_ROWS) / (img.original_height+1) ))
-                c = int(math.floor( (p['column'] * NUM_OF_CELL_COLUMNS) / (img.original_width+1) ))
-                if r >= 5 or c >= 5:
-                    print r, c
+                # Assign each random point to the cell it belongs in.
+                # This is all int math, so no floor(), int(), etc. needed.
+                # But remember to not divide until the end.
+                r = ((p['row'] - annoarea_min_row) * NUM_OF_CELL_ROWS) / annoarea_height
+                c = ((p['column'] - annoarea_min_col) * NUM_OF_CELL_COLUMNS) / annoarea_width
+                
                 cell[r][c].append(p)
 
             point_num = 1
@@ -172,17 +194,19 @@ class PointGen():
 
             point_num = 1
 
+            # Each pixel of the annotation area goes in exactly one cell.
+            # Cell widths and heights are within one pixel of each other.
             for row_num in range(0, number_of_cell_rows):
-                row_min = (row_num * img.original_height) / number_of_cell_rows
-                row_max = (((row_num+1) * img.original_height) / number_of_cell_rows) - 1
+                row_min = ((row_num * annoarea_height) / number_of_cell_rows) + annoarea_min_row
+                row_max = (((row_num+1) * annoarea_height) / number_of_cell_rows) + annoarea_min_row - 1
 
                 for col_num in range(0, number_of_cell_columns):
-                    col_min = (col_num * img.original_width) / number_of_cell_columns
-                    col_max = (((col_num+1) * img.original_width) / number_of_cell_columns) - 1
+                    col_min = ((col_num * annoarea_width) / number_of_cell_columns) + annoarea_min_col
+                    col_max = (((col_num+1) * annoarea_width) / number_of_cell_columns) + annoarea_min_col - 1
 
                     for cell_point_num in range(0, stratified_points_per_cell):
-                        row = row_min + int(math.floor(random.random()*(row_max - row_min +1)))  # row_min to row_max
-                        column = col_min + int(math.floor(random.random()*(col_max - col_min +1)))  # col_min to col_max
+                        row = random.randint(row_min, row_max)
+                        column = random.randint(col_min, col_max)
 
                         points.append(dict(row=row, column=column, point_number=point_num))
                         point_num += 1
@@ -192,10 +216,14 @@ class PointGen():
             point_num = 1
 
             for row_num in range(0, number_of_cell_rows):
-                row_mid = ((row_num+0.5) * img.original_height) / number_of_cell_rows
+                row_min = ((row_num * annoarea_height) / number_of_cell_rows) + annoarea_min_row
+                row_max = (((row_num+1) * annoarea_height) / number_of_cell_rows) + annoarea_min_row - 1
+                row_mid = int(math.floor( (row_min+row_max) / 2.0 ))
 
                 for col_num in range(0, number_of_cell_columns):
-                    col_mid = ((col_num+0.5) * img.original_width) / number_of_cell_columns
+                    col_min = ((col_num * annoarea_width) / number_of_cell_columns) + annoarea_min_col
+                    col_max = (((col_num+1) * annoarea_width) / number_of_cell_columns) + annoarea_min_col - 1
+                    col_mid = int(math.floor( (col_min+col_max) / 2.0 ))
 
                     points.append(dict(row=row_mid, column=col_mid, point_number=point_num))
                     point_num += 1
