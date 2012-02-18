@@ -5,7 +5,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign
-from images.utils import PointGen, AnnotationAreaUtils
+from images.model_utils import PointGen, AnnotationAreaUtils
 from CoralNet.utils import generate_random_filename
 
 # Constants that don't really belong to a particular model
@@ -503,73 +503,3 @@ class Point(models.Model):
     point_number = models.IntegerField()
     annotation_status = models.CharField(max_length=1, blank=True)
     image = models.ForeignKey(Image)
-
-
-
-# General utility methods that involve model classes.
-# If you can find a better place for these methods, feel free to move them.
-
-def get_location_value_objs(source, valueList, createNewValues=False):
-    """
-    Takes a list of values as strings:
-    ['Shore3', 'Reef 5', 'Loc10']
-    Returns a dict of Value objects:
-    {'value1': <Value1 object: 'Shore3'>, 'value2': <Value2 object: 'Reef 5'>, ...}
-
-    If the database doesn't have a Value object of the desired name:
-    - If createNewValues is True, then the required Value object is
-     created and inserted into the DB.
-    - If createNewValues is False, then this method returns False.
-    """
-    valueNameGen = (v for v in valueList)
-    valueDict = dict()
-
-    for valueIndex , valueClass in [
-            ('value1', Value1),
-            ('value2', Value2),
-            ('value3', Value3),
-            ('value4', Value4),
-            ('value5', Value5)
-    ]:
-        try:
-            valueName = valueNameGen.next()
-        except StopIteration:
-            # That's all the values the valueList had
-            break
-        else:
-            if createNewValues:
-                valueDict[valueIndex], created = valueClass.objects.get_or_create(source=source, name=valueName)
-            else:
-                try:
-                    valueDict[valueIndex] = valueClass.objects.get(source=source, name=valueName)
-                except valueClass.DoesNotExist:
-                    # Value object not found
-                    return False
-
-    # All value objects were found/created
-    return valueDict
-
-def find_dupe_image(source, values=None, year=None, **kwargs):
-    """
-    Sees if the given source already has an image with the given arguments.
-    """
-
-    # Get Value objects of the value names given in "values".
-    valueObjDict = get_location_value_objs(source, values, createNewValues=False)
-
-    if not valueObjDict:
-        # One or more of the values weren't found; no dupe image in DB.
-        return False
-
-    # Get all the metadata objects in the DB with these location values and year
-    metaMatches = Metadata.objects.filter(photo_date__year=year, **valueObjDict)
-
-    # Get the images from our source that have this metadata.
-    imageMatches = Image.objects.filter(source=source, metadata__in=metaMatches)
-
-    if len(imageMatches) > 1:
-        raise ValueError("Something's not right - this set of metadata has multiple image matches.")
-    elif len(imageMatches) == 1:
-        return imageMatches[0]
-    else:
-        return False

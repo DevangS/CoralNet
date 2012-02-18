@@ -16,10 +16,10 @@ from annotations.models import LabelGroup, Label, Annotation, LabelSet
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from CoralNet.exceptions import FileContentError
 
-from images.models import Source, Image, Metadata, Point, find_dupe_image, SourceInvite, ImageStatus
-from images.models import get_location_value_objs
+from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationAreaPercentsForm, AnnotationAreaPixelsForm
-from images.utils import filename_to_metadata, PointGen, AnnotationAreaUtils
+from images.model_utils import PointGen, AnnotationAreaUtils
+from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points
 
 from CoralNet.images.tasks import processImageAll
 
@@ -366,8 +366,9 @@ def image_detail_edit(request, image_id, source_id):
     """
 
     image = get_object_or_404(Image, id=image_id)
-    metadata = get_object_or_404(Metadata, id=image.metadata_id)
     source = get_object_or_404(Source, id=source_id)
+    metadata = image.metadata
+    old_annotation_area = metadata.annotation_area
 
     if request.method == 'POST':
 
@@ -390,6 +391,12 @@ def image_detail_edit(request, image_id, source_id):
             editedMetadata = imageDetailForm.instance
             editedMetadata.annotation_area = AnnotationAreaUtils.pixel_integers_to_string(**annotationAreaForm.cleaned_data)
             editedMetadata.save()
+
+            # If the image-level annotation area has changed, then
+            # re-generate points for this image.
+            # (If the image already has human annotations, though, then point re-generation doesn't happen)
+            if editedMetadata.annotation_area != old_annotation_area:
+                generate_points(image)
 
             messages.success(request, 'Image successfully edited.')
             return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
@@ -753,7 +760,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
         # Image upload form, no annotations
         else:
 
-            point_generation_method = source.default_point_generation_method
+            #point_generation_method = source.default_point_generation_method
             
             status = ImageStatus(hasRandomPoints=True)
             status.save()
@@ -761,24 +768,15 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
             # Save the image into the DB
             img = Image(original_file=imageFile,
                     uploaded_by=currentUser,
-                    point_generation_method=point_generation_method,
+                    point_generation_method=source.default_point_generation_method,
                     metadata=metadata,
                     source=source,
                     status=status,
                   )
             img.save()
 
-            # Generate points
-            if point_generation_method:
-                points = PointGen.generate_points(img, **PointGen.db_to_args_format(point_generation_method))
-
-                # Save points
-                for pt in points:
-                    Point(row=pt['row'],
-                          column=pt['column'],
-                          point_number=pt['point_number'],
-                          image=img,
-                    ).save()
+            # Generate and save points
+            generate_points(img)
 
             # For 2011 Oct 21 demonstration purposes:
             # If the source id is 15 or 16, then queue the images for robot annotation

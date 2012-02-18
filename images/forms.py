@@ -2,11 +2,12 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm, TextInput, FileInput, CharField
-from django.forms.fields import ChoiceField, BooleanField, ImageField, FileField, IntegerField, DecimalField
+from django.forms.fields import ChoiceField, ImageField, FileField, IntegerField, DecimalField
 from django.forms.widgets import Select
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
-from images.utils import PointGen, metadata_to_filename, AnnotationAreaUtils
+from images.model_utils import PointGen, AnnotationAreaUtils
+from images.utils import metadata_to_filename
 
 class ImageSourceForm(ModelForm):
 
