@@ -1,20 +1,16 @@
 {% extends "images/base_image.html" %}
 {% load i18n %}
 {% load guardian_tags %}
-{% load dajaxice_templatetags %}
 
 {% block title %}Annotation Tool | CoralNet{% endblock %}
 
-{% block media-includes %}
-    {{ block.super }}
+{% block js-includes %}
+    {% include "javascript-includes.html" with dajaxice="yes" jquery_hotkeys="yes" %}
+{% endblock %}
 
+{% block page-specific-includes %}
     <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/annotation_tool.css" />
-
-    {% include "jquery-hotkeys-include.html" %}
-    {% dajaxice_js_import %}
-
-    <script src="/static/js/util.js" type="text/javascript"></script>
-    <script src="/static/js/AnnotationToolHelper.js" type="text/javascript"></script>
+    <script src="{{ STATIC_URL }}js/AnnotationToolHelper.js" type="text/javascript"></script>
 {% endblock %}
 
 {% block content %}

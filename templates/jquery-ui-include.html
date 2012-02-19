@@ -1,7 +1,0 @@
-{# jQuery UI from Google APIs.  #}
-<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.17/jquery-ui.min.js" type="text/javascript"></script>
-{# If can't connect to Google APIs (offline development, etc.), can fall back to our own copy of jQuery UI. #}
-<script>
-if (!jQuery.ui)
-    document.write('<script src="{{ STATIC_URL }}js/jquery-ui.min.js"><\/script>');
-</script>

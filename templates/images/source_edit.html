@@ -2,8 +2,7 @@
 
 {% block title %}Edit Source ({{ source.name }}) | CoralNet{% endblock %}
 
-{% block media-includes %}
-  {{ block.super }}
+{% block page-specific-includes %}
   {{ editSourceForm.media }}
   {{ pointGenForm.media }}
 {% endblock %}
