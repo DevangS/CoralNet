@@ -26,30 +26,17 @@
 
         <hr />
 
-        <fieldset>
-          <legend>Create a new Label</legend>
-          <span class="helptext">Please note that any new labels you create will be made publicly available to all CoralNet users.</span>
-
-          {% include "form_generic.html" with form=labelForm %}
-        </fieldset>
-
-        <div class="submit_button_wrapper">
-          <input type="submit" id="id_button_send_label_form" name="create_label" value="Create Label" />
-          <button type="button" class="submit" id="id_button_cancel_label_form">Cancel</button>
-        </div>
+        {% include "annotations/form_new_label.html" with labelForm=labelForm %}
 
         <hr />
 
       </div>
 
-      <fieldset>
-        {% include "annotations/form_new_labelset.html" with form=labelSetForm isEditLabelsetForm=isEditLabelsetForm %}
-      </fieldset>
+      {% include "annotations/form_new_labelset.html" with form=labelSetForm isEditLabelsetForm=isEditLabelsetForm %}
 
-      <div class="submit_button_wrapper">
-        <input type="submit" name="edit_labelset" value="Edit LabelSet" />
-        <input type="submit" name="cancel" value="Cancel Changes" />
-      </div>
+      <br />
+      <input type="submit" name="edit_labelset" value="Edit LabelSet" />
+      <input type="submit" name="cancel" value="Cancel Changes" />
 
     </form>
 

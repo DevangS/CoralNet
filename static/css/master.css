@@ -6,7 +6,7 @@ CSS EXPLANATIONS
 border-radius: for making rounded corners; browser support may vary
 
 margin: spacing around the outside of an element.  If specified by 4
- values, it means top left bottom right.  If both left and right have
+ values, it means top right bottom left.  If both left and right have
  a value of auto, then the element is centered horizontally.
 */
 
@@ -403,56 +403,66 @@ form p, .form_item_wrapper {
 }
 
 label {
-    /* This puts the label in a left column, with the text
-     aligned on the right side of that column. */
-    width: 250px;
-    float: left;
-    text-align: right;
-
-    /* Effectively get top/bottom margins for each text line
-    in the label (including between lines in a multiline label) */
-    line-height: 140%;
-
-    /* Right margin makes a bit of horizontal space between the label and the field */
-    margin: 7px 10px 7px 0;    /* top right bottom left */
-    
     font-size: 1.0em;
     color: #444;
 }
 
-/* If your form needs labels for accessibility, but the form layout
- just doesn't lend itself to the regular label styles, then use this */
-label.no_style {
-    width: auto;
-    float: none;
-    text-align: left;
-    line-height: 1em;
-    margin: 0;
-    font-size: 1em;
-    /* ...inherit color from the regular label rule, though. */
+label.column_form_text_field {
+    /* inline allows another element to sit to the right of
+       this element, and block allows this element to have margins. */
+    display: inline-block;
+    /* Defining a set width allows all field labels to sit in one "column"
+       in the form.  Then we can align the label text to the right side
+       of that column. */
+    text-align: right;
+    width: 250px;
+
+    /* Put the label at the correct vertical alignment (ugh)... */
+    vertical-align: top;
+    margin-top: 6px;
 }
+
+label.grid_checkbox {
+    display: inline-block;
+    width: 150px;
+}
+
 
 .field_wrapper {
-    /* Everything in this wrapper goes in a block that sits to
-     the right of the field label.  Need display:table-cell
-     to make everything sit to the right. */
-    display: table-cell;
+    display: inline-block;
 }
 
+/* Checkbox field wrappers contain the checkbox and the label. */
+
 .checkbox_field_wrapper {
-    /* Wrap the checkbox and label in here. */
-    margin-left: 260px;  /* 250px label width + 10px label right margin */
+    /* Indent by the same amount as a text field's label width */
+    margin-left: 250px;
+}
+.grid_checkbox_field_wrapper {
+    /* In an 800-px-wide form, this will create 4 columns of checkboxes. */
+    display: inline-block;
+    width: 190px;
+
+    /* Separate rows of checkboxes a bit, so that multi-line labels
+     * don't run so close to the label of the next row */
+    margin: 3px 0;    /* top/bottom left/right */
+
+    /* TODO: Find a way to handle a really long single word in a label.
+     * It may happen with species names of corals and stuff. Any nice way
+     * to handle text overflow, detect text overflow, or do
+     * auto-hyphenation of long words? */
 }
 
 input[type=text],input[type=password], input[type=file], textarea, span.editable {
     border: 1px solid #d7d7d7;
-    font-size: 14px;
-    padding: 5px 6px;
-    margin: 3px 0;
-    color: #000;
+    display: inline-block;
+    padding: 3px 5px 4px;    /* top left/right bottom */
     -moz-border-radius: 3px;
     -webkit-border-radius: 3px;
     border-radius: 3px;
+    
+    font-size: 0.9em;
+    color: #000;
 }
 
 input[type=checkbox] {
@@ -467,7 +477,9 @@ input[type=radio] {
 /* Dropdown box */
 select {
     min-width: 60px;
-    margin: 7px 0;    /* top/bottom left/right */
+    margin: 5px 0;    /* top/bottom left/right */
+
+    font-size: 0.9em;
 }
 
 input:focus,
@@ -522,18 +534,24 @@ input[type=submit][disabled], button.submit[disabled] {
 
 
 /* Wrap one or multiple submit buttons of a form. */
-.submit_button_wrapper {
-    /* This aligns the buttons themselves. */
+
+.submit_button_wrapper_column_form {
+    /* Form where the labels are on the left column and fields are
+     * on the right column.
+     * Line this up with the fields... */
+    margin-left: 254px;
+}
+.submit_button_wrapper_center {
+    /* The buttons go in the center. */
     text-align: center;
 }
 
 /* Field errors.  "This field is required", etc. */
 ul.errorlist {
-    border: 1px solid #a3181c;
     background-color: #fedae0;
     color: #a3181c;
-    margin: 3px 0;    /* top/bottom left/right */
-    display: block;
+    margin: 3px 0 3px 0;    /* top right bottom left */
+    display: inline-block;
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
     border-radius: 4px;
@@ -542,24 +560,24 @@ ul.errorlist li {
     font-size: 0.8em;
     font-weight: bold;
     padding: 5px 5px 4px 5px;
-    max-width: 250px;    /* TODO: This should only apply to tablecell form fields */
+    max-width: 250px;
 }
 
 .errorlist_wrapper {
-    /* This prevents the errorlist element from expanding beyond the space that
-    its text needs. We could make the errorlist itself display as a table-cell,
-    but this would make the margins not work (margins only work for block elements). */
-    display: table-cell;
+    
 }
 
 /* Help text for a field (e.g. "No more than 20 characters") */
 .helptext {
     display: block;
     line-height: 120%;
+    width: 500px;
 }
 
 .helptext_small {
+    display: block;
     font-size: 0.9em;
+    width: 500px;
 }
 
 /* For groups of fields */

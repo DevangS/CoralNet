@@ -10,17 +10,40 @@ it to be False, and pass in anything that'll evaluate to True
 {% endcomment %}
 
 <div class="form_item_wrapper" id="id_{{ field.name }}_wrapper">
-    <label for="{{ field.id_for_label }}">
+
+  {% if checkbox %}
+
+    <div class="checkbox_field_wrapper">
+
+        {{ field }}
+    
+        <label for="{{ field.id_for_label }}" class="no-style">
+          {{ field.label }}
+        </label>
+
+        {% if field.help_text and not dont_show_help_text %}
+          <div class="helptext_small">{{ field.help_text|linebreaksbr }}</div>
+        {% endif %}
+
+    </div>
+
+
+  {% else %}
+
+    <label for="{{ field.id_for_label }}" class="column_form_text_field">
         {% if field.field.required and not dont_mark_required %} <span style="color:red;"> * </span> {% endif %}
         {{ field.label }}:
     </label>
 
     <div class="field_wrapper">
         {{ field }}
+
         <div class="errorlist_wrapper">{{ field.errors|safe }}</div>  {# Allow HTML; some error messages may have links, etc. #}
 
         {% if field.help_text and not dont_show_help_text %}
           <div class="helptext_small">{{ field.help_text|linebreaksbr }}</div>
         {% endif %}
     </div>
+
+  {% endif %}
 </div>

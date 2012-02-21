@@ -28,8 +28,6 @@ class ImageSourceForm(ModelForm):
 
     class Media:
         js = (
-            # From root static directory
-            "js/util.js",
             # From images static directory
             "js/ImageSourceFormHelper.js",
         )
@@ -195,8 +193,6 @@ class ImageUploadOptionsForm(Form):
             'all': ("css/uploadForm.css",)
         }
         js = (
-            # From root static directory
-            "js/util.js",
             # From annotations static directory
             "js/ImageUploadFormHelper.js",
         )
@@ -261,11 +257,13 @@ class ImageUploadOptionsForm(Form):
         )
 
 
-        # TODO: For correctness, make sure this only applies to the
-        # regular image upload form, not the image+annotation import form.
         self.additional_details = [
             """Annotation points will be automatically generated for your images.
-            Your Source's point generation settings: %s""" % PointGen.db_to_readable_format(source.default_point_generation_method)
+            Your Source's point generation settings: %s
+            Your Source's annotation area settings: %s""" % (
+                PointGen.db_to_readable_format(source.default_point_generation_method),
+                AnnotationAreaUtils.percentage_string_to_readable_format(source.image_annotation_area)
+                )
         ]
 
 
@@ -283,8 +281,6 @@ class ImageDetailForm(ModelForm):
 
     class Media:
         js = (
-            # Collected from root static directory
-            "js/util.js",
             # Collected from app-specific static directory
             "js/ImageDetailFormHelper.js",
         )
@@ -401,8 +397,6 @@ class PointGenForm(Form):
 
     class Media:
         js = (
-            # From root static directory
-            "js/util.js",
             # From annotations static directory
             "js/PointGenFormHelper.js",
         )

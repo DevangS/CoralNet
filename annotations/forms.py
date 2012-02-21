@@ -111,8 +111,6 @@ class NewLabelSetForm(ModelForm):
 
     class Media:
         js = (
-            # From the general static folder
-            "js/util.js",
             # From this app's static folder
             "js/LabelsetFormHelper.js",
         )

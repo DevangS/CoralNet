@@ -8,36 +8,18 @@
 <form action="" method="post">
   {% csrf_token %}
 
-  <fieldset>
-    <legend>{% trans "Signin" %}</legend>
+  <legend>{% trans "Signin" %}</legend>
 
-    {{ form.non_field_errors }}
-    {% for field in form %}
-      {% comment %} Very ugly hack for displaying the checkbox field differently. Really need a generic way of displaying checkbox fields differently {% endcomment %}
+  {{ form.non_field_errors }}
+  {% for field in form %}
       {% if field.name == 'remember_me' %}
-        <div class="checkbox_field_wrapper">
-            {{ field }}
-            <label for="{{ field.id_for_label }}" class="no_style">
-                {{ field.label }}
-            </label>
-        </div>
+          {% include "form_generic_one_field.html" with field=field checkbox="yes" %}
       {% else %}
-        <label for="{{ field.id_for_label }}">
-            {{ field.label }}:
-        </label>
-
-        <div class="field_wrapper">
-            {{ field }}
-            <div class="errorlist_wrapper">{{ field.errors|safe }}</div>  {# Allow HTML; some error messages may have links, etc. #}
-            {% if field.help_text %}
-              <div class="helptext_small">{{ field.help_text|linebreaksbr }}</div>
-            {% endif %}
-        </div>
+          {% include "form_generic_one_field.html" with field=field %}
       {% endif %}
-    {% endfor %}
-  </fieldset>
+  {% endfor %}
 
-  <div class="submit_button_wrapper">
+  <div class="submit_button_wrapper_column_form">
     <input type="submit" value="{% trans "Signin" %}" />
   </div>
 
