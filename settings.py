@@ -221,10 +221,11 @@ IMPORTED_USER_ID = -2
 ROBOT_USER_ID = -3
 
 #Userena settings
-LOGIN_REDIRECT_URL = '/accounts/%(username)s/'
+LOGIN_REDIRECT_URL = '/images/source/'
 LOGIN_URL = '/accounts/signin/'
 LOGOUT_URL = '/accounts/signout/'
 AUTH_PROFILE_MODULE = 'accounts.Profile'
+USERENA_SIGNIN_REDIRECT_URL = LOGIN_REDIRECT_URL
 USERENA_USE_MESSAGES = False
 USERENA_LANGUAGE_FIELD = 'en'
 
