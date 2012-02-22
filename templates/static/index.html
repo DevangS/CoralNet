@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block page-specific-includes %}
-    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/index.css" />
+    {% include "static-local-include.html" with type="css" path="css/index.css" %}
 {% endblock %}
 
 {% block content %}

@@ -5,7 +5,7 @@
 {% block title %}Visualization | CoralNet{% endblock %}
 
 {% block css-includes %}
-    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/visualization.css" />
+    {% include "static-local-include.html" with type="css" path="css/visualization.css" %}
 {% endblock %}
 
 {% block nav %}

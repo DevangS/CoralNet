@@ -9,8 +9,8 @@
 {% endblock %}
 
 {% block page-specific-includes %}
-    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/annotation_tool.css" />
-    <script src="{{ STATIC_URL }}js/AnnotationToolHelper.js" type="text/javascript"></script>
+    {% include "static-local-include.html" with type="css" path="css/annotation_tool.css" %}
+    {% include "static-local-include.html" with type="js" path="js/AnnotationToolHelper.js" %}
 {% endblock %}
 
 {% block content %}

@@ -14,6 +14,7 @@ to any value (except the empty string) to not include it.
 {% endcomment %}
 
 {% load dajaxice_templatetags %}
+{% load common_tags %}
 
 
 {# Dajaxice, for Ajax support #}
@@ -49,12 +50,12 @@ to any value (except the empty string) to not include it.
 {# https://github.com/jeresig/jquery.hotkeys #}
 {# Must be included after: jQuery #}
 {% if jquery_hotkeys %}
-    <script src="{{ STATIC_URL }}js/jquery.hotkeys.js"></script>
+    {% include "static-local-include.html" with type="js" path="js/jquery.hotkeys.js" %}
 {% endif %}
 
 {# Our own utility functions and plugin modifications. #}
 {# Not just for JS-heavy pages, but also for some basic styling. #}
 {# Must be included after: Dajaxice, jQuery #}
 {% if not no_util %}
-    <script src="{{ STATIC_URL }}js/util.js"></script>
+    {% include "static-local-include.html" with type="js" path="js/util.js" %}
 {% endif %}
