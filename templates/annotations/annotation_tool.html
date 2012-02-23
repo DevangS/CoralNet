@@ -15,11 +15,6 @@
 
 {% block content %}
 
-<p>Image: {{ metadata.name }}</p>
-<p>Location keys: {{ location_values|default:"(Unknown)" }}</p>
-<p>Year: {{ metadata.photo_date.year|default:"(Unknown)" }}</p>
-<p>Annotation point type: {{ image.point_gen_method_display }}</p>
-
 <button id="id_button_show_instructions">Help/Controls</button>
 
 <div id="id_instructions_wrapper" style="display:none">
@@ -205,6 +200,15 @@
     <div id="dummyColumn"></div>
 
 </div>
+
+<ul class="detail_list">
+  <li>Image: {{ metadata.name }}</li>
+  <li>Location keys: {{ location_values|default:"(Unknown)" }}</li>
+  <li>Year: {{ metadata.photo_date.year|default:"(Unknown)" }}</li>
+  <li>Annotation points: {{ image.point_gen_method_display }}</li>
+  <li>Annotation area: {{ annotation_area_string|default:"(Not specified)" }}</li>
+</ul>
+    
 
 <!-- Script in the body will run on page load. -->
 <script type="text/javascript">

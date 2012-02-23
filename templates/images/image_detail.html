@@ -46,57 +46,57 @@
     
     <hr />
 
-    <div class="detail_list">
+    <div class="details">
     
-    <div>
-    {% for detail in detailsets.keys %}
-        <p>{{ detail.label }}: {{ detail.value }}</p>
-    {% endfor %}
-    </div>
+        <ul>
+        {% for detail in detailsets.keys %}
+            <li>{{ detail.label }}: {{ detail.value }}</li>
+        {% endfor %}
+        </ul>
 
-    <div>
-    <p>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</p>
+        <ul>
+        <li>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</li>
 
-    {% if annotation_area_string %}
-      <p>Annotation area:</p>
-      <p style="margin-left: 30px;">{{ annotation_area_string }}</p>
-    {% else %}
-      <p>Annotation area: (Not specified)</p>
-    {% endif %}
-
-    {% if metadata.height_in_cm %}
-      <p>Height coverage: {{ metadata.height_in_cm }} centimeters</p>
-    {% else %}
-        {% if source.image_height_in_cm %}
-          <p>Height coverage: {{ source.image_height_in_cm }} centimeters (Source default)</p>
+        {% if annotation_area_string %}
+          <li>Annotation area: {{ annotation_area_string }}</li>
         {% else %}
-          <p>Height coverage: (Not specified)</p>
+          <li>Annotation area: (Not specified)</li>
         {% endif %}
-    {% endif %}
-    </div>
 
-    <div>
-    <p>Upload date: {{ image.upload_date }}</p>
-    <p>Uploaded by: {{ image.uploaded_by|default:"(Unknown)" }}</p>
-    
-    {% for detail in detailsets.other_info %}
-        {% if detail.value %}
-            {% if detail.name == 'comments' %}
-                <p>{{ detail.label }}:</p>
-                <p style="margin-left: 30px;">{{ detail.value|linebreaksbr }}</p>
+        {% if metadata.height_in_cm %}
+          <li>Height coverage: {{ metadata.height_in_cm }} centimeters</li>
+        {% else %}
+            {% if source.image_height_in_cm %}
+              <li>Height coverage: {{ source.image_height_in_cm }} centimeters (Source default)</li>
             {% else %}
-                <p>{{ detail.label }}: {{ detail.value }}</p>
+              <li>Height coverage: (Not specified)</li>
             {% endif %}
         {% endif %}
-    {% endfor %}
-    </div>
+        </ul>
 
-    <div>
-    {% get_obj_perms user for source as "source_perms" %}
-    {% if "source_edit" in source_perms %}
-    <a href="{% url image_detail_edit source.id image.id %}">{% trans 'Edit Image Details' %}</a>
-    {% endif %}
-    </div>
+        <ul>
+        <li>Upload date: {{ image.upload_date }}</li>
+        <li>Uploaded by: {{ image.uploaded_by|default:"(Unknown)" }}</li>
+
+        {% for detail in detailsets.other_info %}
+            {% if detail.value %}
+                {% if detail.name == 'comments' %}
+                    <li>{{ detail.label }}:
+                      <span style="display:block; margin-left:30px;">
+                        {{ detail.value|linebreaksbr }}
+                      </span>
+                    </li>
+                {% else %}
+                    <li>{{ detail.label }}: {{ detail.value }}</li>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        </ul>
+
+        {% get_obj_perms user for source as "source_perms" %}
+        {% if "source_edit" in source_perms %}
+        <a href="{% url image_detail_edit source.id image.id %}">{% trans 'Edit Image Details' %}</a>
+        {% endif %}
 
     </div>
 

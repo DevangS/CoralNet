@@ -336,16 +336,7 @@ def image_detail(request, image_id, source_id):
     scaled_width = min(image.original_width, 1000)
 
     # Annotation area.
-    if metadata.annotation_area:
-        annotation_area_string = AnnotationAreaUtils.pixel_string_to_readable_format(
-            metadata.annotation_area
-        )
-    elif source.image_annotation_area:
-        annotation_area_string = AnnotationAreaUtils.percentage_string_to_pixels_readable_format(
-            source.image_annotation_area, image.original_width, image.original_height
-        )
-    else:
-        annotation_area_string = ''
+    annotation_area_string = AnnotationAreaUtils.annotation_area_string_of_img(image)
 
     return render_to_response('images/image_detail.html', {
         'source': source,

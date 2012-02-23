@@ -17,57 +17,8 @@
 
     <hr />
 
-    <div class="detail_list">
-
-        <div>
-        <p>Visibility: {{ source.get_visibility_display }}</p>
-        <p>Date Created: {{ source.create_date }}</p>
-
-        {% if source.description %}
-          <p>Description:</p>
-            <span style="display:block; margin-left:30px;">
-                {{ source.description|linebreaks }}
-            </span>
-        {% else %}
-          <p>Description: (None)</p>
-        {% endif %}
-
-        </div>
-
-        <div>
-        <p>Location keys: {{ loc_keys }}</p>
-
-        {% if source.image_height_in_cm %}
-          <p>Default image height coverage: {{ source.image_height_in_cm }} centimeters</p>
-        {% else %}
-          <p>Default image height coverage: (Not specified)</p>
-        {% endif %}
-
-        {% if source.image_annotation_area %}
-          <p>Default image annotation area: {{ source.image_annotation_area_display }}</p>
-        {% else %}
-          <p>Default image annotation area: (Not specified)</p>
-        {% endif %}
-
-        <p>Annotation point generation: {{ source.point_gen_method_display }}</p>
-        </div>
-
-        <div>
-        <p>Longitude: {{ source.longitude|default:"(Not specified)" }}</p>
-        <p>Latitude: {{ source.latitude|default:"(Not specified)" }}</p>
-        </div>
-
-        <div>
-        {% if "source_admin" in source_perms %}
-        <a href="{% url source_edit source.id %}">{% trans 'Edit Source Details' %}</a>
-        {% endif %}
-        </div>
-
-    </div>
-
-    <hr />
     <div id="images">
-        <h2>Latest images</h2>
+        <h3>Latest images</h3>
         {% if latest_images %}
             {% for image in latest_images %}
                 <span class="thumb_small_wrapper">
@@ -101,7 +52,7 @@
 
     <hr />
     <div id="annotations">
-        <h2>Annotations</h2>
+        <h3>Annotations</h3>
 
         {% if source.labelset.isEmptyLabelset %}
             {% if "source_admin" in source_perms %}
@@ -117,7 +68,7 @@
     {% if members %}
     <hr />
     <div id="members">
-        <h2>Members</h2>
+        <h3>Members</h3>
 
         <div>
         <table class="detail_table">
@@ -140,10 +91,60 @@
           {% for invite in source.sourceinvite_set.all %}
             <p>({{ invite.recipient.username }} has been invited with {{ invite.source_perm_verbose }} permissions)</p>
           {% endfor %}
-          <a href="{% url source_invite source.id %}">+ Invite a new member</a>
+          <p><a href="{% url source_invite source.id %}">+ Invite a new member</a></p>
         {% endif %}
         </div>
     </div>
     {% endif %}
+
+    <hr />
+
+    <div class="details">
+
+        <h3>Source Details</h3>
+
+        <ul>
+          <li>Visibility: {{ source.get_visibility_display }}</li>
+          <li>Date Created: {{ source.create_date }}</li>
+
+          {% if source.description %}
+            <li>Description:
+              <span style="display:block; margin-left:30px;">
+                {{ source.description|linebreaks }}
+              </span>
+            </li>
+          {% else %}
+            <li>Description: (None)</li>
+          {% endif %}
+        </ul>
+
+        <ul>
+          <li>Location keys: {{ loc_keys }}</li>
+
+          {% if source.image_height_in_cm %}
+            <li>Default image height coverage: {{ source.image_height_in_cm }} centimeters</li>
+          {% else %}
+            <li>Default image height coverage: (Not specified)</li>
+          {% endif %}
+
+          {% if source.image_annotation_area %}
+            <li>Default image annotation area: {{ source.image_annotation_area_display }}</li>
+          {% else %}
+            <li>Default image annotation area: (Not specified)</li>
+          {% endif %}
+
+          <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
+        </ul>
+
+        <ul>
+          <li>Longitude: {{ source.longitude|default:"(Not specified)" }}</li>
+          <li>Latitude: {{ source.latitude|default:"(Not specified)" }}</li>
+        </ul>
+
+        {% if "source_admin" in source_perms %}
+        <a href="{% url source_edit source.id %}">{% trans 'Edit Source Details' %}</a>
+        {% endif %}
+
+    </div>
 
 {% endblock %}

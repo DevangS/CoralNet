@@ -195,3 +195,18 @@ class AnnotationAreaUtils():
             pixel_d['min_y'], pixel_d['max_y'],
             percent_d['min_y'], percent_d['max_y']
             )
+
+    @staticmethod
+    def annotation_area_string_of_img(img):
+        if img.metadata.annotation_area:
+            annotation_area_string = AnnotationAreaUtils.pixel_string_to_readable_format(
+                img.metadata.annotation_area
+            )
+        elif img.source.image_annotation_area:
+            annotation_area_string = AnnotationAreaUtils.percentage_string_to_pixels_readable_format(
+                img.source.image_annotation_area, img.original_width, img.original_height
+            )
+        else:
+            annotation_area_string = None
+
+        return annotation_area_string

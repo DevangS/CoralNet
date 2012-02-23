@@ -946,15 +946,21 @@ min-height: 52px;
 /*	object list / detail pages
 ................................... */
 
-/* Object list */
-ul.object_list li {
-    line-height: 1.5em;
+/* A list of details (e.g. name, age...) */
+ul.detail_list li {
+    line-height: 1.8em;
+}
+/* Multiple lists of details in succession */
+div.details ul {
+    margin: 25px 0;    /* top/bottom left/right */
+}
+div.details ul li {
+    line-height: 1.8em;
 }
 
-/* Single-object details
- * (source main page, image detail page) */
-.detail_list div {
-    margin-bottom: 35px;
+/* A list of objects (e.g. source 1, source 2...) */
+ul.object_list li {
+    line-height: 1.5em;
 }
 
 /* Table details
