@@ -503,3 +503,9 @@ class Point(models.Model):
     point_number = models.IntegerField()
     annotation_status = models.CharField(max_length=1, blank=True)
     image = models.ForeignKey(Image)
+
+    def __unicode__(self):
+        """
+        To-string method.
+        """
+        return "Point %s" % self.point_number

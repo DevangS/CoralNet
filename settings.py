@@ -167,6 +167,7 @@ INSTALLED_APPS = (
     'guardian',
     'easy_thumbnails',
     'south',
+    'reversion',
     'sentry',
     'sentry.client',
     'dajaxice',

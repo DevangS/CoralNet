@@ -75,9 +75,9 @@ class LabelSet(models.Model):
     
 class Annotation(models.Model):
     annotation_date = models.DateTimeField(blank=True, auto_now=True, editable=False)
-    point = models.ForeignKey(Point)
-    image = models.ForeignKey(Image)
+    point = models.ForeignKey(Point, editable=False)
+    image = models.ForeignKey(Image, editable=False)
     # 'user' can be the dummy user "Imported".
     user = models.ForeignKey(User)
     label = models.ForeignKey(Label) #TODO: verify
-    source = models.ForeignKey(Source)
+    source = models.ForeignKey(Source, editable=False)
