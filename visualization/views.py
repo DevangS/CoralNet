@@ -1,7 +1,7 @@
 import csv
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
-from django.db import transaction, models
+from django.db import models
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
@@ -59,7 +59,6 @@ def image_search_args_to_url_arg_str(searchDict):
     return '&'.join(argsList)
 
 
-@transaction.commit_on_success
 @visibility_required('source_id')
 def visualize_source(request, source_id):
     """

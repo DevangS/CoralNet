@@ -213,7 +213,6 @@ def source_edit(request, source_id):
         )
 
 
-@transaction.commit_on_success
 @permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def source_invite(request, source_id):
     """
@@ -349,7 +348,6 @@ def image_detail(request, image_id, source_id):
         context_instance=RequestContext(request)
     )
 
-@transaction.commit_on_success   # "Other" location values are only saved if form is error-less
 @permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 def image_detail_edit(request, image_id, source_id):
     """
@@ -426,7 +424,6 @@ def import_groups(request, fileLocation):
     file.close()
     
 
-@transaction.commit_on_success
 @permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def import_labels(request, source_id):
     """
@@ -807,7 +804,6 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
     )
 
 
-@transaction.commit_on_success
 @permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 def image_upload(request, source_id):
     """
@@ -860,7 +856,6 @@ def image_upload(request, source_id):
     )
 
 
-@transaction.commit_on_success
 @permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 @labelset_required('source_id', 'You need to create a labelset for your source before you can import annotations.')
 def annotation_import(request, source_id):

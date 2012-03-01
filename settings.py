@@ -131,6 +131,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.request",
 )
 
+# The order of middleware classes is important!
+# https://docs.djangoproject.com/en/1.3/topics/http/middleware/
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -140,6 +142,12 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'userena.middleware.UserenaLocaleMiddleware',
     'sentry.client.middleware.Sentry404CatchMiddleware',
+
+    # Put TransactionMiddleware after non-cache middlewares that use the DB.
+    # Reason: it generally doesn't make sense to put middlewares' DB changes
+    # in the same transaction as the view function's DB changes.
+    # https://docs.djangoproject.com/en/1.3/topics/db/transactions/#tying-transactions-to-http-requests
+    'django.middleware.transaction.TransactionMiddleware',
 )
 
 ROOT_URLCONF = 'CoralNet.urls'
