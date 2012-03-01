@@ -81,3 +81,6 @@ class Annotation(models.Model):
     user = models.ForeignKey(User)
     label = models.ForeignKey(Label) #TODO: verify
     source = models.ForeignKey(Source, editable=False)
+
+    def __unicode__(self):
+        return "%s - %s - %s" % (self.image, self.point.point_number, self.label.code)

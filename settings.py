@@ -143,11 +143,15 @@ MIDDLEWARE_CLASSES = (
     'userena.middleware.UserenaLocaleMiddleware',
     'sentry.client.middleware.Sentry404CatchMiddleware',
 
-    # Put TransactionMiddleware after non-cache middlewares that use the DB.
-    # Reason: it generally doesn't make sense to put middlewares' DB changes
-    # in the same transaction as the view function's DB changes.
+    # Put TransactionMiddleware after most non-cache middlewares that use the DB.
+    # Any middleware specified after TransactionMiddleware will be
+    # included in the same DB transaction that wraps the view function.
     # https://docs.djangoproject.com/en/1.3/topics/db/transactions/#tying-transactions-to-http-requests
     'django.middleware.transaction.TransactionMiddleware',
+
+    # Put after TransactionMiddleware.
+    # Model revisions needs to be part of transactions.
+    'reversion.middleware.RevisionMiddleware',
 )
 
 ROOT_URLCONF = 'CoralNet.urls'
