@@ -9,6 +9,7 @@ from django.forms.models import model_to_dict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.template import RequestContext
+from reversion.revisions import revision_context_manager
 
 from userena.models import User
 from accounts.utils import get_imported_user
@@ -726,7 +727,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
                   )
             img.save()
 
-            # Iterate over this image's annotations and save them if the .
+            # Iterate over this image's annotations and save them.
             pointNum = 1
             for anno in imageAnnotations:
 
@@ -736,8 +737,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
                 label = Label.objects.filter(code=anno['label'])[0]
 
-                # Save the Annotation in the database. Leave the user as null; we can display
-                # a null annotator as "annotation was imported".
+                # Save the Annotation in the database, marking the annotations as imported.
                 annotation = Annotation(user=importedUser,
                                         point=point, image=img, label=label, source=source)
                 annotation.save()
@@ -747,9 +747,6 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
         # Image upload form, no annotations
         else:
-
-            #point_generation_method = source.default_point_generation_method
-            
             status = ImageStatus(hasRandomPoints=True)
             status.save()
 
@@ -892,6 +889,23 @@ def annotation_import(request, source_id):
             if resultDict['error']:
                 messages.error(request, resultDict['message'])
                 transaction.rollback()
+                revision_context_manager.invalidate()
+
+#            # This also works, although the try and with make it harder to read, IMO
+#            try:
+#                with reversion.revision:
+#                    resultDict = image_upload_process(imageFiles=imageFiles,
+#                            optionsForm=optionsForm,
+#                            source=source,
+#                            currentUser=request.user,
+#                            annoFile=annoFile)
+#
+#                    if resultDict['error']:
+#                        raise ValueError()
+#            except ValueError:
+#                messages.error(request, resultDict['message'])
+#                transaction.rollback()
+
             else:
                 uploadedImages = resultDict['uploadedImages']
                 messages.success(request, resultDict['message'])

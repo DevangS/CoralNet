@@ -9,4 +9,5 @@ urlpatterns = patterns('',
     url(r'^source/(?P<source_id>\d+)/labelset/new/$', 'annotations.views.labelset_new', name="labelset_new"),
     url(r'^source/(?P<source_id>\d+)/labelset/edit/$', 'annotations.views.labelset_edit', name="labelset_edit"),
     url(r'^source/(?P<source_id>\d+)/annotate/(?P<image_id>\d+)/$', 'annotations.views.annotation_tool', name="annotation_tool"),
+    url(r'^source/(?P<source_id>\d+)/annotation_history/(?P<image_id>\d+)/$', 'annotations.views.annotation_history', name="annotation_history"),
 )

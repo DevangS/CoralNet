@@ -1,0 +1,32 @@
+{% extends "images/base_image.html" %}
+
+{% block title %}Annotation History | CoralNet{% endblock %}
+
+{% block content %}
+
+    <table class="detail_table">
+        <tr>
+            <th>Event</th>
+            <th>User</th>
+            <th>Date</th>
+        </tr>
+        {% for log_entry in anno_log %}
+            <tr>
+                <td>
+                  {% for event in log_entry.events %}
+
+                    {{ event }}
+
+                    {% if not forloop.last %}
+                      <br/>
+                    {% endif %}
+
+                  {% endfor %}
+                </td>
+                <td>{{ log_entry.user }}</td>
+                <td>{{ log_entry.date }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+{% endblock %}
