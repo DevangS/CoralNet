@@ -466,8 +466,7 @@ class Image(models.Model):
 
     def get_location_value_str_list(self):
         """
-        Takes an Image object.
-        Returns its location values as a list of strings:
+        Returns the image's location values as a list of strings:
         ['Shore3', 'Reef 5', 'Loc10']
         """
 
@@ -489,12 +488,26 @@ class Image(models.Model):
 
         return valueList
 
+    def get_location_values_str(self):
+        """
+        Returns the image's location values as a single string:
+        'Shore3, Reef 5, Loc10'
+        """
+        return ', '.join(self.get_location_value_str_list())
+
     def point_gen_method_display(self):
         """
         Display the point generation method in templates.
         Usage: {{ myimage.point_gen_method_display }}
         """
         return PointGen.db_to_readable_format(self.point_generation_method)
+
+    def annotation_area_display(self):
+        """
+        Display the annotation area parameters in templates.
+        Usage: {{ myimage.annotation_area_display }}
+        """
+        return AnnotationAreaUtils.annotation_area_string_of_img(self)
     
 
 class Point(models.Model):

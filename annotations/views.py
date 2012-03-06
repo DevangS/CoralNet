@@ -1,7 +1,3 @@
-from collections import OrderedDict
-from datetime import datetime
-from operator import itemgetter
-import pickle
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
@@ -9,13 +5,12 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from django.utils import simplejson
-import reversion
+from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
 from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
-from annotations.utils import get_old_annotation_user_display
-from images.model_utils import AnnotationAreaUtils
+from annotations.utils import get_annotation_version_user_display
 from images.models import Source, Image, Point
 from visualization.utils import generate_patch_if_doesnt_exist
 
@@ -343,7 +338,6 @@ def annotation_tool(request, image_id, source_id):
     image = get_object_or_404(Image, id=image_id)
     source = get_object_or_404(Source, id=source_id)
     metadata = image.metadata
-    annotation_area_string = AnnotationAreaUtils.annotation_area_string_of_img(image)
 
     # Get all labels, ordered first by functional group, then by short code.
     labels = source.labelset.labels.all().order_by('group', 'code')
@@ -387,11 +381,9 @@ def annotation_tool(request, image_id, source_id):
         'source': source,
         'image': image,
         'metadata': metadata,
-        'annotation_area_string': annotation_area_string,
         'labels': labelValues,
         'labelsJSON': simplejson.dumps(labelValues),
         'form': form,
-        'location_values': ', '.join(image.get_location_value_str_list()),
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
         'num_of_points': len(annotations),
@@ -410,97 +402,66 @@ def annotation_history(request, image_id, source_id):
     image = get_object_or_404(Image, id=image_id)
     source = get_object_or_404(Source, id=source_id)
 
-    annotations = Annotation.objects.filter(image=image, source=source).order_by('point__point_number')
+    # Use values_list() and list() to avoid nested queries.
+    # https://docs.djangoproject.com/en/1.3/ref/models/querysets/#in
+    annotation_values = Annotation.objects.filter(image=image, source=source).values('pk', 'point__point_number')
+    annotation_ids = [v['pk'] for v in annotation_values]
 
-#    anno_versions_by_anno_obj = [reversion.get_for_object(anno) for anno in annotations]
+    versions_queryset = Version.objects.filter(object_id__in=list(annotation_ids))
+    versions = list(versions_queryset)   # Purely for prefetching from the DB
 
-    anno_versions_flat_list = []
-#    for sublist in anno_versions_by_anno_obj:
-#        for anno_version in sublist:
-    for anno in annotations:
-        point_number = anno.point.point_number
+    revision_ids = versions_queryset.values_list('revision', flat=True).distinct()
+    revisions = list(Revision.objects.filter(pk__in=list(revision_ids)))
 
-        for anno_version in reversion.get_for_object(anno):
-            label_id = anno_version.field_dict['label']
-            label_code = Label.objects.get(pk=label_id).code
+    # point_number_map maps annotation IDs to point numbers.
+    point_number_tuples = [(v['pk'], v['point__point_number']) for v in annotation_values]
+    point_number_map = dict()
+    for tup in point_number_tuples:
+        point_number_map[tup[0]] = tup[1]
 
-            event_str = "Point %s: %s" % (
-                point_number,
-                label_code,
-                )
-            # TODO: Use datetime and user from the serialized data, or from the revision's fields?
-            # Problem with the revision's fields is that the initial revisions have a blank user.  In this case the initial revision's data is useless, but the initial revision's serialized data isn't.  Also, the revision's fields obviously don't have the robot version.
-            # Problem with the serialized data is, well... getting the datetime back depends on how it's serialized.
-            anno_versions_flat_list.append(
-                dict(
-                    event_str=event_str,
-                    type='annotation',
-                    date=anno_version.field_dict['annotation_date'],
-                    user=get_old_annotation_user_display(anno_version),
-                )
-            )
+    # label_code_map maps label IDs to label codes.
+    label_code_map = dict()
+    for label in source.labelset.labels.all():
+        label_code_map[label.id] = label.code
 
-    anno_tool_accesses = []
-    for access in AnnotationToolAccess.objects.filter(image=image, source=source):
+    event_log = []
 
-        event_str = "Accessed annotation tool"
-        anno_tool_accesses.append(
+    for rev in revisions:
+        # Get Versions under this Revision
+        rev_versions = list(versions_queryset.filter(revision=rev))
+        # Sort by the point number of the annotation
+        rev_versions.sort( key=lambda x: point_number_map[int(x.object_id)] )
+        # Create a log entry for this Revision
+        event_log.append(
             dict(
-                event_str=event_str,
-                type='access',
+                date=rev.date_created,
+                user=get_annotation_version_user_display(rev_versions[0]),  # Any Version will do
+                events=["Point %s: %s" % (
+                            point_number_map[int(v.object_id)],
+                            label_code_map[v.field_dict['label']],
+                        )
+                        for v in rev_versions],
+            )
+        )
+
+    for access in AnnotationToolAccess.objects.filter(image=image, source=source):
+        # Create a log entry for each annotation tool access
+        event_str = "Accessed annotation tool"
+        event_log.append(
+            dict(
                 date=access.access_date,
                 user=access.user.username,
+                events=[event_str],
             )
         )
 
-    anno_events_unsorted = anno_versions_flat_list + anno_tool_accesses
-
-    # Ultimate goal is to get a list of:
-    # dict(
-    #   date = somedate
-    #   user = someuser
-    #   events = [event1, event2, ...]
-    # )
-
-    # TODO: Accommodate the robot version field to differentiate between
-    # different robot versions.
-
-    # TODO: Just use tuples as the keys.  No need to pickle things.
-    # See http://stackoverflow.com/questions/4878881/python-tuples-dictionaries-as-keys-select-sort
-    event_dict = dict()
-    for event in anno_events_unsorted:
-#        key = pickle.dumps(
-#            (event['date'], event['user'])
-#        )
-        key = (event['date'], event['user'])
-        if event_dict.has_key(key):
-            event_dict[key].append(event['event_str'])
-        else:
-            event_dict[key] = [event['event_str']]
-
-    #tuple_keys = [pickle.loads(k) for k in event_dict.keys()]
-    keys = event_dict.keys()
-
-    # Sort from latest to earliest date.
-    # Within the same date, sort by user.
-    keys.sort(key=itemgetter(1))    # Sort by user
-    keys.sort(key=itemgetter(0), reverse=True)    # Now sort by date, descending
-
-    event_list_sorted = []
-    for key in keys:
-        #pickled_key = pickle.dumps(key)
-        event_list_sorted.append(
-            dict(
-                date=key[0],
-                user=key[1],
-                events=event_dict[key],
-            )
-        )
+    event_log.sort(key=lambda x: x['date'], reverse=True)
 
     return render_to_response('annotations/annotation_history.html', {
         'source': source,
         'image': image,
-        'anno_log': event_list_sorted,
+        'metadata': image.metadata,
+        'event_log': event_log,
         },
         context_instance=RequestContext(request)
     )
