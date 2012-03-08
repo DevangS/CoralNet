@@ -438,7 +438,7 @@ class Image(models.Model):
 
     # To be set by the preprocessing task
     process_date = models.DateTimeField("Date processed", editable=False, null=True)
-
+    # To be set by the classification task
     latest_robot_annotator = models.ForeignKey(Robot, editable=False, null=True)
 
 
@@ -508,6 +508,15 @@ class Image(models.Model):
         Usage: {{ myimage.annotation_area_display }}
         """
         return AnnotationAreaUtils.annotation_area_string_of_img(self)
+
+    def get_process_date_short_str(self):
+        """
+        Return the image's (pre)process date in YYYY-MM-DD format.
+
+        Advantage over YYYY-(M)M-(D)D: alphabetized = sorted by date
+        Advantage over YYYY(M)M(D)D: date is unambiguous
+        """
+        return "{0}-{1:02}-{2:02}".format(self.process_date.year, self.process_date.month, self.process_date.day)
     
 
 class Point(models.Model):

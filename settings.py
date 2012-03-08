@@ -6,7 +6,12 @@ import djcelery
 djcelery.setup_loader()
 
 abspath = lambda *p: os.path.abspath(os.path.join(*p))
-PROJECT_ROOT = abspath(os.path.dirname(__file__))
+
+
+PROJECT_ROOT = settings_2.PROJECT_ROOT
+
+PROCESSING_ROOT = settings_2.PROCESSING_ROOT
+
 USERENA_MODULE_PATH = abspath(PROJECT_ROOT, '..')
 sys.path.insert(0, USERENA_MODULE_PATH)
 
@@ -268,7 +273,7 @@ BROKER_PASSWORD = settings_2.BROKER_PASSWORD
 BROKER_VHOST = settings_2.BROKER_VHOST
 
 #Celery configuration
-CELERYD_CONCURRENCY = 2
+CELERYD_CONCURRENCY = settings_2.CELERYD_CONCURRENCY
 
 # App URL bases
 IMAGES_URL = '/images/'

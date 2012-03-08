@@ -305,3 +305,13 @@ def generate_points(img):
               point_number=new_point['point_number'],
               image=img,
         ).save()
+
+    # Update image status.
+    # Make sure the image goes through the feature-making step again.
+    img.latest_robot_annotator = None
+    img.save()
+    status = img.status
+    status.hasRandomPoints = True
+    status.featuresExtracted = False
+    status.annotatedByRobot = False
+    status.save()

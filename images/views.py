@@ -22,8 +22,6 @@ from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailFor
 from images.model_utils import PointGen, AnnotationAreaUtils
 from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points
 
-from CoralNet.images.tasks import processImageAll
-
 
 def source_list(request):
     """
@@ -382,9 +380,22 @@ def image_detail_edit(request, image_id, source_id):
             editedMetadata.annotation_area = AnnotationAreaUtils.pixel_integers_to_string(**annotationAreaForm.cleaned_data)
             editedMetadata.save()
 
+            # If the image-level cm height has changed, then
+            # invalidate any previous image processing that was done.
+            if editedMetadata.height_in_cm != old_height_in_cm:
+                image.process_date = None
+                image.latest_robot_annotator = None
+                image.save()
+                status = image.status
+                status.preprocessed = False
+                status.featuresExtracted = False
+                status.annotatedByRobot = False
+                status.save()
+
             # If the image-level annotation area has changed, then
             # re-generate points for this image.
             # (If the image already has human annotations, though, then point re-generation doesn't happen)
+            # (TODO: If there's human annotations, we shouldn't even allow changing the annotation area!)
             if editedMetadata.annotation_area != old_annotation_area:
                 generate_points(image)
 
@@ -747,7 +758,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
         # Image upload form, no annotations
         else:
-            status = ImageStatus(hasRandomPoints=True)
+            status = ImageStatus()
             status.save()
 
             # Save the image into the DB
@@ -762,11 +773,6 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
             # Generate and save points
             generate_points(img)
-
-            # For 2011 Oct 21 demonstration purposes:
-            # If the source id is 15 or 16, then queue the images for robot annotation
-            if source.id == 15 or source.id == 16:
-                processImageAll.delay(img)
 
         # Up to 5 uploaded images will be shown
         # upon successful upload.
