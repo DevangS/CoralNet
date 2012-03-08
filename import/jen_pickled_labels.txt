@@ -1,0 +1,399 @@
+(dp0
+S'Green Fleshy Macro'
+p1
+S'Macroalgae'
+p2
+sS'Corallimoprh'
+p3
+S'All other labels'
+p4
+sS'Echinophyllia'
+p5
+S'Other scleractinians'
+p6
+sS'Sargassum sp.'
+p7
+g2
+sS'Green turf'
+p8
+S'Turf'
+p9
+sS'Pocillopora'
+p10
+S'Pocillopora'
+p11
+sS'Symphyllia'
+p12
+g6
+sS'Leather coral'
+p13
+S'Soft Coral'
+p14
+sS'Platygyra'
+p15
+g6
+sS'Tubastrea'
+p16
+S'Tubastrea'
+p17
+sS'Fungia'
+p18
+S'Fungia'
+p19
+sS'Halimeda taenicola'
+p20
+g2
+sS'Cyphastrea'
+p21
+S'Cyphastrea'
+p22
+sS'Green Crust'
+p23
+g2
+sS'Seriatopora'
+p24
+g6
+sS'Chlorodesmis'
+p25
+g2
+sS'Halimeda melanesica'
+p26
+g2
+sS'Valonia fastigiata'
+p27
+g2
+sS'Pachyseris'
+p28
+S'Pachyseris'
+p29
+sS'Anemone'
+p30
+g4
+sS'Cyanobacteria'
+p31
+g2
+sS'Porites'
+p32
+S'Porites'
+p33
+sS'Hydnophora'
+p34
+g6
+sS'Other1'
+p35
+g4
+sS'Other2'
+p36
+g4
+sS'Other3'
+p37
+g4
+sS'Lobophyllia'
+p38
+S'Lobophyllia'
+p39
+sS'Leptofauchia'
+p40
+g2
+sS'Bryozoan'
+p41
+g4
+sS'Neomeris sp.'
+p42
+g2
+sS'Turbinaria'
+p43
+g6
+sS'Porolithon craspedium'
+p44
+S'CCA'
+p45
+sS'Mud'
+p46
+g4
+sS'Holothurian'
+p47
+g4
+sS'Merulina'
+p48
+g6
+sS'Lace Coral'
+p49
+g4
+sS'Sytlophora'
+p50
+g6
+sS'Lobophora variegata'
+p51
+g2
+sS'Zooanthid'
+p52
+g4
+sS'Favities'
+p53
+g6
+sS'Herpolitha'
+p54
+S'Herpolitha'
+p55
+sS'Basalt'
+p56
+S'Bare space'
+p57
+sS'Tunicate'
+p58
+g4
+sS'Tridacna'
+p59
+g4
+sS'Green discosoma'
+p60
+g4
+sS'Ulva sp.'
+p61
+g2
+sS'Peyssonnelia sp.'
+p62
+g2
+sS'Halimeda velasquesii'
+p63
+g2
+sS'Red turf'
+p64
+g9
+sS'Montastrea'
+p65
+S'Montastrea'
+p66
+sS'Sand'
+p67
+S'Sand'
+p68
+sS'Caulerpa serrulata v. spiralis'
+p69
+g2
+sS'Stereonephrea'
+p70
+g14
+sS'Black coral'
+p71
+g4
+sS'Red Fleshy Macro'
+p72
+g2
+sS'Ctenactis'
+p73
+g6
+sS'Sponge'
+p74
+S'Sponge'
+p75
+sS'Lobophytum'
+p76
+g14
+sS'Coscinaraea'
+p77
+g6
+sS'Favia'
+p78
+S'Favia'
+p79
+sS'Oulophyllia'
+p80
+g6
+sS'Dictyosphaeria cavernosa'
+p81
+g2
+sS'Goniopora'
+p82
+g6
+sS'Echinopora'
+p83
+S'Echinopora'
+p84
+sS'Sarcophyton'
+p85
+g14
+sS'Cladiella'
+p86
+g4
+sS'Millipora'
+p87
+S'Millepora'
+p88
+sS'Astreopora'
+p89
+S'Astreopora'
+p90
+sS'Rhipilia'
+p91
+g2
+sS'Halimeda gracilis'
+p92
+g2
+sS'Echinothrix'
+p93
+g4
+sS'Caulerpa'
+p94
+g2
+sS'Caulerpa cupressoides'
+p95
+g2
+sS'Turbinaria sp.'
+p96
+g2
+sS'Halomitra'
+p97
+g6
+sS'Brown Fleshy Macro'
+p98
+g2
+sS'Galaxea'
+p99
+g6
+sS'Codium'
+p100
+g2
+sS'Pavona'
+p101
+S'Pavona'
+p102
+sS'Sandolitha'
+p103
+S'Sandolitha'
+p104
+sS'Goniastrea'
+p105
+g6
+sS'Heteractis'
+p106
+g4
+sS'Dictyota sp.'
+p107
+g2
+sS'Red Calc Crust'
+p108
+g45
+sS'Red Fleshy Calcified'
+p109
+g2
+sS'Avrainvillea'
+p110
+g2
+sS'Cycloseris'
+p111
+g6
+sS'Cryptodendrum'
+p112
+g4
+sS'Other4'
+p113
+g4
+sS'Leptoseris'
+p114
+S'Leptoseris'
+p115
+sS'Acanthastrea'
+p116
+S'Acanthastrea'
+p117
+sS'Mixed turf'
+p118
+g9
+sS'Palmophyllum'
+p119
+g2
+sS'Caulerpa urvilliana'
+p120
+g2
+sS'Codium branching'
+p121
+g2
+sS'Dictyosphaeria verslusii'
+p122
+g2
+sS'Alveopora'
+p123
+g6
+sS'Halimeda'
+p124
+g2
+sS'Diadema'
+p125
+g4
+sS'Codium arabicum'
+p126
+g2
+sS'Octocoral'
+p127
+g14
+sS'Brown Crust'
+p128
+g2
+sS'Sinularia'
+p129
+g14
+sS'Leptastrea'
+p130
+S'Leptastrea'
+p131
+sS'Leptoria'
+p132
+g6
+sS'Psammocora'
+p133
+S'Psammocora'
+p134
+sS'Padina sp.'
+p135
+g2
+sS'Acropora'
+p136
+S'Acropora'
+p137
+sS'Hydroid'
+p138
+g4
+sS'Echinometra'
+p139
+g4
+sS'Galaxaura'
+p140
+g6
+sS'Microdictyon okamurae'
+p141
+g2
+sS'octocoral'
+p142
+g14
+sS'Hypnea nidulans'
+p143
+g2
+sS'Cladophoropsis'
+p144
+g2
+sS'Limestone'
+p145
+g57
+sS'Rubble'
+p146
+g57
+sS'Gardineroseris'
+p147
+S'Gardineroseris'
+p148
+sS'Gorgonian'
+p149
+g14
+sS'Dead coral'
+p150
+g57
+sS'Montipora'
+p151
+S'Montipora'
+p152
+sS'Crustose Coralline'
+p153
+g45
+s.

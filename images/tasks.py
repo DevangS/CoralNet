@@ -1,8 +1,13 @@
+import csv
 from datetime import datetime
+import pickle
+from random import random
+import shutil
 from subprocess import call
 from celery.decorators import task
 import os
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 from accounts.utils import get_robot_user
 from annotations.models import Label, Annotation
 from images.models import Point, Image, Source, Robot
@@ -35,7 +40,7 @@ def dummyTask():
 def PreprocessImages(image):
 
     # check if already preprocessed
-    if(image.status.preprocessed):
+    if image.status.preprocessed:
 	print 'Image {} is already preprocessed'.format(image.id)
 	return 1
 
@@ -70,16 +75,16 @@ def MakeFeatures(image):
     #if error had occurred in preprocess, don't let them go further
     if os.path.isfile(PREPROCESS_ERROR_LOG):
         print("Sorry error detected in preprocessing, halting feature extraction!")
-	return
-    if (not image.status.preprocessed):
- 	print 'Image id {} is not preprocessed. Can not make features'.format(image.id)
-	return
-    if (not image.status.hasRandomPoints):
+        return
+    if not image.status.preprocessed:
+        print 'Image id {} is not preprocessed. Can not make features'.format(image.id)
+        return
+    if not image.status.hasRandomPoints:
         print 'Image id {} doesnt have random points. Can not make features'.format(image.id)
-	return
-    if (image.status.featuresExtracted):
+        return
+    if image.status.featuresExtracted:
         print 'Features already extracted for image id {}'.format(image.id)
-	return
+        return
  
     print 'Start feature extraction for  image id {}'.format(image.id)
 
@@ -115,7 +120,7 @@ def Classify(image):
         return
 
     # make sure that the previous step is complete
-    if (not image.status.featuresExtracted):
+    if not image.status.featuresExtracted:
         print 'Features not extracted for image id {}, can not proceed'.format(image.id)
         return
 
@@ -123,7 +128,7 @@ def Classify(image):
     allRobots = Robot.objects.filter(source = image.source)
  
     # if empty, return
-    if (len(allRobots) == 0):
+    if len(allRobots) == 0:
         print 'No robots exist for the source, {}, of image id {}. Aborting.'.format(image.source, image.id)
         return
     
@@ -188,7 +193,181 @@ def Classify(image):
 
 @task()
 def processImageAll(image):
-   
     PreprocessImages(image)
     MakeFeatures(image)
     Classify(image)
+
+def custom_listdir(path):
+    """
+    Returns the content of a directory by showing directories first
+    and then files by ordering the names alphabetically
+    """
+    dirs = sorted([d for d in os.listdir(path) if os.path.isdir(path + os.path.sep + d)])
+    dirs.extend(sorted([f for f in os.listdir(path) if os.path.isfile(path + os.path.sep + f)]))
+
+    return dirs
+
+
+def importCPCImage(prefix, dirName, imagesLoc, outputFilename, pickledLabelDictLoc):
+    """
+    Takes in prefix like Taiwan, directory of labels, directory of images,
+    output annotation filename, pickled label mapping file location
+    Note: automatically renames the images and require the custom_listdir above
+    """
+    LabelDict = pickle.load(open(pickledLabelDictLoc, 'r'))
+    outputFile = open(outputFilename, 'wb') #opens output file for writing
+    errors = []
+    image_errors = []
+    coords = []
+    labels = []
+    count = 0
+    currImage = ""
+    imagesDirList = custom_listdir(imagesLoc)
+    for dataFilename in custom_listdir(dirName):
+        dataFile = open(dirName+dataFilename, 'rb') #opens the file for reading
+        imageName = dataFilename.replace('.cpc', '.JPG')
+        if not imagesDirList.count(imageName):
+            if not image_errors.count(imageName):
+                image_errors.append(imageName)
+                os.rename(imagesLoc+imageName, "404"+filename)
+                continue
+        if imageName != currImage:
+            count += 1
+            currImage = imageName
+            newname = prefix + "_" + str(count) + "_" + imageName
+            os.rename(imagesLoc+imageName, imagesLoc+newname)
+        if str(dataFile).count(".cpc") == 1:
+            for index,words in enumerate(dataFile):
+                if index > 5:
+                    if words.count(",") == 1:
+                        coords.append(str(words))
+                    elif words.count(",") == 3:
+                        words = words.split(',')
+                        labelName = words[1].replace('"', '')
+                        name = LabelDict.get(labelName.strip())
+                        if name:
+                            #add label
+                            labels.append(name)
+                            #rename file
+                        else:
+                            if not errors.count(labelName):
+                                errors.append(labelName)
+        dataFile.close()
+
+    if not errors:
+        for index,coord in enumerate(coords):
+            coord = coord.split(',')
+            row = str(int(coord[0])/15) #todo automatically scale
+            col = str(int(coord[1])/15)
+            name = labels[index]
+            output = prefix + ";" + str(index) + ";2012-02-29;" + row.strip() + ";" + col.strip() + ";" + name + "\n"
+            outputFile.write(str(output))
+
+    outputFile.close()
+    print errors
+    print image_errors
+
+def importPhotoGridImage(prefix, dirName, imagesLoc, outputFilename, pickledLabelDictLoc):
+    """
+    Takes in prefix like Taiwan, directory of labels, directory of images,
+    output annotation filename, pickled label mapping file location,
+    and total images to
+    pick(put 0 if want all images)
+    Note: automatically renames the images and require the custom_listdir above
+    """
+    LabelDict = pickle.load(open(pickledLabelDictLoc, 'r'))
+    outputFile = open(outputFilename, 'wb') #opens output file for writing
+    count = 0
+    errors = []
+    valid_labels = []
+    image_errors = []
+    imagesDirList = custom_listdir(imagesLoc)
+    for dataFilename in custom_listdir(dirName):
+        dataFile = open(dirName+dataFilename, 'rb') #opens the file for reading
+        reader = csv.reader(dataFile)
+        currImage = ""
+        for index,words in enumerate(reader):
+            #skip table header line
+            if index and len(words) > 1:
+                #parse line and store needed data
+                imageName = str(words[0]).strip() + ".jpg"
+                #if image not found, skip it
+                if not imagesDirList.count(imageName):
+                    if not image_errors.count(imageName):
+                        image_errors.append(imageName)
+                    continue
+
+                if imageName != currImage:
+                    count += 1
+                    currImage = imageName
+                    newname = prefix + "_" + str(count) + "_" + imageName
+                    os.rename(imagesLoc+imageName, imagesLoc+newname)
+                x_coord = words[9]
+                y_coord = words[10]
+                labelName = str(words[11]).strip()
+                name = LabelDict.get(labelName)
+                if name:
+                    output = prefix + ";" + str(count) + ";2012-02-29;" + y_coord + ";" + x_coord + ";" + name + "\n"
+                    outputFile.write(str(output))
+                    if not valid_labels.count(labelName):
+                        valid_labels.append(labelName)
+                else:
+                    output = prefix + ";" + str(count) + ";2012-02-29;" + y_coord + ";" + x_coord + "; error" + labelName + "\n"
+                    outputFile.write(str(output))
+                    if not errors.count(labelName):
+                        errors.append(labelName)
+
+        dataFile.close()
+    outputFile.close()
+    print sorted(errors)
+    print sorted(image_errors)
+
+def randomSampleImages(origImagesLoc, dirName, destImagesLoc, total):
+    list = []
+    imagesDirList = custom_listdir(origImagesLoc)
+    for dataFilename in custom_listdir(dirName):
+        dataFile = open(dirName+dataFilename, 'rb') #opens the file for reading
+        reader = csv.reader(dataFile)
+        for index,words in enumerate(reader):
+        #skip table header line
+            if index and len(words) > 1:
+                #parse line and store needed data
+                imageName = str(words[0]).strip() + ".jpg"
+                #if image not found, skip it
+                if imagesDirList.count(imageName) and not list.count(imageName):
+                    list.append(imageName)
+        dataFile.close()
+    list = random.sample(list, total)
+    for image in list:
+        shutil.move(origImagesLoc+image, destImagesLoc+image)
+
+def renameAllTheImages(prefix, dirName, destDirName, errorArray):
+    count = 1
+    for filename in custom_listdir(dirName):
+        if errorArray.count(filename.replace(".jpg", "")):
+            newname = "404"+filename
+        else:
+            newname = prefix + "_" + str(count) + "_" + filename
+        count += 1
+        os.rename(dirName+filename, destDirName+newname)
+
+def pickle_labels(inputFileLoc, outputFileLoc):
+    dataFile = open(inputFileLoc, 'r') #opens the file for reading
+    outputFile = open(outputFileLoc, 'w') #opens output file for writing
+    dict = {}
+    new_name = ""
+
+    #goes through the input file and outputs a pickled dictionary with each
+    #label name being the key to the value of the consensus label set name
+    for line in dataFile:
+        if line.count(':'):
+            words = line.split(':')
+            new_name = words[0].strip()
+        else:
+            words = line.split(',')
+            old_name = words[0].strip()
+            dict[old_name] = new_name
+    pickle.dump(dict, outputFile )
+    #can be unpickled by doing dict = pickle.load(outputFile)
+    dataFile.close()
+    outputFile.close()
