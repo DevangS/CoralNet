@@ -1,12 +1,13 @@
 {% extends "images/base_source.html" %}
 {% load thumbnail %}
-{% load dajaxice_templatetags %}
 
 {% block title %}Upload Images | CoralNet{% endblock %}
 
-{% block media-includes %}
-  {{ block.super }}
-  {% dajaxice_js_import %}
+{% block js-includes %}
+    {% include "javascript-includes.html" with dajaxice="yes" %}
+{% endblock %}
+
+{% block page-specific-includes %}
   {{ optionsForm.media }} {# CSS and JS #}
 {% endblock %}
 
@@ -38,8 +39,8 @@
             <span class="helptext">{{ detail|linebreaksbr }}</span>
         {% endfor %}
 
-        <div class="submit_button_wrapper">
-            <input type="submit" id="id_upload_submit" value="To be filled in with JS" />
+        <div class="submit_button_wrapper_column_form">
+            <input type="submit" id="id_upload_submit" value="Upload Images" />
         </div>
     </form>
 

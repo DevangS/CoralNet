@@ -16,14 +16,28 @@ This form template is meant to be used with the "include" template tag.
 </fieldset>
 
 <fieldset>
-    <legend class="small">Point Generation</legend>
-    <span class="helptext">This is how we'll generate annotation points for the images you upload (if you don't provide pre-annotated images).</span>
+    <legend class="small">Image Annotation</legend>
+
+    <legend class="smaller">Default image height</legend>
+    <span class="helptext">{{ sourceForm.image_height_in_cm.help_text|linebreaksbr }}</span>
+    {% include "form_generic_one_field.html" with field=sourceForm.image_height_in_cm dont_show_help_text="True" %}
+
+    <hr class="light"/>
+
+    <legend class="smaller">Default image annotation area</legend>
+    <span class="helptext">{{ annotationAreaForm.form_help_text|linebreaksbr }}</span>
+    {% include "images/form_annotation_area.html" with form=annotationAreaForm type="percent" %}
+
+    <hr class="light"/>
+
+    <legend class="smaller">Point generation method</legend>
+    <span class="helptext">{{ pointGenForm.form_help_text|linebreaksbr }}</span>
     {% include "form_generic.html" with form=pointGenForm %}
 </fieldset>
 
 <fieldset>
     <legend class="small">World Location</legend>
-    <span class="helptext">To get your Source's coordinates, try <a href="http://www.getlatlon.com/">getlatlon.com</a>.<br />
+    <span class="helptext">To get your Source's coordinates, try <a href="http://www.getlatlon.com/" target="_blank">getlatlon.com</a>.<br />
                            Later, we'll use this information to integrate with Google Maps.</span>
     {% include "form_generic.html" with form=sourceForm.fieldsets.world_location %}
 </fieldset>

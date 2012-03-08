@@ -1,21 +1,12 @@
 {% comment %}
 This form template is meant to be used with the "include" template tag.
+
+The pattern "with var1=var1" is redundant in an include statement,
+since an included template is rendered with the context of the template
+that's including it.  But the with statement's there for code clarity.
 {% endcomment %}
 
 {{ form.non_field_errors }}
 {% for field in form %}
-    <div class="form_item_wrapper" id="id_{{ field.name }}_wrapper">
-        <label for="{{ field.id_for_label }}">
-            {% if field.field.required and not dont_mark_required %} <span style="color:red;"> * </span> {% endif %}
-            {{ field.label }}:
-        </label>
-
-        <div class="field_wrapper">
-            {{ field }}
-            <div class="errorlist_wrapper">{{ field.errors|safe }}</div>  {# Allow HTML; some error messages may have links, etc. #}
-            {% if field.help_text %}
-              <div class="helptext">{{ field.help_text|linebreaksbr }}</div>
-            {% endif %}
-        </div>
-    </div>
+    {% include "form_generic_one_field.html" with field=field dont_mark_required=dont_mark_required dont_show_help_text=dont_show_help_text %}
 {% endfor %}

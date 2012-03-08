@@ -9,6 +9,7 @@ from accounts.utils import get_robot_user
 from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm
 from annotations.models import Label, LabelSet, Annotation
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
+from images.model_utils import AnnotationAreaUtils
 from images.models import Source, Image, Point
 from visualization.utils import generate_patch_if_doesnt_exist
 
@@ -326,8 +327,8 @@ def label_list(request):
     )
 
 
-@labelset_required('source_id', 'You need to create a labelset for your source before you can annotate images.')
 @permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
+@labelset_required('source_id', 'You need to create a labelset for your source before you can annotate images.')
 def annotation_tool(request, image_id, source_id):
     """
     View for the annotation tool.
@@ -336,6 +337,7 @@ def annotation_tool(request, image_id, source_id):
     image = get_object_or_404(Image, id=image_id)
     source = get_object_or_404(Source, id=source_id)
     metadata = image.metadata
+    annotation_area_string = AnnotationAreaUtils.annotation_area_string_of_img(image)
 
     # Get all labels, ordered first by functional group, then by short code.
     labels = source.labelset.labels.all().order_by('group', 'code')
@@ -376,6 +378,7 @@ def annotation_tool(request, image_id, source_id):
         'source': source,
         'image': image,
         'metadata': metadata,
+        'annotation_area_string': annotation_area_string,
         'labels': labelValues,
         'labelsJSON': simplejson.dumps(labelValues),
         'form': form,

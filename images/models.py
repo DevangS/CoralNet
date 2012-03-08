@@ -1,11 +1,18 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign
-from images.utils import PointGen
+from images.model_utils import PointGen, AnnotationAreaUtils
 from CoralNet.utils import generate_random_filename
+
+# Constants that don't really belong to a particular model
+class ImageModelConstants():
+    MIN_IMAGE_CM_HEIGHT = 1
+    MAX_IMAGE_CM_HEIGHT = 100000
+
 
 class Source(models.Model):
 
@@ -46,11 +53,30 @@ class Source(models.Model):
         (PointGen.Types.UNIFORM, PointGen.Types.UNIFORM_VERBOSE),
     )
     default_point_generation_method = models.CharField(
-        'Point generation method',
+        "Point generation method",
+        help_text="When we create annotation points for uploaded images, this is how we'll generate the point locations.",
         max_length=50,
         default=PointGen.args_to_db_format(
                     point_generation_type=PointGen.Types.SIMPLE,
                     simple_number_of_points=200)
+    )
+
+    image_height_in_cm = models.IntegerField(
+        "Default image height coverage (centimeters)",
+        help_text="The automatic annotation system needs to know how much space is covered by each image.\n"
+                  "You can also set this on a per-image basis; for images that don't have a specific value set, this default value will be used.",
+        validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
+                    MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
+        null=True
+    )
+
+    image_annotation_area = models.CharField(
+        "Default image annotation area",
+        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.\n"
+                  "For example, X boundaries of 10% and 95% mean that the leftmost 10% and the rightmost 5% of the image will not have any points.\n"
+                  "You can also set these boundaries as pixel counts on a per-image basis; for images that don't have a specific value set, these percentages will be used.",
+        max_length=50,
+        null=True
     )
 
     longitude = models.CharField(max_length=20, blank=True)
@@ -223,6 +249,13 @@ class Source(models.Model):
         """
         return len(self.get_key_list())
 
+    def image_annotation_area_display(self):
+        """
+        Display the annotation-area parameters in templates.
+        Usage: {{ mysource.annotation_area_display }}
+        """
+        return AnnotationAreaUtils.percentage_string_to_readable_format(self.image_annotation_area)
+
     def point_gen_method_display(self):
         """
         Display the point generation method in templates.
@@ -308,8 +341,24 @@ class Metadata(models.Model):
     longitude = models.CharField(max_length=20, blank=True)
     depth = models.CharField(max_length=45, blank=True)
 
-    # Do we need any input checking on pixel_cm_ratio?
-    pixel_cm_ratio = models.CharField('Pixel/cm ratio', max_length=45, null=True, blank=True)
+    height_in_cm = models.IntegerField(
+        "Height covered (centimeters)",
+        help_text="The automatic annotation system needs to know how much space is covered by the image.\n"
+                  "If you don't set this value, the source's default value will be used.",
+        validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
+                    MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
+        null=True, blank=True
+    )
+
+    annotation_area = models.CharField(
+        "Annotation area",
+        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.\n"
+                  "For example, X boundaries of 150 and 1800 mean that points are only generated within the X-pixel values 150 through 1800.\n"
+                  "If you don't set these values, the source's default annotation area (defined with percentages, not pixels) will be used.",
+        max_length=50,
+        null=True, blank=True
+    )
+    
     camera = models.CharField(max_length=200, blank=True)
     photographer = models.CharField(max_length=45, blank=True)
     water_quality = models.CharField(max_length=45, blank=True)
@@ -454,73 +503,3 @@ class Point(models.Model):
     point_number = models.IntegerField()
     annotation_status = models.CharField(max_length=1, blank=True)
     image = models.ForeignKey(Image)
-
-
-
-# General utility methods that involve model classes.
-# If you can find a better place for these methods, feel free to move them.
-
-def get_location_value_objs(source, valueList, createNewValues=False):
-    """
-    Takes a list of values as strings:
-    ['Shore3', 'Reef 5', 'Loc10']
-    Returns a dict of Value objects:
-    {'value1': <Value1 object: 'Shore3'>, 'value2': <Value2 object: 'Reef 5'>, ...}
-
-    If the database doesn't have a Value object of the desired name:
-    - If createNewValues is True, then the required Value object is
-     created and inserted into the DB.
-    - If createNewValues is False, then this method returns False.
-    """
-    valueNameGen = (v for v in valueList)
-    valueDict = dict()
-
-    for valueIndex , valueClass in [
-            ('value1', Value1),
-            ('value2', Value2),
-            ('value3', Value3),
-            ('value4', Value4),
-            ('value5', Value5)
-    ]:
-        try:
-            valueName = valueNameGen.next()
-        except StopIteration:
-            # That's all the values the valueList had
-            break
-        else:
-            if createNewValues:
-                valueDict[valueIndex], created = valueClass.objects.get_or_create(source=source, name=valueName)
-            else:
-                try:
-                    valueDict[valueIndex] = valueClass.objects.get(source=source, name=valueName)
-                except valueClass.DoesNotExist:
-                    # Value object not found
-                    return False
-
-    # All value objects were found/created
-    return valueDict
-
-def find_dupe_image(source, values=None, year=None, **kwargs):
-    """
-    Sees if the given source already has an image with the given arguments.
-    """
-
-    # Get Value objects of the value names given in "values".
-    valueObjDict = get_location_value_objs(source, values, createNewValues=False)
-
-    if not valueObjDict:
-        # One or more of the values weren't found; no dupe image in DB.
-        return False
-
-    # Get all the metadata objects in the DB with these location values and year
-    metaMatches = Metadata.objects.filter(photo_date__year=year, **valueObjDict)
-
-    # Get the images from our source that have this metadata.
-    imageMatches = Image.objects.filter(source=source, metadata__in=metaMatches)
-
-    if len(imageMatches) > 1:
-        raise ValueError("Something's not right - this set of metadata has multiple image matches.")
-    elif len(imageMatches) == 1:
-        return imageMatches[0]
-    else:
-        return False

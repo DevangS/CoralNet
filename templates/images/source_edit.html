@@ -2,8 +2,7 @@
 
 {% block title %}Edit Source ({{ source.name }}) | CoralNet{% endblock %}
 
-{% block media-includes %}
-  {{ block.super }}
+{% block page-specific-includes %}
   {{ editSourceForm.media }}
   {{ pointGenForm.media }}
 {% endblock %}
@@ -13,9 +12,9 @@
     <legend>Edit Source</legend>
     
     <form action="" method="post">{% csrf_token %}
-      {% include "images/form_source.html" with sourceForm=editSourceForm pointGenForm=pointGenForm %}
+      {% include "images/form_source.html" with sourceForm=editSourceForm pointGenForm=pointGenForm annotationAreaForm=annotationAreaForm %}
 
-      <div class="submit_button_wrapper">
+      <div class="submit_button_wrapper_column_form">
         <input type="submit" value="Save Changes" />
         <input name="cancel" type="submit" value="Cancel Changes" />
       </div>

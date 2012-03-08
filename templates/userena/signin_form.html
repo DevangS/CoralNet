@@ -1,0 +1,29 @@
+{% extends 'userena/base_userena.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Signin" %}{% endblock %}
+
+{% block content %}
+
+<form action="" method="post">
+  {% csrf_token %}
+
+  <legend>{% trans "Signin" %}</legend>
+
+  {{ form.non_field_errors }}
+  {% for field in form %}
+      {% if field.name == 'remember_me' %}
+          {% include "form_generic_one_field.html" with field=field checkbox="yes" %}
+      {% else %}
+          {% include "form_generic_one_field.html" with field=field %}
+      {% endif %}
+  {% endfor %}
+
+  <div class="submit_button_wrapper_column_form">
+    <input type="submit" value="{% trans "Signin" %}" />
+  </div>
+
+  <p><a href="{% url userena_password_reset %}">{% trans "Forgot your password?" %}</a></p>
+</form>
+
+{% endblock %}

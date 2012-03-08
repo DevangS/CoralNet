@@ -2,8 +2,7 @@
 
 {% block title %}New LabelSet | CoralNet{% endblock %}
 
-{% block media-includes %}
-  {{ block.super }}
+{% block page-specific-includes %}
   {{ labelSetForm.media }}
   {{ labelForm.media }}
 {% endblock %}
@@ -26,30 +25,17 @@
 
         <hr />
           
-        <fieldset>
-          <legend>Create a new Label</legend>
-          <span class="helptext">Please note that any new labels you create will be made publicly available to all CoralNet users.</span>
-
-          {% include "form_generic.html" with form=labelForm allLabelsById=allLabelsById %}
-        </fieldset>
-
-        <div class="submit_button_wrapper">
-          <input type="submit" id="id_button_send_label_form" name="create_label" value="Create Label" />
-          <button type="button" class="submit" id="id_button_cancel_label_form">Cancel</button>
-        </div>
+        {% include "annotations/form_new_label.html" with labelForm=labelForm %}
           
         <hr />
 
       </div>
 
-      <fieldset>
-        {% include "annotations/form_new_labelset.html" with form=labelSetForm isEditLabelsetForm=isEditLabelsetForm %}
-      </fieldset>
-        
-      <div class="submit_button_wrapper">
-        <input type="submit" name="create_labelset" value="Create LabelSet" />
-      </div>
-    
+      {% include "annotations/form_new_labelset.html" with form=labelSetForm isEditLabelsetForm=isEditLabelsetForm %}
+
+      <br />
+      <input type="submit" name="create_labelset" value="Create LabelSet" />
+
     </form>
 
     <!-- Script in the body will run on page load. -->

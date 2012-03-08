@@ -4,8 +4,8 @@
 
 {% block title %}CoralNet - Labels{% endblock %}
 
-{% block media-includes %}
-    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/label.css" />
+{% block css-includes %}
+    {% include "static-local-include.html" with type="css" path="css/label.css" %}
 {% endblock %}
 
 {% block nav %}

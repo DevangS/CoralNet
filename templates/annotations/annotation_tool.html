@@ -1,28 +1,19 @@
 {% extends "images/base_image.html" %}
 {% load i18n %}
 {% load guardian_tags %}
-{% load dajaxice_templatetags %}
 
 {% block title %}Annotation Tool | CoralNet{% endblock %}
 
-{% block media-includes %}
-    {{ block.super }}
+{% block js-includes %}
+    {% include "javascript-includes.html" with dajaxice="yes" jquery_hotkeys="yes" %}
+{% endblock %}
 
-    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/annotation_tool.css" />
-
-    {% include "jquery-hotkeys-include.html" %}
-    {% dajaxice_js_import %}
-
-    <script src="/static/js/util.js" type="text/javascript"></script>
-    <script src="/static/js/AnnotationToolHelper.js" type="text/javascript"></script>
+{% block page-specific-includes %}
+    {% include "static-local-include.html" with type="css" path="css/annotation_tool.css" %}
+    {% include "static-local-include.html" with type="js" path="js/AnnotationToolHelper.js" %}
 {% endblock %}
 
 {% block content %}
-
-<p>Image: {{ metadata.name }}</p>
-<p>Location keys: {{ location_values|default:"(Unknown)" }}</p>
-<p>Year: {{ metadata.photo_date.year|default:"(Unknown)" }}</p>
-<p>Annotation point type: {{ image.point_gen_method_display }}</p>
 
 <button id="id_button_show_instructions">Help/Controls</button>
 
@@ -98,6 +89,10 @@
       <ul>
           <li>To zoom in, left-click on the image or press <kbd>Shift</kbd>+<kbd>&uarr;</kbd>.</li>
           <li>To zoom out, <span class='key_non_mac'>right-click</span><span class='key_mac'><kbd>Ctrl</kbd>-click</span> on the image or press <kbd>Shift</kbd>+<kbd>&darr;</kbd>.</li>
+          <li>You can also zoom with these buttons on the upper right:
+              <img src="/static/img/Icon_zoom-in.png"/>,
+              <img src="/static/img/Icon_zoom-out.png"/>,
+              and <img src="/static/img/Icon_zoom-fit.png"/>.</li>
           <li>To toggle between different point display modes, use these buttons on the upper right:
               <img src="/static/img/Icon_point-mode-all.png"/>,
               <img src="/static/img/Icon_point-mode-selected.png"/>,
@@ -137,6 +132,14 @@
     <div id="rightSidebar">
 
      <div id="toolButtonArea">
+         <input class="zoomButton" type="image"
+                id="zoomInButton" src="/static/img/Icon_zoom-in.png" title="Zoom in"/>
+         <input class="zoomButton" type="image"
+                id="zoomOutButton" src="/static/img/Icon_zoom-out.png" title="Zoom out"/>
+         <input class="zoomButton" type="image"
+                id="zoomFitButton" src="/static/img/Icon_zoom-fit.png" title="Zoom all the way out"/>
+         <br/>
+         
          <input class="pointModeButton" type="image"
                 id="pointModeButtonAll" src="/static/img/Icon_point-mode-all.png" title="Show all points"/>
          <input class="pointModeButton" type="image"
@@ -197,6 +200,15 @@
     <div id="dummyColumn"></div>
 
 </div>
+
+<ul class="detail_list">
+  <li>Image: {{ metadata.name }}</li>
+  <li>Location keys: {{ location_values|default:"(Unknown)" }}</li>
+  <li>Year: {{ metadata.photo_date.year|default:"(Unknown)" }}</li>
+  <li>Annotation points: {{ image.point_gen_method_display }}</li>
+  <li>Annotation area: {{ annotation_area_string|default:"(Not specified)" }}</li>
+</ul>
+    
 
 <!-- Script in the body will run on page load. -->
 <script type="text/javascript">

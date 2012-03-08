@@ -129,6 +129,50 @@ String.prototype.format = function() {
  * jQuery extensions can go here.
  */
 
+/* autoWidth
+ *
+ * Automatically make a group of elements the same width, by taking the maximum width of all
+ * the elements and then setting the whole group to this width.
+ *
+ * Parameters:
+ * limitWidth - Maximum allowed width.  If any element's width is greater than limitWidth,
+ *              make the elements use width=limitWidth instead.
+ *
+ * Side effects:
+ * On slow computers, the elements will appear without their width set for the first
+ * 0.5 second or so, and then will shift position on the page once they have their
+ * widths set.  It can be jarring to see this on nearly every page load.
+ *
+ * Original source (though it's been slightly modified):
+ * http://stackoverflow.com/a/4641390 (http://stackoverflow.com/questions/4641346/css-to-align-label-and-input)
+ * http://www.jankoatwarpspeed.com/post/2008/07/09/Justify-elements-using-jQuery-and-CSS.aspx#id_b16cb791-5bd7-4bb3-abc2-dc414fc1bd07 (1 mistake: maxWidth >= settings.limitWidth should be $(this).width >= settings.limitWidth)
+ */
+jQuery.fn.autoWidth = function(options)
+{
+  var settings = {
+      limitWidth: false
+  };
+
+  if(options) {
+      jQuery.extend(settings, options);
+  }
+
+  var maxWidth = 0;
+
+  this.each(function(){
+      var thisWidth = $(this).width();
+      if (thisWidth > maxWidth){
+          if(settings.limitWidth && thisWidth >= settings.limitWidth) {
+            maxWidth = settings.limitWidth;
+          } else {
+            maxWidth = thisWidth;
+          }
+      }
+  });
+
+  this.width(maxWidth);
+};
+
 /* Selector - exactlycontains
  *
  * Variation of the jQuery selector 'contains':
@@ -158,3 +202,19 @@ if (window.Dajaxice) {
         }
     }});
 }
+
+
+
+/*
+ * CSS-manipulating JS to run at every page load can go here.
+ */
+
+/* Make all labels with class 'form_label' the same width,
+ * and figure out this width dynamically (the longest width
+ * needed by any field, with a max allowed width of 250px).
+ *
+ * See previously defined: jQuery.fn.autoWidth
+ */
+/*util.addLoadEvent( function() {
+    $('label.column_form_text_field').autoWidth({limitWidth: 250});
+});*/

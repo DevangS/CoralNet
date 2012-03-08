@@ -2,8 +2,7 @@ from django.core.urlresolvers import reverse
 from django.utils import simplejson
 from dajaxice.decorators import dajaxice_register
 from images.models import Source
-from images.models import find_dupe_image
-from images.utils import filename_to_metadata
+from images.utils import filename_to_metadata, find_dupe_image
 
 @dajaxice_register
 def ajax_assess_file_status(request, filenames, sourceId, checkDupes):

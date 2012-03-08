@@ -1,8 +1,8 @@
 {% extends "visualization/base_visualize.html" %}
 {% block title %}{{ source.name }} - Statistics | CoralNet{% endblock %}
 
-{% block content %}
-    <style type="text/css">
+{% block css-code %}
+<style type="text/css">
 img {
     float:left;
 }
@@ -21,7 +21,6 @@ table.sample th {
 	border-style: inset;
 	border-color: gray;
 	background-color: white;
-	-moz-border-radius: ;
 }
 table.sample td {
 	border-width: 1px;
@@ -29,11 +28,11 @@ table.sample td {
 	border-style: inset;
 	border-color: gray;
 	background-color: white;
-	-moz-border-radius: ;
 }
 </style>
-    <script type='text/javascript' src='http://code.jquery.com/jquery-1.4.2.js'></script>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.0/jquery-ui.js"></script>
+{% endblock %}
+
+{% block javascript-functions %}
     <script type="text/javascript">
        $(document).ready(function(){
             $("#selectAll").change(function() {
@@ -41,6 +40,9 @@ table.sample td {
             });
        });
     </script>
+{% endblock %}
+
+{% block content %}
     <h2>Statistics</h2>
 
     <p>Pick a set of images and labels to generate statistics for using the form below. This will generate
@@ -48,8 +50,9 @@ table.sample td {
     that there exists data for. </p>
     <br/>
     <p>Large queries may take a while so please be patient! Also note that choosing too many labels may cause some lines to have the same colour.</p>
+    
+    <hr/>
 
-    <div style="text-align: center;">
     <!-- This is the menu to select descriptors to sort through the images -->
 
         <fieldset class="fieldset_statistics">
@@ -78,33 +81,49 @@ table.sample td {
                   </table></div>
             {% endif %}
             <br/><br/><br/> &nbsp;
-             </fieldset>
-            <form action="" method="get">
+        </fieldset>
+        <form action="" method="get">
 
-            Specify some image search parameters<i>(optional)</i>:
-            <br/><br/>
+            <legend class="smaller">Specify some image search parameters <i>(optional)</i>:</legend>
+            <br/>
             {{ form.value1.label }}&nbsp;{{ form.value1 }}&nbsp;
             {{ form.value2.label }}&nbsp;{{ form.value2 }}&nbsp;
             {{ form.value3.label }}&nbsp;{{ form.value3 }}&nbsp;
             {{ form.value4.label }}&nbsp;{{ form.value4 }}&nbsp;
+            <br/><br/><br/>
+
+            <legend class="smaller">Choose some functional groups or labels <i>(required)</i>:</legend>
+            <br/>
+
+            <div style="text-align: center;">
+                <input type="checkbox" id="selectAll">
+                <label for="selectAll">SELECT ALL</label>
+            </div>
+            <br/>
+
+            Groups
+            <br/><br/>
+            {% for groupId, groupName in form.groups.field.choices %}
+              <div class="grid_checkbox_field_wrapper">
+                <input id="id_groups_{{ groupId }}" type="checkbox" value="{{ groupId }}" name="groups">
+                <label class="grid_checkbox" for="id_groups_{{ groupId }}">{{ groupName }}</label>
+              </div>
+            {% endfor %}
             <br/><br/>
 
-            Choose some labels or functional groups<i>(required)</i>: <br/><br/>
-            <div style="text-align: center;">Select All:<input type="checkbox" id="selectAll"><br /><br/></div>
-            <div style="text-align: center;"><br/>Groups<br/><br/>
-            {{ form.groups }}</div><br/><br/><br/><br/><br/><br/><br/>
-            <div style="text-align: center;"><br/><br/><br/>Labels<br/><br/></div>
-            {{ form.labels }}
-
-
-
-
-
+            Labels
+            <br/><br/>
+            {% for labelId, labelName in form.labels.field.choices %}
+              <div class="grid_checkbox_field_wrapper">
+                <input id="id_labels_{{ labelId }}" type="checkbox" value="{{ labelId }}" name="labels">
+                <label for="id_labels_{{ labelId }}">{{ labelName }}</label>
+              </div>
+            {% endfor %}
+            <br/><br/>
                 
-        <div class="submit_button_wrapper">
+        <div class="submit_button_wrapper_center">
            <input type='submit' value="Search">
         </div>
     
     </form>
-    </div>
 {% endblock %}

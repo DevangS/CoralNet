@@ -2,7 +2,7 @@
 
 {% block title %}CoralNet - Signup{% endblock %}
 
-{% block media-includes %}
+{% block page-specific-includes %}
   {{ form.media }}
 {% endblock %}
 
@@ -14,8 +14,12 @@
                            If we accept your request, we'll create an account for you and e-mail you with the info you need to log in.</span>
     <form action="{% url request_account %}" method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <input type="submit" value="Submit" />
+        
+        {% include "form_generic.html" with form=form %}
+        
+        <div class="submit_button_wrapper_column_form">
+          <input type="submit" value="Submit" />
+        </div>
     </form>
 
 {% endblock %}

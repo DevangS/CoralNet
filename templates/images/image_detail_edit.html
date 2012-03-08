@@ -2,8 +2,7 @@
 
 {% block title %}Edit Image Details | CoralNet{% endblock %}
 
-{% block media-includes %}
-  {{ block.super }}
+{% block page-specific-includes %}
   {{ imageDetailForm.media }} {# CSS and JS #}
 {% endblock %}
 
@@ -18,13 +17,27 @@
         <span class="helptext">This information can be used as search keys when you browse through your Source's images.</span>
         {% include "form_generic.html" with form=imageDetailForm.fieldsets.keys %}
       </fieldset>
+
+      <fieldset>
+        <legend class="small">Image Annotation</legend>
+
+        <legend class="smaller">Actual Height</legend>
+        <span class="helptext">{{ imageDetailForm.height_in_cm.help_text|linebreaksbr }}</span>
+        {% include "form_generic_one_field.html" with field=imageDetailForm.height_in_cm dont_show_help_text="True" %}
+
+        <hr class="light"/>
+
+        <legend class="smaller">Annotation area</legend>
+        <span class="helptext">{{ annotationAreaForm.form_help_text|linebreaksbr }}</span>
+        {% include "images/form_annotation_area.html" with form=annotationAreaForm type="pixel" %}
+      </fieldset>
         
       <fieldset>
         <legend class="small">Other Information</legend>
         {% include "form_generic.html" with form=imageDetailForm.fieldsets.other_info %}
       </fieldset>
 
-      <div class="submit_button_wrapper">
+      <div class="submit_button_wrapper_column_form">
         <input type="submit" value="Save Changes" />
         <input name="cancel" type="submit" value="Cancel Changes" />
       </div>

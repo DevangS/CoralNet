@@ -1,0 +1,14 @@
+{% comment %}
+Usage:
+{% include "static-local-include.html" with type="css" path="css/source.css" %}
+{% endcomment %}
+
+{% load common_tags %}
+
+{% if type == 'css' %}
+    <link rel="stylesheet" type="text/css" media="screen" href="{% versioned_static path %}" />
+{% else %}
+{% if type == 'js' %}
+    <script src="{% versioned_static path %}" type="text/javascript"></script>
+{% endif %}
+{% endif %}

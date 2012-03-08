@@ -41,10 +41,13 @@ def PreprocessImages(image):
 
     # check if already preprocessed
     if image.status.preprocessed:
-	print 'Image {} is already preprocessed'.format(image.id)
-	return 1
+        print 'Image {} is already preprocessed'.format(image.id)
+        return 1
 
-    # TODO: check if pixel-cm ratio field is set. If not return.
+    # TODO: use the cm height when calling the Matlab function.
+    if not (image.metadata.height_in_cm or image.source.image_height_in_cm):
+        print "Can't get a cm height for image {}. Can not preprocess".format(image.id)
+        return
 
     print 'Start pre-processing image id {}'.format(image.id)
 

@@ -9,33 +9,38 @@
     <meta name="keywords" content="corals, research, annotation, UCSD, University of California San Diego, open source" />
     <meta name="author" content="UCSD CVCE" />
 
-    <link rel="stylesheet" type="text/css" media="screen" href="{{ STATIC_URL }}css/master.css" />
+    {% include "static-local-include.html" with type="css" path="css/master.css" %}
     <link rel="shortcut icon" type="image/ico" href="/favicon.ico" />
 
-    {# jQuery from Google APIs.  Why: http://encosia.com/3-reasons-why-you-should-let-google-host-jquery-for-you/ #}
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript"></script>
-    {# If can't connect to Google APIs (offline development, etc.), can fall back to a copy of jQuery from within our project. Source: http://community.mybb.com/thread-83861-post-611152.html#pid611152 #}
-    <script>
-    if (!window.jQuery)
-        document.write('<script src="{{ STATIC_URL }}js/jquery-1.6.2.min.js"><\/script>');
-    </script>
+    {% comment %}
+    Multi-purpose CSS includes (CSS used on multiple pages) can go here.
+    {% endcomment %}
+    {% block css-includes %}{% endblock %}
 
     {% comment %}
-    CSS or JS includes, or stuff like {{ form.media }}, can go here. -Stephen
+    General-purpose JS includes can go here.
     {% endcomment %}
-    {% block media-includes %}{% endblock %}
+    {% block js-includes %}
+        {% include "javascript-includes.html" %}
+    {% endblock %}
+
+    {% comment %}
+    Page-specific CSS and JS includes can go here.
+    {{ form.media }} for example.
+    {% endcomment %}
+    {% block page-specific-includes %}{% endblock %}
+
+    {% comment %}
+    Page-specific CSS code can go here.
+    (Though it's often better to include an external .css instead, especially if it's more than a few CSS rules.).
+    {% endcomment %}
+    {% block css-code %}{% endblock %}
 
     {% comment %}
     Page-header JavaScript functions can go here.
-    (Though it's often better to include an external .js instead). -Stephen
+    (Though it's often better to include an external .js instead).
     {% endcomment %}
     {% block javascript-functions %}{% endblock %}
-
-    {% comment %}
-    Template-specific CSS can go here.
-    (If not page specific, it's often better to include it in master.css.). -Stephen
-    {% endcomment %}
-    {% block css-code %}{% endblock %}
 
   </head>
   <body>

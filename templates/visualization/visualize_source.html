@@ -4,8 +4,7 @@
 
 {% block title %}{{ source.name }} - Visualization | CoralNet{% endblock %}
 
-{% block media-includes %}
-  {{ block.super }}
+{% block page-specific-includes %}
   {{ actionForm.media }}
 {% endblock %}
 
@@ -26,27 +25,12 @@ label.label_visualization {
     width: auto;
 }
 
-.form_item_wrapper_actionform {
-    float: none;
-    margin: 0 10px;
-    border: 0;
-}
-
-label.label_actionform {
-    float: left;
-    width: auto;
-}
-
-input.submitbutton_actionform {
-    display: block;
-}
-
 </style>
 {% endblock %}
 
 {% block content %}
 
-    <h2>Browse Images</h2>
+    <legend>Browse Images</legend>
     
     <!-- This is the menu to select descriptors to sort through the images -->
     <form action="" method="get">
@@ -63,7 +47,7 @@ input.submitbutton_actionform {
           {% endfor %}
         </fieldset>
         
-      <div class="submit_button_wrapper">
+      <div class="submit_button_wrapper_center">
         <input type='submit' value="Search">
       </div>
     </form>
@@ -119,28 +103,30 @@ input.submitbutton_actionform {
             </span>
         </div>
 
+        <hr />
+
         {% get_obj_perms user for source as "source_perms" %}
         {% if not showPatches and "source_edit" in source_perms %}
+
+            <legend class="small">Edit these images</legend>
 
             <form id="id_actionForm" action="?{{ searchParamsStr }}" method="post">{% csrf_token %}
               {% for field in actionForm %}
 
                 {% if not field.is_hidden %}
-                  <div class="form_item_wrapper, form_item_wrapper_actionform" id="id_{{ field.name }}_wrapper">
-                    <div class="errorlist_wrapper">{{ field.errors|safe }}</div>
-                    <label for="{{ field.id_for_label }}" class="label_actionform">{{ field.label }}:</label>
-                    {{ field }}
-                  </div>
+                    {% include "form_generic_one_field.html" with field=field %}
                 {% else %}
                     {{ field }}
                 {% endif %}
 
               {% endfor %}
-            
-              <input id="id_actionFormSubmitButton_withoutConfirm"
-                     type="submit" class="submitbutton_actionform" name="Action" value="Perform Action"/>
-              <input id="id_actionFormSubmitButton_withConfirm"
-                     type="submit" class="submitbutton_actionform" name="Action" value="Perform Action"/>
+
+              <div class="submit_button_wrapper_column_form">
+                  <input id="id_actionFormSubmitButton_withoutConfirm"
+                         type="submit" name="Action" value="Perform Action"/>
+                  <input id="id_actionFormSubmitButton_withConfirm"
+                         type="submit" name="Action" value="Perform Action"/>
+              </div>
             </form>
 
             <!-- Script in the body will run on page load. -->
