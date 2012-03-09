@@ -383,14 +383,7 @@ def image_detail_edit(request, image_id, source_id):
             # If the image-level cm height has changed, then
             # invalidate any previous image processing that was done.
             if editedMetadata.height_in_cm != old_height_in_cm:
-                image.process_date = None
-                image.latest_robot_annotator = None
-                image.save()
-                status = image.status
-                status.preprocessed = False
-                status.featuresExtracted = False
-                status.annotatedByRobot = False
-                status.save()
+                image.after_height_cm_change()
 
             # If the image-level annotation area has changed, then
             # re-generate points for this image.
@@ -398,6 +391,7 @@ def image_detail_edit(request, image_id, source_id):
             # (TODO: If there's human annotations, we shouldn't even allow changing the annotation area!)
             if editedMetadata.annotation_area != old_annotation_area:
                 generate_points(image)
+                image.after_annotation_area_change()
 
             messages.success(request, 'Image successfully edited.')
             return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))

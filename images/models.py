@@ -537,7 +537,7 @@ class Image(models.Model):
         status.usedInCurrentModel = False
         status.save()
 
-    def after_human_annotation_change(self):
+    def after_completed_annotations_change(self):
         """
         Only necessary to run this if human annotations are complete,
         to begin with, and then an annotation is changed.

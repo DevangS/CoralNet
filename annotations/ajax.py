@@ -87,18 +87,20 @@ def ajax_save_annotations(request, annotationForm):
                     newAnno = Annotation(point=point, user=user, image=image, source=source, label=label)
                     newAnno.save()
 
-    if image_annotation_all_done(image.id):
-        # Image annotation is all done
-        if not image.status.annotatedByHuman:
-            image.status.annotatedByHuman = True
-            image.status.save()
-        # (Need simplejson.dumps() to convert the Python True to a JS true)
+    # Are all points human annotated?
+    all_done = image_annotation_all_done(image.id)
+
+    # Update image status, if needed
+    if image.status.annotatedByHuman:
+        image.after_completed_annotations_change()
+    if image.status.annotatedByHuman != all_done:
+        image.status.annotatedByHuman = all_done
+        image.status.save()
+
+    if all_done:
+        # Need simplejson.dumps() to convert the Python True to a JS true
         return simplejson.dumps(dict(all_done=True))
     else:
-        # Not done
-        if image.status.annotatedByHuman:
-            image.status.annotatedByHuman = False
-            image.status.save()
         return dict()
 
     
