@@ -5,11 +5,12 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from django.utils import simplejson
+from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
 from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm
-from annotations.models import Label, LabelSet, Annotation
+from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
-from images.model_utils import AnnotationAreaUtils
+from annotations.utils import get_annotation_version_user_display
 from images.models import Source, Image, Point
 from visualization.utils import generate_patch_if_doesnt_exist
 
@@ -337,7 +338,6 @@ def annotation_tool(request, image_id, source_id):
     image = get_object_or_404(Image, id=image_id)
     source = get_object_or_404(Source, id=source_id)
     metadata = image.metadata
-    annotation_area_string = AnnotationAreaUtils.annotation_area_string_of_img(image)
 
     # Get all labels, ordered first by functional group, then by short code.
     labels = source.labelset.labels.all().order_by('group', 'code')
@@ -374,19 +374,94 @@ def annotation_tool(request, image_id, source_id):
     #  ...]
     # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
 
+    access = AnnotationToolAccess(image=image, source=source, user=request.user)
+    access.save()
+
     return render_to_response('annotations/annotation_tool.html', {
         'source': source,
         'image': image,
         'metadata': metadata,
-        'annotation_area_string': annotation_area_string,
         'labels': labelValues,
         'labelsJSON': simplejson.dumps(labelValues),
         'form': form,
-        'location_values': ', '.join(image.get_location_value_str_list()),
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
         'num_of_points': len(annotations),
         'num_of_annotations': len(annotationValues),
+        },
+        context_instance=RequestContext(request)
+    )
+
+
+@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
+def annotation_history(request, image_id, source_id):
+    """
+    View for an image's annotation history.
+    """
+
+    image = get_object_or_404(Image, id=image_id)
+    source = get_object_or_404(Source, id=source_id)
+
+    # Use values_list() and list() to avoid nested queries.
+    # https://docs.djangoproject.com/en/1.3/ref/models/querysets/#in
+    annotation_values = Annotation.objects.filter(image=image, source=source).values('pk', 'point__point_number')
+    annotation_ids = [v['pk'] for v in annotation_values]
+
+    versions_queryset = Version.objects.filter(object_id__in=list(annotation_ids))
+    versions = list(versions_queryset)   # Purely for prefetching from the DB
+
+    revision_ids = versions_queryset.values_list('revision', flat=True).distinct()
+    revisions = list(Revision.objects.filter(pk__in=list(revision_ids)))
+
+    # point_number_map maps annotation IDs to point numbers.
+    point_number_tuples = [(v['pk'], v['point__point_number']) for v in annotation_values]
+    point_number_map = dict()
+    for tup in point_number_tuples:
+        point_number_map[tup[0]] = tup[1]
+
+    # label_code_map maps label IDs to label codes.
+    label_code_map = dict()
+    for label in source.labelset.labels.all():
+        label_code_map[label.id] = label.code
+
+    event_log = []
+
+    for rev in revisions:
+        # Get Versions under this Revision
+        rev_versions = list(versions_queryset.filter(revision=rev))
+        # Sort by the point number of the annotation
+        rev_versions.sort( key=lambda x: point_number_map[int(x.object_id)] )
+        # Create a log entry for this Revision
+        event_log.append(
+            dict(
+                date=rev.date_created,
+                user=get_annotation_version_user_display(rev_versions[0]),  # Any Version will do
+                events=["Point %s: %s" % (
+                            point_number_map[int(v.object_id)],
+                            label_code_map[v.field_dict['label']],
+                        )
+                        for v in rev_versions],
+            )
+        )
+
+    for access in AnnotationToolAccess.objects.filter(image=image, source=source):
+        # Create a log entry for each annotation tool access
+        event_str = "Accessed annotation tool"
+        event_log.append(
+            dict(
+                date=access.access_date,
+                user=access.user.username,
+                events=[event_str],
+            )
+        )
+
+    event_log.sort(key=lambda x: x['date'], reverse=True)
+
+    return render_to_response('annotations/annotation_history.html', {
+        'source': source,
+        'image': image,
+        'metadata': image.metadata,
+        'event_log': event_log,
         },
         context_instance=RequestContext(request)
     )

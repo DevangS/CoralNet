@@ -9,6 +9,7 @@ from django.forms.models import model_to_dict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.template import RequestContext
+from reversion.revisions import revision_context_manager
 
 from userena.models import User
 from accounts.utils import get_imported_user
@@ -20,8 +21,6 @@ from images.models import Source, Image, Metadata, Point, SourceInvite, ImageSta
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationAreaPercentsForm, AnnotationAreaPixelsForm
 from images.model_utils import PointGen, AnnotationAreaUtils
 from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points
-
-from CoralNet.images.tasks import processImageAll
 
 
 def source_list(request):
@@ -213,7 +212,6 @@ def source_edit(request, source_id):
         )
 
 
-@transaction.commit_on_success
 @permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def source_invite(request, source_id):
     """
@@ -349,7 +347,6 @@ def image_detail(request, image_id, source_id):
         context_instance=RequestContext(request)
     )
 
-@transaction.commit_on_success   # "Other" location values are only saved if form is error-less
 @permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 def image_detail_edit(request, image_id, source_id):
     """
@@ -383,9 +380,22 @@ def image_detail_edit(request, image_id, source_id):
             editedMetadata.annotation_area = AnnotationAreaUtils.pixel_integers_to_string(**annotationAreaForm.cleaned_data)
             editedMetadata.save()
 
+            # If the image-level cm height has changed, then
+            # invalidate any previous image processing that was done.
+            if editedMetadata.height_in_cm != old_height_in_cm:
+                image.process_date = None
+                image.latest_robot_annotator = None
+                image.save()
+                status = image.status
+                status.preprocessed = False
+                status.featuresExtracted = False
+                status.annotatedByRobot = False
+                status.save()
+
             # If the image-level annotation area has changed, then
             # re-generate points for this image.
             # (If the image already has human annotations, though, then point re-generation doesn't happen)
+            # (TODO: If there's human annotations, we shouldn't even allow changing the annotation area!)
             if editedMetadata.annotation_area != old_annotation_area:
                 generate_points(image)
 
@@ -426,7 +436,6 @@ def import_groups(request, fileLocation):
     file.close()
     
 
-@transaction.commit_on_success
 @permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def import_labels(request, source_id):
     """
@@ -729,7 +738,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
                   )
             img.save()
 
-            # Iterate over this image's annotations and save them if the .
+            # Iterate over this image's annotations and save them.
             pointNum = 1
             for anno in imageAnnotations:
 
@@ -739,8 +748,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
                 label = Label.objects.filter(code=anno['label'])[0]
 
-                # Save the Annotation in the database. Leave the user as null; we can display
-                # a null annotator as "annotation was imported".
+                # Save the Annotation in the database, marking the annotations as imported.
                 annotation = Annotation(user=importedUser,
                                         point=point, image=img, label=label, source=source)
                 annotation.save()
@@ -750,10 +758,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
         # Image upload form, no annotations
         else:
-
-            #point_generation_method = source.default_point_generation_method
-            
-            status = ImageStatus(hasRandomPoints=True)
+            status = ImageStatus()
             status.save()
 
             # Save the image into the DB
@@ -768,11 +773,6 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
             # Generate and save points
             generate_points(img)
-
-            # For 2011 Oct 21 demonstration purposes:
-            # If the source id is 15 or 16, then queue the images for robot annotation
-            if source.id == 15 or source.id == 16:
-                processImageAll.delay(img)
 
         # Up to 5 uploaded images will be shown
         # upon successful upload.
@@ -807,7 +807,6 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
     )
 
 
-@transaction.commit_on_success
 @permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 def image_upload(request, source_id):
     """
@@ -860,7 +859,6 @@ def image_upload(request, source_id):
     )
 
 
-@transaction.commit_on_success
 @permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
 @labelset_required('source_id', 'You need to create a labelset for your source before you can import annotations.')
 def annotation_import(request, source_id):
@@ -897,6 +895,23 @@ def annotation_import(request, source_id):
             if resultDict['error']:
                 messages.error(request, resultDict['message'])
                 transaction.rollback()
+                revision_context_manager.invalidate()
+
+#            # This also works, although the try and with make it harder to read, IMO
+#            try:
+#                with reversion.revision:
+#                    resultDict = image_upload_process(imageFiles=imageFiles,
+#                            optionsForm=optionsForm,
+#                            source=source,
+#                            currentUser=request.user,
+#                            annoFile=annoFile)
+#
+#                    if resultDict['error']:
+#                        raise ValueError()
+#            except ValueError:
+#                messages.error(request, resultDict['message'])
+#                transaction.rollback()
+
             else:
                 uploadedImages = resultDict['uploadedImages']
                 messages.success(request, resultDict['message'])

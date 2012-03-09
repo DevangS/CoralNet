@@ -438,7 +438,7 @@ class Image(models.Model):
 
     # To be set by the preprocessing task
     process_date = models.DateTimeField("Date processed", editable=False, null=True)
-
+    # To be set by the classification task
     latest_robot_annotator = models.ForeignKey(Robot, editable=False, null=True)
 
 
@@ -466,8 +466,7 @@ class Image(models.Model):
 
     def get_location_value_str_list(self):
         """
-        Takes an Image object.
-        Returns its location values as a list of strings:
+        Returns the image's location values as a list of strings:
         ['Shore3', 'Reef 5', 'Loc10']
         """
 
@@ -489,6 +488,13 @@ class Image(models.Model):
 
         return valueList
 
+    def get_location_values_str(self):
+        """
+        Returns the image's location values as a single string:
+        'Shore3, Reef 5, Loc10'
+        """
+        return ', '.join(self.get_location_value_str_list())
+
     def point_gen_method_display(self):
         """
         Display the point generation method in templates.
@@ -496,6 +502,7 @@ class Image(models.Model):
         """
         return PointGen.db_to_readable_format(self.point_generation_method)
 
+<<<<<<< HEAD
 	# this function returns the image height by checking both the image and the source for the height	
 	def height_cm(self):
 		thisSource = source.objects.filter(image = self.id)
@@ -505,6 +512,24 @@ class Image(models.Model):
 
 		return imheight
    
+=======
+    def annotation_area_display(self):
+        """
+        Display the annotation area parameters in templates.
+        Usage: {{ myimage.annotation_area_display }}
+        """
+        return AnnotationAreaUtils.annotation_area_string_of_img(self)
+
+    def get_process_date_short_str(self):
+        """
+        Return the image's (pre)process date in YYYY-MM-DD format.
+
+        Advantage over YYYY-(M)M-(D)D: alphabetized = sorted by date
+        Advantage over YYYY(M)M(D)D: date is unambiguous
+        """
+        return "{0}-{1:02}-{2:02}".format(self.process_date.year, self.process_date.month, self.process_date.day)
+    
+>>>>>>> 7aedb43a304d26740549ebe46077817ebb409419
 
 class Point(models.Model):
     row = models.IntegerField()
@@ -512,3 +537,9 @@ class Point(models.Model):
     point_number = models.IntegerField()
     annotation_status = models.CharField(max_length=1, blank=True)
     image = models.ForeignKey(Image)
+
+    def __unicode__(self):
+        """
+        To-string method.
+        """
+        return "Point %s" % self.point_number

@@ -13,6 +13,15 @@
 # Please update this example file if you encounter any additional
 # settings that should go in settings_2.py.
 
+import os
+
+abspath = lambda *p: os.path.abspath(os.path.join(*p))
+
+
+PROJECT_ROOT = abspath(os.path.dirname(__file__))
+
+PROCESSING_ROOT = PROJECT_ROOT
+
 DEBUG = True
 
 ADMINS = (
@@ -48,6 +57,9 @@ STATIC_ROOT = ''
 BROKER_USER = "usernameGoesHere"
 BROKER_PASSWORD = "passwordGoesHere"
 BROKER_VHOST = "vhostGoesHere"
+
+#Celery configuration
+CELERYD_CONCURRENCY = 2
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'tg5t&4x9f8edmnhe)d55tkk$e-djc4m_q%=^xo%n-jipn&v&8j'

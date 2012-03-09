@@ -4,26 +4,41 @@ import pickle
 from random import random
 import shutil
 from subprocess import call
-from celery.decorators import task
+from celery.task import task
 import os
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
+from django.db import transaction
+import reversion
 from accounts.utils import get_robot_user
 from annotations.models import Label, Annotation
+from images import task_helpers
 from images.models import Point, Image, Source, Robot
 
-PREPROCESS_ERROR_LOG = "/cnhome/errorlogs/preprocess_error.txt"
-FEATURE_ERROR_LOG = "/cnhome/errorlogs/features_error.txt"
-CLASSIFY_ERROR_LOG = "/cnhome/errorlogs/classify_error.txt"
+# Revision objects will not be saved during Celery tasks unless
+# the Celery worker hooks up Reversion's signal handlers.
+# To do this, import admin modules so that
+# the admin registration statements are run.
+from django.contrib import admin
+admin.autodiscover()
 
-ORIGINALIMAGES_DIR = "/cnhome/media/"
-PREPROCESS_DIR = "/cnhome/images/preprocess/"
-FEATURES_DIR = "/cnhome/images/features/"
-CLASSIFY_DIR = "/cnhome/images/classify/"
-MODEL_DIR = "/cnhome/images/models/"
 
-PREPROCESS_PARAM_FILE = "/cnhome/images/preprocess/preProcessParameters.mat"
-FEATURE_PARAM_FILE = "/cnhome/images/features/featureExtractionParameters.mat"
+join_project_root = lambda *p: os.path.join(settings.PROJECT_ROOT, *p)
+join_processing_root = lambda *p: os.path.join(settings.PROCESSING_ROOT, *p)
+
+PREPROCESS_ERROR_LOG = join_processing_root("errorlogs/preprocess_error.txt")
+FEATURE_ERROR_LOG = join_processing_root("errorlogs/features_error.txt")
+CLASSIFY_ERROR_LOG = join_processing_root("errorlogs/classify_error.txt")
+
+ORIGINALIMAGES_DIR = join_project_root("media/")
+PREPROCESS_DIR = join_processing_root("images/preprocess/")
+FEATURES_DIR = join_processing_root("images/features/")
+CLASSIFY_DIR = join_processing_root("images/classify/")
+MODEL_DIR = join_processing_root("images/models/")
+
+PREPROCESS_PARAM_FILE = join_processing_root("images/preprocess/preProcessParameters.mat")
+FEATURE_PARAM_FILE = join_processing_root("images/features/featureExtractionParameters.mat")
 
 
 #Tasks that get processed by Celery
@@ -37,7 +52,9 @@ def dummyTask():
     return 1
 
 @task()
-def PreprocessImages(image):
+@transaction.commit_on_success()
+def PreprocessImages(image_id):
+    image = Image.objects.get(pk=image_id)
 
     # check if already preprocessed
     if image.status.preprocessed:
@@ -62,12 +79,14 @@ def PreprocessImages(image):
     image.save()
 
     #matlab will output image.id_YearMonthDay.mat file
-    preprocessedImageFile = PREPROCESS_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".mat"
+    preprocessedImageFile = PREPROCESS_DIR + str(image.id) + "_" + image.get_process_date_short_str() + ".mat"
 
-    matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_preprocessImage(\'' + ORIGINALIMAGES_DIR + str(image.original_file) + '\', \'' + preprocessedImageFile + '\', \'' + PREPROCESS_PARAM_FILE + '\', \'' + heightFile + '\', \'' + PREPROCESS_ERROR_LOG + '\'); exit;"'
-
-    #call coralnet_preprocessImage(matlab script) to process a single image
-    os.system(matlabCallString);
+    task_helpers.coralnet_preprocessImage(
+        imageFile=ORIGINALIMAGES_DIR + str(image.original_file),
+        preprocessedImageFile=preprocessedImageFile,
+        preprocessParameterFile=PREPROCESS_PARAM_FILE,
+        errorLogfile=PREPROCESS_ERROR_LOG,
+    )
 
     #error occurred in matlab
     if os.path.isfile(PREPROCESS_ERROR_LOG):
@@ -79,7 +98,8 @@ def PreprocessImages(image):
         print 'Finished pre-processing image id {}'.format(image.id)
 
 @task()
-def MakeFeatures(image):
+def MakeFeatures(image_id):
+    image = Image.objects.get(pk=image_id)
     
     #if error had occurred in preprocess, don't let them go further
     if os.path.isfile(PREPROCESS_ERROR_LOG):
@@ -98,8 +118,8 @@ def MakeFeatures(image):
     print 'Start feature extraction for  image id {}'.format(image.id)
 
     #builds args for matlab script
-    preprocessedImageFile = PREPROCESS_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".mat"
-    featureFile = FEATURES_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".dat"
+    preprocessedImageFile = PREPROCESS_DIR + str(image.id) + "_" + image.get_process_date_short_str() + ".mat"
+    featureFile = FEATURES_DIR + str(image.id) + "_" + image.get_process_date_short_str() + ".dat"
     #creates rowColFile
     rowColFile = FEATURES_DIR + str(image.id) + "_rowCol.txt"
     file = open(rowColFile, 'w')
@@ -108,10 +128,14 @@ def MakeFeatures(image):
         #points get stored in the file in this format, one of these per line: row,column\n
         file.write(str(point.row) + "," + str(point.column) + "\n")
     file.close()
-        
-    matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_makeFeatures(\'' + preprocessedImageFile + '\', \'' + featureFile + '\', \'' + rowColFile + '\', \'' + FEATURE_PARAM_FILE+ '\', \'' + FEATURE_ERROR_LOG + '\'); exit;"'
-    #call matlab script coralnet_makeFeatures
-    os.system(matlabCallString);
+
+    task_helpers.coralnet_makeFeatures(
+        preprocessedImageFile=preprocessedImageFile,
+        featureFile=featureFile,
+        rowColFile=rowColFile,
+        featureExtractionParameterFile=FEATURE_PARAM_FILE,
+        errorLogfile=FEATURE_ERROR_LOG,
+    )
 
     if os.path.isfile(FEATURE_ERROR_LOG):
         print("Sorry error detected in feature extraction!")
@@ -121,7 +145,10 @@ def MakeFeatures(image):
         print 'Finished feature extraction for image id {}'.format(image.id)
         
 @task()
-def Classify(image):
+@transaction.commit_on_success()
+@reversion.create_revision()
+def Classify(image_id):
+    image = Image.objects.get(pk=image_id)
 
     #if error occurred in feature extraction, don't let them go further
     if os.path.isfile(FEATURE_ERROR_LOG):
@@ -156,13 +183,17 @@ def Classify(image):
     
     print 'Start classify image id {}'.format(image.id)
     #builds args for matlab script
-    
-	featureFile = FEATURES_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".dat"
-    labelFile = CLASSIFY_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".txt"
-    matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_classify(\'' + featureFile + '\', \'' + latestRobot.path_to_model + '\', \'' + labelFile + '\', \'' + CLASSIFY_ERROR_LOG + '\'); exit;"'
+    featureFile = FEATURES_DIR + str(image.id) + "_" + image.get_process_date_short_str() + ".dat"
+	#get the source id for this file
+    labelFile = CLASSIFY_DIR + str(image.id) + "_" + image.get_process_date_short_str() + ".txt"
 
-    #call matlab script coralnet_classify
-    os.system(matlabCallString)
+    task_helpers.coralnet_classify(
+        featureFile=featureFile,
+        modelFile=latestRobot.path_to_model,
+        labelFile=labelFile,
+        errorLogfile=CLASSIFY_ERROR_LOG,
+    )
+
     if os.path.isfile(CLASSIFY_ERROR_LOG):
         print("Sorry error detected in classification!")
     else:
@@ -175,18 +206,22 @@ def Classify(image):
         row_file = open(rowColFile, 'r')
 
         for line in row_file: #words[0] is row, words[1] is column 
-            words = line.split(',') 
-            #gets the point object for the image that has that row and column
-            point = Point.objects.get(image=image, row=words[0], column=words[1])
+            words = line.split(',')
 
             #gets the label object based on the label id the algorithm specified
             label_id = label_file.readline()
             label_id.replace('\n', '')
             label = Label.objects.filter(id=label_id)
 
-            #create the annotation object and save it
-            annotation = Annotation(image=image, label=label[0], point=point, user=user, source=image.source)
-            annotation.save()
+            #gets the point object(s) that have that row and column.
+            #if there's more than one such point, add annotations to all of
+            #these points the first time we see this row+col, and don't do
+            #anything on subsequent times (filtering with annotation=None accomplishes this).
+            points = Point.objects.filter(image=image, row=words[0], column=words[1], annotation=None)
+            for point in points:
+                #create the annotation object and save it
+                annotation = Annotation(image=image, label=label[0], point=point, user=user, robot_version=latestRobot, source=image.source)
+                annotation.save()
 
         #update image status
         image.status.annotatedByRobot = True
@@ -206,10 +241,10 @@ def Classify(image):
 
 
 @task()
-def processImageAll(image):
-    PreprocessImages(image)
-    MakeFeatures(image)
-    Classify(image)
+def processImageAll(image_id):
+    PreprocessImages(image_id)
+    MakeFeatures(image_id)
+    Classify(image_id)
 
 def custom_listdir(path):
     """

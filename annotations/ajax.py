@@ -1,7 +1,7 @@
 from dajaxice.decorators import dajaxice_register
 from django.contrib.auth.models import User
 from django.utils import simplejson
-from accounts.utils import is_robot_user, get_robot_user
+from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation
 from annotations.utils import image_annotation_all_done
 from images.models import Image, Point, Source
@@ -66,9 +66,10 @@ def ajax_save_annotations(request, annotationForm):
             # An annotation of this point number exists in the database
             if annotations.has_key(point.id):
                 anno = annotations[point.id]
-                # Label field is now blank
+                # Label field is now blank.
+                # We're not allowing label deletions, so don't do anything in this case.
                 if label is None:
-                    anno.delete()
+                    pass
                 # Label was robot annotated, and then the human user confirmed or changed it
                 elif is_robot_user(anno.user) and not isFormRobotAnnotation:
                     anno.label = label
@@ -77,6 +78,7 @@ def ajax_save_annotations(request, annotationForm):
                 # Label was otherwise changed
                 elif label != anno.label:
                     anno.label = label
+                    anno.user = user
                     anno.save()
 
             # No annotation of this point number in the database yet

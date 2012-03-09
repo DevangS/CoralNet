@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from images.models import Point, Image, Source
+from images.models import Point, Image, Source, Robot
 from userena.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
 from CoralNet.utils import generate_random_filename
@@ -75,9 +75,23 @@ class LabelSet(models.Model):
     
 class Annotation(models.Model):
     annotation_date = models.DateTimeField(blank=True, auto_now=True, editable=False)
-    point = models.ForeignKey(Point)
-    image = models.ForeignKey(Image)
-    # 'user' can be the dummy user "Imported".
-    user = models.ForeignKey(User)
+    point = models.ForeignKey(Point, editable=False)
+    image = models.ForeignKey(Image, editable=False)
+
+    # The user who made this annotation
+    user = models.ForeignKey(User, editable=False)
+    # Only fill this in if the user is the robot user
+    robot_version = models.ForeignKey(Robot, editable=False, null=True)
+
     label = models.ForeignKey(Label) #TODO: verify
-    source = models.ForeignKey(Source)
+    source = models.ForeignKey(Source, editable=False)
+
+    def __unicode__(self):
+        return "%s - %s - %s" % (self.image, self.point.point_number, self.label.code)
+
+
+class AnnotationToolAccess(models.Model):
+    access_date = models.DateTimeField(blank=True, auto_now=True, editable=False)
+    image = models.ForeignKey(Image, editable=False)
+    source = models.ForeignKey(Source, editable=False)
+    user = models.ForeignKey(User, editable=False)
