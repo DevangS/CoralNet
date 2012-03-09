@@ -392,6 +392,8 @@ class ImageStatus(models.Model):
     hasRandomPoints = models.BooleanField(default=False)
     annotatedByRobot = models.BooleanField(default=False)
     annotatedByHuman = models.BooleanField(default=False)
+    featureFileHasHumanLabels = models.BooleanField(default=False)
+    usedInCurrentModel = models.BooleanField(default=False)
 
 
 def get_original_image_upload_path(instance, filename):
@@ -502,23 +504,48 @@ class Image(models.Model):
         """
         return PointGen.db_to_readable_format(self.point_generation_method)
 
-<<<<<<< HEAD
-	# this function returns the image height by checking both the image and the source for the height	
-	def height_cm(self):
-		thisSource = source.objects.filter(image = self.id)
-		imheight = thisSource[0].image_height_in_cm
-		if image.metadata.annotation_area:
-			imheight = image.metadata.annotation_area
+    # this function returns the image height by checking both the image and the source for the height
+    def height_cm(self):
+        thisSource = source.objects.filter(image = self.id)
+        imheight = thisSource[0].image_height_in_cm
+        if self.metadata.annotation_area:
+            imheight = self.metadata.annotation_area
 
-		return imheight
-   
-=======
+        return imheight
+
+    def after_height_cm_change(self):
+        status = self.status
+        status.preprocessed = False
+        status.featuresExtracted = False
+        status.annotatedByRobot = False
+        status.featureFileHasHumanLabels = False
+        status.usedInCurrentModel = False
+        status.save()
+
     def annotation_area_display(self):
         """
         Display the annotation area parameters in templates.
         Usage: {{ myimage.annotation_area_display }}
         """
         return AnnotationAreaUtils.annotation_area_string_of_img(self)
+
+    def after_annotation_area_change(self):
+        status = self.status
+        status.featuresExtracted = False
+        status.annotatedByRobot = False
+        status.featureFileHasHumanLabels = False
+        status.usedInCurrentModel = False
+        status.save()
+
+    def after_human_annotation_change(self):
+        """
+        Only necessary to run this if human annotations are complete,
+        to begin with, and then an annotation is changed.
+        """
+        status = self.status
+        status.featureFileHasHumanLabels = False
+        status.usedInCurrentModel = False
+        status.save()
 
     def get_process_date_short_str(self):
         """
@@ -528,8 +555,6 @@ class Image(models.Model):
         Advantage over YYYY(M)M(D)D: date is unambiguous
         """
         return "{0}-{1:02}-{2:02}".format(self.process_date.year, self.process_date.month, self.process_date.day)
-    
->>>>>>> 7aedb43a304d26740549ebe46077817ebb409419
 
 class Point(models.Model):
     row = models.IntegerField()
