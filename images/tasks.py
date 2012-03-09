@@ -49,6 +49,12 @@ def PreprocessImages(image):
         print "Can't get a cm height for image {}. Can not preprocess".format(image.id)
         return
 
+	#creates height file 
+    heightFile = PREPROCESS_DIR + str(image.id) + "_height.txt"
+    file = open(heightFile, 'w')
+    file.write(image.height_cm + "\n");
+    file.close()
+
     print 'Start pre-processing image id {}'.format(image.id)
 
     # set the process_date to todays date
@@ -58,7 +64,7 @@ def PreprocessImages(image):
     #matlab will output image.id_YearMonthDay.mat file
     preprocessedImageFile = PREPROCESS_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".mat"
 
-    matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_preprocessImage(\'' + ORIGINALIMAGES_DIR + str(image.original_file) + '\', \'' + preprocessedImageFile + '\', \'' + PREPROCESS_PARAM_FILE + '\', \'' + PREPROCESS_ERROR_LOG + '\'); exit;"'
+    matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_preprocessImage(\'' + ORIGINALIMAGES_DIR + str(image.original_file) + '\', \'' + preprocessedImageFile + '\', \'' + PREPROCESS_PARAM_FILE + '\', \'' + heightFile + '\', \'' + PREPROCESS_ERROR_LOG + '\'); exit;"'
 
     #call coralnet_preprocessImage(matlab script) to process a single image
     os.system(matlabCallString);
@@ -150,10 +156,9 @@ def Classify(image):
     
     print 'Start classify image id {}'.format(image.id)
     #builds args for matlab script
-    featureFile = FEATURES_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".dat"
-	#get the source id for this file
+    
+	featureFile = FEATURES_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".dat"
     labelFile = CLASSIFY_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".txt"
-        
     matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_classify(\'' + featureFile + '\', \'' + latestRobot.path_to_model + '\', \'' + labelFile + '\', \'' + CLASSIFY_ERROR_LOG + '\'); exit;"'
 
     #call matlab script coralnet_classify
@@ -192,6 +197,12 @@ def Classify(image):
 
         label_file.close()
         row_file.close()
+
+#@task()
+#def TrainRobot(source):
+	# first, find the number of annotated images
+#	enoughimages = false
+	
 
 
 @task()

@@ -495,7 +495,16 @@ class Image(models.Model):
         Usage: {{ myimage.point_gen_method_display }}
         """
         return PointGen.db_to_readable_format(self.point_generation_method)
-    
+
+	# this function returns the image height by checking both the image and the source for the height	
+	def height_cm(self):
+		thisSource = source.objects.filter(image = self.id)
+		imheight = thisSource[0].image_height_in_cm
+		if image.metadata.annotation_area:
+			imheight = image.metadata.annotation_area
+
+		return imheight
+   
 
 class Point(models.Model):
     row = models.IntegerField()
