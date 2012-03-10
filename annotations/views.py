@@ -11,7 +11,11 @@ from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from annotations.utils import get_annotation_version_user_display
+from decorators import annotation_area_must_be_editable
+from images.forms import AnnotationAreaPixelsForm
+from images.model_utils import AnnotationAreaUtils
 from images.models import Source, Image, Point
+from images.utils import generate_points
 from visualization.utils import generate_patch_if_doesnt_exist
 
 @login_required
@@ -325,6 +329,55 @@ def label_list(request):
                 'labels': labels,
                 },
                 context_instance=RequestContext(request)
+    )
+
+
+@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
+@annotation_area_must_be_editable('image_id')
+def annotation_area_edit(request, image_id, source_id):
+    """
+    Edit an image's annotation area.
+    """
+
+    image = get_object_or_404(Image, id=image_id)
+    source = get_object_or_404(Source, id=source_id)
+    metadata = image.metadata
+
+    old_annotation_area = metadata.annotation_area
+
+    if request.method == 'POST':
+
+        # Cancel
+        cancel = request.POST.get('cancel', None)
+        if cancel:
+            messages.success(request, 'Edit cancelled.')
+            return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
+
+        # Submit
+        annotationAreaForm = AnnotationAreaPixelsForm(request.POST, image=image)
+
+        if annotationAreaForm.is_valid():
+            metadata.annotation_area = AnnotationAreaUtils.pixels_to_db_format(**annotationAreaForm.cleaned_data)
+            metadata.save()
+
+            if metadata.annotation_area != old_annotation_area:
+                generate_points(image)
+                image.after_annotation_area_change()
+
+            messages.success(request, 'Annotation area successfully edited.')
+            return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        # Just reached this form page
+        annotationAreaForm = AnnotationAreaPixelsForm(image=image)
+
+    return render_to_response('annotations/annotation_area_edit.html', {
+        'source': source,
+        'image': image,
+        'annotationAreaForm': annotationAreaForm,
+        },
+        context_instance=RequestContext(request)
     )
 
 

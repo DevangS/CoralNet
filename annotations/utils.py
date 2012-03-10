@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from accounts.utils import get_robot_user, is_robot_user
 from annotations.models import Annotation
+from images.model_utils import PointGen
 from images.models import Image, Point, Robot
 
 def image_annotation_all_done(image_id):
@@ -21,6 +22,17 @@ def image_has_any_human_annotations(image_id):
     image = Image.objects.get(id=image_id)
     human_annotations = Annotation.objects.filter(image=image).exclude(user=get_robot_user())
     return human_annotations.count() > 0
+
+def image_annotation_area_is_editable(image_id):
+    """
+    Returns True if the image's annotation area is editable; False otherwise.
+    The annotation area is editable only if:
+    (1) there are no human annotations for the image yet, and
+    (2) the points are not imported.
+    """
+    image = Image.objects.get(id=image_id)
+    return (not image_has_any_human_annotations(image_id))\
+    and (PointGen.db_to_args_format(image.point_generation_method)['point_generation_type'] != PointGen.Types.IMPORTED)
 
 def get_annotation_user_display(anno):
     """

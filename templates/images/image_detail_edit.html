@@ -24,12 +24,6 @@
         <legend class="smaller">Actual Height</legend>
         <span class="helptext">{{ imageDetailForm.height_in_cm.help_text|linebreaksbr }}</span>
         {% include "form_generic_one_field.html" with field=imageDetailForm.height_in_cm dont_show_help_text="True" %}
-
-        <hr class="light"/>
-
-        <legend class="smaller">Annotation area</legend>
-        <span class="helptext">{{ annotationAreaForm.form_help_text|linebreaksbr }}</span>
-        {% include "images/form_annotation_area.html" with form=annotationAreaForm type="pixel" %}
       </fieldset>
         
       <fieldset>

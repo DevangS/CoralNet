@@ -553,12 +553,13 @@ class AnnotationAreaPixelsForm(Form):
 
         if image.metadata.annotation_area:
             d = AnnotationAreaUtils.db_format_to_numbers(image.metadata.annotation_area)
-            if d['type'] == AnnotationAreaUtils.TYPE_PERCENTAGES:
-                kwargs['initial'] = AnnotationAreaUtils.percentages_to_pixels(d)
-            elif d['type'] == AnnotationAreaUtils.TYPE_PIXELS:
+            annoarea_type = d.pop('type')
+            if annoarea_type == AnnotationAreaUtils.TYPE_PERCENTAGES:
+                kwargs['initial'] = AnnotationAreaUtils.percentages_to_pixels(width=image.original_width, height=image.original_height, **d)
+            elif annoarea_type == AnnotationAreaUtils.TYPE_PIXELS:
                 kwargs['initial'] = d
-            elif d['type'] == AnnotationAreaUtils.TYPE_IMPORTED:
-                raise ValueError("Points were imported; cannot edit annotation area")
+            elif annoarea_type == AnnotationAreaUtils.TYPE_IMPORTED:
+                raise ValueError("Points were imported; annotation area should be un-editable.")
 
         super(AnnotationAreaPixelsForm, self).__init__(*args, **kwargs)
 

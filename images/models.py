@@ -343,8 +343,8 @@ class Metadata(models.Model):
 
     height_in_cm = models.IntegerField(
         "Height covered (centimeters)",
-        help_text="The automatic annotation system needs to know how much space is covered by the image.\n"
-                  "If you don't set this value, the source's default value will be used.",
+        help_text="What is the actual span between the top and bottom of this image?\n"
+                  "(This information is used by the automatic annotator.)",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
         null=True, blank=True
@@ -352,9 +352,7 @@ class Metadata(models.Model):
 
     annotation_area = models.CharField(
         "Annotation area",
-        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.\n"
-                  "For example, X boundaries of 150 and 1800 mean that points are only generated within the X-pixel values 150 through 1800.\n"
-                  "If you don't set these values, the source's default annotation area (defined with percentages, not pixels) will be used.",
+        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.",
         max_length=50,
         null=True, blank=True
     )

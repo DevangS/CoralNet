@@ -16,10 +16,10 @@ from accounts.utils import get_imported_user
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from CoralNet.exceptions import FileContentError
-from annotations.utils import image_has_any_human_annotations
+from annotations.utils import image_annotation_area_is_editable
 
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
-from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationAreaPercentsForm, AnnotationAreaPixelsForm
+from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationAreaPercentsForm
 from images.model_utils import PointGen, AnnotationAreaUtils
 from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points
 
@@ -334,12 +334,15 @@ def image_detail(request, image_id, source_id):
     # Feel free to change the constant according to the page layout.
     scaled_width = min(image.original_width, 1000)
 
+    annotation_area_editable = image_annotation_area_is_editable(image_id)
+
     return render_to_response('images/image_detail.html', {
         'source': source,
         'image': image,
         'metadata': metadata,
         'detailsets': detailsets,
         'scaled_width': scaled_width,
+        'annotation_area_editable': annotation_area_editable,
         },
         context_instance=RequestContext(request)
     )
@@ -354,12 +357,7 @@ def image_detail_edit(request, image_id, source_id):
     source = get_object_or_404(Source, id=source_id)
     metadata = image.metadata
 
-    old_annotation_area = metadata.annotation_area
     old_height_in_cm = metadata.height_in_cm
-
-    # The annotation area is editable only if there are no human annotations
-    # for the image yet.
-    annotation_area_editable = not image_has_any_human_annotations(image_id)
 
     if request.method == 'POST':
 
@@ -371,25 +369,13 @@ def image_detail_edit(request, image_id, source_id):
 
         # Submit
         imageDetailForm = ImageDetailForm(request.POST, instance=metadata, source=source)
-        annotationAreaForm = AnnotationAreaPixelsForm(request.POST, image=image)
 
-        # Make sure is_valid() is called for all forms, so all forms are checked and
-        # all relevant error messages appear.
-        image_detail_form_is_valid = imageDetailForm.is_valid()
-        annotation_area_form_is_valid = annotationAreaForm.is_valid()
-
-        if image_detail_form_is_valid and annotation_area_form_is_valid:
+        if imageDetailForm.is_valid():
             editedMetadata = imageDetailForm.instance
-            editedMetadata.annotation_area = AnnotationAreaUtils.pixels_to_db_format(**annotationAreaForm.cleaned_data)
             editedMetadata.save()
 
             if editedMetadata.height_in_cm != old_height_in_cm:
                 image.after_height_cm_change()
-
-            # (TODO: If there's human annotations, we shouldn't even allow changing the annotation area!)
-            if editedMetadata.annotation_area != old_annotation_area:
-                generate_points(image)
-                image.after_annotation_area_change()
 
             messages.success(request, 'Image successfully edited.')
             return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
@@ -399,13 +385,11 @@ def image_detail_edit(request, image_id, source_id):
     else:
         # Just reached this form page
         imageDetailForm = ImageDetailForm(instance=metadata, source=source)
-        annotationAreaForm = AnnotationAreaPixelsForm(image=image)
 
     return render_to_response('images/image_detail_edit.html', {
         'source': source,
         'image': image,
         'imageDetailForm': imageDetailForm,
-        'annotationAreaForm': annotationAreaForm,
         },
         context_instance=RequestContext(request)
         )

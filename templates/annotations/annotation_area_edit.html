@@ -1,0 +1,19 @@
+{% extends "images/base_image.html" %}
+
+{% block title %}Edit Annotation Area | CoralNet{% endblock %}
+
+{% block content %}
+
+    <legend>Edit Annotation Area</legend>
+
+    <form action="" method="post">{% csrf_token %}
+        <span class="helptext">{{ annotationAreaForm.form_help_text|linebreaksbr }}</span>
+        {% include "images/form_annotation_area.html" with form=annotationAreaForm type="pixel" %}
+
+        <div class="submit_button_wrapper_column_form">
+            <input type="submit" value="Save Changes" />
+            <input name="cancel" type="submit" value="Cancel Changes" />
+        </div>
+    </form>
+
+{% endblock %}
