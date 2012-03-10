@@ -8,7 +8,7 @@
 
     <form action="" method="post">{% csrf_token %}
         <span class="helptext">{{ annotationAreaForm.form_help_text|linebreaksbr }}</span>
-        {% include "images/form_annotation_area.html" with form=annotationAreaForm type="pixel" %}
+        {% include "annotations/form_annotation_area.html" with form=annotationAreaForm type="pixel" %}
 
         <div class="submit_button_wrapper_column_form">
             <input type="submit" value="Save Changes" />
