@@ -16,6 +16,7 @@ from accounts.utils import get_imported_user
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from CoralNet.exceptions import FileContentError
+from annotations.utils import image_has_any_human_annotations
 
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationAreaPercentsForm, AnnotationAreaPixelsForm
@@ -92,7 +93,7 @@ def source_new(request):
             # We can get this instance and add a bit more to it before saving to the DB.
             newSource = sourceForm.instance
             newSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
-            newSource.image_annotation_area = AnnotationAreaUtils.percentage_decimals_to_string(**annotationAreaForm.cleaned_data)
+            newSource.image_annotation_area = AnnotationAreaUtils.percentages_to_db_format(**annotationAreaForm.cleaned_data)
             newSource.labelset = LabelSet.getEmptyLabelset()
             newSource.save()
 
@@ -190,7 +191,7 @@ def source_edit(request, source_id):
         if source_form_is_valid and point_gen_form_is_valid and annotation_area_form_is_valid:
             editedSource = sourceForm.instance
             editedSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
-            editedSource.image_annotation_area = AnnotationAreaUtils.percentage_decimals_to_string(**annotationAreaForm.cleaned_data)
+            editedSource.image_annotation_area = AnnotationAreaUtils.percentages_to_db_format(**annotationAreaForm.cleaned_data)
             editedSource.save()
             messages.success(request, 'Source successfully edited.')
             return HttpResponseRedirect(reverse('source_main', args=[source_id]))
@@ -333,16 +334,12 @@ def image_detail(request, image_id, source_id):
     # Feel free to change the constant according to the page layout.
     scaled_width = min(image.original_width, 1000)
 
-    # Annotation area.
-    annotation_area_string = AnnotationAreaUtils.annotation_area_string_of_img(image)
-
     return render_to_response('images/image_detail.html', {
         'source': source,
         'image': image,
         'metadata': metadata,
         'detailsets': detailsets,
         'scaled_width': scaled_width,
-        'annotation_area_string': annotation_area_string,
         },
         context_instance=RequestContext(request)
     )
@@ -356,7 +353,13 @@ def image_detail_edit(request, image_id, source_id):
     image = get_object_or_404(Image, id=image_id)
     source = get_object_or_404(Source, id=source_id)
     metadata = image.metadata
+
     old_annotation_area = metadata.annotation_area
+    old_height_in_cm = metadata.height_in_cm
+
+    # The annotation area is editable only if there are no human annotations
+    # for the image yet.
+    annotation_area_editable = not image_has_any_human_annotations(image_id)
 
     if request.method == 'POST':
 
@@ -377,17 +380,12 @@ def image_detail_edit(request, image_id, source_id):
 
         if image_detail_form_is_valid and annotation_area_form_is_valid:
             editedMetadata = imageDetailForm.instance
-            editedMetadata.annotation_area = AnnotationAreaUtils.pixel_integers_to_string(**annotationAreaForm.cleaned_data)
+            editedMetadata.annotation_area = AnnotationAreaUtils.pixels_to_db_format(**annotationAreaForm.cleaned_data)
             editedMetadata.save()
 
-            # If the image-level cm height has changed, then
-            # invalidate any previous image processing that was done.
             if editedMetadata.height_in_cm != old_height_in_cm:
                 image.after_height_cm_change()
 
-            # If the image-level annotation area has changed, then
-            # re-generate points for this image.
-            # (If the image already has human annotations, though, then point re-generation doesn't happen)
             # (TODO: If there's human annotations, we shouldn't even allow changing the annotation area!)
             if editedMetadata.annotation_area != old_annotation_area:
                 generate_points(image)
@@ -662,6 +660,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
         filename = imageFile.name
         metadataDict = None
+        metadata = Metadata(height_in_cm=source.image_height_in_cm)
 
         if optionsForm.cleaned_data['specify_metadata'] == 'filenames':
 
@@ -691,14 +690,14 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
             photoDate = datetime.date(year = int(metadataDict['year']),
                              month = int(metadataDict['month']),
                              day = int(metadataDict['day']))
-            metadata = Metadata(name=metadataDict['name'],
-                                photo_date=photoDate,
-                                **valueDict)
+
+            metadata.name = metadataDict['name']
+            metadata.photo_date = photoDate
+            for key, value in valueDict.iteritems():
+                setattr(metadata, key, value)
 
         else:
-            metadata = Metadata(name=filename)
-
-        metadata.save()
+            metadata.name = filename
 
         # Image + annotation import form
         # Assumes we got the images' metadata (from filenames or otherwise)
@@ -719,6 +718,9 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
             status = ImageStatus(hasRandomPoints=True, annotatedByHuman=True)
             status.save()
+
+            metadata.annotation_area = AnnotationAreaUtils.IMPORTED_STR
+            metadata.save()
 
             img = Image(original_file=imageFile,
                     uploaded_by=currentUser,
@@ -755,6 +757,9 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
             status = ImageStatus()
             status.save()
 
+            metadata.annotation_area = source.image_annotation_area
+            metadata.save()
+
             # Save the image into the DB
             img = Image(original_file=imageFile,
                     uploaded_by=currentUser,
@@ -770,7 +775,6 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
         # Up to 5 uploaded images will be shown
         # upon successful upload.
-
         # Prepend to list, so most recent image comes first
         uploadedImages.insert(0, img)
         if len(uploadedImages) > 5:

@@ -115,39 +115,70 @@ class PointGen():
 
 class AnnotationAreaUtils():
 
-    @staticmethod
-    def percentage_decimals_to_string(min_x, max_x, min_y, max_y):
-        # Handle the case where the field is not filled at all.
-        if min_x is None and max_x is None and \
-           min_y is None and max_y is None:
-            return ''
+    # Percentages are decimals.
+    # Pixels are integers.
+    # Database (db) format:
+    #     percentages - "5.7;94.5;10;90"
+    #     pixels - "125,1880,80,1600"
 
+    IMPORTED_STR = 'imported'
+    IMPORTED_DISPLAY = "(Imported points; not specified)"
+    TYPE_PERCENTAGES = 'percentages'
+    TYPE_PIXELS = 'pixels'
+    TYPE_IMPORTED = 'imported'
+
+    @staticmethod
+    def percentages_to_db_format(min_x, max_x, min_y, max_y):
+        return ';'.join([
+            str(min_x), str(max_x), str(min_y), str(max_y)
+        ])
+
+    @staticmethod
+    def pixels_to_db_format(min_x, max_x, min_y, max_y):
         return ','.join([
             str(min_x), str(max_x), str(min_y), str(max_y)
         ])
 
     @staticmethod
-    def percentage_string_to_decimals(s):
+    def db_format_to_numbers(s):
         d = dict()
-        d['min_x'], d['max_x'], d['min_y'], d['max_y'] = [Decimal(dec_str) for dec_str in s.split(',')]
+        if s == AnnotationAreaUtils.IMPORTED_STR:
+            d['type'] = AnnotationAreaUtils.TYPE_IMPORTED
+        elif s.find(';') != -1:
+            # percentages
+            d['min_x'], d['max_x'], d['min_y'], d['max_y'] = [Decimal(dec_str) for dec_str in s.split(';')]
+            d['type'] = AnnotationAreaUtils.TYPE_PERCENTAGES
+        elif s.find(',') != -1:
+            # pixels
+            d['min_x'], d['max_x'], d['min_y'], d['max_y'] = [int(int_str) for int_str in s.split(',')]
+            d['type'] = AnnotationAreaUtils.TYPE_PIXELS
+        else:
+            raise ValueError("Annotation area isn't in a valid DB format.")
         return d
 
     @staticmethod
-    def pixel_integers_to_string(min_x, max_x, min_y, max_y):
-        # Handle the case where the field is not filled at all.
-        if min_x is None and max_x is None and \
-           min_y is None and max_y is None:
-            return ''
-
-        return ','.join([
-            str(min_x), str(max_x), str(min_y), str(max_y)
-        ])
+    def db_format_to_percentages(s):
+        d = AnnotationAreaUtils.db_format_to_numbers(s)
+        if d['type'] == AnnotationAreaUtils.TYPE_PERCENTAGES:
+            return d
+        else:
+            raise ValueError("Annotation area type is '{0}' expected {1}.".format(
+                d['type'], AnnotationAreaUtils.TYPE_PERCENTAGES))
 
     @staticmethod
-    def pixel_string_to_integers(s):
-        d = dict()
-        d['min_x'], d['max_x'], d['min_y'], d['max_y'] = [int(int_str) for int_str in s.split(',')]
-        return d
+    def db_format_to_display(s):
+        d = AnnotationAreaUtils.db_format_to_numbers(s)
+
+        if d['type'] == AnnotationAreaUtils.TYPE_IMPORTED:
+            return AnnotationAreaUtils.IMPORTED_DISPLAY
+        elif d['type'] == AnnotationAreaUtils.TYPE_PERCENTAGES:
+            return "X: {0} - {1}% / Y: {2} - {3}%".format(
+                d['min_x'], d['max_x'], d['min_y'], d['max_y']
+            )
+        elif d['type'] == AnnotationAreaUtils.TYPE_PIXELS:
+            return "X: {0} - {1} pixels / Y: {2} - {3} pixels".format(
+                d['min_x'], d['max_x'], d['min_y'], d['max_y']
+            )
 
     @staticmethod
     def percentages_to_pixels(min_x, max_x, min_y, max_y, width, height):
@@ -170,43 +201,3 @@ class AnnotationAreaUtils():
                 d[key] = 1
 
         return d
-
-    @staticmethod
-    def percentage_string_to_readable_format(s):
-        d = AnnotationAreaUtils.percentage_string_to_decimals(s)
-        return "X: %s - %s%% / Y: %s - %s%%" % (
-            d['min_x'], d['max_x'], d['min_y'], d['max_y']
-            )
-
-    @staticmethod
-    def pixel_string_to_readable_format(s):
-        d = AnnotationAreaUtils.pixel_string_to_integers(s)
-        return "X: %s - %s pixels / Y: %s - %s pixels" % (
-            d['min_x'], d['max_x'], d['min_y'], d['max_y']
-            )
-
-    @staticmethod
-    def percentage_string_to_pixels_readable_format(s, width, height):
-        percent_d = AnnotationAreaUtils.percentage_string_to_decimals(s)
-        pixel_d = AnnotationAreaUtils.percentages_to_pixels(width=width, height=height, **percent_d)
-        return "X: %s - %s pixels (%s - %s%%) / Y: %s - %s pixels (%s - %s%%)" % (
-            pixel_d['min_x'], pixel_d['max_x'],
-            percent_d['min_x'], percent_d['max_x'],
-            pixel_d['min_y'], pixel_d['max_y'],
-            percent_d['min_y'], percent_d['max_y']
-            )
-
-    @staticmethod
-    def annotation_area_string_of_img(img):
-        if img.metadata.annotation_area:
-            annotation_area_string = AnnotationAreaUtils.pixel_string_to_readable_format(
-                img.metadata.annotation_area
-            )
-        elif img.source.image_annotation_area:
-            annotation_area_string = AnnotationAreaUtils.percentage_string_to_pixels_readable_format(
-                img.source.image_annotation_area, img.original_width, img.original_height
-            )
-        else:
-            annotation_area_string = None
-
-        return annotation_area_string

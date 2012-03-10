@@ -13,6 +13,15 @@ def image_annotation_all_done(image_id):
     return (annotations.count() == Point.objects.filter(image=image).count()
             and annotations.filter(user=get_robot_user()).count() == 0)
 
+def image_has_any_human_annotations(image_id):
+    """
+    Return True if the image has at least one human-made Annotation.
+    Return False otherwise.
+    """
+    image = Image.objects.get(id=image_id)
+    human_annotations = Annotation.objects.filter(image=image).exclude(user=get_robot_user())
+    return human_annotations.count() > 0
+
 def get_annotation_user_display(anno):
     """
     anno - an annotations.Annotation model.

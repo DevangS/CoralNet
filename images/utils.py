@@ -279,13 +279,14 @@ def generate_points(img):
         return
 
     # Find the annotation area.
-    if img.metadata.annotation_area:
-        annoarea_dict = AnnotationAreaUtils.pixel_string_to_integers(img.metadata.annotation_area)
-    elif img.source.image_annotation_area:
-        d = AnnotationAreaUtils.percentage_string_to_decimals(img.source.image_annotation_area)
+    d = AnnotationAreaUtils.db_format_to_numbers(img.metadata.annotation_area)
+    annoarea_type = d.pop('type')
+    if annoarea_type == AnnotationAreaUtils.TYPE_PERCENTAGES:
         annoarea_dict = AnnotationAreaUtils.percentages_to_pixels(width=img.original_width, height=img.original_height, **d)
+    elif annoarea_type == AnnotationAreaUtils.TYPE_PIXELS:
+        annoarea_dict = d
     else:
-        raise ValueError("Can't generate points without an annotation area.")
+        raise ValueError("Can't generate points with annotation area type '{0}'.".format(annoarea_type))
 
     # Calculate points.
     new_points = calculate_points(

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm, TextInput, FileInput, CharField
 from django.forms.fields import ChoiceField, ImageField, FileField, IntegerField, DecimalField
-from django.forms.widgets import Select
+from django.forms.widgets import Select, HiddenInput
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
 from images.model_utils import PointGen, AnnotationAreaUtils
@@ -66,19 +66,6 @@ class ImageSourceForm(ModelForm):
             self._errors['annotation_max_y'] = self.error_class([msg])
             del data['annotation_min_y']
             del data['annotation_max_y']
-
-        if 'annotation_min_x' in data and \
-            'annotation_max_x' in data and \
-            'annotation_min_y' in data and \
-            'annotation_max_y' in data:
-
-            # No errors, so set the image_annotation_area field for the model.
-            data['image_annotation_area'] = AnnotationAreaUtils.percentage_decimals_to_string(
-                min_x=data['annotation_min_x'],
-                max_x=data['annotation_max_x'],
-                min_y=data['annotation_min_y'],
-                max_y=data['annotation_max_y'],
-            )
 
         self.cleaned_data = data
 
@@ -262,7 +249,7 @@ class ImageUploadOptionsForm(Form):
             Your Source's point generation settings: %s
             Your Source's annotation area settings: %s""" % (
                 PointGen.db_to_readable_format(source.default_point_generation_method),
-                AnnotationAreaUtils.percentage_string_to_readable_format(source.image_annotation_area)
+                AnnotationAreaUtils.db_format_to_display(source.image_annotation_area)
                 )
         ]
 
@@ -520,7 +507,7 @@ class AnnotationAreaPercentsForm(Form):
             source = kwargs.pop('source')
             
             if source.image_annotation_area:
-                kwargs['initial'] = AnnotationAreaUtils.percentage_string_to_decimals(source.image_annotation_area)
+                kwargs['initial'] = AnnotationAreaUtils.db_format_to_percentages(source.image_annotation_area)
 
         self.form_help_text = Source._meta.get_field('image_annotation_area').help_text
 
@@ -565,7 +552,13 @@ class AnnotationAreaPixelsForm(Form):
         image = kwargs.pop('image')
 
         if image.metadata.annotation_area:
-            kwargs['initial'] = AnnotationAreaUtils.pixel_string_to_integers(image.metadata.annotation_area)
+            d = AnnotationAreaUtils.db_format_to_numbers(image.metadata.annotation_area)
+            if d['type'] == AnnotationAreaUtils.TYPE_PERCENTAGES:
+                kwargs['initial'] = AnnotationAreaUtils.percentages_to_pixels(d)
+            elif d['type'] == AnnotationAreaUtils.TYPE_PIXELS:
+                kwargs['initial'] = d
+            elif d['type'] == AnnotationAreaUtils.TYPE_IMPORTED:
+                raise ValueError("Points were imported; cannot edit annotation area")
 
         super(AnnotationAreaPixelsForm, self).__init__(*args, **kwargs)
 

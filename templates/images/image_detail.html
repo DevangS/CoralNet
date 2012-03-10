@@ -57,11 +57,7 @@
         <ul>
         <li>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</li>
 
-        {% if annotation_area_string %}
-          <li>Annotation area: {{ annotation_area_string }}</li>
-        {% else %}
-          <li>Annotation area: (Not specified)</li>
-        {% endif %}
+        <li>Annotation area: {{ image.annotation_area_display }}</li>
 
         {% if metadata.height_in_cm %}
           <li>Height coverage: {{ metadata.height_in_cm }} centimeters</li>
