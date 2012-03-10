@@ -4,8 +4,9 @@ import datetime
 import math, random
 from os.path import splitext
 from accounts.utils import get_robot_user
+from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Annotation
-from images.model_utils import PointGen, AnnotationAreaUtils
+from images.model_utils import PointGen
 from images.models import Point, Metadata, Image, Value1, Value2, Value3, Value4, Value5
 
 

@@ -7,13 +7,12 @@ from django.template.context import RequestContext
 from django.utils import simplejson
 from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
-from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm
+from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm
+from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from annotations.utils import get_annotation_version_user_display
 from decorators import annotation_area_must_be_editable
-from images.forms import AnnotationAreaPixelsForm
-from images.model_utils import AnnotationAreaUtils
 from images.models import Source, Image, Point
 from images.utils import generate_points
 from visualization.utils import generate_patch_if_doesnt_exist

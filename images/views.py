@@ -13,14 +13,16 @@ from reversion.revisions import revision_context_manager
 
 from userena.models import User
 from accounts.utils import get_imported_user
+from annotations.forms import AnnotationAreaPercentsForm
+from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from CoralNet.exceptions import FileContentError
 from annotations.utils import image_annotation_area_is_editable
 
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
-from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationAreaPercentsForm
-from images.model_utils import PointGen, AnnotationAreaUtils
+from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm
+from images.model_utils import PointGen
 from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points
 
 

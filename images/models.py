@@ -5,7 +5,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign
-from images.model_utils import PointGen, AnnotationAreaUtils
+from annotations.model_utils import AnnotationAreaUtils
+from images.model_utils import PointGen
 from CoralNet.utils import generate_random_filename
 
 # Constants that don't really belong to a particular model

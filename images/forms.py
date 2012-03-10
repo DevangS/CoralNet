@@ -1,12 +1,12 @@
-from decimal import Decimal
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm, TextInput, FileInput, CharField
-from django.forms.fields import ChoiceField, ImageField, FileField, IntegerField, DecimalField
-from django.forms.widgets import Select, HiddenInput
+from django.forms.fields import ChoiceField, ImageField, FileField, IntegerField
+from django.forms.widgets import Select
+from annotations.model_utils import AnnotationAreaUtils
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
-from images.model_utils import PointGen, AnnotationAreaUtils
+from images.model_utils import PointGen
 from images.utils import metadata_to_filename
 
 class ImageSourceForm(ModelForm):
@@ -480,141 +480,6 @@ class PointGenForm(Form):
 
         self.cleaned_data = data
         return super(PointGenForm, self).clean()
-
-
-class AnnotationAreaPercentsForm(Form):
-    
-    min_x = DecimalField(label="Left boundary X",
-                         required=True, min_value=Decimal(0), max_value=Decimal(100),
-                         decimal_places=3, widget=TextInput(attrs={'size': 3}))
-    max_x = DecimalField(label="Right boundary X",
-                         required=True, min_value=Decimal(0), max_value=Decimal(100),
-                         decimal_places=3, widget=TextInput(attrs={'size': 3}))
-    min_y = DecimalField(label="Top boundary Y",
-                         required=True, min_value=Decimal(0), max_value=Decimal(100),
-                         decimal_places=3, widget=TextInput(attrs={'size': 3}))
-    max_y = DecimalField(label="Bottom boundary Y",
-                         required=True, min_value=Decimal(0), max_value=Decimal(100),
-                         decimal_places=3, widget=TextInput(attrs={'size': 3}))
-
-    def __init__(self, *args, **kwargs):
-        """
-        If a Source is passed in as an argument, then get
-        the annotation area of that Source,
-        and use that to fill the form fields' initial values.
-        """
-        if kwargs.has_key('source'):
-            source = kwargs.pop('source')
-            
-            if source.image_annotation_area:
-                kwargs['initial'] = AnnotationAreaUtils.db_format_to_percentages(source.image_annotation_area)
-
-        self.form_help_text = Source._meta.get_field('image_annotation_area').help_text
-
-        super(AnnotationAreaPercentsForm, self).__init__(*args, **kwargs)
-
-
-    def clean(self):
-        data = self.cleaned_data
-
-        if 'min_x' in data and 'max_x' in data:
-
-            if data['min_x'] > data['max_x']:
-                self._errors['max_x'] = self.error_class(["The right boundary x must be greater than or equal to the left boundary x."])
-                del data['min_x']
-                del data['max_x']
-
-        if 'min_y' in data and 'max_y' in data:
-            
-            if data['min_y'] > data['max_y']:
-                self._errors['max_y'] = self.error_class(["The bottom boundary y must be greater than or equal to the top boundary y."])
-                del data['min_y']
-                del data['max_y']
-
-        self.cleaned_data = data
-        return super(AnnotationAreaPercentsForm, self).clean()
-
-
-class AnnotationAreaPixelsForm(Form):
-
-    # The complete field definitions are in __init__(), because
-    # max_value needs to be set dynamically.
-    # (We *could* just append the max-value validators dynamically, except
-    # that results in some really weird behavior where the error list grows
-    # with duplicate errors every time you press submit.)
-    min_x = IntegerField()
-    max_x = IntegerField()
-    min_y = IntegerField()
-    max_y = IntegerField()
-
-    def __init__(self, *args, **kwargs):
-        
-        image = kwargs.pop('image')
-
-        if image.metadata.annotation_area:
-            d = AnnotationAreaUtils.db_format_to_numbers(image.metadata.annotation_area)
-            annoarea_type = d.pop('type')
-            if annoarea_type == AnnotationAreaUtils.TYPE_PERCENTAGES:
-                kwargs['initial'] = AnnotationAreaUtils.percentages_to_pixels(width=image.original_width, height=image.original_height, **d)
-            elif annoarea_type == AnnotationAreaUtils.TYPE_PIXELS:
-                kwargs['initial'] = d
-            elif annoarea_type == AnnotationAreaUtils.TYPE_IMPORTED:
-                raise ValueError("Points were imported; annotation area should be un-editable.")
-
-        super(AnnotationAreaPixelsForm, self).__init__(*args, **kwargs)
-
-        self.fields['min_x'] = IntegerField(
-            label="Left boundary X", required=False,
-            min_value=1, max_value=image.original_width,
-            widget=TextInput(attrs={'size': 3})
-        )
-        self.fields['max_x'] = IntegerField(
-            label="Right boundary X", required=False,
-            min_value=1, max_value=image.original_width,
-            widget=TextInput(attrs={'size': 3})
-        )
-        self.fields['min_y'] = IntegerField(
-            label="Top boundary Y", required=False,
-            min_value=1, max_value=image.original_height,
-            widget=TextInput(attrs={'size': 3})
-        )
-        self.fields['max_y'] = IntegerField(
-            label="Bottom boundary Y", required=False,
-            min_value=1, max_value=image.original_height,
-            widget=TextInput(attrs={'size': 3})
-        )
-
-        self.form_help_text = Metadata._meta.get_field('annotation_area').help_text
-
-    def clean(self):
-        data = self.cleaned_data
-
-        field_names = ['min_x', 'max_x', 'min_y', 'max_y']
-        no_errors_yet = len(filter(lambda key: key not in data, field_names)) == 0
-
-        if no_errors_yet:
-            has_empty_fields = len(filter(lambda key: data[key] is None, field_names)) > 0
-            all_empty_fields = len(filter(lambda key: data[key] is not None, field_names)) == 0
-
-            if has_empty_fields and not all_empty_fields:
-                raise ValidationError("You must fill in all four of the annotation area fields.")
-
-        if 'min_x' in data and 'max_x' in data:
-
-            if data['min_x'] > data['max_x']:
-                self._errors['max_x'] = self.error_class(["The right boundary x must be greater than or equal to the left boundary x."])
-                del data['min_x']
-                del data['max_x']
-
-        if 'min_y' in data and 'max_y' in data:
-
-            if data['min_y'] > data['max_y']:
-                self._errors['max_y'] = self.error_class(["The bottom boundary y must be greater than or equal to the top boundary y."])
-                del data['min_y']
-                del data['max_y']
-
-        self.cleaned_data = data
-        return super(AnnotationAreaPixelsForm, self).clean()
 
 
 class AnnotationImportForm(Form):
