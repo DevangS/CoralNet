@@ -371,9 +371,16 @@ def annotation_area_edit(request, image_id, source_id):
         # Just reached this form page
         annotationAreaForm = AnnotationAreaPixelsForm(image=image)
 
+    # Scale down the image to have a max width of 800 pixels.
+    scale_factor = min(1.0, 800.0 / image.original_width)
+    image_display_size = ( int(round(image.original_width * scale_factor)),
+                           int(round(image.original_height * scale_factor)) )
+
     return render_to_response('annotations/annotation_area_edit.html', {
         'source': source,
         'image': image,
+        'image_display_size': image_display_size,
+        'scale_factor': scale_factor,
         'annotationAreaForm': annotationAreaForm,
         },
         context_instance=RequestContext(request)
