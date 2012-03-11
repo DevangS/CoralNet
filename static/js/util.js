@@ -45,6 +45,13 @@ var util = {
     },
 
     /*
+    Checks a string to see if it represents an integer.
+    */
+    isIntStr: function(s) {
+        return (s === parseInt(s).toString()) && (s !== 'NaN');
+    },
+
+    /*
     Returns true if the user's OS is Mac, false otherwise.
     */
     osIsMac: function() {
