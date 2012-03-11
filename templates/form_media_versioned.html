@@ -4,6 +4,8 @@
 {% for js_include in form_media.js %}
     {% include "static-local-include.html" with type="js" path=js_include %}
 {% endfor %}
-{% for css_include in form_media.css %}
-    {% include "static-local-include.html" with type="css" path=css_include %}
+{% for media_type, css_includes in form_media.css.items %}
+    {% for css_include in css_includes %}
+        {% include "static-local-include.html" with type="css" media_type=media_type path=css_include %}
+    {% endfor %}
 {% endfor %}

@@ -1,13 +1,15 @@
 var AAH = {
     // HTML elements
-    box: undefined,
-    image: undefined,
+    $box: undefined,
+    $image: undefined,
+    $imageContainer: undefined,
     fields: undefined,
     scaleFactor: undefined,
 
-    init: function(scaleFactor) {
-        AAH.box = $('#annoarea_box');
-        AAH.image = $('#image');
+    init: function(scaleFactor, imageDisplayWidth, imageDisplayHeight) {
+        AAH.$box = $('#annoarea_box');
+        AAH.$image = $('#image');
+        AAH.$imageContainer = $('#image_container');
         AAH.fields = {
             min_x: $('#id_min_x')[0],
             max_x: $('#id_max_x')[0],
@@ -16,11 +18,30 @@ var AAH = {
         };
         AAH.scaleFactor = scaleFactor;
 
+        AAH.$imageContainer.css({
+            'width': imageDisplayWidth,
+            'height': imageDisplayHeight
+        });
+        AAH.$image.css({
+            'width': imageDisplayWidth,
+            'height': imageDisplayHeight
+        });
+
+        // Initialize the box's position and dimensions.
         AAH.formToBoxUpdate();
 
-        /* Set event handlers. */
+        // Make the box resizable with jQuery UI.
+        AAH.$box.resizable({
+            containment: '#image_container',
+            handles: 'all',
+            minHeight: 1,
+            minWidth: 1,
+            resize: AAH.boxToFormUpdate
+        });
 
-        // Form field is typed into and changed, and then unfocused.
+        // Form field event handlers:
+        // When a field is typed into and changed, and then unfocused,
+        // the box is updated to match the fields.
         for (var key in AAH.fields) {
             if (!AAH.fields.hasOwnProperty(key)){ continue; }
 
@@ -49,14 +70,14 @@ var AAH = {
             if (!css_dict.hasOwnProperty(key)){ continue; }
             css_dict[key] = Math.round(css_dict[key] * AAH.scaleFactor);
         }
-        AAH.box.css(css_dict);
+        AAH.$box.css(css_dict);
     },
     getBoxValues: function() {
         var d = {};
-        d['min_x'] = AAH.box.css('left') + 1;
-        d['max_x'] = AAH.box.css('left') + AAH.box.css('width') + 1;
-        d['min_y'] = AAH.box.css('top') + 1;
-        d['max_y'] = AAH.box.css('top') + AAH.box.css('height') + 1;
+        d['min_x'] = parseInt(AAH.$box.css('left')) + 1;
+        d['max_x'] = parseInt(AAH.$box.css('left')) + parseInt(AAH.$box.css('width')) + 1;
+        d['min_y'] = parseInt(AAH.$box.css('top')) + 1;
+        d['max_y'] = parseInt(AAH.$box.css('top')) + parseInt(AAH.$box.css('height')) + 1;
         for (var key in d) {
             if (!d.hasOwnProperty(key)){ continue; }
             d[key] = Math.round(d[key] / AAH.scaleFactor);

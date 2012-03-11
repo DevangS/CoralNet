@@ -3,31 +3,12 @@
 
 {% block title %}Edit Annotation Area | CoralNet{% endblock %}
 
-{% block page-specific-includes %}
-    {% include "form_media_versioned.html" with form=annotationAreaForm %}
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_ui="yes" %}
 {% endblock %}
 
-{% block css-code %}
-    <style type="text/css">
-        #annoarea_box {
-            position: absolute;
-            border: 4px solid #FFFF00;
-            width: 500px;
-            height: 500px;
-        }
-        #image {
-            position: absolute;
-            border: 4px solid transparent;
-            width: {{ image_display_size.0 }}px;
-            height: {{ image_display_size.1 }}px;
-        }
-        #image_container {
-            position: relative;
-            border: 4px solid transparent;
-            width: {{ image_display_size.0 }}px;
-            height: {{ image_display_size.1 }}px;
-        }
-    </style>
+{% block page-specific-includes %}
+    {% include "form_media_versioned.html" with form=annotationAreaForm %}
 {% endblock %}
 
 {% block content %}
@@ -35,7 +16,10 @@
     <legend>Edit Annotation Area</legend>
 
     <form action="" method="post">{% csrf_token %}
-        <span class="helptext">{{ annotationAreaForm.form_help_text|linebreaksbr }}</span>
+        <span class="helptext">
+            {{ annotationAreaForm.form_help_text|linebreaksbr }}<br />
+            Image dimensions: {{ image.original_width }} x {{ image.original_height }}
+        </span>
         {% include "annotations/form_annotation_area.html" with form=annotationAreaForm type="pixel" %}
 
         <div class="submit_button_wrapper_column_form">
@@ -46,12 +30,14 @@
 
     <div id="image_container">
         <img id="image" src="{% thumbnail image.original_file image_display_size %}" />
-        <img id="annoarea_box" />
+        <div id="annoarea_box"></div>
     </div>
 
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
-        AAH.init({{ scale_factor }});
+        AAH.init({{ scale_factor }},
+                 {{ image_display_size.0 }},
+                 {{ image_display_size.1 }});
     </script>
 
 {% endblock %}

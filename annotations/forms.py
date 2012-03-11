@@ -237,10 +237,10 @@ class AnnotationAreaPercentsForm(Form):
 class AnnotationAreaPixelsForm(Form):
 
     class Media:
-        js = (
-            # From this app's static folder
-            "js/AnnotationAreaEditHelper.js",
-            )
+        js = ("js/AnnotationAreaEditHelper.js",)
+        css = {
+            'all': ("css/annotation_area_edit.css",)
+        }
 
     # The complete field definitions are in __init__(), because
     # max_value needs to be set dynamically.
