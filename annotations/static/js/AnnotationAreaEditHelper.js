@@ -69,10 +69,12 @@ var AAH = {
             // Be able to resize in all 8 directions.
             handles: 'all',
 
-            // We want the minimum size to be practically 0, but exactly 0
-            // results in very odd behavior.
-            minHeight: 0.01,
-            minWidth: 0.01,
+            // We want the minimum size to be as close to 0 as possible, but:
+            // - exactly 0 results in very odd behavior
+            // - 0 < min < 0.49-ish allows the low bound to exceed the high bound for some reason
+            // - 0.49-ish < 1 has the same effect as 1.
+            minHeight: 1,
+            minWidth: 1,
 
             // Event handler to call upon resize.
             resize: AAH.onBoxResize

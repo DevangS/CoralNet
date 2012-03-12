@@ -27,14 +27,17 @@
 
     /* Make the handles visible, effectively creating a (purely visual) element border. */
     background-color: yellow;
+
+    /* Should still be possible to see the image behind this border. */
+    opacity: 0.7;
 }
 
 /* Put all resize handles just outside of the element. */
-.ui-resizable-n { cursor: n-resize; height: 7px; width: 100%; top: -7px; left: 0; }
-.ui-resizable-s { cursor: s-resize; height: 7px; width: 100%; bottom: -7px; left: 0; }
-.ui-resizable-e { cursor: e-resize; width: 7px; right: -7px; top: 0; height: 100%; }
-.ui-resizable-w { cursor: w-resize; width: 7px; left: -7px; top: 0; height: 100%; }
-.ui-resizable-se { cursor: se-resize; width: 7px; height: 7px; right: -7px; bottom: -7px; }
-.ui-resizable-sw { cursor: sw-resize; width: 7px; height: 7px; left: -7px; bottom: -7px; }
-.ui-resizable-nw { cursor: nw-resize; width: 7px; height: 7px; left: -7px; top: -7px; }
-.ui-resizable-ne { cursor: ne-resize; width: 7px; height: 7px; right: -7px; top: -7px;}
+.ui-resizable-n { cursor: n-resize; height: 9px; width: 100%; top: -9px; left: 0; }
+.ui-resizable-s { cursor: s-resize; height: 9px; width: 100%; bottom: -9px; left: 0; }
+.ui-resizable-e { cursor: e-resize; width: 9px; right: -9px; top: 0; height: 100%; }
+.ui-resizable-w { cursor: w-resize; width: 9px; left: -9px; top: 0; height: 100%; }
+.ui-resizable-se { cursor: se-resize; width: 9px; height: 9px; right: -9px; bottom: -9px; }
+.ui-resizable-sw { cursor: sw-resize; width: 9px; height: 9px; left: -9px; bottom: -9px; }
+.ui-resizable-nw { cursor: nw-resize; width: 9px; height: 9px; left: -9px; top: -9px; }
+.ui-resizable-ne { cursor: ne-resize; width: 9px; height: 9px; right: -9px; top: -9px;}
