@@ -114,7 +114,7 @@ if (!Array.prototype.indexOf) {
 }
 
 
-/* String format function, similar to printf in C.
+/* String format function, similar to Python's.
  * Example usage: "{0} is dead, but {1} is alive! {0} {2}".format("ASP", "ASP.NET")
  * Example output: ASP is dead, but ASP.NET is alive! ASP {2}
  * 

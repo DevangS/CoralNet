@@ -21,13 +21,16 @@ var AAH = {
         AAH.dimensions = dimensions;
         AAH.scaleFactor = scaleFactor;
 
-        AAH.$imageContainer.css({
-            'width': AAH.dimensions['displayWidth'],
-            'height': AAH.dimensions['displayHeight']
-        });
         AAH.$image.css({
             'width': AAH.dimensions['displayWidth'],
             'height': AAH.dimensions['displayHeight']
+        });
+        // The imageContainer should contain the box + its borders.
+        // Border widths are hard-coded here because using css() seems
+        // to get inaccurate border widths (can be 0.5 to 2 px off).
+        AAH.$imageContainer.css({
+            'width': AAH.dimensions['displayWidth'] + (2*5),
+            'height': AAH.dimensions['displayHeight'] + (2*5)
         });
 
         // Initialize the remembered form values.
@@ -37,13 +40,13 @@ var AAH = {
         AAH.formToBoxUpdate();
 
         // Make the box resizable with jQuery UI.
-        AAH.$box.resizable({
-            containment: '#image_container',
-            handles: 'all',
-            minHeight: 1,
-            minWidth: 1,
-            resize: AAH.boxToFormUpdate
-        });
+//        AAH.$box.resizable({
+//            containment: '#image_container',
+//            handles: 'all',
+//            minHeight: 0.01,
+//            minWidth: 0.01,
+//            resize: AAH.boxToFormUpdate
+//        });
 
         // Form field event handlers:
         // When a field is typed into and changed, and then unfocused.
