@@ -1,14 +1,34 @@
 var AAH = {
-    // HTML elements
+    // jQuery objects
     $box: undefined,
     $image: undefined,
     $imageContainer: undefined,
-    fields: undefined,
-    dimensions: undefined,
-    savedFormValues: undefined,
-    scaleFactor: undefined,
 
-    init: function(scaleFactor, dimensions) {
+    // HTML elements
+    fields: {
+        min_x: undefined,
+        max_x: undefined,
+        min_y: undefined,
+        max_y: undefined
+    },
+
+    // Other
+    dimensions: {
+        displayWidth: undefined,
+        displayHeight: undefined,
+        fullWidth: undefined,
+        fullHeight: undefined,
+        widthScaleFactor: undefined,
+        heightScaleFactor: undefined
+    },
+    savedFormValues: {
+        min_x: undefined,
+        max_x: undefined,
+        min_y: undefined,
+        max_y: undefined
+    },
+
+    init: function(dimensions) {
         AAH.$box = $('#annoarea_box');
         AAH.$image = $('#image');
         AAH.$imageContainer = $('#image_container');
@@ -19,18 +39,14 @@ var AAH = {
             max_y: $('#id_max_y')[0]
         };
         AAH.dimensions = dimensions;
-        AAH.scaleFactor = scaleFactor;
 
         AAH.$image.css({
-            'width': AAH.dimensions['displayWidth'],
-            'height': AAH.dimensions['displayHeight']
+            'width': AAH.dimensions.displayWidth,
+            'height': AAH.dimensions.displayHeight
         });
-        // The imageContainer should contain the box + its borders.
-        // Border widths are hard-coded here because using css() seems
-        // to get inaccurate border widths (can be 0.5 to 2 px off).
         AAH.$imageContainer.css({
-            'width': AAH.dimensions['displayWidth'] + (2*5),
-            'height': AAH.dimensions['displayHeight'] + (2*5)
+            'width': AAH.dimensions.displayWidth,
+            'height': AAH.dimensions.displayHeight
         });
 
         // Initialize the remembered form values.
@@ -40,13 +56,21 @@ var AAH = {
         AAH.formToBoxUpdate();
 
         // Make the box resizable with jQuery UI.
-//        AAH.$box.resizable({
-//            containment: '#image_container',
-//            handles: 'all',
-//            minHeight: 0.01,
-//            minWidth: 0.01,
-//            resize: AAH.boxToFormUpdate
-//        });
+        AAH.$box.resizable({
+            // Only allowed to resize within the bounds of #image_container.
+            containment: '#image_container',
+
+            // Be able to resize in all 8 directions.
+            handles: 'all',
+
+            // We want the minimum size to be practically 0, but exactly 0
+            // results in very odd behavior.
+            minHeight: 0.01,
+            minWidth: 0.01,
+
+            // Event handler to call upon resize.
+            resize: AAH.boxToFormUpdate
+        });
 
         // Form field event handlers:
         // When a field is typed into and changed, and then unfocused.
@@ -72,19 +96,22 @@ var AAH = {
     /* Update the box to match the form field values. */
     formToBoxUpdate: function() {
         var d = AAH.getFormValues();
-        var cssDict = {
+        var cssScaledToImage = {
             'left': d['min_x'] - 1,
             'top': d['min_y'] - 1,
             'width': d['max_x'] - d['min_x'] + 1,
             'height': d['max_y'] - d['min_y'] + 1
         };
-        for (var key in cssDict) {
-            if (!cssDict.hasOwnProperty(key)){ continue; }
-            cssDict[key] = Math.round(cssDict[key] * AAH.scaleFactor);
-        }
+        var cssDict = {};
+        cssDict['left'] = Math.round(cssScaledToImage['left'] * AAH.dimensions.widthScaleFactor);
+        cssDict['width'] = Math.round(cssScaledToImage['width'] * AAH.dimensions.widthScaleFactor);
+        cssDict['top'] = Math.round(cssScaledToImage['top'] * AAH.dimensions.heightScaleFactor);
+        cssDict['height'] = Math.round(cssScaledToImage['height'] * AAH.dimensions.heightScaleFactor);
         AAH.$box.css(cssDict);
     },
 
+    /* Check for valid form values.  If invalid, either revert them back to
+     * what they were previously, or correct them. */
     checkFormValues: function() {
         var d = AAH.getFormValuesAsStrs();
 
@@ -113,16 +140,19 @@ var AAH = {
         // Out-of-range values can be easily corrected.
         if (d['min_x'] < 1)
             AAH.fields['min_x'].value = 1;
-        if (d['max_x'] > AAH.dimensions['fullWidth'])
-            AAH.fields['max_x'].value = AAH.dimensions['fullWidth'];
+        if (d['max_x'] > AAH.dimensions.fullWidth)
+            AAH.fields['max_x'].value = AAH.dimensions.fullWidth;
         if (d['min_y'] < 1)
             AAH.fields['min_y'].value = 1;
-        if (d['max_y'] > AAH.dimensions['fullHeight'])
-            AAH.fields['max_y'].value = AAH.dimensions['fullHeight'];
+        if (d['max_y'] > AAH.dimensions.fullHeight)
+            AAH.fields['max_y'].value = AAH.dimensions.fullHeight;
     },
+    /* Save the current form values, in case we get invalid
+     * values later and need to revert. */
     rememberFormValues: function() {
         AAH.savedFormValues = AAH.getFormValues();
     },
+    /* Revert back to the latest valid form values. */
     revertFormValues: function(fieldsToRevert) {
         if (fieldsToRevert === undefined)
             fieldsToRevert = ['min_x', 'max_x', 'min_y', 'max_y'];
@@ -133,19 +163,28 @@ var AAH = {
         }
     },
 
+    /* Get the annotation area values represented by the box. */
     getBoxValues: function() {
         var d = {};
-        d['min_x'] = parseInt(AAH.$box.css('left')) + 1;
-        d['max_x'] = parseInt(AAH.$box.css('left')) + parseInt(AAH.$box.css('width')) + 1;
-        d['min_y'] = parseInt(AAH.$box.css('top')) + 1;
-        d['max_y'] = parseInt(AAH.$box.css('top')) + parseInt(AAH.$box.css('height')) + 1;
-        for (var key in d) {
-            if (!d.hasOwnProperty(key)){ continue; }
-            d[key] = Math.round(d[key] / AAH.scaleFactor);
-        }
+        var cssDict = {
+            'left': parseInt(AAH.$box.css('left')),
+            'top': parseInt(AAH.$box.css('top')),
+            'width': parseInt(AAH.$box.css('width')),
+            'height': parseInt(AAH.$box.css('height'))
+        };
+        var cssScaledToImage = {};
+        cssScaledToImage['left'] = Math.round(cssDict['left'] / AAH.dimensions.widthScaleFactor);
+        cssScaledToImage['width'] = Math.round(cssDict['width'] / AAH.dimensions.widthScaleFactor);
+        cssScaledToImage['top'] = Math.round(cssDict['top'] / AAH.dimensions.heightScaleFactor);
+        cssScaledToImage['height'] = Math.round(cssDict['height'] / AAH.dimensions.heightScaleFactor);
+
+        d['min_x'] = cssScaledToImage['left'] + 1;
+        d['max_x'] = cssScaledToImage['left'] + cssScaledToImage['width'];
+        d['min_y'] = cssScaledToImage['top'] + 1;
+        d['max_y'] = cssScaledToImage['top'] + cssScaledToImage['height'];
         return d;
     },
-    // Get form values as numbers
+    /* Get form values as numbers */
     getFormValues: function() {
         var d = AAH.getFormValuesAsStrs();
         for (var fieldName in d) {
@@ -154,7 +193,7 @@ var AAH = {
         }
         return d;
     },
-    // Get form values as strings
+    /* Get form values as strings */
     getFormValuesAsStrs: function() {
         var d = {};
         d['min_x'] = AAH.fields.min_x.value;

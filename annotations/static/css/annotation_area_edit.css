@@ -1,12 +1,13 @@
 #annoarea_box {
     position: relative;
-    border: 5px solid #FFFF00;
+
+    /* Dummy values to be overwritten. If you see a 500x500
+       box, then perhaps something didn't work. */
     width: 500px;
     height: 500px;
 }
 #image {
     position: absolute;
-    border: 5px solid transparent;
 }
 #image_container {
     position: relative;
@@ -15,7 +16,7 @@
 .ui-icon {
     /* Get rid of the icon on the southeast handle...
        a better way to do this would be to prevent that handle
-       from getting the ui-icon class altogether, though. */
+       from getting the ui-icon class altogether. */
     background-image: none;
 }
 .ui-resizable-handle {
@@ -23,13 +24,17 @@
        1001 to 1004, which means they come on top of 1000.  Putting
        diagonal handles on top makes them much easier to grab. */
     z-index: 1000;
+
+    /* Make the handles visible, effectively creating a (purely visual) element border. */
+    background-color: yellow;
 }
-.ui-resizable-se {
-    /* The southeast resize handle is special by default.
-       Make it the same as the other handles. */
-    bottom: -5px;
-    cursor: se-resize;
-    height: 9px;
-    right: -5px;
-    width: 9px;
-}
+
+/* Put all resize handles just outside of the element. */
+.ui-resizable-n { cursor: n-resize; height: 7px; width: 100%; top: -7px; left: 0; }
+.ui-resizable-s { cursor: s-resize; height: 7px; width: 100%; bottom: -7px; left: 0; }
+.ui-resizable-e { cursor: e-resize; width: 7px; right: -7px; top: 0; height: 100%; }
+.ui-resizable-w { cursor: w-resize; width: 7px; left: -7px; top: 0; height: 100%; }
+.ui-resizable-se { cursor: se-resize; width: 7px; height: 7px; right: -7px; bottom: -7px; }
+.ui-resizable-sw { cursor: sw-resize; width: 7px; height: 7px; left: -7px; bottom: -7px; }
+.ui-resizable-nw { cursor: nw-resize; width: 7px; height: 7px; left: -7px; top: -7px; }
+.ui-resizable-ne { cursor: ne-resize; width: 7px; height: 7px; right: -7px; top: -7px;}

@@ -372,21 +372,29 @@ def annotation_area_edit(request, image_id, source_id):
         annotationAreaForm = AnnotationAreaPixelsForm(image=image)
 
     # Scale down the image to have a max width of 800 pixels.
-    scale_factor = min(1.0, 800.0 / image.original_width)
+    DISPLAY_WIDTH = 800
+    width_scale_factor = min(1.0, float(DISPLAY_WIDTH) / image.original_width)
+    display_height = int(round(image.original_height * width_scale_factor))
+
     dimensions = dict(
-        displayWidth = int(round(image.original_width * scale_factor)),
-        displayHeight = int(round(image.original_height * scale_factor)),
+        displayWidth = DISPLAY_WIDTH,
+        displayHeight = display_height,
         fullWidth = image.original_width,
         fullHeight = image.original_height,
+
+        # jQuery UI resizing with containment isn't subpixel-precise, so
+        # the display height is an int.  Thus, need to track width/height
+        # scaling factors separately for accurate calculations.
+        widthScaleFactor = width_scale_factor,
+        heightScaleFactor = float(display_height) / image.original_height,
     )
-    display_dimensions = (dimensions['displayWidth'], dimensions['displayHeight'])
+    thumbnail_dimensions = (DISPLAY_WIDTH, display_height)
 
     return render_to_response('annotations/annotation_area_edit.html', {
         'source': source,
         'image': image,
         'dimensions': simplejson.dumps(dimensions),
-        'display_dimensions': display_dimensions,
-        'scale_factor': scale_factor,
+        'thumbnail_dimensions': thumbnail_dimensions,
         'annotationAreaForm': annotationAreaForm,
         },
         context_instance=RequestContext(request)

@@ -29,14 +29,13 @@
     </form>
 
     <div id="image_container">
-        <img id="image" src="{% thumbnail image.original_file display_dimensions %}" />
+        <img id="image" src="{% thumbnail image.original_file thumbnail_dimensions %}" />
         <div id="annoarea_box"></div>
     </div>
 
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
-        AAH.init({{ scale_factor }},
-                 {{ dimensions|safe }});
+        AAH.init({{ dimensions|safe }});
     </script>
 
 {% endblock %}
