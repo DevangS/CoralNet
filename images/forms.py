@@ -257,8 +257,7 @@ class ImageUploadOptionsForm(Form):
 class ImageDetailForm(ModelForm):
     class Meta:
         model = Metadata
-        exclude = ('group1_percent', 'group2_percent', 'group3_percent',
-                   'group4_percent', 'group5_percent', 'group6_percent', 'group7_percent')
+        exclude = ('annotation_area',)
         widgets = {
             'height_in_cm': TextInput(attrs={'size': 3}),
             'longitude': TextInput(attrs={'size': 10}),

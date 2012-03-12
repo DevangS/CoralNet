@@ -373,13 +373,6 @@ class Metadata(models.Model):
     value3 = models.ForeignKey(Value3, null=True)
     value4 = models.ForeignKey(Value4, null=True)
     value5 = models.ForeignKey(Value5, null=True)
-    group1_percent = models.IntegerField(default=0)
-    group2_percent = models.IntegerField(default=0)
-    group3_percent = models.IntegerField(default=0)
-    group4_percent = models.IntegerField(default=0)
-    group5_percent = models.IntegerField(default=0)
-    group6_percent = models.IntegerField(default=0)
-    group7_percent = models.IntegerField(default=0)
 
     def __unicode__(self):
         return "Metadata of " + self.name
