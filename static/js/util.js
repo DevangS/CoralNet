@@ -114,6 +114,30 @@ if (!Array.prototype.indexOf) {
 }
 
 
+/* Curry function.
+ *
+ * Example:
+ * function converter(toUnit, factor, offset, input) {
+ *     offset = offset || 0;
+ *     return [((offset+input)*factor).toFixed(2), toUnit].join(" ");
+ * }
+ * var fahrenheitToCelsius = converter.curry('degrees C',0.5556, -32);
+ * fahrenheitToCelsius(98); //"36.67 degrees C"
+ *
+ * Source: http://javascriptweblog.wordpress.com/2010/10/25/understanding-javascript-closures/
+ */
+Function.prototype.curry = function() {
+    if (arguments.length<1) {
+        return this; //nothing to curry with - return function
+    }
+    var __method = this;
+    var args = toArray(arguments);
+    return function() {
+        return __method.apply(this, args.concat([].slice.apply(null, arguments)));
+    }
+};
+
+
 /* String format function, similar to Python's.
  * Example usage: "{0} is dead, but {1} is alive! {0} {2}".format("ASP", "ASP.NET")
  * Example output: ASP is dead, but ASP.NET is alive! ASP {2}

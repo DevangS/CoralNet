@@ -21,6 +21,12 @@ var AAH = {
         widthScaleFactor: undefined,
         heightScaleFactor: undefined
     },
+    boxValues: {
+        left: undefined,
+        right: undefined,
+        top: undefined,
+        bottom: undefined
+    },
     savedFormValues: {
         min_x: undefined,
         max_x: undefined,
@@ -69,7 +75,7 @@ var AAH = {
             minWidth: 0.01,
 
             // Event handler to call upon resize.
-            resize: AAH.boxToFormUpdate
+            resize: AAH.onBoxResize
         });
 
         // Form field event handlers:
@@ -85,28 +91,71 @@ var AAH = {
         }
     },
 
+    onBoxResize: function(event, ui) {
+        AAH.updateBoxValuesOnResize(event, ui);
+        AAH.boxToFormUpdate();
+    },
+    updateBoxValuesOnResize: function(event, ui) {
+        var newAttrs = {
+            'left': parseInt(AAH.$box.css('left')),
+            'width': parseInt(AAH.$box.css('width')),
+            'top': parseInt(AAH.$box.css('top')),
+            'height': parseInt(AAH.$box.css('height'))
+        };
+
+        // Only update the box value(s) that have changed.
+        // Box values derived from the form fields are more exact,
+        // and we want to preserve those whenever possible.
+        if (Math.round(AAH.boxValues.left) !== newAttrs.left) {
+            AAH.boxValues.left = newAttrs.left;
+        }
+        if (Math.round(AAH.boxValues.right) !== newAttrs.left + newAttrs.width) {
+            AAH.boxValues.right = newAttrs.left + newAttrs.width;
+        }
+        if (Math.round(AAH.boxValues.top) !== newAttrs.top) {
+            AAH.boxValues.top = newAttrs.top;
+        }
+        if (Math.round(AAH.boxValues.bottom) !== newAttrs.top + newAttrs.height) {
+            AAH.boxValues.bottom = newAttrs.top + newAttrs.height;
+        }
+    },
     /* Update the form to match the box. */
     boxToFormUpdate: function() {
-        var d = AAH.getBoxValues();
-        AAH.fields.min_x.value = d['min_x'];
-        AAH.fields.max_x.value = d['max_x'];
-        AAH.fields.min_y.value = d['min_y'];
-        AAH.fields.max_y.value = d['max_y'];
+        var boxValues = AAH.boxValues;
+        var boxScaledToImage = {};
+        boxScaledToImage['left'] = boxValues['left'] / AAH.dimensions.widthScaleFactor;
+        boxScaledToImage['right'] = boxValues['right'] / AAH.dimensions.widthScaleFactor;
+        boxScaledToImage['top'] = boxValues['top'] / AAH.dimensions.heightScaleFactor;
+        boxScaledToImage['bottom'] = boxValues['bottom'] / AAH.dimensions.heightScaleFactor;
+
+        AAH.fields.min_x.value = Math.round(boxScaledToImage['left']) + 1;
+        AAH.fields.max_x.value = Math.round(boxScaledToImage['right']);
+        AAH.fields.min_y.value = Math.round(boxScaledToImage['top']) + 1;
+        AAH.fields.max_y.value = Math.round(boxScaledToImage['bottom']);
+
+        AAH.rememberFormValues();
     },
     /* Update the box to match the form field values. */
     formToBoxUpdate: function() {
         var d = AAH.getFormValues();
-        var cssScaledToImage = {
+        var boxScaledToImage = {
             'left': d['min_x'] - 1,
+            'right': d['max_x'],
             'top': d['min_y'] - 1,
-            'width': d['max_x'] - d['min_x'] + 1,
-            'height': d['max_y'] - d['min_y'] + 1
+            'bottom': d['max_y']
         };
+        // Save boxValues as floats.
+        AAH.boxValues.left = boxScaledToImage.left * AAH.dimensions.widthScaleFactor;
+        AAH.boxValues.right = boxScaledToImage.right * AAH.dimensions.widthScaleFactor;
+        AAH.boxValues.top = boxScaledToImage.top * AAH.dimensions.heightScaleFactor;
+        AAH.boxValues.bottom = boxScaledToImage.bottom * AAH.dimensions.heightScaleFactor;
+
+        // Apply CSS attrs as ints.
         var cssDict = {};
-        cssDict['left'] = Math.round(cssScaledToImage['left'] * AAH.dimensions.widthScaleFactor);
-        cssDict['width'] = Math.round(cssScaledToImage['width'] * AAH.dimensions.widthScaleFactor);
-        cssDict['top'] = Math.round(cssScaledToImage['top'] * AAH.dimensions.heightScaleFactor);
-        cssDict['height'] = Math.round(cssScaledToImage['height'] * AAH.dimensions.heightScaleFactor);
+        cssDict.left = Math.round(AAH.boxValues.left);
+        cssDict.width = Math.round(AAH.boxValues.right - AAH.boxValues.left);
+        cssDict.top = Math.round(AAH.boxValues.top);
+        cssDict.height = Math.round(AAH.boxValues.bottom - AAH.boxValues.top);
         AAH.$box.css(cssDict);
     },
 
@@ -163,27 +212,6 @@ var AAH = {
         }
     },
 
-    /* Get the annotation area values represented by the box. */
-    getBoxValues: function() {
-        var d = {};
-        var cssDict = {
-            'left': parseInt(AAH.$box.css('left')),
-            'top': parseInt(AAH.$box.css('top')),
-            'width': parseInt(AAH.$box.css('width')),
-            'height': parseInt(AAH.$box.css('height'))
-        };
-        var cssScaledToImage = {};
-        cssScaledToImage['left'] = cssDict['left'] / AAH.dimensions.widthScaleFactor;
-        cssScaledToImage['width'] = cssDict['width'] / AAH.dimensions.widthScaleFactor;
-        cssScaledToImage['top'] = cssDict['top'] / AAH.dimensions.heightScaleFactor;
-        cssScaledToImage['height'] = cssDict['height'] / AAH.dimensions.heightScaleFactor;
-
-        d['min_x'] = Math.round(cssScaledToImage['left']) + 1;
-        d['max_x'] = Math.round(cssScaledToImage['left'] + cssScaledToImage['width']);
-        d['min_y'] = Math.round(cssScaledToImage['top']) + 1;
-        d['max_y'] = Math.round(cssScaledToImage['top'] + cssScaledToImage['height']);
-        return d;
-    },
     /* Get form values as numbers */
     getFormValues: function() {
         var d = AAH.getFormValuesAsStrs();
