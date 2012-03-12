@@ -173,15 +173,15 @@ var AAH = {
             'height': parseInt(AAH.$box.css('height'))
         };
         var cssScaledToImage = {};
-        cssScaledToImage['left'] = Math.round(cssDict['left'] / AAH.dimensions.widthScaleFactor);
-        cssScaledToImage['width'] = Math.round(cssDict['width'] / AAH.dimensions.widthScaleFactor);
-        cssScaledToImage['top'] = Math.round(cssDict['top'] / AAH.dimensions.heightScaleFactor);
-        cssScaledToImage['height'] = Math.round(cssDict['height'] / AAH.dimensions.heightScaleFactor);
+        cssScaledToImage['left'] = cssDict['left'] / AAH.dimensions.widthScaleFactor;
+        cssScaledToImage['width'] = cssDict['width'] / AAH.dimensions.widthScaleFactor;
+        cssScaledToImage['top'] = cssDict['top'] / AAH.dimensions.heightScaleFactor;
+        cssScaledToImage['height'] = cssDict['height'] / AAH.dimensions.heightScaleFactor;
 
-        d['min_x'] = cssScaledToImage['left'] + 1;
-        d['max_x'] = cssScaledToImage['left'] + cssScaledToImage['width'];
-        d['min_y'] = cssScaledToImage['top'] + 1;
-        d['max_y'] = cssScaledToImage['top'] + cssScaledToImage['height'];
+        d['min_x'] = Math.round(cssScaledToImage['left']) + 1;
+        d['max_x'] = Math.round(cssScaledToImage['left'] + cssScaledToImage['width']);
+        d['min_y'] = Math.round(cssScaledToImage['top']) + 1;
+        d['max_y'] = Math.round(cssScaledToImage['top'] + cssScaledToImage['height']);
         return d;
     },
     /* Get form values as numbers */
