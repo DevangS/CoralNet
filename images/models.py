@@ -5,7 +5,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign
-from images.model_utils import PointGen, AnnotationAreaUtils
+from annotations.model_utils import AnnotationAreaUtils
+from images.model_utils import PointGen
 from CoralNet.utils import generate_random_filename
 
 # Constants that don't really belong to a particular model
@@ -254,7 +255,7 @@ class Source(models.Model):
         Display the annotation-area parameters in templates.
         Usage: {{ mysource.annotation_area_display }}
         """
-        return AnnotationAreaUtils.percentage_string_to_readable_format(self.image_annotation_area)
+        return AnnotationAreaUtils.db_format_to_display(self.image_annotation_area)
 
     def point_gen_method_display(self):
         """
@@ -371,8 +372,8 @@ class Metadata(models.Model):
 
     height_in_cm = models.IntegerField(
         "Height covered (centimeters)",
-        help_text="The automatic annotation system needs to know how much space is covered by the image.\n"
-                  "If you don't set this value, the source's default value will be used.",
+        help_text="What is the actual span between the top and bottom of this image?\n"
+                  "(This information is used by the automatic annotator.)",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
         null=True, blank=True
@@ -380,9 +381,7 @@ class Metadata(models.Model):
 
     annotation_area = models.CharField(
         "Annotation area",
-        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.\n"
-                  "For example, X boundaries of 150 and 1800 mean that points are only generated within the X-pixel values 150 through 1800.\n"
-                  "If you don't set these values, the source's default annotation area (defined with percentages, not pixels) will be used.",
+        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.",
         max_length=50,
         null=True, blank=True
     )
@@ -402,25 +401,33 @@ class Metadata(models.Model):
     value3 = models.ForeignKey(Value3, null=True)
     value4 = models.ForeignKey(Value4, null=True)
     value5 = models.ForeignKey(Value5, null=True)
-   # group1_percent = models.IntegerField(default=0)
-   # group2_percent = models.IntegerField(default=0)
-   # group3_percent = models.IntegerField(default=0)
-   # group4_percent = models.IntegerField(default=0)
-   # group5_percent = models.IntegerField(default=0)
-   # group6_percent = models.IntegerField(default=0)
-   # group7_percent = models.IntegerField(default=0)
+    group1_percent = models.IntegerField(default=0)
+    group2_percent = models.IntegerField(default=0)
+    group3_percent = models.IntegerField(default=0)
+    group4_percent = models.IntegerField(default=0)
+    group5_percent = models.IntegerField(default=0)
+    group6_percent = models.IntegerField(default=0)
+    group7_percent = models.IntegerField(default=0)
 
     def __unicode__(self):
         return "Metadata of " + self.name
 
 
 class ImageStatus(models.Model):
+    # Image is preprocessed with the desired parameters (cm height, etc.)
     preprocessed = models.BooleanField(default=False)
-    featuresExtracted = models.BooleanField(default=False)
+    # Image has annotation points
     hasRandomPoints = models.BooleanField(default=False)
+    # Features have been extracted for the current annotation points
+    featuresExtracted = models.BooleanField(default=False)
+    # All of the current points have been annotated by robot at some point
+    # (it's OK if the annotations were overwritten by human)
     annotatedByRobot = models.BooleanField(default=False)
+    # Image is 100% annotated by human
     annotatedByHuman = models.BooleanField(default=False)
+    # Feature file includes the completed, human-annotated labels
     featureFileHasHumanLabels = models.BooleanField(default=False)
+    # This source's current robot model uses said feature file
     usedInCurrentModel = models.BooleanField(default=False)
 
 
@@ -555,7 +562,7 @@ class Image(models.Model):
         Display the annotation area parameters in templates.
         Usage: {{ myimage.annotation_area_display }}
         """
-        return AnnotationAreaUtils.annotation_area_string_of_img(self)
+        return AnnotationAreaUtils.db_format_to_display(self.metadata.annotation_area)
 
     def after_annotation_area_change(self):
         status = self.status

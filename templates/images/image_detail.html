@@ -39,6 +39,8 @@
 
 {% block content %}
 
+    {% get_obj_perms user for source as "source_perms" %}
+
     <button type="button" id="originalWidthButton" onclick="setImageToOriginalWidth()">View full image</button>
     <button type="button" id="scaledWidthButton" onclick="setImageToScaledWidth()">Scale image to page</button>
 
@@ -57,21 +59,13 @@
         <ul>
         <li>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</li>
 
-        {% if annotation_area_string %}
-          <li>Annotation area: {{ annotation_area_string }}</li>
-        {% else %}
-          <li>Annotation area: (Not specified)</li>
-        {% endif %}
-
-        {% if metadata.height_in_cm %}
-          <li>Height coverage: {{ metadata.height_in_cm }} centimeters</li>
-        {% else %}
-            {% if source.image_height_in_cm %}
-              <li>Height coverage: {{ source.image_height_in_cm }} centimeters (Source default)</li>
-            {% else %}
-              <li>Height coverage: (Not specified)</li>
+        <li>Annotation area: {{ image.annotation_area_display }}
+            {% if "source_edit" in source_perms and annotation_area_editable %}
+              (<a href="{% url annotation_area_edit source.id image.id %}">Edit</a>)
             {% endif %}
-        {% endif %}
+        </li>
+
+        <li>Height coverage: {{ metadata.height_in_cm }} centimeters</li>
         </ul>
 
         <ul>
@@ -93,9 +87,8 @@
         {% endfor %}
         </ul>
 
-        {% get_obj_perms user for source as "source_perms" %}
         {% if "source_edit" in source_perms %}
-        <a href="{% url image_detail_edit source.id image.id %}">{% trans 'Edit Image Details' %}</a>
+            <a href="{% url image_detail_edit source.id image.id %}">{% trans 'Edit Image Details' %}</a>
         {% endif %}
 
     </div>

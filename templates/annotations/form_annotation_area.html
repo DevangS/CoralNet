@@ -7,18 +7,18 @@ This form template is meant to be used with the "include" template tag.
 <table style="border-collapse: separate; border-spacing: 50px 0;">
     <tr>
         <td>
-          {% include "images/form_annotation_area_one_field.html" with field=form.min_x %}
+          {% include "annotations/form_annotation_area_one_field.html" with field=form.min_x %}
         </td>
         <td>
-            {% include "images/form_annotation_area_one_field.html" with field=form.max_x %}
+            {% include "annotations/form_annotation_area_one_field.html" with field=form.max_x %}
         </td>
     </tr>
     <tr>
         <td>
-            {% include "images/form_annotation_area_one_field.html" with field=form.min_y %}
+            {% include "annotations/form_annotation_area_one_field.html" with field=form.min_y %}
         </td>
         <td>
-            {% include "images/form_annotation_area_one_field.html" with field=form.max_y %}
+            {% include "annotations/form_annotation_area_one_field.html" with field=form.max_y %}
         </td>
     </tr>
 </table>

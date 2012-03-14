@@ -78,6 +78,27 @@ class Migration(SchemaMigration):
         # Adding field 'Metadata.value5'
         db.add_column('images_metadata', 'value5', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['images.Value5'], null=True, blank=True), keep_default=False)
 
+        # Adding field 'Metadata.group2_percent'
+        db.add_column('images_metadata', 'group2_percent', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
+
+        # Adding field 'Metadata.group1_percent'
+        db.add_column('images_metadata', 'group1_percent', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
+
+        # Adding field 'Metadata.group7_percent'
+        db.add_column('images_metadata', 'group7_percent', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
+
+        # Adding field 'Metadata.group6_percent'
+        db.add_column('images_metadata', 'group6_percent', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
+
+        # Adding field 'Metadata.group4_percent'
+        db.add_column('images_metadata', 'group4_percent', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
+
+        # Adding field 'Metadata.group5_percent'
+        db.add_column('images_metadata', 'group5_percent', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
+
+        # Adding field 'Metadata.group3_percent'
+        db.add_column('images_metadata', 'group3_percent', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
+
         # Changing field 'Metadata.pixel_cm_ratio'
         db.alter_column('images_metadata', 'pixel_cm_ratio', self.gf('django.db.models.fields.CharField')(max_length=45, null=True))
 
@@ -158,6 +179,27 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Metadata.value5'
         db.delete_column('images_metadata', 'value5_id')
+
+        # Deleting field 'Metadata.group2_percent'
+        db.delete_column('images_metadata', 'group2_percent')
+
+        # Deleting field 'Metadata.group1_percent'
+        db.delete_column('images_metadata', 'group1_percent')
+
+        # Deleting field 'Metadata.group7_percent'
+        db.delete_column('images_metadata', 'group7_percent')
+
+        # Deleting field 'Metadata.group6_percent'
+        db.delete_column('images_metadata', 'group6_percent')
+
+        # Deleting field 'Metadata.group4_percent'
+        db.delete_column('images_metadata', 'group4_percent')
+
+        # Deleting field 'Metadata.group5_percent'
+        db.delete_column('images_metadata', 'group5_percent')
+
+        # Deleting field 'Metadata.group3_percent'
+        db.delete_column('images_metadata', 'group3_percent')
 
         # Changing field 'Metadata.pixel_cm_ratio'
         db.alter_column('images_metadata', 'pixel_cm_ratio', self.gf('django.db.models.fields.IntegerField')(default=0))

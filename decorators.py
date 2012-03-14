@@ -11,8 +11,48 @@ from django.template.context import RequestContext
 from django.utils.functional import wraps
 from django.utils.http import urlquote
 from guardian.exceptions import GuardianError
+from annotations.utils import image_annotation_area_is_editable
 
-from images.models import Source
+from images.models import Source, Image
+
+def annotation_area_must_be_editable(image_id_view_arg, message_arg=None):
+    """
+    Decorator for views that makes sure an image's annotation area is
+    editable.  If not, then we show a simple error-message template
+    instead of the view.
+
+    :param image_id_view_arg: the name of the view method
+      argument that corresponds to the image id.
+    :param message: a message to be displayed on the template.
+    """
+
+    def decorator(view_func):
+        def _wrapped_view(request, *args, **kwargs):
+
+            if image_id_view_arg not in kwargs:
+                raise ValueError("Argument %s was not passed "
+                                 "into view function" % image_id_view_arg)
+            image_id = kwargs[image_id_view_arg]
+
+            message = message_arg or \
+                      ("This image's annotation area is not editable, because re-generating points "
+                       "would result in loss of data (such as annotations made in the annotation tool, "
+                       "or points imported from outside the site).")
+
+            image = Image.objects.get(pk=image_id)
+
+            if not image_annotation_area_is_editable(image_id):
+                return render_to_response('annotations/annotation_area_not_editable.html', {
+                    'message': message,
+                    'image': image,
+                    'source': image.source,
+                    },
+                    context_instance=RequestContext(request)
+                )
+
+            return view_func(request, *args, **kwargs)
+        return wraps(view_func)(_wrapped_view)
+    return decorator
 
 def labelset_required(source_id_view_arg, message):
     """
@@ -20,7 +60,7 @@ def labelset_required(source_id_view_arg, message):
     not, then the view isn't shown and we instead show a simple template
     saying that a labelset must be created.
 
-    :param source_id_view_arg: a string that specifies the name of the view method
+    :param source_id_view_arg: the name of the view method
       argument that corresponds to the source id.
     :param message: a message to be displayed on the template if the source
       doesn't have a labelset.

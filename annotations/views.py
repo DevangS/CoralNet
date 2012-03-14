@@ -7,11 +7,14 @@ from django.template.context import RequestContext
 from django.utils import simplejson
 from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
-from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm
+from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm
+from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess
 from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from annotations.utils import get_annotation_version_user_display
+from decorators import annotation_area_must_be_editable
 from images.models import Source, Image, Point
+from images.utils import generate_points
 from visualization.utils import generate_patch_if_doesnt_exist
 
 @login_required
@@ -325,6 +328,78 @@ def label_list(request):
                 'labels': labels,
                 },
                 context_instance=RequestContext(request)
+    )
+
+
+@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
+@annotation_area_must_be_editable('image_id')
+def annotation_area_edit(request, image_id, source_id):
+    """
+    Edit an image's annotation area.
+    """
+
+    image = get_object_or_404(Image, id=image_id)
+    source = get_object_or_404(Source, id=source_id)
+    metadata = image.metadata
+
+    old_annotation_area = metadata.annotation_area
+
+    if request.method == 'POST':
+
+        # Cancel
+        cancel = request.POST.get('cancel', None)
+        if cancel:
+            messages.success(request, 'Edit cancelled.')
+            return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
+
+        # Submit
+        annotationAreaForm = AnnotationAreaPixelsForm(request.POST, image=image)
+
+        if annotationAreaForm.is_valid():
+            metadata.annotation_area = AnnotationAreaUtils.pixels_to_db_format(**annotationAreaForm.cleaned_data)
+            metadata.save()
+
+            if metadata.annotation_area != old_annotation_area:
+                generate_points(image)
+                image.after_annotation_area_change()
+
+            messages.success(request, 'Annotation area successfully edited.')
+            return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        # Just reached this form page
+        annotationAreaForm = AnnotationAreaPixelsForm(image=image)
+
+    # Scale down the image to have a max width of 800 pixels.
+    MAX_DISPLAY_WIDTH = 800
+
+    # jQuery UI resizing with containment isn't subpixel-precise, so
+    # the display height is rounded to an int.  Thus, need to track
+    # width/height scaling factors separately for accurate calculations.
+    display_width = min(MAX_DISPLAY_WIDTH, image.original_width)
+    width_scale_factor = float(display_width) / image.original_width
+    display_height = int(round(image.original_height * width_scale_factor))
+    height_scale_factor = float(display_height) / image.original_height
+
+    dimensions = dict(
+        displayWidth = display_width,
+        displayHeight = display_height,
+        fullWidth = image.original_width,
+        fullHeight = image.original_height,
+        widthScaleFactor = width_scale_factor,
+        heightScaleFactor = height_scale_factor,
+    )
+    thumbnail_dimensions = (display_width, display_height)
+
+    return render_to_response('annotations/annotation_area_edit.html', {
+        'source': source,
+        'image': image,
+        'dimensions': simplejson.dumps(dimensions),
+        'thumbnail_dimensions': thumbnail_dimensions,
+        'annotationAreaForm': annotationAreaForm,
+        },
+        context_instance=RequestContext(request)
     )
 
 
