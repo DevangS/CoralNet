@@ -255,8 +255,8 @@ def Classify(image_id):
         points = Point.objects.filter(image=image, row=words[0], column=words[1], annotation=None)
         for point in points:
             #create the annotation object and save it
-		    Ann = Annotation.objects.filter(point=point, image=image)
-		    if is_robot_user(Ann[0].user): # if this is an imported or human, we don't want to overwrite it!
+            Ann = Annotation.objects.filter(point=point, image=image)
+            if is_robot_user(Ann[0].user): # if this is an imported or human, we don't want to overwrite it!
                 annotation = Annotation(image=image, label=label[0], point=point, user=user, robot_version=latestRobot, source=image.source)
                 annotation.save()
 
