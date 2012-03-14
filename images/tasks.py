@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 import reversion
 from accounts.utils import get_robot_user
+from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation
 from images import task_helpers
 from images.models import Point, Image, Source, Robot
@@ -254,6 +255,9 @@ def Classify(image_id):
         points = Point.objects.filter(image=image, row=words[0], column=words[1], annotation=None)
         for point in points:
             #create the annotation object and save it
+		    Ann = Annotation.objects.filter(point=point, image=image)
+			if not is_robot_user(Ann[0].user):
+				continue # if this is an imported or human, we don't want to overwrite it!
             annotation = Annotation(image=image, label=label[0], point=point, user=user, robot_version=latestRobot, source=image.source)
             annotation.save()
 
