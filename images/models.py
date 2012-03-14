@@ -536,8 +536,8 @@ class Image(models.Model):
     def height_cm(self):
         thisSource = Source.objects.filter(image = self.id)
         imheight = thisSource[0].image_height_in_cm
-        if self.metadata.annotation_area:
-            imheight = self.metadata.annotation_area
+        if self.metadata.height_in_cm:
+            imheight = self.metadata.height_in_cm
 
         return imheight
 
