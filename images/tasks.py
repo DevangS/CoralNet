@@ -256,9 +256,8 @@ def Classify(image_id):
         for point in points:
             #create the annotation object and save it
             Ann = Annotation.objects.filter(point=point, image=image)
-            if len(Ann) > 0: # check that there are annotations for this point
-                if not is_robot_user(Ann[0].user): # if this is an imported or human, we don't want to overwrite it, so continue
-                    continue
+            if ( len(Ann) > 0 and ( not is_robot_user(Ann[0].user) ) ): # if this is an imported or human, we don't want to overwrite it, so continue
+                continue
             annotation = Annotation(image=image, label=label[0], point=point, user=user, robot_version=latestRobot, source=image.source)
             annotation.save()
 
@@ -317,14 +316,17 @@ def addLabelsToFeatures(image_id):
 def trainRobot(source_id):
 	
 	# first, see if we should train a new robot
-	trainNewRobot = False	
+	hasNewImagesToTrainOn = False	
+	nbrAnnotatedImages = 0
 	source = Source.objects.get(pk = source_id)
 	allImages = Image.objects.filter(source = source)
 	for image in allImages:
 		if (image.status.featureFileHasHumanLabels and not image.status.usedInCurrentModel):
-			trainNewRobot = True
+			hasNewImagesToTrainOn = True
+		if image.status.featureFileHasHumanLabels:
+			nbrAnnotatedImages = nbrAnnotatedImages + 1;
 	
-	if not trainNewRobot:
+	if ( not hasNewImagesToTrainOn or ( nbrAnnotatedImages < 5 ) ) : #TODO, add field to souce object that specify this threshold.
 		print 'Source ' + str(source_id) + ' has no new images to train on, aborting'
 		return 1
 
@@ -377,15 +379,19 @@ def trainRobot(source_id):
 		workDir = workingDir,
 		logFile = CV_LOG,
 		errorLogfile = TRAIN_ERROR_LOG,
-	) 
+	)
+
+	# clean up	 
+	rmtree(workingDir)	
 	if os.path.isfile(TRAIN_ERROR_LOG): 
 		print("Sorry error detected in robot training!")
-		rmtree(workingDir)	
 		newRobot.delete()
 	else:
-		for image in allImages: # mark these images are used in the current model.
+		for image in allImages: # mark that these images are used in the current model.
 			image.status.usedInCurrentModel = True;
 			image.status.save()
+		if not (previousRobot == None):
+			os.delete(oldModelPath) # remove old model, but keep the meta data files.
 		print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
 	
 
