@@ -61,14 +61,23 @@ def dummyTaskLong(s):
 	time.sleep(s)
 
 @task()
+def schedulerInfLoop():
+	while True:
+		scheduler()
+		print "Sleeping " + str(settings.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING) + " seconds."
+		time.sleep(settings.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING) #sleep
+
+@task()
 def scheduler():
-	print("Main scheduler task starting")
+	print("==== Main scheduler task starting ====")
 	for source in Source.objects.filter(): # grab all sources, on at the time
+		print "Processing source " + source.name
 		for image in source.get_all_images(): # grab all images from this source
 			result = prepareImage.delay(image.id) # create the pre processing task for each image
 		while not result.ready():
 			time.sleep(5) # wait for all image to be processed, check every 5 seconds
 		trainAndTest.delay(source.id) # trains a new robot for this source, and re classifies all unseen images
+	print("==== Main scheduler task done ====")
 
 @task()
 def prepareImage(image_id):

@@ -20,6 +20,8 @@ abspath = lambda *p: os.path.abspath(os.path.join(*p))
 
 PROJECT_ROOT = abspath(os.path.dirname(__file__))
 
+SLEEP_TIME_BETWEEN_IMAGE_PROCESSING = 5 * 60 # 60*60 on the server, but shorter on the dev. machines
+
 PROCESSING_ROOT = PROJECT_ROOT
 
 DEBUG = True
