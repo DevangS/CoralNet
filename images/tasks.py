@@ -62,6 +62,7 @@ def dummyTaskLong(s):
 
 @task()
 def schedulerInfLoop():
+	time.sleep(20) # sleep 20 secs to allow the scheduler to start
 	while True:
 		scheduler()
 		print "Sleeping " + str(settings.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING) + " seconds."
@@ -107,7 +108,7 @@ def PreprocessImages(image_id):
 
 	if not (image.metadata.height_in_cm or image.source.image_height_in_cm):
 	    print "PreprocessImages: Can't get a cm height for image {id}. Can not preprocess".format(id = image_id)
-	    return 0
+	    return 1
 	
 	thisPixelCmRatio = image.original_height / float(image.height_cm())
 	subSampleRate = thisPixelCmRatio / TARGET_PIXEL_CM_RATIO
@@ -400,7 +401,7 @@ def trainRobot(source_id):
 			image.status.usedInCurrentModel = True;
 			image.status.save()
 		if not (previousRobot == None):
-			os.delete(oldModelPath) # remove old model, but keep the meta data files.
+			os.remove(oldModelPath) # remove old model, but keep the meta data files.
 		print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
 	
 
