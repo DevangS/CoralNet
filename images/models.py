@@ -263,12 +263,30 @@ class Source(models.Model):
         """
         return PointGen.db_to_readable_format(self.default_point_generation_method)
 
+    def get_latest_robot(self):
+		"""
+		return the latest robot associated with this source.
+		if no robots, retun None
+		"""
+    	# Get all robots for this source
+		allRobots = Robot.objects.filter(source = self)
+	 
+		# if empty, return
+		if len(allRobots) == 0:
+			return None
+	    
+		# find the most recent robot
+		latestRobot = allRobots[0]
+		for thisRobot in allRobots:
+			if thisRobot.version > latestRobot.version:
+				latestRobot = thisRobot
+		return latestRobot
+
     def __unicode__(self):
         """
         To-string method.
         """
         return self.name
-
 
 class SourceInvite(models.Model):
     """
@@ -301,6 +319,16 @@ class Robot(models.Model):
 
     # Automatically set to the date and time of creation.
     create_date = models.DateTimeField('Date created', auto_now_add=True, editable=False)
+    
+    def get_process_date_short_str(self):
+        """
+        Return the image's (pre)process date in YYYY-MM-DD format.
+
+        Advantage over YYYY-(M)M-(D)D: alphabetized = sorted by date
+        Advantage over YYYY(M)M(D)D: date is unambiguous
+        """
+        return "{0}-{1:02}-{2:02}".format(self.create_date.year, self.create_date.month, self.create_date.day)
+
 
     def __unicode__(self):
         """
@@ -374,13 +402,13 @@ class Metadata(models.Model):
     value3 = models.ForeignKey(Value3, null=True)
     value4 = models.ForeignKey(Value4, null=True)
     value5 = models.ForeignKey(Value5, null=True)
-    group1_percent = models.IntegerField(default=0)
-    group2_percent = models.IntegerField(default=0)
-    group3_percent = models.IntegerField(default=0)
-    group4_percent = models.IntegerField(default=0)
-    group5_percent = models.IntegerField(default=0)
-    group6_percent = models.IntegerField(default=0)
-    group7_percent = models.IntegerField(default=0)
+   # group1_percent = models.IntegerField(default=0)
+   # group2_percent = models.IntegerField(default=0)
+   # group3_percent = models.IntegerField(default=0)
+   # group4_percent = models.IntegerField(default=0)
+   # group5_percent = models.IntegerField(default=0)
+   # group6_percent = models.IntegerField(default=0)
+   # group7_percent = models.IntegerField(default=0)
 
     def __unicode__(self):
         return "Metadata of " + self.name
@@ -506,7 +534,7 @@ class Image(models.Model):
 
     # this function returns the image height by checking both the image and the source for the height
     def height_cm(self):
-        thisSource = source.objects.filter(image = self.id)
+        thisSource = Source.objects.filter(image = self.id)
         imheight = thisSource[0].image_height_in_cm
         if self.metadata.annotation_area:
             imheight = self.metadata.annotation_area
