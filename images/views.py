@@ -24,7 +24,7 @@ from images.models import Source, Image, Metadata, Point, SourceInvite, ImageSta
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm
 from images.model_utils import PointGen
 from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points
-
+import json
 
 def source_list(request):
     """
@@ -150,13 +150,30 @@ def source_main(request, source_id):
         anno_completed_images=all_images.filter(status__annotatedByHuman=True).count(),
         num_annotations=Annotation.objects.filter(image__source=source).count(),
     )
-
+    latestRobot = source.get_latest_robot()
+    if latestRobot == None:
+        robotStats = dict(
+            hasRobot=False,
+        )
+    else:
+        f = open(latestRobot.path_to_model + '.meta.json')
+        jsonstring = f.read()
+        f.close()
+        meta=json.loads(jsonstring)
+        robotStats = dict(
+            version=latestRobot.version,
+            trainTime=round(meta['totalRuntime']),
+            precision = 100 * (1 - meta['hp']['estPrecision']),
+            hasRobot=True,
+        )
+    
     return render_to_response('images/source_main.html', {
         'source': source,
         'loc_keys': ', '.join(source.get_key_list()),
         'members': memberDicts,
         'latest_images': latest_images,
         'stats': stats,
+		'robotStats':robotStats,
         },
         context_instance=RequestContext(request)
         )

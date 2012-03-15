@@ -51,6 +51,28 @@
     </div>
 
     <hr />
+    <div id="robots">
+		{% if robotStats.hasRobot %}
+        <h3>Robot stats</h3>
+            <table class="detail_table">
+                <tr>
+                    <td>Version</td>
+                    <td>{{ robotStats.version }}</td>
+                </tr>
+                <tr>
+                    <td>Estimated precision (%)</td>
+                    <td>{{ robotStats.precision }}</td>
+                </tr>
+                <tr>
+                    <td>Traintime (s)</td>
+                    <td>{{ robotStats.trainTime }}</td>
+                </tr>
+            </table>
+        {% else %}
+            <p>(No robot availible yet)</p>
+        {% endif %}
+	</div> 
+    <hr />
     <div id="annotations">
         <h3>Annotations</h3>
 

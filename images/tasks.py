@@ -73,28 +73,30 @@ def scheduler():
 	print("==== Main scheduler task starting ====")
 	for source in Source.objects.filter(): # grab all sources, on at the time
 		print "Processing source " + source.name
-		for image in source.get_all_images(): # grab all images from this source
-			result = prepareImage.delay(image.id) # create the pre processing task for each image
+		
+		# == For each image, do all preprocessing == 	
+		for image in source.get_all_images(): 
+			result = prepareImage.delay(image.id) 
+		while not result.ready(): #NOTE, implement with callback
+			time.sleep(5) 
+		
+		# == Train robot for this source ==	
+		result = trainRobot.delay(source.id)
 		while not result.ready():
-			time.sleep(5) # wait for all image to be processed, check every 5 seconds
-		trainAndTest.delay(source.id) # trains a new robot for this source, and re classifies all unseen images
+			time.sleep(5)
+		
+		# == Classify all images with the new robot ==	
+		for image in source.get_all_images():
+			result = Classify.delay(image.id)
+		while not result.ready():
+			time.sleep(5) 
 	print("==== Main scheduler task done ====")
-
+	
 @task()
 def prepareImage(image_id):
 	PreprocessImages(image_id)
 	MakeFeatures(image_id)
 	addLabelsToFeatures(image_id)
-
-@task()
-def trainAndTest(source_id):
-	result = trainRobot.delay(source_id) # train robot 
-	while not result.ready():
-		time.sleep(5) # wait for training to compleate
-	source = Source.objects.get(pk = source_id)
-	for image in source.get_all_images(): # and then classify all images in that source
-		Classify.delay(image.id)
-
 
 @task()
 @transaction.commit_on_success()
