@@ -111,7 +111,12 @@ def PreprocessImages(image_id):
 	if not (image.metadata.height_in_cm or image.source.image_height_in_cm):
 	    print "PreprocessImages: Can't get a cm height for image {id}. Can not preprocess".format(id = image_id)
 	    return 1
-	
+
+	####### EVERYTHING OK: START THE IMAGE PREPROCESSING ##########
+	image.status.preprocessed = True # Update database 
+	image.status.save()
+	print 'Start pre-processing image id {id}'.format(id = image_id)
+
 	thisPixelCmRatio = image.original_height / float(image.height_cm())
 	subSampleRate = thisPixelCmRatio / TARGET_PIXEL_CM_RATIO
 	
@@ -120,10 +125,8 @@ def PreprocessImages(image_id):
 	file = open(ssFile, 'w')
 	file.write(str(subSampleRate) + "\n");
 	file.close()
-
-	print 'Start pre-processing image id {id}'.format(id = image_id)
-
-	# set the process_date to todays date
+	
+    # set the process_date to todays date
 	image.process_date = datetime.now()
 	image.save()
 	
@@ -141,11 +144,11 @@ def PreprocessImages(image_id):
 	
 	#error occurred in matlab
 	if os.path.isfile(PREPROCESS_ERROR_LOG):
+		image.status.preprocessed = False # roll back data base changes
+		image.status.save()
 		print("Sorry error detected in preprocessing this image, halting!")
 	#everything went okay with matlab
 	else:
-		image.status.preprocessed = True
-		image.status.save()
 		print 'Finished pre-processing image id {id}'.format(id = image_id)
 
 @task()
@@ -166,8 +169,11 @@ def MakeFeatures(image_id):
         print 'MakeFeatures: Features already extracted for image id {id}'.format(id = image_id)
         return
  
+    ####### EVERYTHING OK: START THE FEATURE EXTRACTION ##########
     print 'Start feature extraction for image id {id}'.format(id = image_id)
-
+    image.status.featuresExtracted = True;
+    image.status.save()
+        
     #builds args for matlab script
     preprocessedImageFile = PREPROCESS_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".mat"
     featureFile = FEATURES_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".dat"
@@ -192,10 +198,10 @@ def MakeFeatures(image_id):
     )
 
     if os.path.isfile(FEATURE_ERROR_LOG):
+        image.status.featuresExtracted = False;
+        image.status.save()
         print("Sorry error detected in feature extraction!")
     else:
-        image.status.featuresExtracted = True;
-        image.status.save()
         print 'Finished feature extraction for image id {id}'.format(id = image_id)
         
 @task()
@@ -229,7 +235,12 @@ def Classify(image_id):
             return
    
     ####### EVERYTHING OK: START THE CLASSIFICATION ##########
- 
+    #update image status
+    image.status.annotatedByRobot = True
+    image.status.save()
+    image.latest_robot_annotator = latestRobot
+    image.save()
+    
     print 'Start classify image id {id}'.format(id = image_id)
     #builds args for matlab script
     featureFile = FEATURES_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".dat"
@@ -273,11 +284,6 @@ def Classify(image_id):
             annotation = Annotation(image=image, label=label[0], point=point, user=user, robot_version=latestRobot, source=image.source)
             annotation.save()
 
-    #update image status
-    image.status.annotatedByRobot = True
-    image.status.save()
-    image.latest_robot_annotator = latestRobot
-    image.save()
     print 'Finished classification of image id {id}'.format(id = image_id)
 
     label_file.close()
@@ -301,6 +307,10 @@ def addLabelsToFeatures(image_id):
 
 
 	############### EVERYTHING OK, START THE PROCEDURE ###########
+	# update status first to ensure concurrency
+	image.status.featureFileHasHumanLabels = True
+	image.status.save()
+
 	featureFileIn = FEATURES_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".dat"	
 	featureFileOut = FEATURES_DIR + str(image_id) + "_temp_" + image.get_process_date_short_str() + ".dat"	#temp file
 	inputFF = open(featureFileIn, 'r')
@@ -320,10 +330,7 @@ def addLabelsToFeatures(image_id):
 	inputFF.close()
 
 	copyfile(featureFileOut, featureFileIn)
-	os.remove(featureFileOut)
-	image.status.featureFileHasHumanLabels = True
-	image.status.save()
-
+	os.remove(featureFileOut) 
 @task()
 def trainRobot(source_id):
 	
@@ -344,6 +351,17 @@ def trainRobot(source_id):
 
 	################### EVERYTHING OK, START TRAINING NEW MODEL ################
 	
+	# create the new Robot object
+	newRobot = Robot(source=source, version = Robot.objects.all().order_by('-version')[0].version + 1, time_to_train = 1);
+	newRobot.path_to_model = join_project_root("images/models/robot" + str(newRobot.version))
+	newRobot.save();
+	print 'new robot version:' + str(newRobot.version)
+	# update the data base.
+	for image in allImages: # mark that these images are used in the current model.
+		if image.status.featureFileHasHumanLabels:
+			image.status.usedInCurrentModel = True;
+			image.status.save()
+		
 	# grab the last robot
 	previousRobot = source.get_latest_robot()	
 	if previousRobot == None:
@@ -351,12 +369,6 @@ def trainRobot(source_id):
 	else:
 		oldModelPath = previousRobot.path_to_model
 		print 'previous robot version:' + str(previousRobot.version)
-	
-	# create the new Robot object
-	newRobot = Robot(source=source, version = Robot.objects.all().order_by('-version')[0].version + 1, time_to_train = 1);
-	newRobot.path_to_model = join_project_root("images/models/robot" + str(newRobot.version))
-	newRobot.save();
-	print 'new robot version:' + str(newRobot.version)
 	
 	# now, loop through the images and create some meta data files that MATLAB needs
 	workingDir = newRobot.path_to_model + '.workdir/'
@@ -396,12 +408,13 @@ def trainRobot(source_id):
 	# clean up	 
 	rmtree(workingDir)	
 	if os.path.isfile(TRAIN_ERROR_LOG): 
+		for image in allImages: # roll back changes. 
+			if image.status.featureFileHasHumanLabels:
+				image.status.usedInCurrentModel = False
+				image.status.save()
 		print("Sorry error detected in robot training!")
 		newRobot.delete()
 	else:
-		for image in allImages: # mark that these images are used in the current model.
-			image.status.usedInCurrentModel = True;
-			image.status.save()
 		if not (previousRobot == None):
 			os.remove(oldModelPath) # remove old model, but keep the meta data files.
 		print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
