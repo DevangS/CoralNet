@@ -1,3 +1,4 @@
+import datetime
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -344,6 +345,9 @@ class LocationValue(models.Model):
         # this class, but tables will be created for its sub-classes
         abstract = True
 
+        # Default ordering criteria.
+        ordering = ['name']
+
     name = models.CharField(max_length=50)
     source = models.ForeignKey(Source)
 
@@ -475,9 +479,85 @@ class Image(models.Model):
     def __unicode__(self):
         return self.metadata.name
 
-    # Use this as the "title" element of the image on an HTML page
-    # (hover the mouse over the image to see this)
+    def get_prev_or_next(self, kind):
+        """
+        Gets the previous or next image in this image's source.
+        Ordering is done by photo_date's year, then by
+        location value 1, ..., location value n.
+
+        *** WARNING ***
+        The use of extra() on querysets involves database-specific arguments!
+        For example, MySQL and PostgreSQL may have to use different arguments.
+        """
+        db_extra_select = {'year': 'YEAR(photo_date)'}
+
+        metadatas = Metadata.objects.filter(image__source=self.source).extra(select=db_extra_select)
+        sort_keys = ['year'] + self.source.get_value_field_list()
+        sort_keys_reverse = sort_keys[::-1]
+        self_metadata_values = Metadata.objects.filter(pk=self.metadata.id).extra(select=db_extra_select).values(*sort_keys)[0]
+
+        # If we have 3 sort keys, and are getting the next image, then the algorithm is:
+        # - Look for metadatas where key 1 is equal, key 2 is equal, and key 3 is greater
+        # - If no matches, look where key 1 is equal and key 2 is greater
+        # - If no matches, look where key 1 is greater
+        # - Whenever there are matches, get the first one (the matches should be ordered,
+        #   so this should be the next image). If no matches in any step, return None.
+
+        if kind == 'next':
+            compare_query_str = '{0}__gt'
+            metadatas_ordered = metadatas.order_by(*sort_keys)
+        else:  # 'prev'
+            compare_query_str = '{0}__lt'
+            metadatas_ordered = metadatas.order_by(*['-'+sk for sk in sort_keys])
+
+        matching_sort_keys = sort_keys[:]
+        for sort_key_to_compare in sort_keys_reverse:
+            kwargs = dict()
+            del matching_sort_keys[-1]
+
+            for sort_key in matching_sort_keys:
+                if sort_key == 'year':
+                    # For some reason, filter() doesn't seem to care about extra values obtained
+                    # with extra().  So instead of the 'year' extra value, we need to give
+                    # something that filter() understands.
+                    kwargs['photo_date__year'] = self_metadata_values[sort_key]
+                else:
+                    kwargs[sort_key] = self_metadata_values[sort_key]
+
+            if sort_key_to_compare == 'year':
+                # And accommodating filter() is even nastier here.
+                if kind == 'next':
+                    kwargs['photo_date__gte'] = datetime.datetime(self_metadata_values['year']+1, 1, 1)
+                else:  # 'prev'
+                    kwargs['photo_date__lt'] = datetime.datetime(self_metadata_values['year'],1,1)
+            else:
+                kwargs[compare_query_str.format(sort_key_to_compare)] = self_metadata_values[sort_key_to_compare]
+
+            candidate_metadatas = metadatas_ordered.filter(**kwargs)
+            if candidate_metadatas:
+                return Image.objects.get(metadata=candidate_metadatas[0])
+
+        return None
+
+    def get_next(self):
+        """
+        Get the "next" image in the source.
+        Return None if this is the last image.
+        """
+        return self.get_prev_or_next('next')
+
+    def get_previous(self):
+        """
+        Get the "previous" image in the source.
+        Return None if this is the first image.
+        """
+        return self.get_prev_or_next('prev')
+
     def get_image_element_title(self):
+        """
+        Use this as the "title" element of the image on an HTML page
+        (hover the mouse over the image to see this).
+        """
         metadata = self.metadata
         dataStrings = []
         for v in [metadata.value1,
@@ -490,7 +570,7 @@ class Image(models.Model):
             else:
                 break
         if metadata.photo_date:
-            dataStrings.append(str(metadata.photo_date))
+            dataStrings.insert(0, str(metadata.photo_date.year))
 
         return ' '.join(dataStrings)
 

@@ -351,13 +351,20 @@ def image_detail(request, image_id, source_id):
 
     # Default max viewing width
     # Feel free to change the constant according to the page layout.
-    scaled_width = min(image.original_width, 1000)
+    scaled_width = min(image.original_width, 800)
 
+    # Next and previous image links
+    next_image = image.get_next()
+    prev_image = image.get_previous()
+
+    # Should we include a link to the annotation area edit page?
     annotation_area_editable = image_annotation_area_is_editable(image_id)
 
     return render_to_response('images/image_detail.html', {
         'source': source,
         'image': image,
+        'next_image': next_image,
+        'prev_image': prev_image,
         'metadata': metadata,
         'detailsets': detailsets,
         'scaled_width': scaled_width,
