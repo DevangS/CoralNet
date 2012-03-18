@@ -28,7 +28,7 @@
 
         <li><a href="{% url labelset_main source.id %}"><span>{% trans 'LabelSet' %}</span></a></li>
       
-        {% if "source_edit" in source_perms %}
+        {% if "source_admin" in source_perms %}
           <li><a href="{% url annotation_import source.id %}"><span>{% trans 'Import Annotations' %}</span></a></li>
         {% endif %}
       </ul>

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm, TextInput, FileInput, CharField
-from django.forms.fields import ChoiceField, ImageField, FileField, IntegerField
+from django.forms.fields import ChoiceField, ImageField, FileField, IntegerField, BooleanField
 from django.forms.widgets import Select
 from annotations.model_utils import AnnotationAreaUtils
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
@@ -169,20 +169,18 @@ class ImageUploadForm(Form):
         widget=FileInput(attrs={'multiple': 'multiple'}))
     #TODO: Add helptext saying which file formats are acceptable.
 
+    class Media:
+        css = {
+            'all': ("css/uploadForm.css",)
+        }
+        js = ("js/ImageUploadFormHelper.js",)
+
 
 class ImageUploadOptionsForm(Form):
     """
     Helper form for the ImageUploadForm.
     Has options such as choosing to skip or replace duplicate images.
     """
-    class Media:
-        css = {
-            'all': ("css/uploadForm.css",)
-        }
-        js = (
-            # From annotations static directory
-            "js/ImageUploadFormHelper.js",
-        )
 
     specify_metadata = ChoiceField(
         label='How to specify metadata',
@@ -485,6 +483,17 @@ class AnnotationImportForm(Form):
     annotations_file = FileField(
         label='Annotation file (.txt)',
     )
+
+
+class AnnotationImportOptionsForm(Form):
+    """
+    Helper form for the AnnotationImportForm, containing import options.
+    """
+    points_only = BooleanField(
+        label='Points only, no annotations',
+        required=False,
+        initial=False)
+
 
 class LabelImportForm(Form):
     labelset_description = CharField(

@@ -21,7 +21,7 @@ from CoralNet.exceptions import FileContentError
 from annotations.utils import image_annotation_area_is_editable
 
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
-from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm
+from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationImportOptionsForm
 from images.model_utils import PointGen
 from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points, get_first_image, get_next_image, get_prev_image
 import json
@@ -653,7 +653,7 @@ def annotations_file_to_python(annoFile, source):
     return annotationsDict
 
 
-def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile):
+def image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, source, currentUser, annoFile):
     """
     Helper method for the image upload view and the image+annotation
     import view.
@@ -664,7 +664,8 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
     imagesUploaded = 0
     annotationsImported = 0
 
-    dupeOption = optionsForm.cleaned_data['skip_or_replace_duplicates']
+    dupeOption = imageOptionsForm.cleaned_data['skip_or_replace_duplicates']
+    pointsOnlyOption = annotationOptionsForm.cleaned_data['points_only']
     importedUser = get_imported_user()
 
     annotationData = None
@@ -682,7 +683,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
         metadataDict = None
         metadata = Metadata(height_in_cm=source.image_height_in_cm)
 
-        if optionsForm.cleaned_data['specify_metadata'] == 'filenames':
+        if imageOptionsForm.cleaned_data['specify_metadata'] == 'filenames':
 
             try:
                 metadataDict = filename_to_metadata(filename, source)
@@ -736,7 +737,7 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
 
             imageAnnotations = annotationData[imageIdentifier]
 
-            status = ImageStatus(hasRandomPoints=True, annotatedByHuman=True)
+            status = ImageStatus()
             status.save()
 
             metadata.annotation_area = AnnotationAreaUtils.IMPORTED_STR
@@ -762,15 +763,22 @@ def image_upload_process(imageFiles, optionsForm, source, currentUser, annoFile)
                 point = Point(row=anno['row'], column=anno['col'], point_number=pointNum, image=img)
                 point.save()
 
-                label = Label.objects.filter(code=anno['label'])[0]
+                if not pointsOnlyOption:
+                    label = Label.objects.filter(code=anno['label'])[0]
 
-                # Save the Annotation in the database, marking the annotations as imported.
-                annotation = Annotation(user=importedUser,
-                                        point=point, image=img, label=label, source=source)
-                annotation.save()
+                    # Save the Annotation in the database, marking the annotations as imported.
+                    annotation = Annotation(user=importedUser,
+                                            point=point, image=img, label=label, source=source)
+                    annotation.save()
 
-                annotationsImported += 1
+                    annotationsImported += 1
+
                 pointNum += 1
+
+            img.status.hasRandomPoints = True
+            if not pointsOnlyOption:
+                img.status.annotatedByHuman = True
+            img.status.save()
 
         # Image upload form, no annotations
         else:
@@ -848,7 +856,7 @@ def image_upload(request, source_id):
         if imageForm.is_valid() and optionsForm.is_valid():
 
             resultDict = image_upload_process(imageFiles=imageFiles,
-                                              optionsForm=optionsForm,
+                                              imageOptionsForm=optionsForm,
                                               source=source,
                                               currentUser=request.user,
                                               annoFile=None)
@@ -877,7 +885,7 @@ def image_upload(request, source_id):
     )
 
 
-@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
+@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 @labelset_required('source_id', 'You need to create a labelset for your source before you can import annotations.')
 def annotation_import(request, source_id):
     """
@@ -892,7 +900,8 @@ def annotation_import(request, source_id):
     if request.method == 'POST':
         annotationForm = AnnotationImportForm(request.POST, request.FILES)
         imageForm = ImageUploadForm(request.POST, request.FILES)
-        optionsForm = ImageUploadOptionsForm(request.POST, source=source)
+        imageOptionsForm = ImageUploadOptionsForm(request.POST, source=source)
+        annotationOptionsForm = AnnotationImportOptionsForm(request.POST)
 
         # Need getlist instead of simply request.FILES, in order to handle
         # multiple files.
@@ -900,36 +909,26 @@ def annotation_import(request, source_id):
 
         # TODO: imageForm.is_valid() just validates the first image file.
         # Make sure all image files are checked to be valid images.
-        if annotationForm.is_valid() and imageForm.is_valid() and optionsForm.is_valid():
+        if (annotationForm.is_valid() and
+            imageForm.is_valid() and
+            annotationOptionsForm.is_valid() and
+            imageOptionsForm.is_valid() ):
 
             annoFile = request.FILES['annotations_file']
 
-            resultDict = image_upload_process(imageFiles=imageFiles,
-                                              optionsForm=optionsForm,
-                                              source=source,
-                                              currentUser=request.user,
-                                              annoFile=annoFile)
+            resultDict = image_upload_process(
+                imageFiles=imageFiles,
+                imageOptionsForm=imageOptionsForm,
+                annotationOptionsForm=annotationOptionsForm,
+                source=source,
+                currentUser=request.user,
+                annoFile=annoFile
+            )
 
             if resultDict['error']:
                 messages.error(request, resultDict['message'])
                 transaction.rollback()
                 revision_context_manager.invalidate()
-
-#            # This also works, although the try and with make it harder to read, IMO
-#            try:
-#                with reversion.revision:
-#                    resultDict = image_upload_process(imageFiles=imageFiles,
-#                            optionsForm=optionsForm,
-#                            source=source,
-#                            currentUser=request.user,
-#                            annoFile=annoFile)
-#
-#                    if resultDict['error']:
-#                        raise ValueError()
-#            except ValueError:
-#                messages.error(request, resultDict['message'])
-#                transaction.rollback()
-
             else:
                 uploadedImages = resultDict['uploadedImages']
                 messages.success(request, resultDict['message'])
@@ -940,13 +939,15 @@ def annotation_import(request, source_id):
     else:
         annotationForm = AnnotationImportForm()
         imageForm = ImageUploadForm()
-        optionsForm = ImageUploadOptionsForm(source=source)
+        annotationOptionsForm = AnnotationImportOptionsForm()
+        imageOptionsForm = ImageUploadOptionsForm(source=source)
 
     return render_to_response('images/image_and_annotation_upload.html', {
         'source': source,
         'annotationForm': annotationForm,
         'imageForm': imageForm,
-        'optionsForm': optionsForm,
+        'annotationOptionsForm': annotationOptionsForm,
+        'imageOptionsForm': imageOptionsForm,
         'uploadedImages': uploadedImages,
         },
         context_instance=RequestContext(request)

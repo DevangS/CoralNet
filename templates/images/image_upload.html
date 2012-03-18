@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block page-specific-includes %}
-  {{ optionsForm.media }} {# CSS and JS #}
+    {% include "form_media_versioned.html" with form=imageForm %}
 {% endblock %}
 
 {% block content %}
