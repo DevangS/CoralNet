@@ -164,7 +164,7 @@ def get_first_image(source, conditions=None):
     location value 1, ..., location value n.
 
     conditions:
-    A list specifying additional filters. For example, 'needs_human_annotation'.
+    A dict specifying additional filters.
 
     *** WARNING ***
     The use of extra() on querysets involves database-specific arguments!
@@ -172,13 +172,13 @@ def get_first_image(source, conditions=None):
     """
     db_extra_select = {'year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
 
-    if conditions is None:
-        conditions = []
-
     metadatas = Metadata.objects.filter(image__source=source).extra(select=db_extra_select)
-    if 'needs_human_annotation' in conditions:
-        # TODO: Cover the case where robot annotation is disabled for the source
-        metadatas = metadatas.filter(image__status__annotatedByHuman=False, image__status__annotatedByRobot=True)
+
+    if conditions:
+        filter_kwargs = dict()
+        for key, value in conditions.iteritems():
+            filter_kwargs['image__'+key] = value
+        metadatas = metadatas.filter(**filter_kwargs)
 
     if not metadatas:
         return None
@@ -201,13 +201,13 @@ def get_prev_or_next_image(current_image, kind, conditions=None):
     """
     db_extra_select = {'year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
 
-    if conditions is None:
-        conditions = []
-
     metadatas = Metadata.objects.filter(image__source=current_image.source).extra(select=db_extra_select)
-    if 'needs_human_annotation' in conditions:
-        # TODO: Cover the case where robot annotation is disabled for the source
-        metadatas = metadatas.filter(image__status__annotatedByHuman=False, image__status__annotatedByRobot=True)
+
+    if conditions:
+        filter_kwargs = dict()
+        for key, value in conditions.iteritems():
+            filter_kwargs['image__'+key] = value
+        metadatas = metadatas.filter(**filter_kwargs)
 
     sort_keys = ['year'] + current_image.source.get_value_field_list()
     sort_keys_reverse = sort_keys[::-1]

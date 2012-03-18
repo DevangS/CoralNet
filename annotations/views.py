@@ -449,8 +449,8 @@ def annotation_tool(request, image_id, source_id):
     #  ...]
     # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
 
-    need_human_anno_next = get_next_image(image, ['needs_human_annotation'])
-    need_human_anno_prev = get_prev_image(image, ['needs_human_annotation'])
+    need_human_anno_next = get_next_image(image, dict(status__annotatedByHuman=False))
+    need_human_anno_prev = get_prev_image(image, dict(status__annotatedByHuman=False))
 
     access = AnnotationToolAccess(image=image, source=source, user=request.user)
     access.save()

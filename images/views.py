@@ -145,12 +145,20 @@ def source_main(request, source_id):
 
     image_stats = dict(
         total = all_images.count(),
-        need_comp_anno = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=False).count(),
-        need_human_anno = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=True).count(),
-        need_human_anno_first = get_first_image(source, ['needs_human_annotation']),
-        need_anno = all_images.filter(status__annotatedByHuman=False).count(),
         anno_completed = all_images.filter(status__annotatedByHuman=True).count(),
     )
+    if source.enable_robot_classifier:
+        image_stats.update( dict(
+            need_comp_anno = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=False).count(),
+            need_human_anno = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=True).count(),
+            need_human_anno_first = get_first_image(source, dict(status__annotatedByHuman=False, status__annotatedByRobot=True)),
+        ))
+    else:
+        image_stats.update( dict(
+            need_anno = all_images.filter(status__annotatedByHuman=False).count(),
+            need_anno_first = get_first_image(source, dict(status__annotatedByHuman=False)),
+        ))
+
 
     latestRobot = source.get_latest_robot()
     if latestRobot == None:

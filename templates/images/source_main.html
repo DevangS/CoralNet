@@ -31,7 +31,9 @@
             {% endfor %}
 
             <p>Total images: {{ image_stats.total }}</p>
+
             <table class="detail_table">
+            {% if source.enable_robot_classifier %}
                 <tr>
                     <td>Not annotated</td>
                     <td>{{ image_stats.need_comp_anno }}</td>
@@ -52,12 +54,32 @@
                     <td>Completed (human annotated)</td>
                     <td>{{ image_stats.anno_completed }}</td>
                 </tr>
+            {% else %}
+                <tr>
+                    <td>Needs annotation</td>
+                    <td>
+                        {% if image_stats.need_anno_first %}
+                            <a href="{% url annotation_tool source.id image_stats.need_anno_first.id %}"
+                               title="{{ image_stats.need_anno_first.get_image_element_title }}">
+                                {{ image_stats.need_anno }}</a>
+                        {% else %}
+                            {{ image_stats.need_anno }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Completed</td>
+                    <td>{{ image_stats.anno_completed }}</td>
+                </tr>
+            {% endif %}
             </table>
+
         {% else %}
             <p>(No images yet)</p>
         {% endif %}
     </div>
 
+    {% if source.enable_robot_classifier %}
     <hr />
     <div id="robots">
 		{% if robotStats.hasRobot %}
@@ -77,9 +99,11 @@
                 </tr>
             </table>
         {% else %}
-            <p>(No robot availible yet)</p>
+            <p>(No robot available yet)</p>
         {% endif %}
-	</div> 
+	</div>
+    {% endif %}
+
     <hr />
     <div id="annotations">
         <h3>Annotations</h3>

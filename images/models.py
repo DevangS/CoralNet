@@ -81,6 +81,15 @@ class Source(models.Model):
         null=True
     )
 
+    enable_robot_classifier = models.BooleanField(
+        "Enable robot classifier",
+        default=False,
+        help_text="With this option on, the automatic classification system will "
+                  "go through your images and add unofficial annotations to them. "
+                  "Then when you enter the annotation tool, you will be able to start "
+                  "from the system's suggestions instead of from a blank slate.",
+    )
+
     longitude = models.CharField(max_length=20, blank=True)
     latitude = models.CharField(max_length=20, blank=True)
 
