@@ -1,0 +1,14 @@
+<table class="detail_table horizontal">
+    {% with image_values=image.get_year_and_location_values %}
+        <tr>
+            {% for key in image_values.keys %}
+                <th>{{ key }}</th>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for value in image_values.values %}
+                <td>{{ value }}</td>
+            {% endfor %}
+        </tr>
+    {% endwith %}
+</table>

@@ -201,12 +201,40 @@
 
 </div>
 
+<hr/>
+
+<div style="display:inline-block;">
+    {% include "images/location_values_table.html" with image=image %}
+</div>
+
+<div style="display:inline-block; margin-left:50px;">
+    <ul class="detail_list">
+        {% if prev_image or next_image %}
+            <li>Annotate another image</li>
+        {% else %}
+            <li>All other images have been annotated</li>
+        {% endif %}
+        <li>
+            {% if prev_image %}
+                <a href="{% url annotation_tool source.id prev_image.id %}"
+                   title="{{ prev_image.get_image_element_title }}">
+                    &lt; Previous</a>
+            {% endif %}
+
+            {% if next_image %}
+                <a href="{% url annotation_tool source.id next_image.id %}"
+                   title="{{ next_image.get_image_element_title }}">
+                    Next &gt;</a>
+            {% endif %}
+        </li>
+    </ul>
+</div>
+
+<hr class="light">
+
 <ul class="detail_list">
-  <li>Image: {{ metadata.name }}</li>
-  <li>Location keys: {{ image.get_location_values_str|default:"(Unknown)" }}</li>
-  <li>Year: {{ metadata.photo_date.year|default:"(Unknown)" }}</li>
-  <li>Annotation points: {{ image.point_gen_method_display }}</li>
-  <li>Annotation area: {{ image.annotation_area_display|default:"(Not specified)" }}</li>
+    <li>Annotation points: {{ image.point_gen_method_display }}</li>
+    <li>Annotation area: {{ image.annotation_area_display|default:"(Not specified)" }}</li>
 </ul>
     
 

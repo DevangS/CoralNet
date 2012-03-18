@@ -44,17 +44,36 @@
     <button type="button" id="originalWidthButton" onclick="setImageToOriginalWidth()">View full image</button>
     <button type="button" id="scaledWidthButton" onclick="setImageToScaledWidth()">Scale image to page</button>
 
+    <br/>
     <img id="coralImage" src="{{ image.original_file.url }}" />
     
     <hr />
 
-    <div class="details">
-    
-        <ul>
-        {% for detail in detailsets.keys %}
-            <li>{{ detail.label }}: {{ detail.value }}</li>
-        {% endfor %}
+    <div style="display:inline-block;">
+        {% include "images/location_values_table.html" with image=image %}
+    </div>
+
+    <div style="display:inline-block; margin-left:50px;">
+        <ul class="detail_list">
+            <li>View another image</li>
+            <li>
+                {% if prev_image %}
+                    <a href="{% url image_detail source.id prev_image.id %}"
+                       title="{{ prev_image.get_image_element_title }}">
+                        &lt; Previous</a>
+                {% endif %}
+                {% if next_image %}
+                    <a href="{% url image_detail source.id next_image.id %}"
+                       title="{{ next_image.get_image_element_title }}">
+                        Next &gt;</a>
+                {% endif %}
+            </li>
         </ul>
+    </div>
+
+    <hr class="light"/>
+
+    <div class="details">
 
         <ul>
         <li>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</li>

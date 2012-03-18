@@ -6,10 +6,13 @@
 
     <h2>Annotation History</h2>
 
+    <hr/>
+
+    {% include "images/location_values_table.html" %}
+
+    <hr class="light">
+
     <ul class="detail_list">
-        <li>Image: {{ metadata.name }}</li>
-        <li>Location keys: {{ image.get_location_values_str|default:"(Unknown)" }}</li>
-        <li>Year: {{ metadata.photo_date.year|default:"(Unknown)" }}</li>
         <li>Annotation points: {{ image.point_gen_method_display }}</li>
         <li>Annotation area: {{ image.annotation_area_display|default:"(Not specified)" }}</li>
     </ul>

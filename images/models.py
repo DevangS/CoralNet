@@ -1,3 +1,4 @@
+import datetime
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -79,6 +80,15 @@ class Source(models.Model):
                   "You can also set these boundaries as pixel counts on a per-image basis; for images that don't have a specific value set, these percentages will be used.",
         max_length=50,
         null=True
+    )
+
+    enable_robot_classifier = models.BooleanField(
+        "Enable robot classifier",
+        default=False,
+        help_text="With this option on, the automatic classification system will "
+                  "go through your images and add unofficial annotations to them. "
+                  "Then when you enter the annotation tool, you will be able to start "
+                  "from the system's suggestions instead of from a blank slate.",
     )
 
     longitude = models.CharField(max_length=20, blank=True)
@@ -352,6 +362,9 @@ class LocationValue(models.Model):
         # this class, but tables will be created for its sub-classes
         abstract = True
 
+        # Default ordering criteria.
+        ordering = ['name']
+
     name = models.CharField(max_length=50)
     source = models.ForeignKey(Source)
 
@@ -483,9 +496,11 @@ class Image(models.Model):
     def __unicode__(self):
         return self.metadata.name
 
-    # Use this as the "title" element of the image on an HTML page
-    # (hover the mouse over the image to see this)
     def get_image_element_title(self):
+        """
+        Use this as the "title" element of the image on an HTML page
+        (hover the mouse over the image to see this).
+        """
         metadata = self.metadata
         dataStrings = []
         for v in [metadata.value1,
@@ -498,7 +513,7 @@ class Image(models.Model):
             else:
                 break
         if metadata.photo_date:
-            dataStrings.append(str(metadata.photo_date))
+            dataStrings.insert(0, str(metadata.photo_date.year))
 
         return ' '.join(dataStrings)
 
@@ -526,12 +541,37 @@ class Image(models.Model):
 
         return valueList
 
-    def get_location_values_str(self):
+    def get_year_and_location_values(self):
         """
-        Returns the image's location values as a single string:
-        'Shore3, Reef 5, Loc10'
+        Get the year and location values for display as a 2 x n table.
         """
-        return ', '.join(self.get_location_value_str_list())
+        metadata = self.metadata
+        source = self.source
+        dataTupleList = []
+
+        if metadata.photo_date:
+            dataTupleList.append( ("Year", str(metadata.photo_date.year)) )
+        else:
+            dataTupleList.append( ("Year", "") )
+
+        for keyName, valueObj in [
+            (source.key1, metadata.value1),
+            (source.key2, metadata.value2),
+            (source.key3, metadata.value3),
+            (source.key4, metadata.value4),
+            (source.key5, metadata.value5)
+        ]:
+            if keyName:
+                if valueObj:
+                    dataTupleList.append( (keyName, valueObj.name) )
+                else:
+                    dataTupleList.append( (keyName, "") )
+
+        dataTwoLists = dict(
+            keys=[t[0] for t in dataTupleList],
+            values=[t[1] for t in dataTupleList],
+        )
+        return dataTwoLists
 
     def point_gen_method_display(self):
         """

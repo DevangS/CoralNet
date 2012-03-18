@@ -23,7 +23,7 @@ from annotations.utils import image_annotation_area_is_editable
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm
 from images.model_utils import PointGen
-from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points
+from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points, get_first_image, get_next_image, get_prev_image
 import json
 
 def source_list(request):
@@ -143,13 +143,23 @@ def source_main(request, source_id):
     all_images = source.get_all_images()
     latest_images = all_images.order_by('-upload_date')[:5]
 
-    stats = dict(
-        num_images=all_images.count(),
-        need_comp_anno_images=all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=False).count(),
-        need_human_anno_images=all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=True).count(),
-        anno_completed_images=all_images.filter(status__annotatedByHuman=True).count(),
-        num_annotations=Annotation.objects.filter(image__source=source).count(),
+    image_stats = dict(
+        total = all_images.count(),
+        anno_completed = all_images.filter(status__annotatedByHuman=True).count(),
     )
+    if source.enable_robot_classifier:
+        image_stats.update( dict(
+            need_comp_anno = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=False).count(),
+            need_human_anno = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=True).count(),
+            need_human_anno_first = get_first_image(source, dict(status__annotatedByHuman=False, status__annotatedByRobot=True)),
+        ))
+    else:
+        image_stats.update( dict(
+            need_anno = all_images.filter(status__annotatedByHuman=False).count(),
+            need_anno_first = get_first_image(source, dict(status__annotatedByHuman=False)),
+        ))
+
+
     latestRobot = source.get_latest_robot()
     if latestRobot == None:
         robotStats = dict(
@@ -172,7 +182,7 @@ def source_main(request, source_id):
         'loc_keys': ', '.join(source.get_key_list()),
         'members': memberDicts,
         'latest_images': latest_images,
-        'stats': stats,
+        'image_stats': image_stats,
 		'robotStats':robotStats,
         },
         context_instance=RequestContext(request)
@@ -351,13 +361,20 @@ def image_detail(request, image_id, source_id):
 
     # Default max viewing width
     # Feel free to change the constant according to the page layout.
-    scaled_width = min(image.original_width, 1000)
+    scaled_width = min(image.original_width, 800)
 
+    # Next and previous image links
+    next_image = get_next_image(image)
+    prev_image = get_prev_image(image)
+
+    # Should we include a link to the annotation area edit page?
     annotation_area_editable = image_annotation_area_is_editable(image_id)
 
     return render_to_response('images/image_detail.html', {
         'source': source,
         'image': image,
+        'next_image': next_image,
+        'prev_image': prev_image,
         'metadata': metadata,
         'detailsets': detailsets,
         'scaled_width': scaled_width,

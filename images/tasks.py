@@ -71,7 +71,7 @@ def schedulerInfLoop():
 @task()
 def scheduler():
 	print("==== Main scheduler task starting ====")
-	for source in Source.objects.filter(): # grab all sources, on at the time
+	for source in Source.objects.filter(enable_robot_classifier=True): # grab all sources, on at the time
 		print "Processing source " + source.name
 		
 		# == For each image, do all preprocessing == 	
