@@ -8,6 +8,7 @@ from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_p
 from annotations.model_utils import AnnotationAreaUtils
 from images.model_utils import PointGen
 from CoralNet.utils import generate_random_filename
+import os
 
 # Constants that don't really belong to a particular model
 class ImageModelConstants():
@@ -277,11 +278,18 @@ class Source(models.Model):
 			return None
 	    
 		# find the most recent robot
-		latestRobot = allRobots[0]
+		latestVersion = 0
+		foundRobot = False
 		for thisRobot in allRobots:
-			if thisRobot.version > latestRobot.version:
+			if (thisRobot.version > latestVersion) and os.path.exists(thisRobot.path_to_model + '.meta.json'): #if meta file does not exist, the robot is not yet trained..
 				latestRobot = thisRobot
-		return latestRobot
+				foundRobot = True
+				latestVersion = thisRobot.version
+
+		if foundRobot:
+			return latestRobot
+		else:
+			return None
 
     def __unicode__(self):
         """
