@@ -663,10 +663,9 @@ def image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, so
     duplicates = 0
     imagesUploaded = 0
     annotationsImported = 0
+    importedUser = get_imported_user()
 
     dupeOption = imageOptionsForm.cleaned_data['skip_or_replace_duplicates']
-    pointsOnlyOption = annotationOptionsForm.cleaned_data['points_only']
-    importedUser = get_imported_user()
 
     annotationData = None
     if annoFile:
@@ -723,6 +722,8 @@ def image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, so
         # Image + annotation import form
         # Assumes we got the images' metadata (from filenames or otherwise)
         if annotationData:
+
+            pointsOnlyOption = annotationOptionsForm.cleaned_data['points_only']
 
             # Use the location values and the year to build a string identifier for the image, such as:
             # Shore1;Reef5;...;2008
@@ -855,11 +856,14 @@ def image_upload(request, source_id):
         # Make sure all image files are checked to be valid images.
         if imageForm.is_valid() and optionsForm.is_valid():
 
-            resultDict = image_upload_process(imageFiles=imageFiles,
-                                              imageOptionsForm=optionsForm,
-                                              source=source,
-                                              currentUser=request.user,
-                                              annoFile=None)
+            resultDict = image_upload_process(
+                imageFiles=imageFiles,
+                imageOptionsForm=optionsForm,
+                annotationOptionsForm=None,
+                source=source,
+                currentUser=request.user,
+                annoFile=None
+            )
 
             if resultDict['error']:
                 messages.error(request, resultDict['message'])
