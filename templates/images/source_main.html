@@ -30,19 +30,27 @@
                 </span>
             {% endfor %}
 
-            <p>Total images: {{ stats.num_images }}</p>
+            <p>Total images: {{ image_stats.total }}</p>
             <table class="detail_table">
                 <tr>
                     <td>Not annotated</td>
-                    <td>{{ stats.need_comp_anno_images }}</td>
+                    <td>{{ image_stats.need_comp_anno }}</td>
                 </tr>
                 <tr>
                     <td>Computer annotated, needs human annotation</td>
-                    <td>{{ stats.need_human_anno_images }}</td>
+                    <td>
+                        {% if image_stats.need_human_anno_first %}
+                            <a href="{% url annotation_tool source.id image_stats.need_human_anno_first.id %}"
+                               title="{{ image_stats.need_human_anno_first.get_image_element_title }}">
+                                {{ image_stats.need_human_anno }}</a>
+                        {% else %}
+                            {{ image_stats.need_human_anno }}
+                        {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <td>Completed (human annotated)</td>
-                    <td>{{ stats.anno_completed_images }}</td>
+                    <td>{{ image_stats.anno_completed }}</td>
                 </tr>
             </table>
         {% else %}

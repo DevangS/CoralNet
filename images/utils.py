@@ -157,6 +157,120 @@ def metadata_to_filename(values=None,
     return filename
 
 
+def get_first_image(source, conditions=None):
+    """
+    Gets the first image in the source.
+    Ordering is done by photo_date's year, then by
+    location value 1, ..., location value n.
+
+    conditions:
+    A list specifying additional filters. For example, 'needs_human_annotation'.
+
+    *** WARNING ***
+    The use of extra() on querysets involves database-specific arguments!
+    For example, MySQL and PostgreSQL may have to use different arguments.
+    """
+    db_extra_select = {'year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
+
+    if conditions is None:
+        conditions = []
+
+    metadatas = Metadata.objects.filter(image__source=source).extra(select=db_extra_select)
+    if 'needs_human_annotation' in conditions:
+        # TODO: Cover the case where robot annotation is disabled for the source
+        metadatas = metadatas.filter(image__status__annotatedByHuman=False, image__status__annotatedByRobot=True)
+
+    if not metadatas:
+        return None
+
+    sort_keys = ['year'] + source.get_value_field_list()
+    metadatas_ordered = metadatas.order_by(*sort_keys)
+
+    return Image.objects.get(metadata=metadatas_ordered[0])
+
+
+def get_prev_or_next_image(current_image, kind, conditions=None):
+    """
+    Gets the previous or next image in this image's source.
+
+    conditions:
+    A list specifying additional filters. For example, 'needs_human_annotation'.
+
+    *** WARNING ***
+    The use of extra() on querysets involves database-specific arguments!
+    """
+    db_extra_select = {'year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
+
+    if conditions is None:
+        conditions = []
+
+    metadatas = Metadata.objects.filter(image__source=current_image.source).extra(select=db_extra_select)
+    if 'needs_human_annotation' in conditions:
+        # TODO: Cover the case where robot annotation is disabled for the source
+        metadatas = metadatas.filter(image__status__annotatedByHuman=False, image__status__annotatedByRobot=True)
+
+    sort_keys = ['year'] + current_image.source.get_value_field_list()
+    sort_keys_reverse = sort_keys[::-1]
+    self_metadata_values = Metadata.objects.filter(pk=current_image.metadata.id).extra(select=db_extra_select).values(*sort_keys)[0]
+
+    # If we have 3 sort keys, and are getting the next image, then the algorithm is:
+    # - Look for metadatas where key 1 is equal, key 2 is equal, and key 3 is greater
+    # - If no matches, look where key 1 is equal and key 2 is greater
+    # - If no matches, look where key 1 is greater
+    # - Whenever there are matches, get the first one (the matches should be ordered,
+    #   so this should be the next image). If no matches in any step, return None.
+
+    if kind == 'next':
+        compare_query_str = '{0}__gt'
+        metadatas_ordered = metadatas.order_by(*sort_keys)
+    else:  # 'prev'
+        compare_query_str = '{0}__lt'
+        metadatas_ordered = metadatas.order_by(*['-'+sk for sk in sort_keys])
+
+    matching_sort_keys = sort_keys[:]
+    for sort_key_to_compare in sort_keys_reverse:
+        kwargs = dict()
+        del matching_sort_keys[-1]
+
+        for sort_key in matching_sort_keys:
+            if sort_key == 'year':
+                # For some reason, filter() doesn't seem to care about extra values obtained
+                # with extra().  So instead of the 'year' extra value, we need to give
+                # something that filter() understands.
+                kwargs['photo_date__year'] = self_metadata_values[sort_key]
+            else:
+                kwargs[sort_key] = self_metadata_values[sort_key]
+
+        if sort_key_to_compare == 'year':
+            # And accommodating filter() is even nastier here.
+            if kind == 'next':
+                kwargs['photo_date__gte'] = datetime.datetime(self_metadata_values['year']+1, 1, 1)
+            else:  # 'prev'
+                kwargs['photo_date__lt'] = datetime.datetime(self_metadata_values['year'],1,1)
+        else:
+            kwargs[compare_query_str.format(sort_key_to_compare)] = self_metadata_values[sort_key_to_compare]
+
+        candidate_metadatas = metadatas_ordered.filter(**kwargs)
+        if candidate_metadatas:
+            return Image.objects.get(metadata=candidate_metadatas[0])
+
+    return None
+
+def get_next_image(current_image, conditions=None):
+    """
+    Get the "next" image in the source.
+    Return None if the current image is the last image.
+    """
+    return get_prev_or_next_image(current_image, 'next', conditions=conditions)
+
+def get_prev_image(current_image, conditions=None):
+    """
+    Get the "previous" image in the source.
+    Return None if the current image is the first image.
+    """
+    return get_prev_or_next_image(current_image, 'prev', conditions=conditions)
+
+
 def calculate_points(img,
                      annotation_area=None,
                      point_generation_type=None,

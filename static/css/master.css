@@ -381,7 +381,7 @@ a.button:active span {
 hr.light {
     background-color: #dddddd;
     border: none;
-    height: 1px;
+    height: 2px;
 }
 
 
@@ -973,6 +973,16 @@ table.detail_table th,
 table.detail_table td {
     border: 1px solid #999999;
     padding: 5px;
+}
+
+table.detail_table.horizontal {
+    border: none;
+    display: inline-block;
+}
+table.detail_table.horizontal th,
+table.detail_table.horizontal td {
+    border: none;
+    padding: 3px 5px;  /* vertical horizontal */
 }
 
 /* thumbnails and thumbnail wrappers

@@ -14,7 +14,7 @@ from CoralNet.decorators import labelset_required, permission_required, visibili
 from annotations.utils import get_annotation_version_user_display
 from decorators import annotation_area_must_be_editable
 from images.models import Source, Image, Point
-from images.utils import generate_points
+from images.utils import generate_points, get_next_image, get_prev_image
 from visualization.utils import generate_patch_if_doesnt_exist
 
 @login_required
@@ -449,12 +449,17 @@ def annotation_tool(request, image_id, source_id):
     #  ...]
     # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
 
+    need_human_anno_next = get_next_image(image, ['needs_human_annotation'])
+    need_human_anno_prev = get_prev_image(image, ['needs_human_annotation'])
+
     access = AnnotationToolAccess(image=image, source=source, user=request.user)
     access.save()
 
     return render_to_response('annotations/annotation_tool.html', {
         'source': source,
         'image': image,
+        'next_image': need_human_anno_next,
+        'prev_image': need_human_anno_prev,
         'metadata': metadata,
         'labels': labelValues,
         'labelsJSON': simplejson.dumps(labelValues),

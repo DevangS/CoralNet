@@ -49,12 +49,13 @@
     
     <hr />
 
-    <div class="details">
-    
-        <ul>
-            {% for detail in detailsets.keys %}
-                <li>{{ detail.label }}: {{ detail.value }}</li>
-            {% endfor %}
+    <div style="display:inline-block;">
+        {% include "images/location_values_table.html" with image=image %}
+    </div>
+
+    <div style="display:inline-block; margin-left:50px;">
+        <ul class="detail_list">
+            <li>View another image</li>
             <li>
                 {% if prev_image %}
                     <a href="{% url image_detail source.id prev_image.id %}"
@@ -68,6 +69,11 @@
                 {% endif %}
             </li>
         </ul>
+    </div>
+
+    <hr class="light"/>
+
+    <div class="details">
 
         <ul>
         <li>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</li>
