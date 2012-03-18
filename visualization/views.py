@@ -126,7 +126,16 @@ def visualize_source(request, source_id):
         #if user did not specify a label to generate patches for, assume they want to view whole images
         if not label:
             showPatches = False
-            allSearchResults = Image.objects.filter(source=source, **imageArgs).order_by('-upload_date')
+            allSearchResults = Image.objects.filter(source=source, **imageArgs)
+
+            # Sort the images.
+            # TODO: Stop duplicating this DB-specific extras query; put it in a separate function...
+            # Also, despite the fact that we're dealing with images and not metadatas, selecting photo_date does indeed work.
+            db_extra_select = {'metadata__year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
+
+            sort_keys = ['metadata__'+k for k in (['year'] + source.get_value_field_list())]
+            allSearchResults = allSearchResults.extra(select=db_extra_select)
+            allSearchResults = allSearchResults.order_by(*sort_keys)
 
         else:
             #since user specified a label, generate patches to show instead of whole images
