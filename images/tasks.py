@@ -62,36 +62,35 @@ def dummyTaskLong(s):
 
 @task()
 def schedulerInfLoop():
-	time.sleep(20) # sleep 20 secs to allow the scheduler to start
+	time.sleep(10) # sleep 10 secs to allow the scheduler to start
 	while True:
-		scheduler()
-		print "Sleeping " + str(settings.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING) + " seconds."
+		for source in Source.objects.filter(enable_robot_classifier=True): # grab all sources, on at the time		
+			processSourceCompleate(source.id)
 		time.sleep(settings.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING) #sleep
 
 @task()
-def scheduler():
-	print("==== Main scheduler task starting ====")
-	for source in Source.objects.filter(enable_robot_classifier=True): # grab all sources, on at the time
-		print "Processing source " + source.name
-		
-		# == For each image, do all preprocessing == 	
-		for image in source.get_all_images(): 
-			result = prepareImage.delay(image.id) 
-		while not result.ready(): #NOTE, implement with callback
-			time.sleep(5) 
-		
-		# == Train robot for this source ==	
-		result = trainRobot.delay(source.id)
-		while not result.ready():
-			time.sleep(5)
-		
-		# == Classify all images with the new robot ==	
-		for image in source.get_all_images():
-			result = Classify.delay(image.id)
-		while not result.ready():
-			time.sleep(5) 
-	print("==== Main scheduler task done ====")
+def processSourceCompleate(source_id):
+	source = Source.objects.get(pk = source_id)
 	
+	print "==== Processing source: " + source.name + " ===="
+	# == For each image, do all preprocessing == 	
+	for image in source.get_all_images(): 
+		result = prepareImage.delay(image.id) 
+	while not result.ready(): #NOTE, implement with callback
+		time.sleep(5) 
+		
+	# == Train robot for this source ==	
+	result = trainRobot.delay(source.id)
+	while not result.ready():
+		time.sleep(5)
+		
+	# == Classify all images with the new robot ==	
+	for image in source.get_all_images():
+		result = Classify.delay(image.id)
+	while not result.ready():
+		time.sleep(5) 
+	print "==== Source: " + source.name + " done ===="
+
 @task()
 def prepareImage(image_id):
 	PreprocessImages(image_id)
@@ -523,7 +522,7 @@ def importPhotoGridImage(prefix, dirName, imagesLoc, outputFilename, pickledLabe
                 if imageName != currImage:
                     count += 1
                     currImage = imageName
-                    newname = prefix + "_" + str(count) + "_" + imageName
+                    newname = prefix + "_" + str(count) + "_" + "2012-02-29_" + imageName
                     os.rename(imagesLoc+imageName, imagesLoc+newname)
                 x_coord = words[9]
                 y_coord = words[10]
@@ -542,7 +541,7 @@ def importPhotoGridImage(prefix, dirName, imagesLoc, outputFilename, pickledLabe
 
         dataFile.close()
     outputFile.close()
-    print sorted(errors)
+    print sorted(errorsFilename)
     print sorted(image_errors)
 
 def randomSampleImages(origImagesLoc, dirName, destImagesLoc, total):
