@@ -39,7 +39,7 @@ def annotation_area_must_be_editable(image_id_view_arg, message_arg=None):
                        "would result in loss of data (such as annotations made in the annotation tool, "
                        "or points imported from outside the site).")
 
-            image = Image.objects.get(pk=image_id)
+            image = get_object_or_404(Image, pk=image_id)
 
             if not image_annotation_area_is_editable(image_id):
                 return render_to_response('annotations/annotation_area_not_editable.html', {
@@ -80,7 +80,7 @@ def labelset_required(source_id_view_arg, message):
                     "into view function" % source_id_view_arg)
             source_id = kwargs[source_id_view_arg]
 
-            source = Source.objects.get(pk=source_id)
+            source = get_object_or_404(Source, pk=source_id)
 
             if source.labelset.isEmptyLabelset():
                 return render_to_response('annotations/labelset_required.html', {
@@ -189,7 +189,7 @@ def visibility_required(source_id_view_arg):
                     "into view function" % source_id_view_arg)
             source_id = kwargs[source_id_view_arg]
 
-            source = Source.objects.get(pk=source_id)
+            source = get_object_or_404(Source, pk=source_id)
 
             if not source.visible_to_user(request.user):
                 return render_to_response('permission_denied.html', {
