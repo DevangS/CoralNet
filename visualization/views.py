@@ -8,7 +8,7 @@ from django.template.context import RequestContext
 from django.utils import simplejson
 from accounts.utils import get_robot_user
 from annotations.models import Annotation, Label, LabelSet, LabelGroup
-from CoralNet.decorators import visibility_required
+from decorators import source_visibility_required
 from images.models import Source, Image
 from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
 from visualization.utils import generate_patch_if_doesnt_exist
@@ -59,7 +59,7 @@ def image_search_args_to_url_arg_str(searchDict):
     return '&'.join(argsList)
 
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def visualize_source(request, source_id):
     """
     View for browsing through a source's images.
@@ -202,7 +202,7 @@ def visualize_source(request, source_id):
         context_instance=RequestContext(request)
     )
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def generate_statistics(request, source_id):
     errors = []
     years = []
@@ -362,7 +362,7 @@ def generate_statistics(request, source_id):
         context_instance=RequestContext(request)
     )
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def export_statistics(request, source_id):
     # get the response object, this can be used as a stream.
     response = HttpResponse(mimetype='text/csv')
@@ -422,7 +422,7 @@ def export_statistics(request, source_id):
 
     return response
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def export_annotations(request, source_id):
     # get the response object, this can be used as a stream.
     response = HttpResponse(mimetype='text/csv')
@@ -473,6 +473,7 @@ def export_annotations(request, source_id):
     return response
 
 
+@source_visibility_required('source_id')
 def export_menu(request, source_id):
     source = get_object_or_404(Source, id=source_id)
 

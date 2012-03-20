@@ -1,5 +1,6 @@
 from dajaxice.decorators import dajaxice_register
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 from django.utils import simplejson
 from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation
@@ -88,7 +89,7 @@ def ajax_save_annotations(request, annotationForm):
                     newAnno.save()
 
     # Are all points human annotated?
-    all_done = image_annotation_all_done(image.id)
+    all_done = image_annotation_all_done(image)
 
     # Update image status, if needed
     if image.status.annotatedByHuman:
@@ -106,5 +107,6 @@ def ajax_save_annotations(request, annotationForm):
     
 @dajaxice_register
 def ajax_is_all_done(request, image_id):
-    return simplejson.dumps(image_annotation_all_done(image_id))
+    image = get_object_or_404(Image, id=image_id)
+    return simplejson.dumps(image_annotation_all_done(image))
 

@@ -216,13 +216,13 @@
         {% endif %}
         <li>
             {% if prev_image %}
-                <a href="{% url annotation_tool source.id prev_image.id %}"
+                <a href="{% url annotation_tool prev_image.id %}"
                    title="{{ prev_image.get_image_element_title }}">
                     &lt; Previous</a>
             {% endif %}
 
             {% if next_image %}
-                <a href="{% url annotation_tool source.id next_image.id %}"
+                <a href="{% url annotation_tool next_image.id %}"
                    title="{{ next_image.get_image_element_title }}">
                     Next &gt;</a>
             {% endif %}

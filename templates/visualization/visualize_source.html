@@ -63,7 +63,7 @@ label.label_visualization {
            {% if image.metadata %}
               {% with metadata=image.metadata %}
                 <span class="thumb_wrapper">
-                <a href="{% url image_detail source.id image.id %}">
+                <a href="{% url image_detail image.id %}">
                     <img class="thumb"
                          src="{% thumbnail image.original_file 150x150 %}"
                          title="{{ image.get_image_element_title }}"/>
@@ -73,7 +73,7 @@ label.label_visualization {
             {% else %}
               {% with fullImage=image.fullImage %}
                 <span class="thumb_wrapper">
-                <a href="{% url image_detail source.id fullImage.id %}">
+                <a href="{% url image_detail fullImage.id %}">
                     <img class="thumb"
                          src="{{ MEDIA_URL }}{{ image.patchPath }}"
                          title="Point {{ image.pointNum }} ({{ image.row }},{{ image.col }}) in: {{ fullImage.get_image_element_title }}"/>

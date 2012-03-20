@@ -16,9 +16,9 @@ from accounts.utils import get_imported_user
 from annotations.forms import AnnotationAreaPercentsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
-from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from CoralNet.exceptions import FileContentError
 from annotations.utils import image_annotation_area_is_editable
+from decorators import source_permission_required, image_visibility_required, image_permission_required, source_labelset_required, source_visibility_required
 
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationImportOptionsForm
@@ -127,7 +127,7 @@ def source_new(request):
         )
 
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def source_main(request, source_id):
     """
     Main page for a particular source.
@@ -189,8 +189,7 @@ def source_main(request, source_id):
         )
 
 
-# Must have admin permission for the Source whose id is source_id
-@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
+@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def source_edit(request, source_id):
     """
     Edit a source: name, visibility, location keys, etc.
@@ -242,7 +241,7 @@ def source_edit(request, source_id):
         )
 
 
-@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
+@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def source_invite(request, source_id):
     """
     Invite a user to this Source.
@@ -330,14 +329,14 @@ def invites_manage(request):
         )
 
 
-@visibility_required('source_id')
-def image_detail(request, image_id, source_id):
+@image_visibility_required('image_id')
+def image_detail(request, image_id):
     """
     View for seeing an image's full size and details/metadata.
     """
 
     image = get_object_or_404(Image, id=image_id)
-    source = get_object_or_404(Source, id=source_id)
+    source = image.source
     metadata = image.metadata
 
     # Get the metadata fields (including the right no. of keys for the source)
@@ -368,7 +367,7 @@ def image_detail(request, image_id, source_id):
     prev_image = get_prev_image(image)
 
     # Should we include a link to the annotation area edit page?
-    annotation_area_editable = image_annotation_area_is_editable(image_id)
+    annotation_area_editable = image_annotation_area_is_editable(image)
 
     return render_to_response('images/image_detail.html', {
         'source': source,
@@ -383,14 +382,14 @@ def image_detail(request, image_id, source_id):
         context_instance=RequestContext(request)
     )
 
-@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
-def image_detail_edit(request, image_id, source_id):
+@image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
+def image_detail_edit(request, image_id):
     """
     Edit image details.
     """
 
     image = get_object_or_404(Image, id=image_id)
-    source = get_object_or_404(Source, id=source_id)
+    source = image.source
     metadata = image.metadata
 
     old_height_in_cm = metadata.height_in_cm
@@ -401,7 +400,7 @@ def image_detail_edit(request, image_id, source_id):
         cancel = request.POST.get('cancel', None)
         if cancel:
             messages.success(request, 'Edit cancelled.')
-            return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
+            return HttpResponseRedirect(reverse('image_detail', args=[image.id]))
 
         # Submit
         imageDetailForm = ImageDetailForm(request.POST, instance=metadata, source=source)
@@ -414,7 +413,7 @@ def image_detail_edit(request, image_id, source_id):
                 image.after_height_cm_change()
 
             messages.success(request, 'Image successfully edited.')
-            return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
+            return HttpResponseRedirect(reverse('image_detail', args=[image.id]))
         else:
             transaction.rollback()  # Don't save "Other" location values to database
             messages.error(request, 'Please correct the errors below.')
@@ -431,7 +430,6 @@ def image_detail_edit(request, image_id, source_id):
         )
 
 
-@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
 def import_groups(request, fileLocation):
     """
     Create label groups through a text file.
@@ -448,7 +446,7 @@ def import_groups(request, fileLocation):
     file.close()
     
 
-@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
+@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def import_labels(request, source_id):
     """
     Create a labelset through a text file.
@@ -834,7 +832,7 @@ def image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, so
     )
 
 
-@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload(request, source_id):
     """
     View for uploading images to a source.
@@ -889,8 +887,8 @@ def image_upload(request, source_id):
     )
 
 
-@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
-@labelset_required('source_id', 'You need to create a labelset for your source before you can import annotations.')
+@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
+@source_labelset_required('source_id', message='You need to create a labelset for your source before you can import annotations.')
 def annotation_import(request, source_id):
     """
     Upload images and import their annotations from a text file.

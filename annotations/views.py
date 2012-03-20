@@ -10,9 +10,8 @@ from accounts.utils import get_robot_user
 from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess
-from CoralNet.decorators import labelset_required, permission_required, visibility_required
 from annotations.utils import get_annotation_version_user_display
-from decorators import annotation_area_must_be_editable
+from decorators import source_permission_required, source_visibility_required, image_permission_required, image_annotation_area_must_be_editable, image_labelset_required
 from images.models import Source, Image, Point
 from images.utils import generate_points, get_next_image, get_prev_image
 from visualization.utils import generate_patch_if_doesnt_exist
@@ -42,7 +41,7 @@ def label_new(request):
         context_instance=RequestContext(request)
     )
 
-@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
+@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def labelset_new(request, source_id):
     """
     Page to create a labelset for a source.
@@ -119,7 +118,7 @@ def labelset_new(request, source_id):
         context_instance=RequestContext(request)
     )
 
-@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
+@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def labelset_edit(request, source_id):
     """
     Page to edit a source's labelset.
@@ -275,7 +274,7 @@ def label_main(request, label_id):
     )
 
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def labelset_main(request, source_id):
     """
     Main page for a particular source's labelset
@@ -331,15 +330,15 @@ def label_list(request):
     )
 
 
-@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
-@annotation_area_must_be_editable('image_id')
-def annotation_area_edit(request, image_id, source_id):
+@image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
+@image_annotation_area_must_be_editable('image_id')
+def annotation_area_edit(request, image_id):
     """
     Edit an image's annotation area.
     """
 
     image = get_object_or_404(Image, id=image_id)
-    source = get_object_or_404(Source, id=source_id)
+    source = image.source
     metadata = image.metadata
 
     old_annotation_area = metadata.annotation_area
@@ -350,7 +349,7 @@ def annotation_area_edit(request, image_id, source_id):
         cancel = request.POST.get('cancel', None)
         if cancel:
             messages.success(request, 'Edit cancelled.')
-            return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
+            return HttpResponseRedirect(reverse('image_detail', args=[image.id]))
 
         # Submit
         annotationAreaForm = AnnotationAreaPixelsForm(request.POST, image=image)
@@ -364,7 +363,7 @@ def annotation_area_edit(request, image_id, source_id):
                 image.after_annotation_area_change()
 
             messages.success(request, 'Annotation area successfully edited.')
-            return HttpResponseRedirect(reverse('image_detail', args=[source_id, image_id]))
+            return HttpResponseRedirect(reverse('image_detail', args=[image.id]))
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -403,15 +402,15 @@ def annotation_area_edit(request, image_id, source_id):
     )
 
 
-@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
-@labelset_required('source_id', 'You need to create a labelset for your source before you can annotate images.')
-def annotation_tool(request, image_id, source_id):
+@image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
+@image_labelset_required('image_id', message='You need to create a labelset for your source before you can annotate images.')
+def annotation_tool(request, image_id):
     """
     View for the annotation tool.
     """
 
     image = get_object_or_404(Image, id=image_id)
-    source = get_object_or_404(Source, id=source_id)
+    source = image.source
     metadata = image.metadata
 
     # Get all labels, ordered first by functional group, then by short code.
@@ -473,14 +472,14 @@ def annotation_tool(request, image_id, source_id):
     )
 
 
-@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
-def annotation_history(request, image_id, source_id):
+@image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
+def annotation_history(request, image_id):
     """
     View for an image's annotation history.
     """
 
     image = get_object_or_404(Image, id=image_id)
-    source = get_object_or_404(Source, id=source_id)
+    source = image.source
 
     # Use values_list() and list() to avoid nested queries.
     # https://docs.djangoproject.com/en/1.3/ref/models/querysets/#in

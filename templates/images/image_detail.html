@@ -58,12 +58,12 @@
             <li>View another image</li>
             <li>
                 {% if prev_image %}
-                    <a href="{% url image_detail source.id prev_image.id %}"
+                    <a href="{% url image_detail prev_image.id %}"
                        title="{{ prev_image.get_image_element_title }}">
                         &lt; Previous</a>
                 {% endif %}
                 {% if next_image %}
-                    <a href="{% url image_detail source.id next_image.id %}"
+                    <a href="{% url image_detail next_image.id %}"
                        title="{{ next_image.get_image_element_title }}">
                         Next &gt;</a>
                 {% endif %}
@@ -80,7 +80,7 @@
 
         <li>Annotation area: {{ image.annotation_area_display }}
             {% if "source_edit" in source_perms and annotation_area_editable %}
-              (<a href="{% url annotation_area_edit source.id image.id %}">Edit</a>)
+              (<a href="{% url annotation_area_edit image.id %}">Edit</a>)
             {% endif %}
         </li>
 
@@ -107,7 +107,7 @@
         </ul>
 
         {% if "source_edit" in source_perms %}
-            <a href="{% url image_detail_edit source.id image.id %}">{% trans 'Edit Image Details' %}</a>
+            <a href="{% url image_detail_edit image.id %}">{% trans 'Edit Image Details' %}</a>
         {% endif %}
 
     </div>
