@@ -45,6 +45,8 @@
   </head>
   <body>
     <div id="top">
+      {% include "maintenance_notice.html" %}
+
       {% if messages %}
       <ul class="messages">
         {% for message in messages %}

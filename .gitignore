@@ -3,6 +3,7 @@ settings_2.py
 settings_2.pyc
 images/task_helpers.py
 images/task_helpers.pyc
+templates/maintenance_notice.html
 *.pyc
 #Ignore apache configs
 apache/django.wsgi

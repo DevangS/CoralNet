@@ -40,12 +40,6 @@ html, body{
 	padding: 0 10px;
 }
 
-#top{
-    height: 30px;
-    background-color: #111;
-    border-bottom: 1px solid #fff;
-}
-
 #header{
     /* Consider styling the header here */
 }
@@ -807,14 +801,16 @@ div#lang_form input[type=submit] {
 /*	notifications
 ................................... */
 
+#top{
+    background-color: #111;
+    border-bottom: 1px solid #fff;
+}
+
 ul.messages{
-    position: absolute;
     font-size: 0.8em;
     font-weight: bold;
     width: 540px;
-    left: 50%;
-    top: 4px;
-    margin: 0 0 0 -270px;
+    margin: 0 auto;  /* vertical horizontal */
 }
 
 ul.messages li{
@@ -824,7 +820,16 @@ ul.messages li{
     border-radius: 20px;
     padding: 4px 20px;
     text-align: center;
+}
 
+div.maintenance_message {
+    background-color: #FFCCCC;
+
+    width: 540px;
+    margin: 0 auto;  /* vertical horizontal */
+    padding: 4px 20px;
+
+    font-size: 0.9em;
 }
 
 
