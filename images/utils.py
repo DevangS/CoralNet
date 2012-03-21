@@ -209,7 +209,7 @@ def get_prev_or_next_image(current_image, kind, conditions=None):
             filter_kwargs['image__'+key] = value
         metadatas = metadatas.filter(**filter_kwargs)
 
-    sort_keys = ['year'] + current_image.source.get_value_field_list()
+    sort_keys = ['year'] + [vf+'__name' for vf in current_image.source.get_value_field_list()]
     sort_keys_reverse = sort_keys[::-1]
     self_metadata_values = Metadata.objects.filter(pk=current_image.metadata.id).extra(select=db_extra_select).values(*sort_keys)[0]
 
