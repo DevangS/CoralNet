@@ -402,7 +402,8 @@ class Metadata(models.Model):
 
     annotation_area = models.CharField(
         "Annotation area",
-        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.",
+        help_text="This defines a rectangle of the image where annotation points are allowed to be generated. "
+                  "If you change this, then new points will be generated for this image, and the old points will be deleted.",
         max_length=50,
         null=True, blank=True
     )

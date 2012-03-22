@@ -17,7 +17,7 @@
 
     <form action="" method="post">{% csrf_token %}
         <span class="helptext">
-            {{ annotationAreaForm.form_help_text|linebreaksbr }}<br />
+            {{ annotationAreaForm.form_help_text|linebreaksbr }}<br /><br/>
             Image dimensions: {{ image.original_width }} x {{ image.original_height }}
         </span>
         {% include "annotations/form_annotation_area.html" with form=annotationAreaForm type="pixel" %}
