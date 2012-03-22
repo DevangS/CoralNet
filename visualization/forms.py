@@ -1,5 +1,5 @@
 from django import forms
-from django.forms.fields import ChoiceField, CharField
+from django.forms.fields import ChoiceField, CharField, BooleanField
 from django.forms.widgets import HiddenInput
 from annotations.forms import CustomCheckboxSelectMultiple
 from annotations.models import LabelSet, Label, LabelGroup
@@ -13,7 +13,7 @@ class YearModelChoiceField(forms.ModelChoiceField):
 class VisualizationSearchForm(forms.Form):
     class Meta:
         fields = ('value1', 'value2', 'value3',
-              'value4', 'value5', 'year', 'labels')
+              'value4', 'value5', 'year', 'labels', 'include_robot')
         
     def __init__(self,source_id,*args,**kwargs):
         super(VisualizationSearchForm,self).__init__(*args,**kwargs)
@@ -27,7 +27,6 @@ class VisualizationSearchForm(forms.Form):
 
         self.fields['year'] = ChoiceField(choices=[('',"All")] + [(year,year) for year in years],
                                           required=False)
-
         labelset = LabelSet.objects.filter(source=source)[0]
         self.fields['labels'] = forms.ModelChoiceField(labelset.labels.all(),
                                             empty_label="View Whole Images",
@@ -47,6 +46,7 @@ class VisualizationSearchForm(forms.Form):
                 
                 self.fields[valueField] = ChoiceField(choices, label=key, required=False)
 
+        self.fields['include_robot'] = BooleanField(required=False)
 
 class ImageBatchActionForm(forms.Form):
     class Media:
@@ -76,7 +76,7 @@ class ImageBatchActionForm(forms.Form):
 class StatisticsSearchForm(forms.Form):
     class Meta:
         fields = ('value1', 'value2', 'value3',
-              'value4', 'value5', 'labels', 'groups')
+              'value4', 'value5', 'labels', 'groups', 'include_robot')
 
     def __init__(self,source_id,*args,**kwargs):
         super(StatisticsSearchForm,self).__init__(*args,**kwargs)
@@ -115,9 +115,11 @@ class StatisticsSearchForm(forms.Form):
         # Custom widget for label selection
         #self.fields['labels'].widget = CustomCheckboxSelectMultiple(choices=self.fields['labels'].choices)
         self.fields['labels']= forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
-                                                         choices=label_choices)
+                                                         choices=label_choices, required=False)
 
         self.fields['groups']= forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
-                                                         choices=group_choices)
+                                                         choices=group_choices, required=False)
+        
+        self.fields['include_robot'] = BooleanField(required=False)
 
 

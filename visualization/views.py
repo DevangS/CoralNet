@@ -119,7 +119,6 @@ def visualize_source(request, source_id):
     # Get the search results (all of them, not just on this page)
     # (This must happen after processing the action form, so that
     # images can be deleted/modified before we get search results.)
-
     errors = []
     if searchFormErrors:
         errors.append("There were errors in the search parameters.")
@@ -146,7 +145,10 @@ def visualize_source(request, source_id):
             patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
             #get all annotations for the source that contain the label
-            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).exclude(user=get_robot_user())
+            if request.GET and request.GET.get('include_robot', ''):
+                annotations = Annotation.objects.filter(source=source, label=label, **patchArgs)
+            else:
+                annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).exclude(user=get_robot_user())
 
             # Placeholder the image patches with the annotation objects for now.
             # We'll actually get the patches when we know which page we're showing.
@@ -239,115 +241,122 @@ def generate_statistics(request, source_id):
                 images = Image.objects.filter(source=source, **imageArgs).distinct().select_related()
                 patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
-                #get all non-robot annotations for the source
-                all_annotations = Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user())
+                #get all annotations for the source that contain the label
+                if request.GET and request.GET.get('include_robot', ''):
+                    all_annotations = Annotation.objects.filter(source=source, **patchArgs)
+                else:
+                    all_annotations = Annotation.objects.filter(source=source, **patchArgs).exclude(user=get_robot_user())
 
-                #holds the data that gets passed to the graphing code
-                data = []
 
+                #check that we found annotations
+                if all_annotations:
+                    #holds the data that gets passed to the graphing code
+                    data = []
 
-                #Format computed data for the graph API to use
-                #TODO: pick easily distinguishable colours from
-                # http://search.cpan.org/~rokr/Color-Library-0.021/lib/Color/Library/Dictionary/WWW.pm
-                # and add them to bucket to be picked randomly
-                bucket = ['00FFFF','32CD32','A52A2A','DC143C','9370DB']
-                legends = []
+                    #Format computed data for the graph API to use
+                    #TODO: pick easily distinguishable colours from
+                    # http://search.cpan.org/~rokr/Color-Library-0.021/lib/Color/Library/Dictionary/WWW.pm
+                    # and add them to bucket to be picked randomly
+                    bucket = ['00FFFF','32CD32','A52A2A','DC143C','9370DB']
+                    legends = []
 
-                #gets the years we have data for from the specified set of images
-                for image in images:
-                    date = image.metadata.photo_date
-                    if not date is None:
-                        if not years.count(date.year):
-                           years.append(date.year)
-                years.sort()
+                    #gets the years we have data for from the specified set of images
+                    for image in images:
+                        date = image.metadata.photo_date
+                        if not date is None:
+                            if not years.count(date.year):
+                               years.append(date.year)
+                    years.sort()
 
-                for label in labels:
-                    yearly_counts = []
-                    #get yearly counts that become y values for the label's line
-                    for year in years:
-                        #get the most recent for each point for every label specified
-                        total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year)
-                        total_year_annotations_count = total_year_annotations.count()
-                        label_year_annotations_count = total_year_annotations.filter(label=label).count()
+                    for label in labels:
+                        yearly_counts = []
+                        #get yearly counts that become y values for the label's line
+                        for year in years:
+                            #get the most recent for each point for every label specified
+                            total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year)
+                            total_year_annotations_count = total_year_annotations.count()
+                            label_year_annotations_count = total_year_annotations.filter(label=label).count()
 
-                        #add up # of annotations, divide by total annotations, and times 100 to get % coverage
-                        # done the way it is b/c we need to cast either num or denom as float to get float result,
-                        # convert to %, round, then truncate by casting to int
-                        try:
-                            percent_coverage = int(round((float(label_year_annotations_count)/total_year_annotations_count)*100))
-                        except ZeroDivisionError:
-                            percent_coverage = 0
-                        yearly_counts.append(percent_coverage)
+                            #add up # of annotations, divide by total annotations, and times 100 to get % coverage
+                            # done the way it is b/c we need to cast either num or denom as float to get float result,
+                            # convert to %, round, then truncate by casting to int
+                            try:
+                                percent_coverage = int(round((float(label_year_annotations_count)/total_year_annotations_count)*100))
+                            except ZeroDivisionError:
+                                percent_coverage = 0
+                            yearly_counts.append(percent_coverage)
 
-                    data.append(yearly_counts)
+                        data.append(yearly_counts)
 
-                    #add label name to legends
-                    name = Label.objects.get(id=int(label)).name
-                    legends.append(str(name))
+                        #add label name to legends
+                        name = Label.objects.get(id=int(label)).name
+                        legends.append(str(name))
 
-                    #create table row to display
-                    table_row = [name]
-                    table_row.extend(yearly_counts)
-                    table.append(table_row)
+                        #create table row to display
+                        table_row = [name]
+                        table_row.extend(yearly_counts)
+                        table.append(table_row)
 
-                for group in groups:
-                    yearly_counts = []
-                    #get yearly counts that become y values for the label's line
-                    for year in years:
-                        #get the most recent for each point for every label specified
-                        total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year)
-                        total_year_annotations_count = total_year_annotations.count()
-                        label_year_annotations_count = total_year_annotations.filter(label__group=group).count()
+                    for group in groups:
+                        yearly_counts = []
+                        #get yearly counts that become y values for the label's line
+                        for year in years:
+                            #get the most recent for each point for every label specified
+                            total_year_annotations =  all_annotations.filter(image__metadata__photo_date__year=year)
+                            total_year_annotations_count = total_year_annotations.count()
+                            label_year_annotations_count = total_year_annotations.filter(label__group=group).count()
 
-                        #add up # of annotations, divide by total annotations, and times 100 to get % coverage
-                        # done the way it is b/c we need to cast either num or denom as float to get float result,
-                        # convert to %, round, then truncate by casting to int
-                        try:
-                            percent_coverage = int(round((float(label_year_annotations_count)/total_year_annotations_count)*100))
-                        except ZeroDivisionError:
-                            percent_coverage = 0
-                        yearly_counts.append(percent_coverage)
+                            #add up # of annotations, divide by total annotations, and times 100 to get % coverage
+                            # done the way it is b/c we need to cast either num or denom as float to get float result,
+                            # convert to %, round, then truncate by casting to int
+                            try:
+                                percent_coverage = int(round((float(label_year_annotations_count)/total_year_annotations_count)*100))
+                            except ZeroDivisionError:
+                                percent_coverage = 0
+                            yearly_counts.append(percent_coverage)
 
-                    data.append(yearly_counts)
+                        data.append(yearly_counts)
 
-                    #add group name to legends
-                    name = LabelGroup.objects.get(id=int(group)).name
-                    legends.append(str(name))
+                        #add group name to legends
+                        name = LabelGroup.objects.get(id=int(group)).name
+                        legends.append(str(name))
 
-                    #create table row to display
-                    table_row = [name]
-                    table_row.extend(yearly_counts)
-                    table.append(table_row)
+                        #create table row to display
+                        table_row = [name]
+                        table_row.extend(yearly_counts)
+                        table.append(table_row)
 
-                #Create string of colors
-                colors_string = str(bucket[0: (len(labels)+len(groups))]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
+                    #Create string of colors
+                    colors_string = str(bucket[0: (len(labels)+len(groups))]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
 
-                #Create string of labels to put on legend
-                legends_string = str(legends).replace('[', '').replace(']','').replace(' ','').replace('\'', '').replace(',', '|')
+                    #Create string of labels to put on legend
+                    legends_string = str(legends).replace('[', '').replace(']','').replace(' ','').replace('\'', '').replace(',', '|')
 
-                #Get max y value and add 5 to it
-                max_y = max(map(max,data)) + 5
+                    #Get max y value and add 5 to it
+                    max_y = max(map(max,data)) + 5
 
-                #Calculate new data proportional to max_y to scale graph
-                for elem in data:
-                    elem[:] = [x*(100/max_y) for x in elem]
-                
-                #Actually generate the graph now
-                graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdl=legends_string)
-                #draw x axis values from lowest to highest year stepping by 1 year
-                graph.axes.range(0,min(years),max(years),1)
-                #draw y axis values from 0 to (max percent coverage + 5) stepping by 5
-                graph.axes.range(1,0,max_y,5)
-                #Define pixel size to draw graph
-                graph.size(400,400)
-                #Adds the title to the graph
-                graph.title('% Coverage over Years')
-                #Set the line thickness for each dataset
-                count = len(data)
-                while count > 0:
-                    graph.line(3,0,0)
-                    count -= 1
-                    
+                    #Calculate new data proportional to max_y to scale graph
+                    for elem in data:
+                        elem[:] = [x*(100/max_y) for x in elem]
+
+                    #Actually generate the graph now
+                    graph = GChart('lc', data, encoding='text', chxt='x,y', chco=colors_string, chdl=legends_string)
+                    #draw x axis values from lowest to highest year stepping by 1 year
+                    graph.axes.range(0,min(years),max(years),1)
+                    #draw y axis values from 0 to (max percent coverage + 5) stepping by 5
+                    graph.axes.range(1,0,max_y,5)
+                    #Define pixel size to draw graph
+                    graph.size(400,400)
+                    #Adds the title to the graph
+                    graph.title('% Coverage over Years')
+                    #Set the line thickness for each dataset
+                    count = len(data)
+                    while count > 0:
+                        graph.line(3,0,0)
+                        count -= 1
+                else:
+                    errors.append("No data found!")
+
         else:
             errors.append("Your specified search parameters were invalid!")
 
