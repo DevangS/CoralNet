@@ -1,30 +1,49 @@
+import time
 import csv
+from shutil import copyfile, rmtree
 from datetime import datetime
 import pickle
 from random import random
 import shutil
 from subprocess import call
-from celery.decorators import task
+from celery.task import task
 import os
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
+from django.db import transaction
+import reversion
 from accounts.utils import get_robot_user
+from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation
+from images import task_helpers
 from images.models import Point, Image, Source, Robot
 
-PREPROCESS_ERROR_LOG = "/cnhome/errorlogs/preprocess_error.txt"
-FEATURE_ERROR_LOG = "/cnhome/errorlogs/features_error.txt"
-CLASSIFY_ERROR_LOG = "/cnhome/errorlogs/classify_error.txt"
+# Revision objects will not be saved during Celery tasks unless
+# the Celery worker hooks up Reversion's signal handlers.
+# To do this, import admin modules so that
+# the admin registration statements are run.
+from django.contrib import admin
+admin.autodiscover()
 
-ORIGINALIMAGES_DIR = "/cnhome/media/"
-PREPROCESS_DIR = "/cnhome/images/preprocess/"
-FEATURES_DIR = "/cnhome/images/features/"
-CLASSIFY_DIR = "/cnhome/images/classify/"
-MODEL_DIR = "/cnhome/images/models/"
 
-PREPROCESS_PARAM_FILE = "/cnhome/images/preprocess/preProcessParameters.mat"
-FEATURE_PARAM_FILE = "/cnhome/images/features/featureExtractionParameters.mat"
+join_project_root = lambda *p: os.path.join(settings.PROJECT_ROOT, *p)
+join_processing_root = lambda *p: os.path.join(settings.PROCESSING_ROOT, *p)
 
+PREPROCESS_ERROR_LOG = join_processing_root("logs/preprocess_error.txt")
+FEATURE_ERROR_LOG = join_processing_root("logs/features_error.txt")
+CLASSIFY_ERROR_LOG = join_processing_root("logs/classify_error.txt")
+TRAIN_ERROR_LOG = join_processing_root("logs/train_error.txt")
+CV_LOG = join_processing_root("logs/cvlog.txt")
+
+ORIGINALIMAGES_DIR = join_project_root("media/")
+PREPROCESS_DIR = join_processing_root("images/preprocess/")
+FEATURES_DIR = join_processing_root("images/features/")
+CLASSIFY_DIR = join_processing_root("images/classify/")
+MODEL_DIR = join_processing_root("images/models/")
+TARGET_PIXEL_CM_RATIO = 17.2
+
+PREPROCESS_PARAM_FILE = join_processing_root("images/preprocess/preProcessParameters.mat")
 
 #Tasks that get processed by Celery
 #Possible future problems include that each task relies on it being the same day to continue processing an image,
@@ -37,168 +56,368 @@ def dummyTask():
     return 1
 
 @task()
-def PreprocessImages(image):
-
-    # check if already preprocessed
-    if image.status.preprocessed:
-        print 'Image {} is already preprocessed'.format(image.id)
-        return 1
-
-    # TODO: use the cm height when calling the Matlab function.
-    if not (image.metadata.height_in_cm or image.source.image_height_in_cm):
-        print "Can't get a cm height for image {}. Can not preprocess".format(image.id)
-        return
-
-    print 'Start pre-processing image id {}'.format(image.id)
-
-    # set the process_date to todays date
-    image.process_date = datetime.now()
-    image.save()
-
-    #matlab will output image.id_YearMonthDay.mat file
-    preprocessedImageFile = PREPROCESS_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".mat"
-
-    matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_preprocessImage(\'' + ORIGINALIMAGES_DIR + str(image.original_file) + '\', \'' + preprocessedImageFile + '\', \'' + PREPROCESS_PARAM_FILE + '\', \'' + PREPROCESS_ERROR_LOG + '\'); exit;"'
-
-    #call coralnet_preprocessImage(matlab script) to process a single image
-    os.system(matlabCallString);
-
-    #error occurred in matlab
-    if os.path.isfile(PREPROCESS_ERROR_LOG):
-        print("Sorry error detected in preprocessing this image, halting!")
-    #everything went okay with matlab
-    else:
-        image.status.preprocessed = True
-        image.status.save()
-        print 'Finished pre-processing image id {}'.format(image.id)
+def dummyTaskLong(s):
+	print("This is a dummy task that can sleep")
+	time.sleep(s)
 
 @task()
-def MakeFeatures(image):
+def schedulerInfLoop():
+	time.sleep(10) # sleep 10 secs to allow the scheduler to start
+	while True:
+		for source in Source.objects.filter(enable_robot_classifier=True): # grab all sources, on at the time		
+			processSourceCompleate(source.id)
+		time.sleep(settings.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING) #sleep
+
+@task()
+def processSourceCompleate(source_id):
+	source = Source.objects.get(pk = source_id)
+	
+	print "==== Processing source: " + source.name + " ===="
+	# == For each image, do all preprocessing == 	
+	for image in source.get_all_images(): 
+		result = prepareImage.delay(image.id) 
+	while not result.ready(): #NOTE, implement with callback
+		time.sleep(5) 
+		
+	# == Train robot for this source ==	
+	result = trainRobot.delay(source.id)
+	while not result.ready():
+		time.sleep(5)
+		
+	# == Classify all images with the new robot ==	
+	for image in source.get_all_images():
+		result = Classify.delay(image.id)
+	while not result.ready():
+		time.sleep(5) 
+	print "==== Source: " + source.name + " done ===="
+
+@task()
+def prepareImage(image_id):
+	PreprocessImages(image_id)
+	MakeFeatures(image_id)
+	addLabelsToFeatures(image_id)
+
+@task()
+@transaction.commit_on_success()
+def PreprocessImages(image_id):
+	image = Image.objects.get(pk=image_id)
+
+	# check if already preprocessed
+	if image.status.preprocessed:
+	    print 'PreprocessImages: Image {id} is already preprocessed'.format(id = image_id)
+	    return 1
+
+	if not (image.metadata.height_in_cm or image.source.image_height_in_cm):
+	    print "PreprocessImages: Can't get a cm height for image {id}. Can not preprocess".format(id = image_id)
+	    return 1
+
+	####### EVERYTHING OK: START THE IMAGE PREPROCESSING ##########
+	image.status.preprocessed = True # Update database 
+	image.status.save()
+	print 'Start pre-processing image id {id}'.format(id = image_id)
+
+	thisPixelCmRatio = image.original_height / float(image.height_cm())
+	subSampleRate = thisPixelCmRatio / TARGET_PIXEL_CM_RATIO
+	
+	#creates ssRate file 
+	ssFile = PREPROCESS_DIR + str(image_id) + "_ssRate.txt"
+	file = open(ssFile, 'w')
+	file.write(str(subSampleRate) + "\n");
+	file.close()
+	
+    # set the process_date to todays date
+	image.process_date = datetime.now()
+	image.save()
+	
+	#matlab will output image.id_YearMonthDay.mat file
+	preprocessedImageFile = PREPROCESS_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".mat"
+
+	task_helpers.coralnet_preprocessImage(
+	    imageFile=ORIGINALIMAGES_DIR + str(image.original_file),
+	    preprocessedImageFile=preprocessedImageFile,
+	    preprocessParameterFile=PREPROCESS_PARAM_FILE,
+	    ssFile = ssFile,
+	    logFile = CV_LOG,
+	    errorLogfile=PREPROCESS_ERROR_LOG,
+	)
+	
+	#error occurred in matlab
+	if os.path.isfile(PREPROCESS_ERROR_LOG):
+		image.status.preprocessed = False # roll back data base changes
+		image.status.save()
+		print("Sorry error detected in preprocessing this image, halting!")
+	#everything went okay with matlab
+	else:
+		print 'Finished pre-processing image id {id}'.format(id = image_id)
+
+@task()
+def MakeFeatures(image_id):
+    image = Image.objects.get(pk=image_id)
     
     #if error had occurred in preprocess, don't let them go further
     if os.path.isfile(PREPROCESS_ERROR_LOG):
-        print("Sorry error detected in preprocessing, halting feature extraction!")
+        print("MakeFeatures: Sorry error detected in preprocessing, halting feature extraction!")
         return
     if not image.status.preprocessed:
-        print 'Image id {} is not preprocessed. Can not make features'.format(image.id)
+        print 'MakeFeatures: Image id {id} is not preprocessed. Can not make features'.format(id = image_id)
         return
     if not image.status.hasRandomPoints:
-        print 'Image id {} doesnt have random points. Can not make features'.format(image.id)
+        print 'MakeFeatures: Image id {id} doesnt have random points. Can not make features'.format(id = image_id)
         return
     if image.status.featuresExtracted:
-        print 'Features already extracted for image id {}'.format(image.id)
+        print 'MakeFeatures: Features already extracted for image id {id}'.format(id = image_id)
         return
  
-    print 'Start feature extraction for  image id {}'.format(image.id)
-
+    ####### EVERYTHING OK: START THE FEATURE EXTRACTION ##########
+    print 'Start feature extraction for image id {id}'.format(id = image_id)
+    image.status.featuresExtracted = True;
+    image.status.save()
+        
     #builds args for matlab script
-    preprocessedImageFile = PREPROCESS_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".mat"
-    featureFile = FEATURES_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".dat"
+    preprocessedImageFile = PREPROCESS_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".mat"
+    featureFile = FEATURES_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".dat"
     #creates rowColFile
-    rowColFile = FEATURES_DIR + str(image.id) + "_rowCol.txt"
+    rowColFile = FEATURES_DIR + str(image_id) + "_rowCol.txt"
     file = open(rowColFile, 'w')
     points = Point.objects.filter(image=image)
     for point in points:
         #points get stored in the file in this format, one of these per line: row,column\n
         file.write(str(point.row) + "," + str(point.column) + "\n")
     file.close()
-        
-    matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_makeFeatures(\'' + preprocessedImageFile + '\', \'' + featureFile + '\', \'' + rowColFile + '\', \'' + FEATURE_PARAM_FILE+ '\', \'' + FEATURE_ERROR_LOG + '\'); exit;"'
-    #call matlab script coralnet_makeFeatures
-    os.system(matlabCallString);
+
+    ssFile = PREPROCESS_DIR + str(image_id) + "_ssRate.txt"
+    task_helpers.coralnet_makeFeatures(
+        preprocessedImageFile=preprocessedImageFile,
+        featureFile=featureFile,
+        rowColFile=rowColFile,
+		ssFile = ssFile,
+        featureExtractionParameterFile=PREPROCESS_PARAM_FILE,
+        logFile = CV_LOG,
+        errorLogfile=FEATURE_ERROR_LOG,
+    )
 
     if os.path.isfile(FEATURE_ERROR_LOG):
+        image.status.featuresExtracted = False;
+        image.status.save()
         print("Sorry error detected in feature extraction!")
     else:
-        image.status.featuresExtracted = True;
-        image.status.save()
-        print 'Finished feature extraction for image id {}'.format(image.id)
+        print 'Finished feature extraction for image id {id}'.format(id = image_id)
         
 @task()
-def Classify(image):
+@transaction.commit_on_success()
+@reversion.create_revision()
+def Classify(image_id):
+    image = Image.objects.get(pk=image_id)
 
-    #if error occurred in feature extraction, don't let them go further
-    if os.path.isfile(FEATURE_ERROR_LOG):
-        print("Sorry error detected in feature extraction, halting classification!")
-        return
+    # if annotated by Human, no need to re-classify
+    if image.status.annotatedByHuman:
+    	print 'Classify: Image nr ' + str(image_id) + ' is annotated by the human operator, aborting'
+    	return
 
     # make sure that the previous step is complete
     if not image.status.featuresExtracted:
-        print 'Features not extracted for image id {}, can not proceed'.format(image.id)
+        print 'Classify: Features not extracted for image id {id}, can not proceed'.format(id = image_id)
         return
 
     # Get all robots for this source
-    allRobots = Robot.objects.filter(source = image.source)
+    latestRobot = image.source.get_latest_robot()
  
-    # if empty, return
-    if len(allRobots) == 0:
-        print 'No robots exist for the source, {}, of image id {}. Aborting.'.format(image.source, image.id)
+    if latestRobot == None:
+        print 'Classify: No robots exist for the source, {src}, of image id {id}. Aborting.'.format(src=image.source, id=image_id)
         return
-    
-    # find the most recent robot
-    latestRobot = allRobots[0]
-    for thisRobot in allRobots:
-        if thisRobot.version > latestRobot.version:
-            latestRobot = thisRobot
 
     # Check if this image has been previously annotated by a robot.
     if (image.status.annotatedByRobot):
         # now, compare this version number to the latest_robot_annotator field for image.
         if (not (latestRobot.version > image.latest_robot_annotator.version)):
-            print 'Image {} is already annotated by the latest robot version, {}, for source, {}'.format(image.id,  latestRobot.version, image.source)
+            print 'Image {id} is already annotated by the latest robot version, {ver}, for source, {src}'.format(id = image_id,  ver=latestRobot.version, src=image.source)
             return
+   
+    ####### EVERYTHING OK: START THE CLASSIFICATION ##########
+    #update image status
+    image.status.annotatedByRobot = True
+    image.status.save()
+    image.latest_robot_annotator = latestRobot
+    image.save()
     
-    print 'Start classify image id {}'.format(image.id)
+    print 'Start classify image id {id}'.format(id = image_id)
     #builds args for matlab script
-    featureFile = FEATURES_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".dat"
+    featureFile = FEATURES_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".dat"
 	#get the source id for this file
-    labelFile = CLASSIFY_DIR + str(image.id) + "_" + str(image.process_date.year) + str(image.process_date.month) + str(image.process_date.day) + ".txt"
-        
-    matlabCallString = '/usr/bin/matlab/bin/matlab -nosplash -nodesktop -nojvm -r "cd /home/beijbom/e/Code/MATLAB; startup; warning off; coralnet_classify(\'' + featureFile + '\', \'' + latestRobot.path_to_model + '\', \'' + labelFile + '\', \'' + CLASSIFY_ERROR_LOG + '\'); exit;"'
+    labelFile = CLASSIFY_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".txt"
 
-    #call matlab script coralnet_classify
-    os.system(matlabCallString)
-    if os.path.isfile(CLASSIFY_ERROR_LOG):
-        print("Sorry error detected in classification!")
-    else:
-        #get algorithm user object
-        user = get_robot_user()
+    task_helpers.coralnet_classify(
+        featureFile=featureFile,
+        modelFile=latestRobot.path_to_model,
+        labelFile=labelFile,
+		logFile=CV_LOG,
+        errorLogfile=CLASSIFY_ERROR_LOG,
+    )
 
-        #open the labelFile and rowColFile to process labels
-        rowColFile = FEATURES_DIR + str(image.id) + "_rowCol.txt"
-        label_file = open(labelFile, 'r')
-        row_file = open(rowColFile, 'r')
+    #get algorithm user object
+    user = get_robot_user()
 
-        for line in row_file: #words[0] is row, words[1] is column 
-            words = line.split(',') 
-            #gets the point object for the image that has that row and column
-            point = Point.objects.get(image=image, row=words[0], column=words[1])
+    #open the labelFile and rowColFile to process labels
+    rowColFile = FEATURES_DIR + str(image_id) + "_rowCol.txt"
+    label_file = open(labelFile, 'r')
+    row_file = open(rowColFile, 'r')
 
-            #gets the label object based on the label id the algorithm specified
-            label_id = label_file.readline()
-            label_id.replace('\n', '')
-            label = Label.objects.filter(id=label_id)
+    for line in row_file: #words[0] is row, words[1] is column 
+        words = line.split(',')
 
+        #gets the label object based on the label id the algorithm specified
+        label_id = label_file.readline()
+        label_id.replace('\n', '')
+        label = Label.objects.filter(id=label_id)
+
+        #gets the point object(s) that have that row and column.
+        #if there's more than one such point, add annotations to all of
+        #these points the first time we see this row+col, and don't do
+        #anything on subsequent times (filtering with annotation=None accomplishes this).
+        points = Point.objects.filter(image=image, row=words[0], column=words[1], annotation=None)
+        for point in points:
             #create the annotation object and save it
-            annotation = Annotation(image=image, label=label[0], point=point, user=user, source=image.source)
+            Ann = Annotation.objects.filter(point=point, image=image)
+            if ( len(Ann) > 0 and ( not is_robot_user(Ann[0].user) ) ): # if this is an imported or human, we don't want to overwrite it, so continue
+                continue
+            annotation = Annotation(image=image, label=label[0], point=point, user=user, robot_version=latestRobot, source=image.source)
             annotation.save()
 
-        #update image status
-        image.status.annotatedByRobot = True
-        image.status.save()
-        image.latest_robot_annotator = latestRobot
-        image.save()
-        print 'Finished classification of image id {}'.format(image.id)
+    print 'Finished classification of image id {id}'.format(id = image_id)
 
-        label_file.close()
-        row_file.close()
+    label_file.close()
+    row_file.close()
 
 
+# This task modifies the feature file so that is contains the correct labels, as provided by the human operator.
 @task()
-def processImageAll(image):
-    PreprocessImages(image)
-    MakeFeatures(image)
-    Classify(image)
+def addLabelsToFeatures(image_id):
+
+	image = Image.objects.get(pk=image_id)
+	if not image.status.annotatedByHuman:
+		print 'addLabelsToFeatures: Image id {id} is not annoated by human. Can not make add labels to feature file'.format(id = image_id)
+		return 0
+	if not image.status.featuresExtracted:
+		print 'addLabelsToFeatures: Image id {id} has not yet gone through feature extraction. Can not add labels to feature file'.format(id = image_id)
+		return 0
+	if image.status.featureFileHasHumanLabels:
+		print 'addLabelsToFeatuers: Image id ' + str(image_id) + ' already has human label attached to the feature file'
+		return 1
+
+
+	############### EVERYTHING OK, START THE PROCEDURE ###########
+	# update status first to ensure concurrency
+	image.status.featureFileHasHumanLabels = True
+	image.status.save()
+
+	featureFileIn = FEATURES_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".dat"	
+	featureFileOut = FEATURES_DIR + str(image_id) + "_temp_" + image.get_process_date_short_str() + ".dat"	#temp file
+	inputFF = open(featureFileIn, 'r')
+	outputFF = open(featureFileOut, 'w')
+
+	points = Point.objects.filter(image=image)
+	itt = -1;
+	for line in inputFF:
+		itt = itt + 1
+		label = line.split(None, 1)
+		# find the annotation associated with this point, and then write the label.id 
+		# associated with this annotaiton
+		Ann = Annotation.objects.filter(point=points[itt], image=image)
+		outputFF.write(str(Ann[0].label.id) + " " + label[1]) #label[1] contains the rest of the row, excluding the first number (the old dummy label)
+
+	outputFF.close()	
+	inputFF.close()
+
+	copyfile(featureFileOut, featureFileIn)
+	os.remove(featureFileOut) 
+@task()
+def trainRobot(source_id):
+	
+	# first, see if we should train a new robot
+	hasNewImagesToTrainOn = False	
+	nbrAnnotatedImages = 0
+	source = Source.objects.get(pk = source_id)
+	allImages = Image.objects.filter(source = source)
+	for image in allImages:
+		if (image.status.featureFileHasHumanLabels and not image.status.usedInCurrentModel):
+			hasNewImagesToTrainOn = True
+		if image.status.featureFileHasHumanLabels:
+			nbrAnnotatedImages = nbrAnnotatedImages + 1;
+	
+	if ( not hasNewImagesToTrainOn or ( nbrAnnotatedImages < 5 ) ) : #TODO, add field to souce object that specify this threshold.
+		print 'Source ' + str(source_id) + ' has no new images to train on, aborting'
+		return 1
+
+	################### EVERYTHING OK, START TRAINING NEW MODEL ################
+	
+	# create the new Robot object
+	newRobot = Robot(source=source, version = Robot.objects.all().order_by('-version')[0].version + 1, time_to_train = 1);
+	newRobot.path_to_model = join_project_root("images/models/robot" + str(newRobot.version))
+	newRobot.save();
+	print 'new robot version:' + str(newRobot.version)
+	# update the data base.
+	for image in allImages: # mark that these images are used in the current model.
+		if image.status.featureFileHasHumanLabels:
+			image.status.usedInCurrentModel = True;
+			image.status.save()
+		
+	# grab the last robot
+	previousRobot = source.get_latest_robot()	
+	if previousRobot == None:
+		oldModelPath = '';
+	else:
+		oldModelPath = previousRobot.path_to_model
+		print 'previous robot version:' + str(previousRobot.version)
+	
+	# now, loop through the images and create some meta data files that MATLAB needs
+	workingDir = newRobot.path_to_model + '.workdir/'
+	pointInfoPath = workingDir + 'points'
+	fileNamesPath = workingDir + 'fileNames'
+	os.mkdir(workingDir)
+	fItt = 0 #image iterator
+	pointFile = open(pointInfoPath, 'w')
+	fileNameFile = open(fileNamesPath, 'w')
+	for image in allImages:
+		if not image.status.featureFileHasHumanLabels:
+			continue
+		fItt = fItt + 1 #note that we start at 1, MATLAB style
+		featureFile = FEATURES_DIR + str(image.id) + "_" + image.get_process_date_short_str() + ".dat"	
+		fileNameFile.write(featureFile + "\n") # write all file names in a file, so that mablat can find them
+		points = Point.objects.filter(image=image)
+		pItt = 0
+		for point in points:
+ 			pItt = pItt + 1 #note that we start at 1, MATLAB style
+			Ann = Annotation.objects.filter(point=point, image=image)
+			pointFile.write(str(fItt) + ', ' + str(pItt) + ', ' + str(Ann[0].label.id) + '\n')
+
+	pointFile.close()
+	fileNameFile.close()
+	
+	# call the matlab function
+	task_helpers.coralnet_trainRobot(
+        modelPath = newRobot.path_to_model,
+		oldModelPath = oldModelPath,
+		pointInfoPath = pointInfoPath,
+		fileNamesPath = fileNamesPath,
+		workDir = workingDir,
+		logFile = CV_LOG,
+		errorLogfile = TRAIN_ERROR_LOG,
+	)
+
+	# clean up	 
+	rmtree(workingDir)	
+	if os.path.isfile(TRAIN_ERROR_LOG): 
+		for image in allImages: # roll back changes. 
+			if image.status.featureFileHasHumanLabels:
+				image.status.usedInCurrentModel = False
+				image.status.save()
+		print("Sorry error detected in robot training!")
+		newRobot.delete()
+	else:
+		if not (previousRobot == None):
+			os.remove(oldModelPath) # remove old model, but keep the meta data files.
+		print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
+	
 
 def custom_listdir(path):
     """
@@ -303,7 +522,7 @@ def importPhotoGridImage(prefix, dirName, imagesLoc, outputFilename, pickledLabe
                 if imageName != currImage:
                     count += 1
                     currImage = imageName
-                    newname = prefix + "_" + str(count) + "_" + imageName
+                    newname = prefix + "_" + str(count) + "_" + "2012-02-29_" + imageName
                     os.rename(imagesLoc+imageName, imagesLoc+newname)
                 x_coord = words[9]
                 y_coord = words[10]
@@ -322,7 +541,7 @@ def importPhotoGridImage(prefix, dirName, imagesLoc, outputFilename, pickledLabe
 
         dataFile.close()
     outputFile.close()
-    print sorted(errors)
+    print sorted(errorsFilename)
     print sorted(image_errors)
 
 def randomSampleImages(origImagesLoc, dirName, destImagesLoc, total):

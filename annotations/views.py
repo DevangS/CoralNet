@@ -5,12 +5,15 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from django.utils import simplejson
+from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
-from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm
-from annotations.models import Label, LabelSet, Annotation
-from CoralNet.decorators import labelset_required, permission_required, visibility_required
-from images.model_utils import AnnotationAreaUtils
+from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm
+from annotations.model_utils import AnnotationAreaUtils
+from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess
+from annotations.utils import get_annotation_version_user_display
+from decorators import source_permission_required, source_visibility_required, image_permission_required, image_annotation_area_must_be_editable, image_labelset_required
 from images.models import Source, Image, Point
+from images.utils import generate_points, get_next_image, get_prev_image
 from visualization.utils import generate_patch_if_doesnt_exist
 
 @login_required
@@ -38,7 +41,7 @@ def label_new(request):
         context_instance=RequestContext(request)
     )
 
-@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
+@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def labelset_new(request, source_id):
     """
     Page to create a labelset for a source.
@@ -115,7 +118,7 @@ def labelset_new(request, source_id):
         context_instance=RequestContext(request)
     )
 
-@permission_required(Source.PermTypes.ADMIN.code, (Source, 'id', 'source_id'))
+@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def labelset_edit(request, source_id):
     """
     Page to edit a source's labelset.
@@ -271,7 +274,7 @@ def label_main(request, label_id):
     )
 
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def labelset_main(request, source_id):
     """
     Main page for a particular source's labelset
@@ -327,17 +330,88 @@ def label_list(request):
     )
 
 
-@permission_required(Source.PermTypes.EDIT.code, (Source, 'id', 'source_id'))
-@labelset_required('source_id', 'You need to create a labelset for your source before you can annotate images.')
-def annotation_tool(request, image_id, source_id):
+@image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
+@image_annotation_area_must_be_editable('image_id')
+def annotation_area_edit(request, image_id):
+    """
+    Edit an image's annotation area.
+    """
+
+    image = get_object_or_404(Image, id=image_id)
+    source = image.source
+    metadata = image.metadata
+
+    old_annotation_area = metadata.annotation_area
+
+    if request.method == 'POST':
+
+        # Cancel
+        cancel = request.POST.get('cancel', None)
+        if cancel:
+            messages.success(request, 'Edit cancelled.')
+            return HttpResponseRedirect(reverse('image_detail', args=[image.id]))
+
+        # Submit
+        annotationAreaForm = AnnotationAreaPixelsForm(request.POST, image=image)
+
+        if annotationAreaForm.is_valid():
+            metadata.annotation_area = AnnotationAreaUtils.pixels_to_db_format(**annotationAreaForm.cleaned_data)
+            metadata.save()
+
+            if metadata.annotation_area != old_annotation_area:
+                generate_points(image)
+                image.after_annotation_area_change()
+
+            messages.success(request, 'Annotation area successfully edited.')
+            return HttpResponseRedirect(reverse('image_detail', args=[image.id]))
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        # Just reached this form page
+        annotationAreaForm = AnnotationAreaPixelsForm(image=image)
+
+    # Scale down the image to have a max width of 800 pixels.
+    MAX_DISPLAY_WIDTH = 800
+
+    # jQuery UI resizing with containment isn't subpixel-precise, so
+    # the display height is rounded to an int.  Thus, need to track
+    # width/height scaling factors separately for accurate calculations.
+    display_width = min(MAX_DISPLAY_WIDTH, image.original_width)
+    width_scale_factor = float(display_width) / image.original_width
+    display_height = int(round(image.original_height * width_scale_factor))
+    height_scale_factor = float(display_height) / image.original_height
+
+    dimensions = dict(
+        displayWidth = display_width,
+        displayHeight = display_height,
+        fullWidth = image.original_width,
+        fullHeight = image.original_height,
+        widthScaleFactor = width_scale_factor,
+        heightScaleFactor = height_scale_factor,
+    )
+    thumbnail_dimensions = (display_width, display_height)
+
+    return render_to_response('annotations/annotation_area_edit.html', {
+        'source': source,
+        'image': image,
+        'dimensions': simplejson.dumps(dimensions),
+        'thumbnail_dimensions': thumbnail_dimensions,
+        'annotationAreaForm': annotationAreaForm,
+        },
+        context_instance=RequestContext(request)
+    )
+
+
+@image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
+@image_labelset_required('image_id', message='You need to create a labelset for your source before you can annotate images.')
+def annotation_tool(request, image_id):
     """
     View for the annotation tool.
     """
 
     image = get_object_or_404(Image, id=image_id)
-    source = get_object_or_404(Source, id=source_id)
+    source = image.source
     metadata = image.metadata
-    annotation_area_string = AnnotationAreaUtils.annotation_area_string_of_img(image)
 
     # Get all labels, ordered first by functional group, then by short code.
     labels = source.labelset.labels.all().order_by('group', 'code')
@@ -374,19 +448,99 @@ def annotation_tool(request, image_id, source_id):
     #  ...]
     # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
 
+    need_human_anno_next = get_next_image(image, dict(status__annotatedByHuman=False))
+    need_human_anno_prev = get_prev_image(image, dict(status__annotatedByHuman=False))
+
+    access = AnnotationToolAccess(image=image, source=source, user=request.user)
+    access.save()
+
     return render_to_response('annotations/annotation_tool.html', {
         'source': source,
         'image': image,
+        'next_image': need_human_anno_next,
+        'prev_image': need_human_anno_prev,
         'metadata': metadata,
-        'annotation_area_string': annotation_area_string,
         'labels': labelValues,
         'labelsJSON': simplejson.dumps(labelValues),
         'form': form,
-        'location_values': ', '.join(image.get_location_value_str_list()),
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
         'num_of_points': len(annotations),
         'num_of_annotations': len(annotationValues),
+        },
+        context_instance=RequestContext(request)
+    )
+
+
+@image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
+def annotation_history(request, image_id):
+    """
+    View for an image's annotation history.
+    """
+
+    image = get_object_or_404(Image, id=image_id)
+    source = image.source
+
+    # Use values_list() and list() to avoid nested queries.
+    # https://docs.djangoproject.com/en/1.3/ref/models/querysets/#in
+    annotation_values = Annotation.objects.filter(image=image, source=source).values('pk', 'point__point_number')
+    annotation_ids = [v['pk'] for v in annotation_values]
+
+    versions_queryset = Version.objects.filter(object_id__in=list(annotation_ids))
+    versions = list(versions_queryset)   # Purely for prefetching from the DB
+
+    revision_ids = versions_queryset.values_list('revision', flat=True).distinct()
+    revisions = list(Revision.objects.filter(pk__in=list(revision_ids)))
+
+    # point_number_map maps annotation IDs to point numbers.
+    point_number_tuples = [(v['pk'], v['point__point_number']) for v in annotation_values]
+    point_number_map = dict()
+    for tup in point_number_tuples:
+        point_number_map[tup[0]] = tup[1]
+
+    # label_code_map maps label IDs to label codes.
+    label_code_map = dict()
+    for label in source.labelset.labels.all():
+        label_code_map[label.id] = label.code
+
+    event_log = []
+
+    for rev in revisions:
+        # Get Versions under this Revision
+        rev_versions = list(versions_queryset.filter(revision=rev))
+        # Sort by the point number of the annotation
+        rev_versions.sort( key=lambda x: point_number_map[int(x.object_id)] )
+        # Create a log entry for this Revision
+        event_log.append(
+            dict(
+                date=rev.date_created,
+                user=get_annotation_version_user_display(rev_versions[0]),  # Any Version will do
+                events=["Point %s: %s" % (
+                            point_number_map[int(v.object_id)],
+                            label_code_map[v.field_dict['label']],
+                        )
+                        for v in rev_versions],
+            )
+        )
+
+    for access in AnnotationToolAccess.objects.filter(image=image, source=source):
+        # Create a log entry for each annotation tool access
+        event_str = "Accessed annotation tool"
+        event_log.append(
+            dict(
+                date=access.access_date,
+                user=access.user.username,
+                events=[event_str],
+            )
+        )
+
+    event_log.sort(key=lambda x: x['date'], reverse=True)
+
+    return render_to_response('annotations/annotation_history.html', {
+        'source': source,
+        'image': image,
+        'metadata': image.metadata,
+        'event_log': event_log,
         },
         context_instance=RequestContext(request)
     )

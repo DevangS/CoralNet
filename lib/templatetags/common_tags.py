@@ -4,11 +4,107 @@
 # app.  This file is for those general tags.
 
 import os.path
+import re
+from datetime import datetime, timedelta
 from django import template
 from django.conf import settings
 from django.contrib.staticfiles import finders
 
 register = template.Library()
+
+
+def do_assignment_tag(parser, token, cls):
+    # Uses a regular expression to parse tag contents.
+    try:
+        # Splitting by None == splitting by spaces.
+        tag_name, arg = token.contents.split(None, 1)
+    except ValueError:
+        raise template.TemplateSyntaxError("%r tag requires arguments" % token.contents.split()[0])
+    m = re.search(r'(.*?) as (\w+)', arg)
+    if not m:
+        raise template.TemplateSyntaxError("%r tag had invalid arguments" % tag_name)
+    arg1, result_var_name = m.groups()
+    return cls(arg1, result_var_name)
+
+
+# Usage: {% get_form_media form as form_media %}
+class GetFormMediaNode(template.Node):
+    def __init__(self, form_context_var, result_var_name):
+        self.form_context_var = template.Variable(form_context_var)
+        self.result_var_name = result_var_name
+    def render(self, context):
+        form = self.form_context_var.resolve(context)
+        context[self.result_var_name] = dict(js=form.media._js, css=form.media._css)
+        return ''
+@register.tag
+def get_form_media(parser, token):
+    return do_assignment_tag(parser, token, GetFormMediaNode)
+
+
+# Usage: {% set_maintenance_time form as maintenance_time %}
+class SetMaintenanceTimeNode(template.Node):
+    def __init__(self, context_var, result_var_name):
+        self.context_var = template.Variable(context_var)
+        self.result_var_name = result_var_name
+
+    def render(self, context):
+        datetime_str = self.context_var.resolve(context)
+
+        # Acceptable datetime formats.
+        datetime_format_strs = dict(
+            time = '%I:%M %p',                        # 12:34 PM
+            day_and_time = '%b %d %I:%M %p',          # Jun 24 12:34 PM
+            year_day_and_time = '%Y %b %d %I:%M %p',  # 2008 Jun 24 12:34 PM
+        )
+        datetime_obj = None
+        now = datetime.now()
+
+        # Parse the input, trying each acceptable datetime format.
+        # Then infer the full date and time.
+        for key, datetime_format_str in datetime_format_strs.iteritems():
+            try:
+                input = datetime.strptime(datetime_str, datetime_format_str)
+                if key == 'time':
+                    # Just the hour and minute were given.
+                    # To find whether the intended day is yesterday,
+                    # today, or tomorrow, assume that the admin meant a time
+                    # within 12 hours (either way) from now.
+                    datetime_obj = datetime(now.year, now.month, now.day,
+                                            input.hour, input.minute)
+                    if datetime_obj - now > timedelta(0.5):
+                        datetime_obj = datetime_obj - timedelta(1)
+                    elif now - datetime_obj > timedelta(0.5):
+                        datetime_obj = datetime_obj + timedelta(1)
+                elif key == 'day_and_time':
+                    # The month, day, hour, and minute were given.
+                    # To find whether the intended year is last year,
+                    # this year, or next year, assume that the admin meant a
+                    # date within ~half a year (either way) from now.
+                    # This just handles the corner case if you're doing
+                    # maintenance instead of celebrating the new year...
+                    datetime_obj = datetime(now.year, input.month, input.day,
+                        input.hour, input.minute)
+                    if datetime_obj - now > timedelta(182.5):
+                        datetime_obj = datetime(now.year-1, input.month, input.day,
+                            input.hour, input.minute)
+                    elif now - datetime_obj > timedelta(182.5):
+                        datetime_obj = datetime(now.year+1, input.month, input.day,
+                            input.hour, input.minute)
+                elif key == 'year_day_and_time':
+                    # The full date and time were given.
+                    datetime_obj = input
+
+                # We've got the date and time, so we're done.
+                break
+
+            except ValueError:
+                continue
+
+        context[self.result_var_name] = datetime_obj
+        return ''
+@register.tag
+def set_maintenance_time(parser, token):
+    return do_assignment_tag(parser, token, SetMaintenanceTimeNode)
 
 
 # versioned_static

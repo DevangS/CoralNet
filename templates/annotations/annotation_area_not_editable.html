@@ -1,0 +1,11 @@
+{% extends "images/base_image.html" %}
+{% load i18n %}
+
+{% block title %}Annotation area not editable | CoralNet{% endblock %}
+
+{% block content %}
+
+    <p>{{ message }}</p>
+    <p><a href="{% url image_detail image.id %}">Back to image</a></p>
+
+{% endblock %}

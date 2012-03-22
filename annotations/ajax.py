@@ -1,7 +1,8 @@
 from dajaxice.decorators import dajaxice_register
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 from django.utils import simplejson
-from accounts.utils import is_robot_user, get_robot_user
+from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation
 from annotations.utils import image_annotation_all_done
 from images.models import Image, Point, Source
@@ -66,9 +67,10 @@ def ajax_save_annotations(request, annotationForm):
             # An annotation of this point number exists in the database
             if annotations.has_key(point.id):
                 anno = annotations[point.id]
-                # Label field is now blank
+                # Label field is now blank.
+                # We're not allowing label deletions, so don't do anything in this case.
                 if label is None:
-                    anno.delete()
+                    pass
                 # Label was robot annotated, and then the human user confirmed or changed it
                 elif is_robot_user(anno.user) and not isFormRobotAnnotation:
                     anno.label = label
@@ -77,6 +79,7 @@ def ajax_save_annotations(request, annotationForm):
                 # Label was otherwise changed
                 elif label != anno.label:
                     anno.label = label
+                    anno.user = user
                     anno.save()
 
             # No annotation of this point number in the database yet
@@ -85,22 +88,25 @@ def ajax_save_annotations(request, annotationForm):
                     newAnno = Annotation(point=point, user=user, image=image, source=source, label=label)
                     newAnno.save()
 
-    if image_annotation_all_done(image.id):
-        # Image annotation is all done
-        if not image.status.annotatedByHuman:
-            image.status.annotatedByHuman = True
-            image.status.save()
-        # (Need simplejson.dumps() to convert the Python True to a JS true)
+    # Are all points human annotated?
+    all_done = image_annotation_all_done(image)
+
+    # Update image status, if needed
+    if image.status.annotatedByHuman:
+        image.after_completed_annotations_change()
+    if image.status.annotatedByHuman != all_done:
+        image.status.annotatedByHuman = all_done
+        image.status.save()
+
+    if all_done:
+        # Need simplejson.dumps() to convert the Python True to a JS true
         return simplejson.dumps(dict(all_done=True))
     else:
-        # Not done
-        if image.status.annotatedByHuman:
-            image.status.annotatedByHuman = False
-            image.status.save()
         return dict()
 
     
 @dajaxice_register
 def ajax_is_all_done(request, image_id):
-    return simplejson.dumps(image_annotation_all_done(image_id))
+    image = get_object_or_404(Image, id=image_id)
+    return simplejson.dumps(image_annotation_all_done(image))
 

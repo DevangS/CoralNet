@@ -11,48 +11,126 @@ from django.template.context import RequestContext
 from django.utils.functional import wraps
 from django.utils.http import urlquote
 from guardian.exceptions import GuardianError
+from annotations.utils import image_annotation_area_is_editable
 
-from images.models import Source
+from images.models import Source, Image
 
-def labelset_required(source_id_view_arg, message):
+# TODO: Add comments to this class.
+class ModelViewDecorator():
     """
-    Decorator for views that makes sure the source has a labelset.  If
-    not, then the view isn't shown and we instead show a simple template
-    saying that a labelset must be created.
+    Class for instantiating decorators for views.
+    Specifically, views that take the id of a model as a parameter.
 
-    :param source_id_view_arg: a string that specifies the name of the view method
-      argument that corresponds to the source id.
-    :param message: a message to be displayed on the template if the source
-      doesn't have a labelset.
-
-    Example::
-
-        @labelset_required('source_id', 'Your source needs a labelset before you can import annotations.')
-        def import_annotations(request, source_id):
-            return HttpResponse('An HTTP response')
+    :param model_class:
+    :param meets_requirements:
+    :param template:
+    :param get_extra_context:
+    :param default_message:
     """
 
-    def decorator(view_func):
-        def _wrapped_view(request, *args, **kwargs):
+    def __init__(self, model_class, meets_requirements,
+                 template, get_extra_context=None,
+                 default_message=None):
+        self.model_class = model_class
+        self.meets_requirements = meets_requirements
+        self.template = template
+        self.get_extra_context = get_extra_context
+        self.default_message = default_message
 
-            if source_id_view_arg not in kwargs:
-                raise ValueError("Argument %s was not passed "
-                    "into view function" % source_id_view_arg)
-            source_id = kwargs[source_id_view_arg]
+    def __call__(self, object_id_view_arg, message=None, **requirements_kwargs):
+        def decorator(view_func):
+            def _wrapped_view(request, *args, **kwargs):
 
-            source = Source.objects.get(pk=source_id)
+                if object_id_view_arg not in kwargs:
+                    raise ValueError("Argument %s was not passed "
+                                     "into view function" % object_id_view_arg)
+                object_id = kwargs[object_id_view_arg]
 
-            if source.labelset.isEmptyLabelset():
-                return render_to_response('annotations/labelset_required.html', {
-                    'message': message,
-                    'source': source,
-                    },
-                    context_instance=RequestContext(request)
+                object = get_object_or_404(self.model_class, pk=object_id)
+
+                if not self.meets_requirements(object, request, **requirements_kwargs):
+                    context_dict = dict(
+                        message=message or self.default_message or ""
                     )
-            
-            return view_func(request, *args, **kwargs)
-        return wraps(view_func)(_wrapped_view)
-    return decorator
+                    if self.get_extra_context:
+                        context_dict.update(self.get_extra_context(object))
+
+                    return render_to_response(self.template,
+                        context_dict,
+                        context_instance=RequestContext(request)
+                    )
+
+                return view_func(request, *args, **kwargs)
+            return wraps(view_func)(_wrapped_view)
+        return decorator
+
+def image_get_extra_context(image):
+    return dict(
+        image=image,
+        source=image.source,
+    )
+def source_get_extra_context(source):
+    return dict(
+        source=source,
+    )
+
+# @image_annotation_area_must_be_editable('image_id')
+image_annotation_area_must_be_editable = ModelViewDecorator(
+    model_class=Image,
+    meets_requirements=lambda image, request: image_annotation_area_is_editable(image),
+    template='annotations/annotation_area_not_editable.html',
+    get_extra_context=image_get_extra_context,
+    default_message="This image's annotation area is not editable, because re-generating points "
+                    "would result in loss of data (such as annotations made in the annotation tool, "
+                    "or points imported from outside the site)."
+    )
+
+# @image_labelset_required('image_id')
+image_labelset_required = ModelViewDecorator(
+    model_class=Image,
+    meets_requirements=lambda image, request: not image.source.labelset.isEmptyLabelset(),
+    template='annotations/labelset_required.html',
+    get_extra_context=image_get_extra_context,
+    default_message="You need to create a labelset before you can use this page."
+    )
+
+# @source_labelset_required('source_id')
+source_labelset_required = ModelViewDecorator(
+    model_class=Source,
+    meets_requirements=lambda source, request: not source.labelset.isEmptyLabelset(),
+    template='annotations/labelset_required.html',
+    get_extra_context=source_get_extra_context,
+    default_message="You need to create a labelset before you can use this page."
+)
+
+# @image_visibility_required('image_id')
+image_visibility_required = ModelViewDecorator(
+    model_class=Image,
+    meets_requirements=lambda image, request: image.source.visible_to_user(request.user),
+    template='permission_denied.html',
+)
+
+# @source_visibility_required('source_id')
+source_visibility_required = ModelViewDecorator(
+    model_class=Source,
+    meets_requirements=lambda source, request: source.visible_to_user(request.user),
+    template='permission_denied.html',
+)
+
+# TODO: Make this even more DRY: just pass in 'admin' instead of Source.PermTypes.ADMIN.code.
+# @image_permission_required('image_id', perm=Source.PermTypes.<YOUR_PERMISSION_TYPE_HERE>.code)
+image_permission_required = ModelViewDecorator(
+    model_class=Image,
+    meets_requirements=lambda image, request, perm: request.user.has_perm(perm, image.source),
+    template='permission_denied.html',
+)
+
+# @source_permission_required('source_id', perm=Source.PermTypes.<YOUR_PERMISSION_TYPE_HERE>.code)
+source_permission_required = ModelViewDecorator(
+    model_class=Source,
+    meets_requirements=lambda source, request, perm: request.user.has_perm(perm, source),
+    template='permission_denied.html',
+)
 
 
 def permission_required(perm, lookup_variables=None, **kwargs):
@@ -118,45 +196,6 @@ def permission_required(perm, lookup_variables=None, **kwargs):
                     context_instance=RequestContext(request)
                     )
             # User has permission, so show the requested page.
-            return view_func(request, *args, **kwargs)
-        return wraps(view_func)(_wrapped_view)
-    return decorator
-
-
-def visibility_required(source_id_view_arg):
-    """
-    View decorator: requires that the user has permission to see the Source.
-    If not, then the view isn't shown and we instead show a simple template
-    saying that they don't have permission to access the page.
-
-    :param source_id_view_arg: a string that specifies the name of the view method
-      argument that corresponds to the source id.
-    :param message: a message to be displayed on the template if the source
-      doesn't have a labelset.
-
-    Example::
-
-        @visibility_required('source_id')
-        def source_main(request, source_id):
-            return HttpResponse('An HTTP response')
-    """
-
-    def decorator(view_func):
-        def _wrapped_view(request, *args, **kwargs):
-
-            if source_id_view_arg not in kwargs:
-                raise ValueError("Argument %s was not passed "
-                    "into view function" % source_id_view_arg)
-            source_id = kwargs[source_id_view_arg]
-
-            source = Source.objects.get(pk=source_id)
-
-            if not source.visible_to_user(request.user):
-                return render_to_response('permission_denied.html', {
-                    },
-                    context_instance=RequestContext(request)
-                    )
-
             return view_func(request, *args, **kwargs)
         return wraps(view_func)(_wrapped_view)
     return decorator

@@ -1,14 +1,14 @@
 import csv
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
-from django.db import transaction, models
+from django.db import models
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.utils import simplejson
 from accounts.utils import get_robot_user
 from annotations.models import Annotation, Label, LabelSet, LabelGroup
-from CoralNet.decorators import visibility_required
+from decorators import source_visibility_required
 from images.models import Source, Image
 from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
 from visualization.utils import generate_patch_if_doesnt_exist
@@ -59,8 +59,7 @@ def image_search_args_to_url_arg_str(searchDict):
     return '&'.join(argsList)
 
 
-@transaction.commit_on_success
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def visualize_source(request, source_id):
     """
     View for browsing through a source's images.
@@ -94,8 +93,11 @@ def visualize_source(request, source_id):
         form = VisualizationSearchForm(source_id)
 
 
-    # Perform selected actions, if any, on the images previously shown
-    if request.POST:
+    # Perform selected actions, if any, on the images previously shown.
+    # Security check: to guard against forged POST data, make sure the
+    # user actually has permission to the action form.
+    if request.POST and request.user.has_perm(Source.PermTypes.ADMIN.code, source):
+
         actionForm = ImageBatchActionForm(request.POST)
 
         if actionForm.is_valid():
@@ -127,7 +129,16 @@ def visualize_source(request, source_id):
         #if user did not specify a label to generate patches for, assume they want to view whole images
         if not label:
             showPatches = False
-            allSearchResults = Image.objects.filter(source=source, **imageArgs).order_by('-upload_date')
+            allSearchResults = Image.objects.filter(source=source, **imageArgs)
+
+            # Sort the images.
+            # TODO: Stop duplicating this DB-specific extras query; put it in a separate function...
+            # Also, despite the fact that we're dealing with images and not metadatas, selecting photo_date does indeed work.
+            db_extra_select = {'metadata__year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
+
+            sort_keys = ['metadata__'+k for k in (['year'] + source.get_value_field_list())]
+            allSearchResults = allSearchResults.extra(select=db_extra_select)
+            allSearchResults = allSearchResults.order_by(*sort_keys)
 
         else:
             #since user specified a label, generate patches to show instead of whole images
@@ -194,7 +205,7 @@ def visualize_source(request, source_id):
         context_instance=RequestContext(request)
     )
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def generate_statistics(request, source_id):
     errors = []
     years = []
@@ -354,7 +365,7 @@ def generate_statistics(request, source_id):
         context_instance=RequestContext(request)
     )
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def export_statistics(request, source_id):
     # get the response object, this can be used as a stream.
     response = HttpResponse(mimetype='text/csv')
@@ -414,7 +425,7 @@ def export_statistics(request, source_id):
 
     return response
 
-@visibility_required('source_id')
+@source_visibility_required('source_id')
 def export_annotations(request, source_id):
     # get the response object, this can be used as a stream.
     response = HttpResponse(mimetype='text/csv')
@@ -465,6 +476,7 @@ def export_annotations(request, source_id):
     return response
 
 
+@source_visibility_required('source_id')
 def export_menu(request, source_id):
     source = get_object_or_404(Source, id=source_id)
 

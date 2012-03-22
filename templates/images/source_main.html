@@ -22,7 +22,7 @@
         {% if latest_images %}
             {% for image in latest_images %}
                 <span class="thumb_small_wrapper">
-                <a href="{% url image_detail source.id image.id %}">
+                <a href="{% url image_detail image.id %}">
                     <img class="thumb_small"
                          src="{% thumbnail image.original_file 100x100 %}"
                          title="{{ image.get_image_element_title }}"/>
@@ -30,25 +30,83 @@
                 </span>
             {% endfor %}
 
-            <p>Total images: {{ stats.num_images }}</p>
+            <br/>
+            <a href="{% url visualize_source source.id %}">Browse Images</a>
+            <br/><br/>
+
+            <p>Total images: {{ image_stats.total }}</p>
+
             <table class="detail_table">
+            {% if source.enable_robot_classifier %}
                 <tr>
                     <td>Not annotated</td>
-                    <td>{{ stats.need_comp_anno_images }}</td>
+                    <td>{{ image_stats.need_comp_anno }}</td>
                 </tr>
                 <tr>
                     <td>Computer annotated, needs human annotation</td>
-                    <td>{{ stats.need_human_anno_images }}</td>
+                    <td>
+                        {% if image_stats.need_human_anno_first %}
+                            <a href="{% url annotation_tool image_stats.need_human_anno_first.id %}"
+                               title="{{ image_stats.need_human_anno_first.get_image_element_title }}">
+                                {{ image_stats.need_human_anno }}</a>
+                        {% else %}
+                            {{ image_stats.need_human_anno }}
+                        {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <td>Completed (human annotated)</td>
-                    <td>{{ stats.anno_completed_images }}</td>
+                    <td>{{ image_stats.anno_completed }}</td>
                 </tr>
+            {% else %}
+                <tr>
+                    <td>Needs annotation</td>
+                    <td>
+                        {% if image_stats.need_anno_first %}
+                            <a href="{% url annotation_tool image_stats.need_anno_first.id %}"
+                               title="{{ image_stats.need_anno_first.get_image_element_title }}">
+                                {{ image_stats.need_anno }}</a>
+                        {% else %}
+                            {{ image_stats.need_anno }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Completed</td>
+                    <td>{{ image_stats.anno_completed }}</td>
+                </tr>
+            {% endif %}
             </table>
+
         {% else %}
             <p>(No images yet)</p>
         {% endif %}
     </div>
+
+    {% if source.enable_robot_classifier %}
+    <hr />
+    <div id="robots">
+		{% if robotStats.hasRobot %}
+        <h3>Robot stats</h3>
+            <table class="detail_table">
+                <tr>
+                    <td>Version</td>
+                    <td>{{ robotStats.version }}</td>
+                </tr>
+                <tr>
+                    <td>Estimated precision (%)</td>
+                    <td>{{ robotStats.precision }}</td>
+                </tr>
+                <tr>
+                    <td>Traintime (s)</td>
+                    <td>{{ robotStats.trainTime }}</td>
+                </tr>
+            </table>
+        {% else %}
+            <p>(No robot available yet)</p>
+        {% endif %}
+	</div>
+    {% endif %}
 
     <hr />
     <div id="annotations">

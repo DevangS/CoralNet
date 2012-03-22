@@ -15,15 +15,13 @@
 
     <div class="nav_container" id="nav_second_container">
       <ul class="nav nav_right" id="nav_image">
-        <li><a href="{% url image_detail source.id image.id %}"><span>{% trans 'View Image' %}</span></a></li>
+        <li><a href="{% url image_detail image.id %}"><span>{% trans 'Image Details' %}</span></a></li>
 
         {% get_obj_perms user for source as "source_perms" %}
         {% if "source_edit" in source_perms %}
-        <li><a href="{% url annotation_tool source.id image.id %}"><span>{% trans 'Annotate Image' %}</span></a></li>
-        <li><a href="{% url image_detail_edit source.id image.id %}"><span>{% trans 'Edit Details' %}</span></a></li>
+          <li><a href="{% url annotation_tool image.id %}"><span>{% trans 'Annotation Tool' %}</span></a></li>
+          <li><a href="{% url annotation_history image.id %}"><span>{% trans 'Annotation History' %}</span></a></li>
         {% endif %}
-
-        <li><a href="{% url visualize_source source.id %}"><span>{% trans 'Browse Source Images' %}</span></a></li>
       </ul>
     </div>
 {% endblock %}

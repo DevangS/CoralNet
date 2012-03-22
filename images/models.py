@@ -1,3 +1,4 @@
+import datetime
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -5,8 +6,10 @@ from django.db import models
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
 from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign
-from images.model_utils import PointGen, AnnotationAreaUtils
+from annotations.model_utils import AnnotationAreaUtils
+from images.model_utils import PointGen
 from CoralNet.utils import generate_random_filename
+import os
 
 # Constants that don't really belong to a particular model
 class ImageModelConstants():
@@ -77,6 +80,15 @@ class Source(models.Model):
                   "You can also set these boundaries as pixel counts on a per-image basis; for images that don't have a specific value set, these percentages will be used.",
         max_length=50,
         null=True
+    )
+
+    enable_robot_classifier = models.BooleanField(
+        "Enable robot classifier",
+        default=False,
+        help_text="With this option on, the automatic classification system will "
+                  "go through your images and add unofficial annotations to them. "
+                  "Then when you enter the annotation tool, you will be able to start "
+                  "from the system's suggestions instead of from a blank slate.",
     )
 
     longitude = models.CharField(max_length=20, blank=True)
@@ -254,7 +266,7 @@ class Source(models.Model):
         Display the annotation-area parameters in templates.
         Usage: {{ mysource.annotation_area_display }}
         """
-        return AnnotationAreaUtils.percentage_string_to_readable_format(self.image_annotation_area)
+        return AnnotationAreaUtils.db_format_to_display(self.image_annotation_area)
 
     def point_gen_method_display(self):
         """
@@ -263,12 +275,37 @@ class Source(models.Model):
         """
         return PointGen.db_to_readable_format(self.default_point_generation_method)
 
+    def get_latest_robot(self):
+		"""
+		return the latest robot associated with this source.
+		if no robots, retun None
+		"""
+    	# Get all robots for this source
+		allRobots = Robot.objects.filter(source = self)
+	 
+		# if empty, return
+		if len(allRobots) == 0:
+			return None
+	    
+		# find the most recent robot
+		latestVersion = 0
+		foundRobot = False
+		for thisRobot in allRobots:
+			if (thisRobot.version > latestVersion) and os.path.exists(thisRobot.path_to_model + '.meta.json'): #if meta file does not exist, the robot is not yet trained..
+				latestRobot = thisRobot
+				foundRobot = True
+				latestVersion = thisRobot.version
+
+		if foundRobot:
+			return latestRobot
+		else:
+			return None
+
     def __unicode__(self):
         """
         To-string method.
         """
         return self.name
-
 
 class SourceInvite(models.Model):
     """
@@ -301,6 +338,16 @@ class Robot(models.Model):
 
     # Automatically set to the date and time of creation.
     create_date = models.DateTimeField('Date created', auto_now_add=True, editable=False)
+    
+    def get_process_date_short_str(self):
+        """
+        Return the image's (pre)process date in YYYY-MM-DD format.
+
+        Advantage over YYYY-(M)M-(D)D: alphabetized = sorted by date
+        Advantage over YYYY(M)M(D)D: date is unambiguous
+        """
+        return "{0}-{1:02}-{2:02}".format(self.create_date.year, self.create_date.month, self.create_date.day)
+
 
     def __unicode__(self):
         """
@@ -314,6 +361,9 @@ class LocationValue(models.Model):
         # An abstract base class; no table will be created for
         # this class, but tables will be created for its sub-classes
         abstract = True
+
+        # Default ordering criteria.
+        ordering = ['name']
 
     name = models.CharField(max_length=50)
     source = models.ForeignKey(Source)
@@ -343,8 +393,8 @@ class Metadata(models.Model):
 
     height_in_cm = models.IntegerField(
         "Height covered (centimeters)",
-        help_text="The automatic annotation system needs to know how much space is covered by the image.\n"
-                  "If you don't set this value, the source's default value will be used.",
+        help_text="What is the actual span between the top and bottom of this image?\n"
+                  "(This information is used by the automatic annotator.)",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
         null=True, blank=True
@@ -352,9 +402,8 @@ class Metadata(models.Model):
 
     annotation_area = models.CharField(
         "Annotation area",
-        help_text="This defines a rectangle of the image where annotation points are allowed to be generated.\n"
-                  "For example, X boundaries of 150 and 1800 mean that points are only generated within the X-pixel values 150 through 1800.\n"
-                  "If you don't set these values, the source's default annotation area (defined with percentages, not pixels) will be used.",
+        help_text="This defines a rectangle of the image where annotation points are allowed to be generated. "
+                  "If you change this, then new points will be generated for this image, and the old points will be deleted.",
         max_length=50,
         null=True, blank=True
     )
@@ -374,24 +423,27 @@ class Metadata(models.Model):
     value3 = models.ForeignKey(Value3, null=True)
     value4 = models.ForeignKey(Value4, null=True)
     value5 = models.ForeignKey(Value5, null=True)
-    group1_percent = models.IntegerField(default=0)
-    group2_percent = models.IntegerField(default=0)
-    group3_percent = models.IntegerField(default=0)
-    group4_percent = models.IntegerField(default=0)
-    group5_percent = models.IntegerField(default=0)
-    group6_percent = models.IntegerField(default=0)
-    group7_percent = models.IntegerField(default=0)
 
     def __unicode__(self):
         return "Metadata of " + self.name
 
 
 class ImageStatus(models.Model):
+    # Image is preprocessed with the desired parameters (cm height, etc.)
     preprocessed = models.BooleanField(default=False)
-    featuresExtracted = models.BooleanField(default=False)
+    # Image has annotation points
     hasRandomPoints = models.BooleanField(default=False)
+    # Features have been extracted for the current annotation points
+    featuresExtracted = models.BooleanField(default=False)
+    # All of the current points have been annotated by robot at some point
+    # (it's OK if the annotations were overwritten by human)
     annotatedByRobot = models.BooleanField(default=False)
+    # Image is 100% annotated by human
     annotatedByHuman = models.BooleanField(default=False)
+    # Feature file includes the completed, human-annotated labels
+    featureFileHasHumanLabels = models.BooleanField(default=False)
+    # This source's current robot model uses said feature file
+    usedInCurrentModel = models.BooleanField(default=False)
 
 
 def get_original_image_upload_path(instance, filename):
@@ -438,16 +490,18 @@ class Image(models.Model):
 
     # To be set by the preprocessing task
     process_date = models.DateTimeField("Date processed", editable=False, null=True)
-
+    # To be set by the classification task
     latest_robot_annotator = models.ForeignKey(Robot, editable=False, null=True)
 
 
     def __unicode__(self):
         return self.metadata.name
 
-    # Use this as the "title" element of the image on an HTML page
-    # (hover the mouse over the image to see this)
     def get_image_element_title(self):
+        """
+        Use this as the "title" element of the image on an HTML page
+        (hover the mouse over the image to see this).
+        """
         metadata = self.metadata
         dataStrings = []
         for v in [metadata.value1,
@@ -460,14 +514,13 @@ class Image(models.Model):
             else:
                 break
         if metadata.photo_date:
-            dataStrings.append(str(metadata.photo_date))
+            dataStrings.insert(0, str(metadata.photo_date.year))
 
         return ' '.join(dataStrings)
 
     def get_location_value_str_list(self):
         """
-        Takes an Image object.
-        Returns its location values as a list of strings:
+        Returns the image's location values as a list of strings:
         ['Shore3', 'Reef 5', 'Loc10']
         """
 
@@ -489,13 +542,96 @@ class Image(models.Model):
 
         return valueList
 
+    def get_year_and_location_values(self):
+        """
+        Get the year and location values for display as a 2 x n table.
+        """
+        metadata = self.metadata
+        source = self.source
+        dataTupleList = []
+
+        if metadata.photo_date:
+            dataTupleList.append( ("Year", str(metadata.photo_date.year)) )
+        else:
+            dataTupleList.append( ("Year", "") )
+
+        for keyName, valueObj in [
+            (source.key1, metadata.value1),
+            (source.key2, metadata.value2),
+            (source.key3, metadata.value3),
+            (source.key4, metadata.value4),
+            (source.key5, metadata.value5)
+        ]:
+            if keyName:
+                if valueObj:
+                    dataTupleList.append( (keyName, valueObj.name) )
+                else:
+                    dataTupleList.append( (keyName, "") )
+
+        dataTwoLists = dict(
+            keys=[t[0] for t in dataTupleList],
+            values=[t[1] for t in dataTupleList],
+        )
+        return dataTwoLists
+
     def point_gen_method_display(self):
         """
         Display the point generation method in templates.
         Usage: {{ myimage.point_gen_method_display }}
         """
         return PointGen.db_to_readable_format(self.point_generation_method)
-    
+
+    # this function returns the image height by checking both the image and the source for the height
+    def height_cm(self):
+        thisSource = Source.objects.filter(image = self.id)
+        imheight = thisSource[0].image_height_in_cm
+        if self.metadata.height_in_cm:
+            imheight = self.metadata.height_in_cm
+
+        return imheight
+
+    def after_height_cm_change(self):
+        status = self.status
+        status.preprocessed = False
+        status.featuresExtracted = False
+        status.annotatedByRobot = False
+        status.featureFileHasHumanLabels = False
+        status.usedInCurrentModel = False
+        status.save()
+
+    def annotation_area_display(self):
+        """
+        Display the annotation area parameters in templates.
+        Usage: {{ myimage.annotation_area_display }}
+        """
+        return AnnotationAreaUtils.db_format_to_display(self.metadata.annotation_area)
+
+    def after_annotation_area_change(self):
+        status = self.status
+        status.featuresExtracted = False
+        status.annotatedByRobot = False
+        status.featureFileHasHumanLabels = False
+        status.usedInCurrentModel = False
+        status.save()
+
+    def after_completed_annotations_change(self):
+        """
+        Only necessary to run this if human annotations are complete,
+        to begin with, and then an annotation is changed.
+        """
+        status = self.status
+        status.featureFileHasHumanLabels = False
+        status.usedInCurrentModel = False
+        status.save()
+
+    def get_process_date_short_str(self):
+        """
+        Return the image's (pre)process date in YYYY-MM-DD format.
+
+        Advantage over YYYY-(M)M-(D)D: alphabetized = sorted by date
+        Advantage over YYYY(M)M(D)D: date is unambiguous
+        """
+        return "{0}-{1:02}-{2:02}".format(self.process_date.year, self.process_date.month, self.process_date.day)
 
 class Point(models.Model):
     row = models.IntegerField()
@@ -503,3 +639,9 @@ class Point(models.Model):
     point_number = models.IntegerField()
     annotation_status = models.CharField(max_length=1, blank=True)
     image = models.ForeignKey(Image)
+
+    def __unicode__(self):
+        """
+        To-string method.
+        """
+        return "Point %s" % self.point_number

@@ -6,7 +6,11 @@ Usage:
 {% load common_tags %}
 
 {% if type == 'css' %}
-    <link rel="stylesheet" type="text/css" media="screen" href="{% versioned_static path %}" />
+    {% if media_type and media_type != 'all' %}
+        <link rel="stylesheet" type="text/css" media="{{ media_type }}" href="{% versioned_static path %}" />
+    {% else %}
+        <link rel="stylesheet" type="text/css" href="{% versioned_static path %}" />
+    {% endif %}
 {% else %}
 {% if type == 'js' %}
     <script src="{% versioned_static path %}" type="text/javascript"></script>

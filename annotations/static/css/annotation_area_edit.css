@@ -1,0 +1,43 @@
+#annoarea_box {
+    position: relative;
+
+    /* Dummy values to be overwritten. If you see a 500x500
+       box, then perhaps something didn't work. */
+    width: 500px;
+    height: 500px;
+}
+#image {
+    position: absolute;
+}
+#image_container {
+    position: relative;
+}
+
+.ui-icon {
+    /* Get rid of the icon on the southeast handle...
+       a better way to do this would be to prevent that handle
+       from getting the ui-icon class altogether. */
+    background-image: none;
+}
+.ui-resizable-handle {
+    /* The diagonal handles get assigned element-specific z-indexes of
+       1001 to 1004, which means they come on top of 1000.  Putting
+       diagonal handles on top makes them much easier to grab. */
+    z-index: 1000;
+
+    /* Make the handles visible, effectively creating a (purely visual) element border. */
+    background-color: yellow;
+
+    /* Should still be possible to see the image behind this border. */
+    opacity: 0.7;
+}
+
+/* Put all resize handles just outside of the element. */
+.ui-resizable-n { cursor: n-resize; height: 9px; width: 100%; top: -9px; left: 0; }
+.ui-resizable-s { cursor: s-resize; height: 9px; width: 100%; bottom: -9px; left: 0; }
+.ui-resizable-e { cursor: e-resize; width: 9px; right: -9px; top: 0; height: 100%; }
+.ui-resizable-w { cursor: w-resize; width: 9px; left: -9px; top: 0; height: 100%; }
+.ui-resizable-se { cursor: se-resize; width: 9px; height: 9px; right: -9px; bottom: -9px; }
+.ui-resizable-sw { cursor: sw-resize; width: 9px; height: 9px; left: -9px; bottom: -9px; }
+.ui-resizable-nw { cursor: nw-resize; width: 9px; height: 9px; left: -9px; top: -9px; }
+.ui-resizable-ne { cursor: ne-resize; width: 9px; height: 9px; right: -9px; top: -9px;}

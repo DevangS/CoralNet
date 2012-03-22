@@ -6,7 +6,14 @@ import djcelery
 djcelery.setup_loader()
 
 abspath = lambda *p: os.path.abspath(os.path.join(*p))
-PROJECT_ROOT = abspath(os.path.dirname(__file__))
+
+
+PROJECT_ROOT = settings_2.PROJECT_ROOT
+
+PROCESSING_ROOT = settings_2.PROCESSING_ROOT
+
+SLEEP_TIME_BETWEEN_IMAGE_PROCESSING = settings_2.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING
+
 USERENA_MODULE_PATH = abspath(PROJECT_ROOT, '..')
 sys.path.insert(0, USERENA_MODULE_PATH)
 
@@ -131,6 +138,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.request",
 )
 
+# The order of middleware classes is important!
+# https://docs.djangoproject.com/en/1.3/topics/http/middleware/
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -140,6 +149,16 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'userena.middleware.UserenaLocaleMiddleware',
     'sentry.client.middleware.Sentry404CatchMiddleware',
+
+    # Put TransactionMiddleware after most non-cache middlewares that use the DB.
+    # Any middleware specified after TransactionMiddleware will be
+    # included in the same DB transaction that wraps the view function.
+    # https://docs.djangoproject.com/en/1.3/topics/db/transactions/#tying-transactions-to-http-requests
+    'django.middleware.transaction.TransactionMiddleware',
+
+    # Put after TransactionMiddleware.
+    # Model revisions needs to be part of transactions.
+    'reversion.middleware.RevisionMiddleware',
 )
 
 ROOT_URLCONF = 'CoralNet.urls'
@@ -167,6 +186,7 @@ INSTALLED_APPS = (
     'guardian',
     'easy_thumbnails',
     'south',
+    'reversion',
     'sentry',
     'sentry.client',
     'dajaxice',
@@ -255,7 +275,7 @@ BROKER_PASSWORD = settings_2.BROKER_PASSWORD
 BROKER_VHOST = settings_2.BROKER_VHOST
 
 #Celery configuration
-CELERYD_CONCURRENCY = 2
+CELERYD_CONCURRENCY = settings_2.CELERYD_CONCURRENCY
 
 # App URL bases
 IMAGES_URL = '/images/'

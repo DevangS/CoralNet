@@ -40,12 +40,6 @@ html, body{
 	padding: 0 10px;
 }
 
-#top{
-    height: 30px;
-    background-color: #111;
-    border-bottom: 1px solid #fff;
-}
-
 #header{
     /* Consider styling the header here */
 }
@@ -381,7 +375,7 @@ a.button:active span {
 hr.light {
     background-color: #dddddd;
     border: none;
-    height: 1px;
+    height: 2px;
 }
 
 
@@ -807,14 +801,16 @@ div#lang_form input[type=submit] {
 /*	notifications
 ................................... */
 
+#top{
+    background-color: #111;
+    border-bottom: 1px solid #fff;
+}
+
 ul.messages{
-    position: absolute;
     font-size: 0.8em;
     font-weight: bold;
     width: 540px;
-    left: 50%;
-    top: 4px;
-    margin: 0 0 0 -270px;
+    margin: 0 auto;  /* vertical horizontal */
 }
 
 ul.messages li{
@@ -824,7 +820,16 @@ ul.messages li{
     border-radius: 20px;
     padding: 4px 20px;
     text-align: center;
+}
 
+div.maintenance_message {
+    background-color: #FFCCCC;
+
+    width: 540px;
+    margin: 0 auto;  /* vertical horizontal */
+    padding: 4px 20px;
+
+    font-size: 0.9em;
 }
 
 
@@ -975,21 +980,39 @@ table.detail_table td {
     padding: 5px;
 }
 
+table.detail_table.horizontal {
+    border: none;
+    display: inline-block;
+}
+table.detail_table.horizontal th,
+table.detail_table.horizontal td {
+    border: none;
+    padding: 3px 5px;  /* vertical horizontal */
+}
+
 /* thumbnails and thumbnail wrappers
 ................................... */
 
 .thumb_wrapper {
     display: inline-block;
     text-align: center;
-    height: 180px;
-    width: 180px;    /* Make it so 5 images can fit on one row.  Might change this later to accommodate a stats box in the visualization page though. */
+
+    /* Effective width of 180px, and effective
+    max height of <max thumbnail height> + 30px.
+    Might shrink this later to accommodate a stats box
+    in the visualization page though. */
+    width: 150px;
+    padding: 15px;
 }
 
 .thumb_small_wrapper {
     display: inline-block;
     text-align: center;
-    height: 120px;
-    width: 120px;
+
+    /* Effective width of 120px, and effective
+    max height of <max thumbnail height> + 20px. */
+    width: 100px;
+    padding: 10px;
 }
 
 img.thumb {

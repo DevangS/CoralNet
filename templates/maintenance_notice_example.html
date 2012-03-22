@@ -1,0 +1,59 @@
+{% load common_tags %}
+
+{% comment %}
+
+To activate the maintenance message, uncomment the line specifying the
+maintenance time:
+{% set_maintenance_time "12:00 AM" as maintenance_time %}
+
+If the maintenance time is in the future, then the maintenance message
+will say the site will be under maintenance.  If the maintenance time is
+in the past, then the maintenance message will say the site is under
+maintenance.
+
+There are three accepted formats for the maintenance time.
+
+(1) Time of day.  This should correctly infer your intended date + time, as long
+as the date + time you intended is within 12 hours from the current time:
+{% set_maintenance_time "12:00 AM" as maintenance_time %}
+
+(2) Month, day, and time.  If you want to announce maintenance more than
+12 hours in advance, or if maintenance might go on for over 12 hours, or
+if you just want to be unambiguous, then use this:
+{% set_maintenance_time "Mar 21 12:00 AM" as maintenance_time %}
+
+(3) Year, month, day, and time.  Usually won't need this, but use this
+if you want to make sure your date and time aren't ambiguous:
+{% set_maintenance_time "2012 Mar 21 12:00 AM" as maintenance_time %}
+
+If you formatted the date incorrectly (like "2012 March 21 12:00 AM")
+then the maintenance message won't appear.  The website won't show an
+error on the browser side, though.  On the other hand, if you have a
+template syntax error (like missing a quotation mark), then the website
+will error, so be careful!
+
+To take down the maintenance message, just comment out the line that
+sets the maintenance time:
+{# {% set_maintenance_time "12:00 AM" as maintenance_time %} #}
+
+{% endcomment %}
+
+
+{# {% set_maintenance_time "12:00 AM" as maintenance_time %} #}
+
+{% if maintenance_time %}
+    <div class="maintenance_message">
+        {% if maintenance_time|timeuntil == "0 minutes" %}
+            {# The message when the site is currently under maintenance. #}
+            <b>The site is under maintenance.</b>
+            During maintenance, the site may abruptly become unavailable,
+            and certain pages may not work properly. If you're going to
+            upload or change anything, we advise you to use the site at
+            a later time.  We’re sorry for the inconvenience.
+        {% else %}
+            {# The message when the site is going to be under maintenance at a particular time. #}
+            The site will be under maintenance starting <b>{{ maintenance_time }},
+            U.S. Pacific time.</b>
+        {% endif %}
+    </div>
+{% endif %}
