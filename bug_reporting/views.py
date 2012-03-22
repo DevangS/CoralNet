@@ -17,7 +17,7 @@ def feedback_form(request):
 
     if request.method == 'POST':
 
-        f = Feedback(user=request.user)
+        f = Feedback(user=request.user, url=str(request.get_full_path().replace('/feedback/', '')))
         # Later, might also auto-set browser, OS, etc. here
         form = FeedbackForm(request.POST, instance=f)
 

@@ -13,7 +13,7 @@ class Feedback(models.Model):
     comment = models.TextField('Description / Comment')
     user = models.ForeignKey(User)
     date = models.DateTimeField('Date', auto_now_add=True, editable=False)
-
+    url = models.TextField('Url')
     # Will be auto-filled in when the feedback form is reached from a 500 error.
     # Otherwise, this field isn't used.
     error_id = models.CharField(max_length=100, blank=True, editable=False)
