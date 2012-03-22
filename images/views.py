@@ -17,7 +17,7 @@ from annotations.forms import AnnotationAreaPercentsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
 from CoralNet.exceptions import FileContentError
-from annotations.utils import image_annotation_area_is_editable
+from annotations.utils import image_annotation_area_is_editable, image_has_any_human_annotations
 from decorators import source_permission_required, image_visibility_required, image_permission_required, source_labelset_required, source_visibility_required
 
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
@@ -366,6 +366,14 @@ def image_detail(request, image_id):
     next_image = get_next_image(image)
     prev_image = get_prev_image(image)
 
+    # Annotation status
+    if image.status.annotatedByHuman:
+        annotation_status = "Complete"
+    elif image_has_any_human_annotations(image):
+        annotation_status = "Partially annotated"
+    else:
+        annotation_status = "Not started"
+
     # Should we include a link to the annotation area edit page?
     annotation_area_editable = image_annotation_area_is_editable(image)
 
@@ -377,6 +385,7 @@ def image_detail(request, image_id):
         'metadata': metadata,
         'detailsets': detailsets,
         'scaled_width': scaled_width,
+        'annotation_status': annotation_status,
         'annotation_area_editable': annotation_area_editable,
         },
         context_instance=RequestContext(request)

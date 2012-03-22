@@ -996,15 +996,23 @@ table.detail_table.horizontal td {
 .thumb_wrapper {
     display: inline-block;
     text-align: center;
-    height: 180px;
-    width: 180px;    /* Make it so 5 images can fit on one row.  Might change this later to accommodate a stats box in the visualization page though. */
+
+    /* Effective width of 180px, and effective
+    max height of <max thumbnail height> + 30px.
+    Might shrink this later to accommodate a stats box
+    in the visualization page though. */
+    width: 150px;
+    padding: 15px;
 }
 
 .thumb_small_wrapper {
     display: inline-block;
     text-align: center;
-    height: 120px;
-    width: 120px;
+
+    /* Effective width of 120px, and effective
+    max height of <max thumbnail height> + 20px. */
+    width: 100px;
+    padding: 10px;
 }
 
 img.thumb {

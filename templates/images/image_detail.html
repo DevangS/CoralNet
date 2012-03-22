@@ -76,14 +76,17 @@
     <div class="details">
 
         <ul>
-        <li>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</li>
-
+        <li>Annotation points: {{ image.point_gen_method_display }}</li>
         <li>Annotation area: {{ image.annotation_area_display }}
             {% if "source_edit" in source_perms and annotation_area_editable %}
               (<a href="{% url annotation_area_edit image.id %}">Edit</a>)
             {% endif %}
         </li>
+        <li>Annotation status: <b>{{ annotation_status }}</b></li>
+        </ul>
 
+        <ul>
+        <li>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</li>
         <li>Height coverage: {{ metadata.height_in_cm }} centimeters</li>
         </ul>
 

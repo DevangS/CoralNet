@@ -30,6 +30,10 @@
                 </span>
             {% endfor %}
 
+            <br/>
+            <a href="{% url visualize_source source.id %}">Browse Images</a>
+            <br/><br/>
+
             <p>Total images: {{ image_stats.total }}</p>
 
             <table class="detail_table">
