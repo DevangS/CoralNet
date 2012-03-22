@@ -18,20 +18,26 @@
 <button id="id_button_show_instructions">Help/Controls</button>
 
 <div id="id_instructions_wrapper" style="display:none">
-  <button id="id_button_hide_instructions">Hide Help</button>
+    <button id="id_button_hide_instructions">Hide Help</button>
 
-  <hr/>
+    <hr/>
 
-  <p>The text fields on the right show the current labels for each point.
-      If the text is in <span style='color:#888888'>gray</span>,
-      the point is robot-annotated and needs to be confirmed by a human annotator.
-      If the background is in <span style='background-color:#FFCCCC'>red</span>,
-      the text is not a valid label code and needs to be changed.</p>
+    <div class="help_section">
+        <span class="help_header">Basics</span>
 
-  <p>The image shows the locations of the points.
-      Unannotated points are in <span style='color:#8888FF'>blue</span>,
-      annotated points are in <span style='color:#FFFF00; background-color:#888888'>yellow</span>,
-      and selected points are in <span style='color:#00FF00'>green</span>.</p>
+        <p>The text fields on the right show the current labels for each point.<br/>
+            If the text in the field is in black, the point is human-annotated.  Once all points
+            are human-annotated, annotation for the image is finished.<br/>
+            If the text is in <span style='color:#888888'>gray</span>,
+            the point is robot-annotated and needs to be confirmed by a human annotator.<br/>
+            If the field background is in <span style='background-color:#FFCCCC'>red</span>,
+            the text is not a valid label code and needs to be changed.</p>
+
+        <p>The image shows the locations of the points.
+            Unannotated points are in <span style='color:#8888FF'>blue</span>,
+            annotated points are in <span style='color:#FFFF00; background-color:#888888'>yellow</span>,
+            and selected points are in <span style='color:#00FF00'>green</span>.</p>
+    </div>
 
   <div class="help_section">
       <span class="help_header">Choosing a point to label</span>
@@ -99,6 +105,27 @@
               and <img src="/static/img/Icon_point-mode-none.png"/>.</li>
       </ul>
   </div>
+
+    <div class="help_section">
+        <span class="help_header">Compatibility</span>
+        <table class="detail_table">
+            <tr>
+                <th>Windows</th><th>Mac</th><th>Linux</th>
+            </tr>
+            <tr>
+                <td>OK</td><td>OK</td><td>Ctrl key problems</td>
+            </tr>
+        </table>
+        <br/>
+        <table class="detail_table">
+            <tr>
+                <th>Firefox</th><th>Chrome</th><th>Safari</th><th>IE</th><th>Opera</th>
+            </tr>
+            <tr>
+                <td>OK</td><td>OK</td><td>Ctrl key problems</td><td>Unknown</td><td>Unknown</td>
+            </tr>
+        </table>
+    </div>
 
   <hr/>
 </div>
