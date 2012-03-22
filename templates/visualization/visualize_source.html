@@ -106,7 +106,7 @@ label.label_visualization {
         <hr />
 
         {% get_obj_perms user for source as "source_perms" %}
-        {% if not showPatches and "source_edit" in source_perms %}
+        {% if not showPatches and "source_admin" in source_perms %}
 
             <legend class="small">Edit these images</legend>
 

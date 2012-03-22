@@ -93,8 +93,11 @@ def visualize_source(request, source_id):
         form = VisualizationSearchForm(source_id)
 
 
-    # Perform selected actions, if any, on the images previously shown
-    if request.POST:
+    # Perform selected actions, if any, on the images previously shown.
+    # Security check: to guard against forged POST data, make sure the
+    # user actually has permission to the action form.
+    if request.POST and request.user.has_perm(Source.PermTypes.ADMIN.code, source):
+
         actionForm = ImageBatchActionForm(request.POST)
 
         if actionForm.is_valid():
