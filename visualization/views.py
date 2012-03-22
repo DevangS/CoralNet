@@ -385,7 +385,11 @@ def export_statistics(request, source_id):
 
     source = get_object_or_404(Source, id=source_id)
     images = Image.objects.filter(source=source).select_related()
-    all_annotations = Annotation.objects.filter(source=source).exclude(user=get_robot_user()).select_related()
+    if request.GET.get('robot', ''):
+        all_annotations = Annotation.objects.filter(source=source).select_related()
+    else:
+        all_annotations = Annotation.objects.filter(source=source).exclude(user=get_robot_user()).select_related()
+    
     labelset = get_object_or_404(LabelSet, source=source)
     labels = Label.objects.filter(labelset=labelset).order_by('name')
     
@@ -445,7 +449,10 @@ def export_annotations(request, source_id):
 
     source = get_object_or_404(Source, id=source_id)
     images = Image.objects.filter(source=source).select_related()
-    all_annotations = Annotation.objects.filter(source=source)
+    if request.GET.get('robot', ''):
+        all_annotations = Annotation.objects.filter(source=source)
+    else:
+        all_annotations = Annotation.objects.filter(source=source).exclude(user=get_robot_user())
 
     #Add table headings: locKey1 locKey2 locKey3 locKey4 photo_date anno_date row col label
     header = []

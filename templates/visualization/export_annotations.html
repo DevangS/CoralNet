@@ -16,7 +16,9 @@
     <div class="nav_container" id="nav_second_container">
           <ul class="nav nav_right" id="nav_visualize">
             <li><a href="{% url export_statistics source.id %}"><span>{% trans 'Export Statistics' %}</span></a></li>
+            <li><a href="{% url export_statistics source.id %}?robot=true"><span>{% trans 'Export Statistics With Robots' %}</span></a></li>
             <li><a href="{% url export_annotations source.id %}"><span>{% trans 'Export Annotations' %}</span></a></li>
+            <li><a href="{% url export_annotations source.id %}?robot=true"><span>{% trans 'Export Annotations With Robots' %}</span></a></li>
           </ul>
     </div>
 
