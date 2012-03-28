@@ -95,3 +95,21 @@ class AnnotationToolAccess(models.Model):
     image = models.ForeignKey(Image, editable=False)
     source = models.ForeignKey(Source, editable=False)
     user = models.ForeignKey(User, editable=False)
+
+
+class AnnotationToolSettings(models.Model):
+
+    user = models.ForeignKey(User, editable=False)
+
+    POINT_MARKER_CHOICES = (
+        ('crosshair', 'Crosshair'),
+        ('circle', 'Circle'),
+        ('crosshair and circle', 'Crosshair and circle'),
+        ('box', 'Box'),
+        )
+    point_marker = models.CharField(max_length=30, choices=POINT_MARKER_CHOICES, default='crosshair')
+
+    unannotated_point_color = models.CharField(max_length=6, default='FFFF00')
+    robot_annotated_point_color = models.CharField(max_length=6, default='FFFF00')
+    human_annotated_point_color = models.CharField(max_length=6, default='8888FF')
+    selected_point_color = models.CharField(max_length=6, default='00FF00')

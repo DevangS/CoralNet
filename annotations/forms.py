@@ -14,7 +14,7 @@ from django import forms
 from django.forms.models import ModelForm
 from accounts.utils import is_robot_user
 from annotations.model_utils import AnnotationAreaUtils
-from annotations.models import Label, LabelSet, Annotation
+from annotations.models import Label, LabelSet, Annotation, AnnotationToolSettings
 from CoralNet.forms import FormHelper
 
 # Custom widget to enable multiple checkboxes without outputting a wrongful
@@ -179,6 +179,28 @@ class AnnotationForm(forms.Form):
                 required=False,
                 initial=simplejson.dumps(isRobotAnnotation),
             )
+
+
+class AnnotationToolSettingsForm(ModelForm):
+
+    class Meta:
+        model = AnnotationToolSettings
+
+    class Media:
+        js = ('jscolor/jscolor.js',
+              'js/AnnotationToolSettingsHelper.js',)
+
+    def __init__(self, *args, **kwargs):
+        super(AnnotationToolSettingsForm, self).__init__(*args, **kwargs)
+
+        color_fields = [self.fields[name] for name in
+                        ['unannotated_point_color',
+                         'robot_annotated_point_color',
+                         'human_annotated_point_color',
+                         'selected_point_color',]
+                       ]
+        for field in color_fields:
+            field.widget.attrs.update({'class': 'color'})
 
 
 class AnnotationAreaPercentsForm(Form):
