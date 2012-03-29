@@ -110,6 +110,8 @@ class AnnotationToolSettings(models.Model):
         )
     MIN_POINT_MARKER_SIZE = 1
     MAX_POINT_MARKER_SIZE = 30
+    MIN_POINT_NUMBER_SIZE = 1
+    MAX_POINT_NUMBER_SIZE = 40
 
     point_marker = models.CharField(max_length=30, choices=POINT_MARKER_CHOICES, default='crosshair')
     point_marker_size = models.IntegerField(
@@ -120,6 +122,15 @@ class AnnotationToolSettings(models.Model):
         ],
     )
     point_marker_is_scaled = models.BooleanField(default=False)
+
+    point_number_size = models.IntegerField(
+        default=24,
+        validators=[
+            MinValueValidator(MIN_POINT_NUMBER_SIZE),
+            MaxValueValidator(MAX_POINT_NUMBER_SIZE),
+        ],
+    )
+    point_number_is_scaled = models.BooleanField(default=False)
 
     unannotated_point_color = models.CharField(max_length=6, default='FFFF00')
     robot_annotated_point_color = models.CharField(max_length=6, default='FFFF00')

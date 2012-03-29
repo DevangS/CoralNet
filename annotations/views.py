@@ -455,7 +455,6 @@ def annotation_tool(request, image_id):
     # If there is no such settings object, then create it.
     settings_obj, created = AnnotationToolSettings.objects.get_or_create(user=request.user)
     settings_form = AnnotationToolSettingsForm(instance=settings_obj)
-    settings_field_selectors = ['#'+bound_field.id_for_label for bound_field in settings_form]
 
     access = AnnotationToolAccess(image=image, source=source, user=request.user)
     access.save()
@@ -470,7 +469,6 @@ def annotation_tool(request, image_id):
         'labelsJSON': simplejson.dumps(labelValues),
         'form': form,
         'settings_form': settings_form,
-        'settings_field_selectors': simplejson.dumps(settings_field_selectors),
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
         'num_of_points': len(annotations),

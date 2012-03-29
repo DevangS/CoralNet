@@ -7,6 +7,8 @@ var ATS = {
         pointMarker: undefined,
         pointMarkerSize: undefined,
         pointMarkerIsScaled: undefined,
+        pointNumberSize: undefined,
+        pointNumberIsScaled: undefined,
         unannotatedColor: undefined,
         robotAnnotatedColor: undefined,
         humanAnnotatedColor: undefined,
@@ -16,29 +18,35 @@ var ATS = {
         pointMarker: undefined,
         pointMarkerSize: undefined,
         pointMarkerIsScaled: undefined,
+        pointNumberSize: undefined,
+        pointNumberIsScaled: undefined,
         unannotatedColor: undefined,
         robotAnnotatedColor: undefined,
         humanAnnotatedColor: undefined,
         selectedColor: undefined
     },
     validators: {
-        pointMarkerSize: undefined
+        pointMarkerSize: undefined,
+        pointNumberSize: undefined
     },
 
 
-    init: function(settingsFieldSelectors) {
+    init: function() {
         ATS.$saveButton = $('#saveSettingsButton');
         ATS.$settingsForm = $('#annotationToolSettingsForm');
 
         ATS.$fields.pointMarker = $('#id_point_marker');
         ATS.$fields.pointMarkerSize = $('#id_point_marker_size');
         ATS.$fields.pointMarkerIsScaled = $('#id_point_marker_is_scaled');
+        ATS.$fields.pointNumberSize = $('#id_point_number_size');
+        ATS.$fields.pointNumberIsScaled = $('#id_point_number_is_scaled');
         ATS.$fields.unannotatedColor = $('#id_unannotated_point_color');
         ATS.$fields.robotAnnotatedColor = $('#id_robot_annotated_point_color');
         ATS.$fields.humanAnnotatedColor = $('#id_human_annotated_point_color');
         ATS.$fields.selectedColor = $('#id_selected_point_color');
 
         ATS.validators.pointMarkerSize = ATS.pointMarkerSizeIsValid;
+        ATS.validators.pointNumberSize = ATS.pointNumberSizeIsValid;
 
         // Initialize settings
         ATS.updateSettingsObj();
@@ -94,8 +102,13 @@ var ATS = {
             }
 
             // Update the setting
-            if ($field.hasClass('color'))
+            if ($field.attr('type') === 'checkbox')
+                ATS.settings[fieldName] = $field.prop('checked');
+            else if ($field.hasClass('color'))
                 ATS.settings[fieldName] = '#' + $field.val();
+            else if ($field.attr('type') === 'text')
+                // Other text fields: only integer fields right now
+                ATS.settings[fieldName] = parseInt($field.val());
             else
                 ATS.settings[fieldName] = $field.val();
         }
@@ -107,6 +120,13 @@ var ATS = {
         return (util.isIntStr(fieldValue)
                 && parseInt(fieldValue) >= 1
                 && parseInt(fieldValue) <= 30);
+    },
+    pointNumberSizeIsValid: function() {
+        var fieldValue = ATS.$fields.pointNumberSize.val();
+
+        return (util.isIntStr(fieldValue)
+            && parseInt(fieldValue) >= 1
+            && parseInt(fieldValue) <= 40);
     },
     revertField: function(fieldName) {
         ATS.$fields[fieldName].val(ATS.settings[fieldName]);
