@@ -122,8 +122,9 @@ def ajax_save_settings(request, submitted_settings_form):
 
     if settings_form.is_valid():
         settings_form.save()
+        return simplejson.dumps(dict(success=True))
     else:
         # Some form values weren't correct.
         # This can happen if the form's JavaScript input checking isn't
         # foolproof, or if the user messed with form values using FireBug.
-        raise ValueError
+        return simplejson.dumps(dict(success=False))

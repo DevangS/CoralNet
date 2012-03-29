@@ -3,7 +3,11 @@
       action="" method="post">{% csrf_token %}
 
     {% for field in settings_form %}
-        {% include "form_generic_one_field.html" with field=field dont_mark_required='yes' %}
+        {% if field.name == "point_marker_is_scaled" %}
+            {% include "form_generic_one_field.html" with field=field dont_mark_required='yes' checkbox='yes' %}
+        {% else %}
+            {% include "form_generic_one_field.html" with field=field dont_mark_required='yes' %}
+        {% endif %}
     {% endfor %}
 
     <button id="saveSettingsButton" type="button" disabled="disabled">Settings saved</button>

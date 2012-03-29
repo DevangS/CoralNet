@@ -5,17 +5,24 @@ var ATS = {
 
     settings: {
         pointMarker: undefined,
+        pointMarkerSize: undefined,
+        pointMarkerIsScaled: undefined,
         unannotatedColor: undefined,
         robotAnnotatedColor: undefined,
         humanAnnotatedColor: undefined,
         selectedColor: undefined
     },
-    $settingsFields: {
+    $fields: {
         pointMarker: undefined,
+        pointMarkerSize: undefined,
+        pointMarkerIsScaled: undefined,
         unannotatedColor: undefined,
         robotAnnotatedColor: undefined,
         humanAnnotatedColor: undefined,
         selectedColor: undefined
+    },
+    validators: {
+        pointMarkerSize: undefined
     },
 
 
@@ -23,11 +30,15 @@ var ATS = {
         ATS.$saveButton = $('#saveSettingsButton');
         ATS.$settingsForm = $('#annotationToolSettingsForm');
 
-        ATS.$settingsFields.pointMarker = $('#id_point_marker');
-        ATS.$settingsFields.unannotatedColor = $('#id_unannotated_point_color');
-        ATS.$settingsFields.robotAnnotatedColor = $('#id_robot_annotated_point_color');
-        ATS.$settingsFields.humanAnnotatedColor = $('#id_human_annotated_point_color');
-        ATS.$settingsFields.selectedColor = $('#id_selected_point_color');
+        ATS.$fields.pointMarker = $('#id_point_marker');
+        ATS.$fields.pointMarkerSize = $('#id_point_marker_size');
+        ATS.$fields.pointMarkerIsScaled = $('#id_point_marker_is_scaled');
+        ATS.$fields.unannotatedColor = $('#id_unannotated_point_color');
+        ATS.$fields.robotAnnotatedColor = $('#id_robot_annotated_point_color');
+        ATS.$fields.humanAnnotatedColor = $('#id_human_annotated_point_color');
+        ATS.$fields.selectedColor = $('#id_selected_point_color');
+
+        ATS.validators.pointMarkerSize = ATS.pointMarkerSizeIsValid;
 
         // Initialize settings
         ATS.updateSettingsObj();
@@ -42,10 +53,10 @@ var ATS = {
         // - update the settings object, which the annotation tool code
         //   refers to during point drawing, etc.
         // - redraw all points
-        for (var fieldName in ATS.$settingsFields) {
-            if (!ATS.$settingsFields.hasOwnProperty(fieldName)){ continue; }
+        for (var fieldName in ATS.$fields) {
+            if (!ATS.$fields.hasOwnProperty(fieldName)){ continue; }
 
-            ATS.$settingsFields[fieldName].change( function() {
+            ATS.$fields[fieldName].change( function() {
                 ATS.enableSaveButton();
                 ATS.updateSettingsObj();
                 ATH.redrawAllPoints();
@@ -65,16 +76,40 @@ var ATS = {
         $('#id_button_show_settings').show();
     },
 
+    /* Update: $fields -> settings.
+     * Revert settings -> $fields for any erroneous field values.
+     */
     updateSettingsObj: function() {
-        for (var fieldName in ATS.$settingsFields) {
-            if (!ATS.$settingsFields.hasOwnProperty(fieldName)){ continue; }
+        for (var fieldName in ATS.$fields) {
+            if (!ATS.$fields.hasOwnProperty(fieldName)){ continue; }
 
-            var $field = ATS.$settingsFields[fieldName];
+            var $field = ATS.$fields[fieldName];
+
+            if (ATS.validators.hasOwnProperty(fieldName)) {
+                var fieldIsValid = ATS.validators[fieldName]();
+                if (fieldIsValid === false) {
+                    ATS.revertField(fieldName);
+                    continue;
+                }
+            }
+
+            // Update the setting
             if ($field.hasClass('color'))
                 ATS.settings[fieldName] = '#' + $field.val();
             else
                 ATS.settings[fieldName] = $field.val();
         }
+    },
+
+    pointMarkerSizeIsValid: function() {
+        var fieldValue = ATS.$fields.pointMarkerSize.val();
+
+        return (util.isIntStr(fieldValue)
+                && parseInt(fieldValue) >= 1
+                && parseInt(fieldValue) <= 30);
+    },
+    revertField: function(fieldName) {
+        ATS.$fields[fieldName].val(ATS.settings[fieldName]);
     },
 
     enableSaveButton: function() {
@@ -91,7 +126,10 @@ var ATS = {
             {'submitted_settings_form': ATS.$settingsForm.serializeArray()}
         );
     },
-    saveSettingsAjaxCallback: function() {
-        ATS.$saveButton.text("Settings saved");
+    saveSettingsAjaxCallback: function(returnDict) {
+        if (returnDict.success === true)
+            ATS.$saveButton.text("Settings saved");
+        else
+            ATS.$saveButton.text("Error");
     }
 };

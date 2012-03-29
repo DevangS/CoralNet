@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from images.models import Point, Image, Source, Robot
 from userena.models import User
@@ -107,7 +108,18 @@ class AnnotationToolSettings(models.Model):
         ('crosshair and circle', 'Crosshair and circle'),
         ('box', 'Box'),
         )
+    MIN_POINT_MARKER_SIZE = 1
+    MAX_POINT_MARKER_SIZE = 30
+
     point_marker = models.CharField(max_length=30, choices=POINT_MARKER_CHOICES, default='crosshair')
+    point_marker_size = models.IntegerField(
+        default=16,
+        validators=[
+            MinValueValidator(MIN_POINT_MARKER_SIZE),
+            MaxValueValidator(MAX_POINT_MARKER_SIZE),
+        ],
+    )
+    point_marker_is_scaled = models.BooleanField(default=False)
 
     unannotated_point_color = models.CharField(max_length=6, default='FFFF00')
     robot_annotated_point_color = models.CharField(max_length=6, default='FFFF00')
