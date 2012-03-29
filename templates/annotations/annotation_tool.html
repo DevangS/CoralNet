@@ -178,13 +178,13 @@
 
 <!-- Script in the body will run on page load. -->
 <script type="text/javascript">
+    // Initialize the Annotation Tool Settings helper object.
+    ATS.init({{ settings_field_selectors|safe }});
     // Initialize the Annotation Tool Helper (ATH) object.
     ATH.init({{ image.original_height }},
              {{ image.original_width }},
              {{ annotationsJSON|safe }},
              {{ labelsJSON|safe }});
-    // Initialize the Annotation Tool Settings helper object.
-    ATS.init({{ settings_field_selectors|safe }});
 </script>
 
 {% endblock %}

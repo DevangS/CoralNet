@@ -193,6 +193,7 @@ class AnnotationToolSettingsForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(AnnotationToolSettingsForm, self).__init__(*args, **kwargs)
 
+        # Make the color fields have class="color" so they use jscolor.
         color_fields = [self.fields[name] for name in
                         ['unannotated_point_color',
                          'robot_annotated_point_color',

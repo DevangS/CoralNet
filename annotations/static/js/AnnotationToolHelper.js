@@ -41,12 +41,9 @@ var ATH = {
     STATE_ANNOTATED: 1,
     STATE_SELECTED: 2,
     STATE_NOTSHOWN: 3,
-    UNANNOTATED_COLOR: "#FFFF00",
-	UNANNOTATED_OUTLINE_COLOR: "#000000",
-	ANNOTATED_COLOR: "#8888FF",
-    ANNOTATED_OUTLINE_COLOR: "#000000",
-	SELECTED_COLOR: "#00FF00",
-    SELECTED_OUTLINE_COLOR: "#000000",
+
+    // Point number outline color
+    OUTLINE_COLOR: "#000000",
     
     // Point viewing mode
     pointViewMode: null,
@@ -1070,20 +1067,20 @@ var ATH = {
     drawPointHelper: function(pointNum, color, outlineColor) {
         var canvasPoint = ATH.canvasPoints[pointNum];
 
-        ATH.drawPointSymbol(canvasPoint.col, canvasPoint.row,
+        ATH.drawPointMarker(canvasPoint.col, canvasPoint.row,
                              color);
         ATH.drawPointNumber(canvasPoint.num.toString(), canvasPoint.col, canvasPoint.row,
                              color, outlineColor);
     },
 
     drawPointUnannotated: function(pointNum) {
-        ATH.drawPointHelper(pointNum, ATH.UNANNOTATED_COLOR, ATH.UNANNOTATED_OUTLINE_COLOR);
+        ATH.drawPointHelper(pointNum, ATS.settings.unannotatedColor, ATH.OUTLINE_COLOR);
     },
     drawPointAnnotated: function(pointNum) {
-        ATH.drawPointHelper(pointNum, ATH.ANNOTATED_COLOR, ATH.ANNOTATED_OUTLINE_COLOR);
+        ATH.drawPointHelper(pointNum, ATS.settings.humanAnnotatedColor, ATH.OUTLINE_COLOR);
     },
     drawPointSelected: function(pointNum) {
-        ATH.drawPointHelper(pointNum, ATH.SELECTED_COLOR, ATH.SELECTED_OUTLINE_COLOR);
+        ATH.drawPointHelper(pointNum, ATS.settings.selectedColor, ATH.OUTLINE_COLOR);
     },
 
     /* Update a point's graphics on the canvas in the correct color.
@@ -1223,10 +1220,13 @@ var ATH = {
     },
 
     /*
-    Draw an annotation point symbol (the crosshair, circle, or whatever)
+    Draw an annotation point marker (the crosshair, circle, or whatever)
     which is centered at x,y.
      */
-    drawPointSymbol: function(x, y, color) {
+    drawPointMarker: function(x, y, color) {
+        var markerType = ATS.settings.pointMarker;
+        var radius = ATH.POINT_RADIUS;
+
         // Adjust x and y by 0.5 so that straight lines are centered
 		// at the halfway point of a pixel, not on a pixel boundary.
 		// This ensures that 1-pixel-wide lines are really 1 pixel wide,
@@ -1239,15 +1239,26 @@ var ATH = {
         ATH.context.lineWidth = 3;
 
 		ATH.context.beginPath();
-		//context.arc(x, y, POINT_RADIUS, 0, 2.0*Math.PI);    // A circle
 
-		ATH.context.moveTo(x, y + ATH.POINT_RADIUS);
-		ATH.context.lineTo(x, y - ATH.POINT_RADIUS);
+        if (markerType === 'crosshair' || markerType === 'crosshair and circle') {
+            ATH.context.moveTo(x, y + radius);
+            ATH.context.lineTo(x, y - radius);
 
-		ATH.context.moveTo(x - ATH.POINT_RADIUS, y);
-		ATH.context.lineTo(x + ATH.POINT_RADIUS, y);
+            ATH.context.moveTo(x - radius, y);
+            ATH.context.lineTo(x + radius, y);
+        }
+        if (markerType === 'circle' || markerType === 'crosshair and circle') {
+            ATH.context.arc(x, y, radius, 0, 2.0*Math.PI);
+        }
+        if (markerType === 'box') {
+            ATH.context.moveTo(x + radius, y + radius);
+            ATH.context.lineTo(x - radius, y + radius);
+            ATH.context.lineTo(x - radius, y - radius);
+            ATH.context.lineTo(x + radius, y - radius);
+            ATH.context.lineTo(x + radius, y + radius);
+        }
 
-		ATH.context.stroke();
+        ATH.context.stroke();
 	},
 
     /*
