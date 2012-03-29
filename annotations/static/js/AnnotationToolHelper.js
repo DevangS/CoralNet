@@ -38,9 +38,10 @@ var ATH = {
     pointContentStates: [],
     pointGraphicStates: [],
     STATE_UNANNOTATED: 0,
-    STATE_ANNOTATED: 1,
-    STATE_SELECTED: 2,
-    STATE_NOTSHOWN: 3,
+    STATE_ROBOT: 1,
+    STATE_ANNOTATED: 2,
+    STATE_SELECTED: 3,
+    STATE_NOTSHOWN: 4,
 
     // Point number outline color
     OUTLINE_COLOR: "#000000",
@@ -1076,7 +1077,10 @@ var ATH = {
     drawPointUnannotated: function(pointNum) {
         ATH.drawPointHelper(pointNum, ATS.settings.unannotatedColor, ATH.OUTLINE_COLOR);
     },
-    drawPointAnnotated: function(pointNum) {
+    drawPointRobotAnnotated: function(pointNum) {
+        ATH.drawPointHelper(pointNum, ATS.settings.robotAnnotatedColor, ATH.OUTLINE_COLOR);
+    },
+    drawPointHumanAnnotated: function(pointNum) {
         ATH.drawPointHelper(pointNum, ATS.settings.humanAnnotatedColor, ATH.OUTLINE_COLOR);
     },
     drawPointSelected: function(pointNum) {
@@ -1099,6 +1103,8 @@ var ATH = {
             newState = ATH.STATE_SELECTED;
         else if ($(row).hasClass('annotated'))
             newState = ATH.STATE_ANNOTATED;
+        else if ($(row).hasClass('robot'))
+            newState = ATH.STATE_ROBOT;
         else
             newState = ATH.STATE_UNANNOTATED;
 
@@ -1117,7 +1123,9 @@ var ATH = {
             if (newState === ATH.STATE_SELECTED)
                 ATH.drawPointSelected(pointNum);
             else if (newState === ATH.STATE_ANNOTATED)
-                ATH.drawPointAnnotated(pointNum);
+                ATH.drawPointHumanAnnotated(pointNum);
+            else if (newState === ATH.STATE_ROBOT)
+                ATH.drawPointRobotAnnotated(pointNum);
             else if (newState === ATH.STATE_UNANNOTATED)
                 ATH.drawPointUnannotated(pointNum);
             else if (newState === ATH.STATE_NOTSHOWN)
