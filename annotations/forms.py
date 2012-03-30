@@ -195,6 +195,7 @@ class AnnotationToolSettingsForm(ModelForm):
 
         # Make text fields have the appropriate size.
         self.fields['point_marker_size'].widget.attrs.update({'size': 2})
+        self.fields['point_number_size'].widget.attrs.update({'size': 2})
 
         # Make the color fields have class="color" so they use jscolor.
         color_fields = [self.fields[name] for name in
