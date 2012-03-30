@@ -606,6 +606,9 @@ var ATH = {
     
     /* Look at a label field, and based on the label, mark the point
      * as (human) annotated, robot annotated, unannotated, or errored.
+     *
+     * Return true if something changed (label code or robot status).
+     * Return false otherwise.
      */
     updatePointState: function(pointNum, robotStatusAction) {
         var field = ATH.annotationFields[pointNum];
@@ -621,8 +624,15 @@ var ATH = {
          * Update style elements and robot statuses accordingly
          */
 
-        if (labelCode !== '' && ATH.labelCodes.indexOf(labelCode) === -1) {
-            // Error: label is not empty string, and not in the labelset
+        if (labelCode === '') {
+            // Empty string; if the label field was non-empty before, fill the field back in.
+            // (Or if it was empty before, then leave it empty.)
+            if (oldState.label !== undefined && oldState.label !== '')
+                field.value = oldState.label;
+            return false;
+        }
+        else if (ATH.labelCodes.indexOf(labelCode) === -1) {
+            // Error: label is not in the labelset
             $(field).attr('title', 'Label not in labelset');
             $(row).addClass('error');
             $(row).removeClass('annotated');
@@ -648,8 +658,8 @@ var ATH = {
             }
 
             // Set as (human) annotated or not
-            if (labelCode === '' || ATH.isRobot(pointNum)) {
-                // No label, or robot annotated
+            if (ATH.isRobot(pointNum)) {
+                // Robot annotated
                 $(row).removeClass('annotated');
             }
             else {
