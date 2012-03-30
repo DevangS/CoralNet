@@ -32,7 +32,7 @@ def image_search_args_to_queryset_args(searchDict):
             querysetArgs['metadata__'+k+'__id'] = searchArgs[k]
         elif k == 'year':
             querysetArgs['metadata__photo_date__'+k] = int(searchArgs[k])
-        elif k == 'exclude_human_annotated_images':
+        elif k == 'exclude_completed':
             querysetArgs['status__annotatedByHuman'] = False
 
     return querysetArgs
