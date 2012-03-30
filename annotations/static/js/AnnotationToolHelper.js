@@ -26,8 +26,7 @@ var ATH = {
 	context: null,
     canvasPoints: [], imagePoints: null,
     numOfPoints: null,
-	POINT_RADIUS: 16,
-    NUMBER_FONT: "bold 24px sans-serif",
+    NUMBER_FONT_FORMAT_STRING: "bold {0}px sans-serif",
 
     // Border where the canvas is drawn, but the coral image is not.
     // This is used to fully show the points that are located near the edge of the image.
@@ -38,15 +37,13 @@ var ATH = {
     pointContentStates: [],
     pointGraphicStates: [],
     STATE_UNANNOTATED: 0,
-    STATE_ANNOTATED: 1,
-    STATE_SELECTED: 2,
-    STATE_NOTSHOWN: 3,
-    UNANNOTATED_COLOR: "#FFFF00",
-	UNANNOTATED_OUTLINE_COLOR: "#000000",
-	ANNOTATED_COLOR: "#8888FF",
-    ANNOTATED_OUTLINE_COLOR: "#000000",
-	SELECTED_COLOR: "#00FF00",
-    SELECTED_OUTLINE_COLOR: "#000000",
+    STATE_ROBOT: 1,
+    STATE_ANNOTATED: 2,
+    STATE_SELECTED: 3,
+    STATE_NOTSHOWN: 4,
+
+    // Point number outline color
+    OUTLINE_COLOR: "#000000",
     
     // Point viewing mode
     pointViewMode: null,
@@ -75,7 +72,7 @@ var ATH = {
     zoomLevel: null,
     ZOOM_FACTORS: {},
     ZOOM_INCREMENT: 1.5,
-    HIGHEST_ZOOM_LEVEL: 4,
+    HIGHEST_ZOOM_LEVEL: 8,
     // Current display position of the image.
     // centerOfZoom is in terms of raw-image coordinates.
     // < 0 offset means top left corner is not visible.
@@ -100,8 +97,8 @@ var ATH = {
          * Initialize styling, sizing, and positioning for various elements
          */
 
-        ATH.IMAGE_AREA_WIDTH = ATH.ANNOTATION_AREA_WIDTH - (ATH.CANVAS_GUTTER * 2),
-        ATH.IMAGE_AREA_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT - (ATH.CANVAS_GUTTER * 2),
+        ATH.IMAGE_AREA_WIDTH = ATH.ANNOTATION_AREA_WIDTH - (ATH.CANVAS_GUTTER * 2);
+        ATH.IMAGE_AREA_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT - (ATH.CANVAS_GUTTER * 2);
 
         ATH.IMAGE_FULL_WIDTH = fullWidth;
         ATH.IMAGE_FULL_HEIGHT = fullHeight;
@@ -609,6 +606,9 @@ var ATH = {
     
     /* Look at a label field, and based on the label, mark the point
      * as (human) annotated, robot annotated, unannotated, or errored.
+     *
+     * Return true if something changed (label code or robot status).
+     * Return false otherwise.
      */
     updatePointState: function(pointNum, robotStatusAction) {
         var field = ATH.annotationFields[pointNum];
@@ -624,8 +624,15 @@ var ATH = {
          * Update style elements and robot statuses accordingly
          */
 
-        if (labelCode !== '' && ATH.labelCodes.indexOf(labelCode) === -1) {
-            // Error: label is not empty string, and not in the labelset
+        if (labelCode === '') {
+            // Empty string; if the label field was non-empty before, fill the field back in.
+            // (Or if it was empty before, then leave it empty.)
+            if (oldState.label !== undefined && oldState.label !== '')
+                field.value = oldState.label;
+            return false;
+        }
+        else if (ATH.labelCodes.indexOf(labelCode) === -1) {
+            // Error: label is not in the labelset
             $(field).attr('title', 'Label not in labelset');
             $(row).addClass('error');
             $(row).removeClass('annotated');
@@ -651,8 +658,8 @@ var ATH = {
             }
 
             // Set as (human) annotated or not
-            if (labelCode === '' || ATH.isRobot(pointNum)) {
-                // No label, or robot annotated
+            if (ATH.isRobot(pointNum)) {
+                // Robot annotated
                 $(row).removeClass('annotated');
             }
             else {
@@ -1070,20 +1077,23 @@ var ATH = {
     drawPointHelper: function(pointNum, color, outlineColor) {
         var canvasPoint = ATH.canvasPoints[pointNum];
 
-        ATH.drawPointSymbol(canvasPoint.col, canvasPoint.row,
+        ATH.drawPointMarker(canvasPoint.col, canvasPoint.row,
                              color);
         ATH.drawPointNumber(canvasPoint.num.toString(), canvasPoint.col, canvasPoint.row,
                              color, outlineColor);
     },
 
     drawPointUnannotated: function(pointNum) {
-        ATH.drawPointHelper(pointNum, ATH.UNANNOTATED_COLOR, ATH.UNANNOTATED_OUTLINE_COLOR);
+        ATH.drawPointHelper(pointNum, ATS.settings.unannotatedColor, ATH.OUTLINE_COLOR);
     },
-    drawPointAnnotated: function(pointNum) {
-        ATH.drawPointHelper(pointNum, ATH.ANNOTATED_COLOR, ATH.ANNOTATED_OUTLINE_COLOR);
+    drawPointRobotAnnotated: function(pointNum) {
+        ATH.drawPointHelper(pointNum, ATS.settings.robotAnnotatedColor, ATH.OUTLINE_COLOR);
+    },
+    drawPointHumanAnnotated: function(pointNum) {
+        ATH.drawPointHelper(pointNum, ATS.settings.humanAnnotatedColor, ATH.OUTLINE_COLOR);
     },
     drawPointSelected: function(pointNum) {
-        ATH.drawPointHelper(pointNum, ATH.SELECTED_COLOR, ATH.SELECTED_OUTLINE_COLOR);
+        ATH.drawPointHelper(pointNum, ATS.settings.selectedColor, ATH.OUTLINE_COLOR);
     },
 
     /* Update a point's graphics on the canvas in the correct color.
@@ -1102,6 +1112,8 @@ var ATH = {
             newState = ATH.STATE_SELECTED;
         else if ($(row).hasClass('annotated'))
             newState = ATH.STATE_ANNOTATED;
+        else if ($(row).hasClass('robot'))
+            newState = ATH.STATE_ROBOT;
         else
             newState = ATH.STATE_UNANNOTATED;
 
@@ -1120,7 +1132,9 @@ var ATH = {
             if (newState === ATH.STATE_SELECTED)
                 ATH.drawPointSelected(pointNum);
             else if (newState === ATH.STATE_ANNOTATED)
-                ATH.drawPointAnnotated(pointNum);
+                ATH.drawPointHumanAnnotated(pointNum);
+            else if (newState === ATH.STATE_ROBOT)
+                ATH.drawPointRobotAnnotated(pointNum);
             else if (newState === ATH.STATE_UNANNOTATED)
                 ATH.drawPointUnannotated(pointNum);
             else if (newState === ATH.STATE_NOTSHOWN)
@@ -1223,10 +1237,21 @@ var ATH = {
     },
 
     /*
-    Draw an annotation point symbol (the crosshair, circle, or whatever)
+    Draw an annotation point marker (crosshair, circle, or whatever)
     which is centered at x,y.
      */
-    drawPointSymbol: function(x, y, color) {
+    drawPointMarker: function(x, y, color) {
+        var markerType = ATS.settings.pointMarker;
+        var radius;
+
+        if (ATS.settings.pointMarkerIsScaled === true)
+            // Zoomed all the way out: radius = pointMarkerSize.
+            // Zoomed in 1.5x: radius = pointMarkerSize * 1.5. etc.
+            // radius must be an integer.
+            radius = Math.round(ATS.settings.pointMarkerSize * Math.pow(ATH.ZOOM_INCREMENT, ATH.zoomLevel));
+        else
+            radius = ATS.settings.pointMarkerSize;
+
         // Adjust x and y by 0.5 so that straight lines are centered
 		// at the halfway point of a pixel, not on a pixel boundary.
 		// This ensures that 1-pixel-wide lines are really 1 pixel wide,
@@ -1239,15 +1264,26 @@ var ATH = {
         ATH.context.lineWidth = 3;
 
 		ATH.context.beginPath();
-		//context.arc(x, y, POINT_RADIUS, 0, 2.0*Math.PI);    // A circle
 
-		ATH.context.moveTo(x, y + ATH.POINT_RADIUS);
-		ATH.context.lineTo(x, y - ATH.POINT_RADIUS);
+        if (markerType === 'crosshair' || markerType === 'crosshair and circle') {
+            ATH.context.moveTo(x, y + radius);
+            ATH.context.lineTo(x, y - radius);
 
-		ATH.context.moveTo(x - ATH.POINT_RADIUS, y);
-		ATH.context.lineTo(x + ATH.POINT_RADIUS, y);
+            ATH.context.moveTo(x - radius, y);
+            ATH.context.lineTo(x + radius, y);
+        }
+        if (markerType === 'circle' || markerType === 'crosshair and circle') {
+            ATH.context.arc(x, y, radius, 0, 2.0*Math.PI);
+        }
+        if (markerType === 'box') {
+            ATH.context.moveTo(x + radius, y + radius);
+            ATH.context.lineTo(x - radius, y + radius);
+            ATH.context.lineTo(x - radius, y - radius);
+            ATH.context.lineTo(x + radius, y - radius);
+            ATH.context.lineTo(x + radius, y + radius);
+        }
 
-		ATH.context.stroke();
+        ATH.context.stroke();
 	},
 
     /*
@@ -1260,11 +1296,31 @@ var ATH = {
 		ATH.context.fillStyle = color;
         ATH.context.strokeStyle = outlineColor;
         ATH.context.lineWidth = 1;
-	    ATH.context.font = ATH.NUMBER_FONT;
+
+        var numberSize = ATS.settings.pointNumberSize;
+        if (ATS.settings.pointNumberIsScaled)
+            numberSize = Math.round(numberSize * Math.pow(ATH.ZOOM_INCREMENT, ATH.zoomLevel));
+
+	    ATH.context.font = ATH.NUMBER_FONT_FORMAT_STRING.format(numberSize.toString());
 
 		// Offset the number's position a bit so it doesn't overlap with the annotation point.
 		// (Unlike the line drawing, 0.5 pixel adjustment doesn't seem to make a difference)
-        x = x + 3, y = y - 3;
+        // TODO: Consider doing offset calculations once each time the settings/zoom level change, not once for each point
+        var offset = ATS.settings.pointMarkerSize;
+
+        if (ATS.settings.pointMarker !== 'box')
+            // When the pointMarker is a box, line up the number with the corner of the box.
+            // When the pointMarker is not a box, line up the number with the corner of a circle instead.
+            offset = offset * 0.7;
+        if (ATS.settings.pointMarkerIsScaled === true)
+            offset = offset * Math.pow(ATH.ZOOM_INCREMENT, ATH.zoomLevel);
+        // Compensate for the fact that the number ends up being drawn
+        // a few pixels away from the specified baseline point.
+        offset = offset - 2;
+        offset = Math.round(offset);
+
+        x = x + offset;
+        y = y - offset;
 
         ATH.context.fillText(num, x, y);    // Color in the number
 		ATH.context.strokeText(num, x, y);    // Outline the number (make it easier to see)

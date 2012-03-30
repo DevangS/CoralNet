@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from images.models import Point, Image, Source, Robot
 from userena.models import User
@@ -95,3 +96,43 @@ class AnnotationToolAccess(models.Model):
     image = models.ForeignKey(Image, editable=False)
     source = models.ForeignKey(Source, editable=False)
     user = models.ForeignKey(User, editable=False)
+
+
+class AnnotationToolSettings(models.Model):
+
+    user = models.ForeignKey(User, editable=False)
+
+    POINT_MARKER_CHOICES = (
+        ('crosshair', 'Crosshair'),
+        ('circle', 'Circle'),
+        ('crosshair and circle', 'Crosshair and circle'),
+        ('box', 'Box'),
+        )
+    MIN_POINT_MARKER_SIZE = 1
+    MAX_POINT_MARKER_SIZE = 30
+    MIN_POINT_NUMBER_SIZE = 1
+    MAX_POINT_NUMBER_SIZE = 40
+
+    point_marker = models.CharField(max_length=30, choices=POINT_MARKER_CHOICES, default='crosshair')
+    point_marker_size = models.IntegerField(
+        default=16,
+        validators=[
+            MinValueValidator(MIN_POINT_MARKER_SIZE),
+            MaxValueValidator(MAX_POINT_MARKER_SIZE),
+        ],
+    )
+    point_marker_is_scaled = models.BooleanField(default=False)
+
+    point_number_size = models.IntegerField(
+        default=24,
+        validators=[
+            MinValueValidator(MIN_POINT_NUMBER_SIZE),
+            MaxValueValidator(MAX_POINT_NUMBER_SIZE),
+        ],
+    )
+    point_number_is_scaled = models.BooleanField(default=False)
+
+    unannotated_point_color = models.CharField(max_length=6, default='FFFF00')
+    robot_annotated_point_color = models.CharField(max_length=6, default='FFFF00')
+    human_annotated_point_color = models.CharField(max_length=6, default='8888FF')
+    selected_point_color = models.CharField(max_length=6, default='00FF00')

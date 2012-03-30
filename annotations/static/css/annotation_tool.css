@@ -154,6 +154,9 @@ td.annotationFormLabelCell {
 #id_instructions_wrapper div.help_section ul {
     list-style: disc none inside;
 }
+#id_instructions_wrapper div.help_section li {
+    line-height: 1.2em;
+}
 #id_instructions_wrapper div.help_section ul li ul {
     padding-left: 20px;
 }

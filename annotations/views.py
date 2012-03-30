@@ -7,9 +7,9 @@ from django.template.context import RequestContext
 from django.utils import simplejson
 from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
-from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm
+from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm, AnnotationToolSettingsForm
 from annotations.model_utils import AnnotationAreaUtils
-from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess
+from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess, AnnotationToolSettings
 from annotations.utils import get_annotation_version_user_display
 from decorators import source_permission_required, source_visibility_required, image_permission_required, image_annotation_area_must_be_editable, image_labelset_required
 from images.models import Source, Image, Point
@@ -451,6 +451,11 @@ def annotation_tool(request, image_id):
     need_human_anno_next = get_next_image(image, dict(status__annotatedByHuman=False))
     need_human_anno_prev = get_prev_image(image, dict(status__annotatedByHuman=False))
 
+    # Get the settings object for this user.
+    # If there is no such settings object, then create it.
+    settings_obj, created = AnnotationToolSettings.objects.get_or_create(user=request.user)
+    settings_form = AnnotationToolSettingsForm(instance=settings_obj)
+
     access = AnnotationToolAccess(image=image, source=source, user=request.user)
     access.save()
 
@@ -463,6 +468,7 @@ def annotation_tool(request, image_id):
         'labels': labelValues,
         'labelsJSON': simplejson.dumps(labelValues),
         'form': form,
+        'settings_form': settings_form,
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
         'num_of_points': len(annotations),
