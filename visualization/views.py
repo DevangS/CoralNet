@@ -32,6 +32,8 @@ def image_search_args_to_queryset_args(searchDict):
             querysetArgs['metadata__'+k+'__id'] = searchArgs[k]
         elif k == 'year':
             querysetArgs['metadata__photo_date__'+k] = int(searchArgs[k])
+        elif k == 'exclude_human_annotated_images':
+            querysetArgs['status__annotatedByHuman'] = False
 
     return querysetArgs
 
@@ -145,10 +147,7 @@ def visualize_source(request, source_id):
             patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
             #get all annotations for the source that contain the label
-            if request.GET and request.GET.get('include_robot', ''):
-                annotations = Annotation.objects.filter(source=source, label=label, **patchArgs)
-            else:
-                annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).exclude(user=get_robot_user())
+            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).exclude(user=get_robot_user())
 
             # Placeholder the image patches with the annotation objects for now.
             # We'll actually get the patches when we know which page we're showing.

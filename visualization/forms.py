@@ -13,7 +13,7 @@ class YearModelChoiceField(forms.ModelChoiceField):
 class VisualizationSearchForm(forms.Form):
     class Meta:
         fields = ('value1', 'value2', 'value3',
-              'value4', 'value5', 'year', 'labels', 'include_robot')
+              'value4', 'value5', 'year', 'labels', 'exclude_human_annotated_images')
         
     def __init__(self,source_id,*args,**kwargs):
         super(VisualizationSearchForm,self).__init__(*args,**kwargs)
@@ -46,7 +46,7 @@ class VisualizationSearchForm(forms.Form):
                 
                 self.fields[valueField] = ChoiceField(choices, label=key, required=False)
 
-        self.fields['include_robot'] = BooleanField(required=False)
+        self.fields['exclude_human_annotated_images'] = BooleanField(required=False)
 
 class ImageBatchActionForm(forms.Form):
     class Media:
