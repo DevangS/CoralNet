@@ -72,7 +72,7 @@ var ATH = {
     zoomLevel: null,
     ZOOM_FACTORS: {},
     ZOOM_INCREMENT: 1.5,
-    HIGHEST_ZOOM_LEVEL: 4,
+    HIGHEST_ZOOM_LEVEL: 8,
     // Current display position of the image.
     // centerOfZoom is in terms of raw-image coordinates.
     // < 0 offset means top left corner is not visible.
