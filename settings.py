@@ -266,6 +266,7 @@ SENTRY_TESTING = True
 
 # Dajaxice settings
 DAJAXICE_MEDIA_PREFIX = "dajaxice"
+DAJAXICE_DEBUG = settings_2.DAJAXICE_DEBUG
 
 #RabbitMQ hosts
 BROKER_HOST = "localhost"

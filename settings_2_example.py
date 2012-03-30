@@ -55,6 +55,14 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 # Example: "/home/media/media.lawrence.com/static/"
 STATIC_ROOT = ''
 
+# Dajaxice settings
+#
+# DAJAXICE_DEBUG: True means that dajaxice.core.js will be
+# regenerated every time a page using dajaxice is loaded.
+# False means that dajaxice.core.js can only be generated
+# with manage.py generate_static_dajaxice.
+DAJAXICE_DEBUG = True
+
 #RabbitMQ hidden configs
 BROKER_USER = "usernameGoesHere"
 BROKER_PASSWORD = "passwordGoesHere"
