@@ -46,7 +46,13 @@ class VisualizationSearchForm(forms.Form):
                 
                 self.fields[valueField] = ChoiceField(choices, label=key, required=False)
 
-        self.fields['exclude_completed'] = BooleanField(required=False, label='Only show images requiring human annotation')
+        status_choices = [(0, 'All'), (1,'Needs annotation')]
+        if source.enable_robot_classifier:
+            status_choices.extend([(2, 'Annotated by robot'),(3, 'Annotated by Human')])
+        else:
+            status_choices.append((2, 'Annotated'))
+        self.fields['image_status'] = forms.ChoiceField(choices=status_choices,
+                                                        required=False)
 
 class ImageBatchActionForm(forms.Form):
     class Media:
