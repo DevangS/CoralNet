@@ -34,12 +34,13 @@ def image_search_args_to_queryset_args(searchDict, source):
         elif k == 'year':
             querysetArgs['metadata__photo_date__'+k] = int(searchArgs[k])
         elif k == 'image_status':
-            value = searchArgs[k]
+            value = int(searchArgs[k])
             #All images wanted so just return
             if not value:
                 continue
             #Else do check for robot classified source options
-            """elif source.enable_robot_classifier:
+            elif source.enable_robot_classifier:
+                print "here"
                 if value == 1:
                     querysetArgs['status__annotatedByHuman'] = False
                     querysetArgs['status__annotatedByRobot'] = False
@@ -51,10 +52,11 @@ def image_search_args_to_queryset_args(searchDict, source):
                     querysetArgs['status__annotatedByRobot'] = True
             #Else do check for only human annotated source options
             else:
+                print "else"
                 if value == 1:
                     querysetArgs['status__annotatedByHuman'] = False
                 else:
-                    querysetArgs['status__annotatedByHuman'] = True"""
+                    querysetArgs['status__annotatedByHuman'] = True
     return querysetArgs
 
 def image_search_args_to_url_arg_str(searchDict):
