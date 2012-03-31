@@ -37,7 +37,7 @@ def image_search_args_to_queryset_args(searchDict, source):
             value = searchArgs[k]
             #All images wanted so just return
             if not value:
-                return
+                continue
             #Else do check for robot classified source options
             elif source.enable_robot_classifier:
                 if value == 1:
