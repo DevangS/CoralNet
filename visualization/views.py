@@ -49,7 +49,6 @@ def image_search_args_to_queryset_args(searchDict, source):
                     querysetArgs['status__annotatedByRobot'] = True
                 else:
                     querysetArgs['status__annotatedByHuman'] = True
-                    querysetArgs['status__annotatedByRobot'] = True
             #Else do check for only human annotated source options
             else:
                 print "else"
