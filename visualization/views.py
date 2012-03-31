@@ -39,7 +39,7 @@ def image_search_args_to_queryset_args(searchDict, source):
             if not value:
                 continue
             #Else do check for robot classified source options
-            elif source.enable_robot_classifier:
+            """elif source.enable_robot_classifier:
                 if value == 1:
                     querysetArgs['status__annotatedByHuman'] = False
                     querysetArgs['status__annotatedByRobot'] = False
@@ -54,7 +54,7 @@ def image_search_args_to_queryset_args(searchDict, source):
                 if value == 1:
                     querysetArgs['status__annotatedByHuman'] = False
                 else:
-                    querysetArgs['status__annotatedByHuman'] = True
+                    querysetArgs['status__annotatedByHuman'] = True"""
     return querysetArgs
 
 def image_search_args_to_url_arg_str(searchDict):

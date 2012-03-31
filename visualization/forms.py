@@ -48,7 +48,7 @@ class VisualizationSearchForm(forms.Form):
 
         status_choices = [(0, 'All'), (1,'Needs annotation')]
         if source.enable_robot_classifier:
-            status_choices.extend([(2, 'Annotated by robot'),(3, 'Annotated by Human')])
+            status_choices.extend([(2, 'Annotated by robot'),(3, 'Annotated by human')])
         else:
             status_choices.append((2, 'Annotated'))
         self.fields['image_status'] = forms.ChoiceField(choices=status_choices,
