@@ -1,6 +1,8 @@
+from django.core.urlresolvers import reverse
+from django.shortcuts import redirect, render_to_response
+from django.template.context import RequestContext
 from guardian.decorators import permission_required_or_403
 from userena.decorators import secure_required
-import userena.views as userena_views
 from accounts.forms import UserAddForm
 
 @secure_required
@@ -11,9 +13,28 @@ def user_add(request):
     which takes care of Profile creation, adding necessary
     user permissions, password generation, and sending an
     activation email.
+
+    The only reason this doesn't use userena.views.signup is
+    that userena.views.signup logs out the current user (the
+    admin user) after a user is added. (That makes sense for
+    creating an account for yourself, but not for creating
+    someone else's account.)
     """
-    return userena_views.signup(
-        request,
-        signup_form=UserAddForm,
-        template_name='accounts/user_add_form.html',
+    form = UserAddForm()
+
+    if request.method == 'POST':
+        form = UserAddForm(request.POST, request.FILES)
+        if form.is_valid():
+            user = form.save()
+
+            redirect_to = reverse(
+                'userena_signup_complete',
+                kwargs={'username': user.username}
+            )
+            return redirect(redirect_to)
+
+    return render_to_response('accounts/user_add_form.html', {
+        'form': form,
+        },
+        context_instance=RequestContext(request)
     )

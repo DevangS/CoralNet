@@ -1,8 +1,8 @@
 {% load i18n %}{% autoescape off %}
 {% blocktrans with user.email as user_email %}Dear {{ user_email }},{% endblocktrans %}
 
-{% blocktrans with site.name as site %}
-Thanks for trying out {{ site }}! We've created an account for you with the username {{ username }}.
+{% blocktrans with user.username as username %}
+Thanks for trying out CoralNet! We've created an account for you with the username {{ username }}.
 
 Please activate your account by clicking on the link below:
 {% endblocktrans %}
@@ -13,10 +13,10 @@ Once you click the above link, your account will be activated and you will be si
 Your current password is: {{ password }}
 We recommend that you change your password as soon as possible.
 
-{% blocktrans with site.name as site %}
-(If you didn't request an account at {{ site }}, then you may safely ignore this email.)
+{% blocktrans %}
+(If you didn't request an account at CoralNet, then you may safely ignore this email.)
 
 Sincerely,
-The {{ site }} team
+The CoralNet team
 {% endblocktrans %}
 {% endautoescape %}
