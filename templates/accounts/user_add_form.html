@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Add User" %}{% endblock %}
+
+{% block content %}
+
+<form action="" method="post">
+    {% csrf_token %}
+
+    <fieldset>
+        <legend>Add User</legend>
+
+        <p>Use this form to create a user account.  This will also
+            create a profile, grant basic permissions (to change their
+            account and profile), generate an initial password, and send
+            an activation email.</p>
+
+        {% for field in form %}
+            {% if field.name == 'tos' %}
+                {% include "form_generic_one_field.html" with field=field checkbox="yes" %}
+            {% else %}
+                {% include "form_generic_one_field.html" with field=field %}
+            {% endif %}
+        {% endfor %}
+    </fieldset>
+
+    <div class="submit_button_wrapper_column_form">
+        <input type="submit" value="{% trans "Add User"%}" />
+    </div>
+</form>
+
+{% endblock %}

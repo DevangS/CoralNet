@@ -1,0 +1,2 @@
+{% load i18n %}
+{% blocktrans with site.name as site %}Your account request at {{ site }}{% endblocktrans %}
