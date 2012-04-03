@@ -14,7 +14,7 @@ from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, S
 from visualization.utils import generate_patch_if_doesnt_exist
 from GChartWrapper import *
 
-def image_search_args_to_queryset_args(searchDict):
+def image_search_args_to_queryset_args(searchDict, source):
     """
     Take the image search arguments directly from the visualization search form's
     form.cleaned_data, and return the search arguments in a format that can go into
@@ -28,13 +28,35 @@ def image_search_args_to_queryset_args(searchDict):
     querysetArgs = dict()
 
     for k in searchArgs:
+        print k
         if k.startswith('value'):
             querysetArgs['metadata__'+k+'__id'] = searchArgs[k]
         elif k == 'year':
             querysetArgs['metadata__photo_date__'+k] = int(searchArgs[k])
-
+        elif k == 'image_status':
+            value = int(searchArgs[k])
+            #All images wanted so just return
+            if not value:
+                continue
+            #Else do check for robot classified source options
+            elif source.enable_robot_classifier:
+                print "here"
+                if value == 1:
+                    querysetArgs['status__annotatedByHuman'] = False
+                    querysetArgs['status__annotatedByRobot'] = False
+                elif value == 2:
+                    querysetArgs['status__annotatedByHuman'] = False
+                    querysetArgs['status__annotatedByRobot'] = True
+                else:
+                    querysetArgs['status__annotatedByHuman'] = True
+            #Else do check for only human annotated source options
+            else:
+                print "else"
+                if value == 1:
+                    querysetArgs['status__annotatedByHuman'] = False
+                else:
+                    querysetArgs['status__annotatedByHuman'] = True
     return querysetArgs
-
 
 def image_search_args_to_url_arg_str(searchDict):
     """
@@ -84,8 +106,7 @@ def visualize_source(request, source_id):
             urlArgsStr = image_search_args_to_url_arg_str(form.cleaned_data)
 
             label = form.cleaned_data.pop('labels')
-            imageArgs = image_search_args_to_queryset_args(form.cleaned_data)
-
+            imageArgs = image_search_args_to_queryset_args(form.cleaned_data, source)
         else:
             searchFormErrors = True
 
@@ -129,7 +150,6 @@ def visualize_source(request, source_id):
         if not label:
             showPatches = False
             allSearchResults = Image.objects.filter(source=source, **imageArgs)
-
             # Sort the images.
             # TODO: Stop duplicating this DB-specific extras query; put it in a separate function...
             # Also, despite the fact that we're dealing with images and not metadatas, selecting photo_date does indeed work.
@@ -145,10 +165,7 @@ def visualize_source(request, source_id):
             patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
             #get all annotations for the source that contain the label
-            if request.GET and request.GET.get('include_robot', ''):
-                annotations = Annotation.objects.filter(source=source, label=label, **patchArgs)
-            else:
-                annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).exclude(user=get_robot_user())
+            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).exclude(user=get_robot_user())
 
             # Placeholder the image patches with the annotation objects for now.
             # We'll actually get the patches when we know which page we're showing.
@@ -228,7 +245,8 @@ def generate_statistics(request, source_id):
         if form.is_valid():
             labels = form.cleaned_data['labels']
             groups = form.cleaned_data['groups']
-            imageArgs = image_search_args_to_queryset_args(form.cleaned_data)
+
+            imageArgs = image_search_args_to_queryset_args(form.cleaned_data, source)
 
             #Check that the specified set of images and/or labels was found
             if not labels and not groups:
