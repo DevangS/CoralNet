@@ -414,7 +414,7 @@ def trainRobot(source_id):
 		print("Sorry error detected in robot training!")
 		newRobot.delete()
 	else:
-		if not (previousRobot == None):
+		#if not (previousRobot == None):
 			#os.remove(oldModelPath) # remove old model, but keep the meta data files.
 		print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
 	
