@@ -1,51 +1,32 @@
 {% extends "images/base_image.html" %}
 {% load i18n %}
+{% load thumbnail %}
 {% load guardian_tags %}
 
-{% block title %}{{ metadata.name }} | CoralNet{% endblock %}
-
-{% block javascript-functions %}
-<script type="text/javascript">
-
-    var ORIGINAL_WIDTH = {{ image.original_width }};
-    var SCALED_WIDTH = {{ scaled_width }};
-
-    function initImageDetailPage() {
-        $("#coralImage").width(SCALED_WIDTH);
-
-        if (ORIGINAL_WIDTH == SCALED_WIDTH) {
-            $("#originalWidthButton").hide();
-            $("#scaledWidthButton").hide();
-        }
-        else {
-            $("#originalWidthButton").show();
-            $("#scaledWidthButton").hide();
-        }
-    }
-
-    function setImageToOriginalWidth() {
-        $("#coralImage").width(ORIGINAL_WIDTH);
-        $("#scaledWidthButton").show();
-        $("#originalWidthButton").hide();
-    }
-    function setImageToScaledWidth() {
-        $("#coralImage").width(SCALED_WIDTH);
-        $("#originalWidthButton").show();
-        $("#scaledWidthButton").hide();
-    }
-
-</script>
+{% block page-specific-includes %}
+    {% include "static-local-include.html" with type="js" path="js/ImageDisplayHelper.js" %}
 {% endblock %}
+
+{% block title %}{{ metadata.name }} | CoralNet{% endblock %}
 
 {% block content %}
 
     {% get_obj_perms user for source as "source_perms" %}
 
-    <button type="button" id="originalWidthButton" onclick="setImageToOriginalWidth()">View full image</button>
-    <button type="button" id="scaledWidthButton" onclick="setImageToScaledWidth()">Scale image to page</button>
+    <button type="button" id="originalWidthButton" style="display:none;">View full image</button>
+    <button type="button" id="scaledWidthButton" style="display:none;">Scale image to page</button>
 
     <br/>
-    <img id="coralImage" src="{{ image.original_file.url }}" />
+
+    <div id="original_image_container" style="display:none;">
+        <img src="{{ image.original_file.url }}" />
+    </div>
+
+    {% if image.original_width != scaled_width %}
+        <div id="scaled_image_container" style="display:none;">
+            <img src="{% thumbnail image.original_file scaled_dimensions %}" />
+        </div>
+    {% endif %}
     
     <hr />
 
@@ -118,7 +99,7 @@
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
 
-        initImageDetailPage();
+        IDH.init({{ image.original_width }}, {{ scaled_width }});
 
     </script>
 
