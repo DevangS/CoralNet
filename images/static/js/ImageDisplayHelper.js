@@ -5,13 +5,10 @@ var IDH = {
     $useOriginalButton: undefined,
     $useScaledButton: undefined,
 
-    ORIGINAL_WIDTH: undefined,
-    SCALED_WIDTH: undefined,
-
-    init: function(originalWidth, scaledWidth) {
+    init: function(hasThumbnail) {
         IDH.$originalImageContainer = $("#original_image_container");
 
-        if (originalWidth === scaledWidth) {
+        if (!hasThumbnail) {
             // There's no scaled image; just show the original image.
             // No further JS needed.
             IDH.$originalImageContainer.show();
@@ -21,9 +18,6 @@ var IDH = {
         IDH.$scaledImageContainer = $("#scaled_image_container");
         IDH.$useOriginalButton = $("#originalWidthButton");
         IDH.$useScaledButton = $("#scaledWidthButton");
-
-        IDH.ORIGINAL_WIDTH = originalWidth;
-        IDH.SCALED_WIDTH = scaledWidth;
 
         IDH.$useOriginalButton.click(IDH.useOriginalImage);
         IDH.$useScaledButton.click(IDH.useScaledImage);

@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load thumbnail %}
 {% load guardian_tags %}
+{% load common_tags %}
 
 {% block page-specific-includes %}
     {% include "static-local-include.html" with type="js" path="js/ImageDisplayHelper.js" %}
@@ -22,9 +23,9 @@
         <img src="{{ image.original_file.url }}" />
     </div>
 
-    {% if image.original_width != scaled_width %}
+    {% if has_thumbnail %}
         <div id="scaled_image_container" style="display:none;">
-            <img src="{% thumbnail image.original_file scaled_dimensions %}" />
+            <img src="{% thumbnail image.original_file thumbnail_dimensions %}" />
         </div>
     {% endif %}
     
@@ -99,7 +100,7 @@
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
 
-        IDH.init({{ image.original_width }}, {{ scaled_width }});
+        IDH.init({{ has_thumbnail|jsonify }});
 
     </script>
 

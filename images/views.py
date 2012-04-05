@@ -358,11 +358,15 @@ def image_detail(request, image_id):
                                 value=getattr(metadata, field.name))
                          for field in fieldset]
 
-    # Set the scaled image's dimensions.
-    # Feel free to change the constant according to the page layout.
+    # Feel free to change this constant according to the page layout.
     MAX_SCALED_WIDTH = 800
-    scaled_width = min(image.original_width, MAX_SCALED_WIDTH)
-    scaled_height = round(image.original_width * (scaled_width / float(image.original_width)))
+    if image.original_width > MAX_SCALED_WIDTH:
+        # Parameters into the easy_thumbnails template tag:
+        # (specific width, height that keeps the aspect ratio)
+        thumbnail_dimensions = (MAX_SCALED_WIDTH, 0)
+    else:
+        # No thumbnail needed
+        thumbnail_dimensions = False
 
     # Next and previous image links
     next_image = get_next_image(image)
@@ -386,8 +390,8 @@ def image_detail(request, image_id):
         'prev_image': prev_image,
         'metadata': metadata,
         'detailsets': detailsets,
-        'scaled_width': scaled_width,
-        'scaled_dimensions': (scaled_width, scaled_height),
+        'has_thumbnail': bool(thumbnail_dimensions),
+        'thumbnail_dimensions': thumbnail_dimensions,
         'annotation_status': annotation_status,
         'annotation_area_editable': annotation_area_editable,
         },

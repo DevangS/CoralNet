@@ -1,7 +1,7 @@
-# Custom template tags need to live inside an app
+# Custom template filters/tags need to live inside an app
 # (http://www.b-list.org/weblog/2006/sep/10/django-tips-laying-out-application/),
-# but some template tags are general and don't really belong in a specific
-# app.  This file is for those general tags.
+# but some filters/tags are general and don't really belong in a specific
+# app.  This file is for those general filters/tags.
 
 import os.path
 import re
@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from django import template
 from django.conf import settings
 from django.contrib.staticfiles import finders
+from django.utils import simplejson
 
 register = template.Library()
 
@@ -41,7 +42,18 @@ def get_form_media(parser, token):
     return do_assignment_tag(parser, token, GetFormMediaNode)
 
 
-# Usage: {% set_maintenance_time form as maintenance_time %}
+# jsonify
+#
+# Pass a Django template variable through simplejson.dumps()
+# and return the result.
+#
+# Usage: <script> ATH.init({{ labels|jsonify }}); </script>
+@register.filter
+def jsonify(object):
+    return simplejson.dumps(object)
+
+
+# Usage: {% set_maintenance_time "9:00 PM" as maintenance_time %}
 class SetMaintenanceTimeNode(template.Node):
     def __init__(self, context_var, result_var_name):
         self.context_var = template.Variable(context_var)

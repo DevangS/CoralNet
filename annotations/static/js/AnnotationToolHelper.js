@@ -88,7 +88,7 @@ var ATH = {
 
     init: function(fullHeight, fullWidth,
                    IMAGE_AREA_WIDTH, IMAGE_AREA_HEIGHT,
-                   fullImageUrl,
+                   hasThumbnail, fullImageUrl,
                    imagePoints, labels) {
         var i, j, n;    // Loop variables...
 
@@ -115,7 +115,7 @@ var ATH = {
 
         ATH.fullImageUrl = fullImageUrl;
 
-        if (fullWidth > IMAGE_AREA_WIDTH) {
+        if (hasThumbnail) {
             // Once the rest of the document has loaded,
             // load the full-resolution image and swap out the scaled-down image.
             util.addLoadEvent(ATH.preloadAndSwapFullImage);
