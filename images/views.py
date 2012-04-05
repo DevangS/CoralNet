@@ -358,9 +358,11 @@ def image_detail(request, image_id):
                                 value=getattr(metadata, field.name))
                          for field in fieldset]
 
-    # Default max viewing width
+    # Set the scaled image's dimensions.
     # Feel free to change the constant according to the page layout.
-    scaled_width = min(image.original_width, 800)
+    MAX_SCALED_WIDTH = 800
+    scaled_width = min(image.original_width, MAX_SCALED_WIDTH)
+    scaled_height = round(image.original_width * (scaled_width / float(image.original_width)))
 
     # Next and previous image links
     next_image = get_next_image(image)
@@ -385,6 +387,7 @@ def image_detail(request, image_id):
         'metadata': metadata,
         'detailsets': detailsets,
         'scaled_width': scaled_width,
+        'scaled_dimensions': (scaled_width, scaled_height),
         'annotation_status': annotation_status,
         'annotation_area_editable': annotation_area_editable,
         },

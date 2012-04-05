@@ -405,7 +405,7 @@ def trainRobot(source_id):
 	)
 
 	# clean up	 
-	rmtree(workingDir)	
+	# rmtree(workingDir)	
 	if os.path.isfile(TRAIN_ERROR_LOG): 
 		for image in allImages: # roll back changes. 
 			if image.status.featureFileHasHumanLabels:
@@ -414,8 +414,8 @@ def trainRobot(source_id):
 		print("Sorry error detected in robot training!")
 		newRobot.delete()
 	else:
-		if not (previousRobot == None):
-			os.remove(oldModelPath) # remove old model, but keep the meta data files.
+		#if not (previousRobot == None):
+			#os.remove(oldModelPath) # remove old model, but keep the meta data files.
 		print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
 	
 

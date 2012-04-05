@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Activation email sent" %}{% endblock %}
+
+{% block content %}
+    <p>{% blocktrans %}You've added a new user!{% endblocktrans %}</p>
+    <p>{% blocktrans %}We've sent them an e-mail with a randomly generated password and an activation link.{% endblocktrans %}</p>
+    <p>{% blocktrans %}They will have {{ userena_activation_days }} days to activate the new account before it expires.{% endblocktrans %}</p>
+{% endblock %}

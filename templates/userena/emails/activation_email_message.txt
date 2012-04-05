@@ -1,0 +1,22 @@
+{% load i18n %}{% autoescape off %}
+{% blocktrans with user.email as user_email %}Dear {{ user_email }},{% endblocktrans %}
+
+{% blocktrans with user.username as username %}
+Thanks for trying out CoralNet! We've created an account for you with the username {{ username }}.
+
+Please activate your account by clicking on the link below:
+{% endblocktrans %}
+{{ protocol }}://{{ site.domain }}{% url userena_activate user.username activation_key %}
+
+Once you click the above link, your account will be activated and you will be signed in.
+
+Your current password is: {{ password }}
+We recommend that you change your password as soon as possible.
+
+{% blocktrans %}
+(If you didn't request an account at CoralNet, then you may safely ignore this email.)
+
+Sincerely,
+The CoralNet team
+{% endblocktrans %}
+{% endautoescape %}
