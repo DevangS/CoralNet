@@ -456,6 +456,16 @@ def annotation_tool(request, image_id):
     settings_obj, created = AnnotationToolSettings.objects.get_or_create(user=request.user)
     settings_form = AnnotationToolSettingsForm(instance=settings_obj)
 
+    IMAGE_AREA_WIDTH = 800
+    IMAGE_AREA_HEIGHT = 600
+    if image.original_width > IMAGE_AREA_WIDTH:
+        # Parameters into the easy_thumbnails template tag:
+        # (specific width, height from keeping aspect ratio)
+        thumbnail_dimensions = (IMAGE_AREA_WIDTH, 0)
+    else:
+        # No thumbnail needed
+        thumbnail_dimensions = None
+
     access = AnnotationToolAccess(image=image, source=source, user=request.user)
     access.save()
 
@@ -471,6 +481,9 @@ def annotation_tool(request, image_id):
         'settings_form': settings_form,
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
+        'IMAGE_AREA_WIDTH': IMAGE_AREA_WIDTH,
+        'IMAGE_AREA_HEIGHT': IMAGE_AREA_HEIGHT,
+        'thumbnail_dimensions': thumbnail_dimensions,
         'num_of_points': len(annotations),
         'num_of_annotations': len(annotationValues),
         },

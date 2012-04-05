@@ -1,5 +1,6 @@
 {% extends "images/base_image.html" %}
 {% load i18n %}
+{% load thumbnail %}
 {% load guardian_tags %}
 
 {% block title %}Annotation Tool | CoralNet{% endblock %}
@@ -50,8 +51,14 @@
 
         <div id="imageArea">
 
-          <!-- The coral image  -->
-          <img id="coralImage" src="{{ image.original_file.url }}" />
+          <!-- The image that's being annotated -->
+          <img id="annotationImage" src="
+              {% if thumbnail_dimensions %}
+                {% thumbnail image.original_file thumbnail_dimensions %}
+              {% else %}
+                {{ image.original_file.url }}
+              {% endif %}
+          " />
 
           <!-- Dummy element for listening to mouseclicks, etc. -->
           <div id="listenerElmt"></div>
@@ -120,7 +127,7 @@
 
       </div>
 
-      <!-- type="button" ensures that the button doesn't do a non-Ajax form submit -->
+      {# type="button" ensures that the button doesn't do a non-Ajax form submit #}
       <button id="saveButton" type="button">Save progress</button>
 
       <div id="allDone"></div>
@@ -181,10 +188,10 @@
     // Initialize the Annotation Tool Settings helper object.
     ATS.init();
     // Initialize the Annotation Tool Helper (ATH) object.
-    ATH.init({{ image.original_height }},
-             {{ image.original_width }},
-             {{ annotationsJSON|safe }},
-             {{ labelsJSON|safe }});
+    ATH.init({{ image.original_height }}, {{ image.original_width }},
+             {{ IMAGE_AREA_WIDTH }}, {{ IMAGE_AREA_HEIGHT }},
+             "{{ image.original_file.url }}",
+             {{ annotationsJSON|safe }}, {{ labelsJSON|safe }});
 </script>
 
 {% endblock %}

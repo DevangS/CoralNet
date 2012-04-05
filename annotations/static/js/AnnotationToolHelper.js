@@ -11,7 +11,7 @@ var ATH = {
     annotationFields: [],
     annotationRobotFields: [],
     annotationFieldsJQ: null,
-    coralImage: null,
+    annotationImage: null,
     pointsCanvas: null,
     listenerElmt: null,
     saveButton: null,
@@ -28,7 +28,7 @@ var ATH = {
     numOfPoints: null,
     NUMBER_FONT_FORMAT_STRING: "bold {0}px sans-serif",
 
-    // Border where the canvas is drawn, but the coral image is not.
+    // Border where the canvas is drawn, but the image is not.
     // This is used to fully show the points that are located near the edge of the image.
 	CANVAS_GUTTER: 25,
     CANVAS_GUTTER_COLOR: "#BBBBBB",
@@ -51,18 +51,22 @@ var ATH = {
     POINTMODE_SELECTED: 1,
     POINTMODE_NONE: 2,
 
-    // Entire annotation tool (including buttons, text fields, etc.)
-    ANNOTATION_TOOL_WIDTH: 980,
-    ANNOTATION_TOOL_HEIGHT: 800, // TODO: Make this dynamic according to how many label buttons there are
-    // The canvas area, where drawing is allowed
-    ANNOTATION_AREA_WIDTH: 850,
-    ANNOTATION_AREA_HEIGHT: 650,
+    // The original image dimensions
+    IMAGE_FULL_WIDTH: null,
+    IMAGE_FULL_HEIGHT: null,
     // The area that the image is permitted to fill
     IMAGE_AREA_WIDTH: null,
     IMAGE_AREA_HEIGHT: null,
-    // The original image dimensions
-	IMAGE_FULL_WIDTH: null,
-    IMAGE_FULL_HEIGHT: null,
+    // The canvas area, where drawing is allowed
+    ANNOTATION_AREA_WIDTH: null,
+    ANNOTATION_AREA_HEIGHT: null,
+    // Right sidebar (tool buttons, text fields, etc.)
+    RIGHT_SIDEBAR_WIDTH: 130,
+    // TODO: Make this height dynamic according to how many label buttons there are.
+    LABEL_BUTTON_GRID_HEIGHT: 150,
+    // Overall height of the annotation tool
+    ANNOTATION_TOOL_HEIGHT: null,
+
     // Display parameters of the image.
     // > 1 zoomFactor means larger than original image
     // zoom levels start at 0 (fully zoomed out) and go up like 1,2,3,etc.
@@ -83,32 +87,39 @@ var ATH = {
 
 
     init: function(fullHeight, fullWidth,
+                   IMAGE_AREA_WIDTH, IMAGE_AREA_HEIGHT,
+                   fullImageUrl,
                    imagePoints, labels) {
         var i, j, n;    // Loop variables...
-
-        /*
-         * Instructions show/hide buttons
-         */
-
-        $('#id_button_show_instructions').click(ATH.showInstructions);
-        $('#id_button_hide_instructions').click(ATH.hideInstructions);
 
         /*
          * Initialize styling, sizing, and positioning for various elements
          */
 
-        ATH.IMAGE_AREA_WIDTH = ATH.ANNOTATION_AREA_WIDTH - (ATH.CANVAS_GUTTER * 2);
-        ATH.IMAGE_AREA_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT - (ATH.CANVAS_GUTTER * 2);
-
         ATH.IMAGE_FULL_WIDTH = fullWidth;
         ATH.IMAGE_FULL_HEIGHT = fullHeight;
+        ATH.IMAGE_AREA_WIDTH = IMAGE_AREA_WIDTH;
+        ATH.IMAGE_AREA_HEIGHT = IMAGE_AREA_HEIGHT;
+
+        ATH.ANNOTATION_AREA_WIDTH = ATH.IMAGE_AREA_WIDTH + (ATH.CANVAS_GUTTER * 2);
+        ATH.ANNOTATION_AREA_HEIGHT = ATH.IMAGE_AREA_HEIGHT + (ATH.CANVAS_GUTTER * 2);
+
+        ATH.ANNOTATION_TOOL_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT + ATH.LABEL_BUTTON_GRID_HEIGHT;
 
         ATH.annotationArea = $("#annotationArea")[0];
         ATH.annotationList = $("#annotationList")[0];
-        ATH.coralImage = $("#coralImage")[0];
+        ATH.annotationImage = $("#annotationImage")[0];
         ATH.pointsCanvas = $("#pointsCanvas")[0];
         ATH.listenerElmt = $("#listenerElmt")[0];
         ATH.saveButton = $("#saveButton")[0];
+
+        ATH.fullImageUrl = fullImageUrl;
+
+        if (fullWidth > IMAGE_AREA_WIDTH) {
+            // Once the rest of the document has loaded,
+            // load the full-resolution image and swap out the scaled-down image.
+            util.addLoadEvent(ATH.preloadAndSwapFullImage);
+        }
 
         $('#mainColumn').css({
             "width": ATH.ANNOTATION_AREA_WIDTH + "px",
@@ -119,7 +130,7 @@ var ATH = {
             "height": ATH.ANNOTATION_TOOL_HEIGHT + "px"
         });
         $('#rightSidebar').css({
-            "width": (ATH.ANNOTATION_TOOL_WIDTH - ATH.ANNOTATION_AREA_WIDTH) + "px",
+            "width": ATH.RIGHT_SIDEBAR_WIDTH + "px",
             "height": ATH.ANNOTATION_TOOL_HEIGHT + "px"
         });
         $('#dummyColumn').css({
@@ -284,6 +295,10 @@ var ATH = {
         /*
          * Set event handlers
          */
+
+        // Instructions show/hide buttons
+        $('#id_button_show_instructions').click(ATH.showInstructions);
+        $('#id_button_hide_instructions').click(ATH.hideInstructions);
 
         // Mouse button is pressed and un-pressed on the canvas
 		$(ATH.listenerElmt).mouseup( function(e) {
@@ -513,6 +528,32 @@ var ATH = {
     },
 
     /*
+     * Preload the full image; once it's loaded, swap it in as the annotation image.
+     * Code from: http://stackoverflow.com/a/1662153/859858
+     */
+    preloadAndSwapFullImage: function() {
+        // Create an Image object.
+        var fullImagePreloader = new Image();
+
+        // When image preloading is done, swap images.
+        fullImagePreloader.onload = function() {
+            ATH.annotationImage.src = fullImagePreloader.src;
+        };
+
+        // Image preloading starts as soon as we set this src attribute.
+        fullImagePreloader.src = ATH.fullImageUrl;
+
+        // For debugging, it helps to load an image that is
+        // (1) totally different, so you can tell when it's swapped in, and
+        // (2) remotely hosted, in case loading a local image is not satisfactory for testing.
+        // Remember to refresh + clear cache (Ctrl+Shift+R in Firefox) on subsequent test runs.
+        // Uncomment the image of your choice:
+        //fullImagePreloader.src = "http://farm6.staticflickr.com/5015/5565696408_8819b64a61_b.jpg"; // 740 KB
+        //fullImagePreloader.src = "http://farm6.staticflickr.com/5018/5565067643_1c9686d932_o.jpg"; // 1,756 KB
+        //fullImagePreloader.src = "http://farm6.staticflickr.com/5015/5565696408_9849980bdb_o.jpg"; // 2,925 KB
+    },
+
+    /*
      * Based on the current zoom level and focus of the zoom, position and
      * set up the image and on-image listener elements.
      */
@@ -566,7 +607,7 @@ var ATH = {
         ATH.imageTopOffset = parseFloat(ATH.imageTopOffset.toFixed(3));
 
         // Set styling properties for the image.
-        $(ATH.coralImage).css({
+        $(ATH.annotationImage).css({
             "height": ATH.imageDisplayHeight,
             "left": ATH.imageLeftOffset,
             "top": ATH.imageTopOffset,
@@ -574,7 +615,7 @@ var ATH = {
         });
 
         // Set styling properties for the listener element:
-        // An invisible element that goes over the coral image
+        // An invisible element that sits on top of the image
         // and listens for mouse events.
         // Since it has to be on top to listen for mouse events,
         // the z-index should be above every other element's z-index.
@@ -1003,8 +1044,8 @@ var ATH = {
 					document.documentElement.scrollTop;
 		}
 
-        // Get the x,y relative to the upper-left corner of the coral image
-        var elmt = ATH.coralImage;
+        // Get the x,y relative to the upper-left corner of the image
+        var elmt = ATH.annotationImage;
         while (elmt !== null) {
             x -= elmt.offsetLeft;
             y -= elmt.offsetTop;
