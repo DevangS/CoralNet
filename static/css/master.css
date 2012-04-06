@@ -993,30 +993,37 @@ table.detail_table.horizontal td {
 /* thumbnails and thumbnail wrappers
 ................................... */
 
-.thumb_wrapper {
-    display: inline-block;
-    text-align: center;
+span.thumb_wrapper {
+    display: inline-block;  /* Allow putting elements side by side + allow block properties like padding, width */
+    text-align: center;  /* Horizontally center the element within */
 
-    /* Effective width of 180px, and effective
-    max height of <max thumbnail height> + 30px.
-    Might shrink this later to accommodate a stats box
-    in the visualization page though. */
-    width: 150px;
-    padding: 15px;
+    width: 158px;  /* 150px for the image, 4px+4px for the image border */
+    padding: 11px;  /* Total width of 158px+11px+11px = 180px */
+
+    /* Effective height of <max image height in row, including border>+11px+11px */
 }
 
-.thumb_small_wrapper {
+span.thumb_small_wrapper {
     display: inline-block;
     text-align: center;
 
-    /* Effective width of 120px, and effective
-    max height of <max thumbnail height> + 20px. */
     width: 100px;
-    padding: 10px;
+    padding: 10px;  /* Total width of 100px+10px+10px = 120px */
+
+    /* Effective height of <max image height in row, including border>+10px+10px */
 }
 
 img.thumb {
     vertical-align: middle;
+}
+img.thumb.annotated_by_human, img.thumb.annotated {
+    border: 4px #00CC00 solid;
+}
+img.thumb.annotated_by_robot {
+    border: 4px #FF9900 solid;
+}
+img.thumb.needs_annotation {
+    border: 4px #CC4444 solid;
 }
 
 img.thumb_small {

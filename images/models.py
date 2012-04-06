@@ -518,6 +518,37 @@ class Image(models.Model):
 
         return ' '.join(dataStrings)
 
+    def get_annotation_status_code(self):
+        """
+        Returns a code for the annotation status of this image.
+        """
+        if self.source.enable_robot_classifier:
+            if self.status.annotatedByHuman:
+                return "annotated_by_human"
+            elif self.status.annotatedByRobot:
+                return "annotated_by_robot"
+            else:
+                return "needs_annotation"
+        else:
+            if self.status.annotatedByHuman:
+                return "annotated"
+            else:
+                return "needs_annotation"
+
+    def get_annotation_status_str(self):
+        """
+        Returns a string describing the annotation status of this image.
+        """
+        code = self.get_annotation_status_code()
+        if code == "annotated_by_human":
+            return "Annotated by human"
+        elif code == "annotated_by_robot":
+            return "Annotated by robot"
+        elif code == "needs_annotation":
+            return "Needs annotation"
+        elif code == "annotated":
+            return "Annotated"
+
     def get_location_value_str_list(self):
         """
         Returns the image's location values as a list of strings:

@@ -203,6 +203,7 @@ def visualize_source(request, source_id):
                 patchPath = "data/annotations/" + str(annotation.id) + ".jpg"
 
                 images.object_list[index] = dict(
+                    type="patches",
                     fullImage=annotation.image,
                     patchPath=patchPath,
                     row=annotation.point.row,
@@ -211,6 +212,15 @@ def visualize_source(request, source_id):
                 )
 
                 generate_patch_if_doesnt_exist(patchPath, annotation)
+
+        else:
+
+            for index, image_obj in enumerate(images.object_list):
+
+                images.object_list[index] = dict(
+                    type="full_images",
+                    image_obj=image_obj,
+                )
 
     return render_to_response('visualization/visualize_source.html', {
         'errors': errors,
