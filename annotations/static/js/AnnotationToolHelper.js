@@ -158,38 +158,43 @@ var ATH = {
             "top": ATH.CANVAS_GUTTER + "px"
         });
 
-        // Styling label buttons
-        var uniqueGroups = [];
+        /* Initialization - Labels and label buttons */
+
+        // Styling label buttons.
+        var groupsWithStyles = [];
         var groupStyles = {};
         var nextStyleNumber = 1;
-        var labelButtonJQ;
+        var $labelButton;
 
-        for (i = 0; i < labels.length; i++) {
-            // Assign a style class for each functional group represented by the buttons.
-            if (uniqueGroups.indexOf(labels[i].group) === -1) {
-                uniqueGroups.push(labels[i].group);
-                groupStyles[labels[i].group] = 'group'+nextStyleNumber;
-                nextStyleNumber++;
-            }
-        }
-        for (i = 0; i < labels.length; i++) {
-            // Get the label button and assign the group style to it.
-            labelButtonJQ = $("#labelButtons button:exactlycontains('" + labels[i].code + "')");
-            labelButtonJQ.addClass(groupStyles[labels[i].group]);
-        }
-
-        // Assigning 'grid positions' to label buttons
         // TODO: Derive this magic number from the label-button space available, or vice versa.
         ATH.BUTTONS_PER_ROW = 10;
         ATH.BUTTON_GRID_MAX_Y = Math.floor(labels.length / ATH.BUTTONS_PER_ROW);
         ATH.BUTTON_GRID_MAX_X = ATH.BUTTONS_PER_ROW - 1;
+        ATH.labelCodes = [];
 
         for (i = 0; i < labels.length; i++) {
-            // Get the label button and assign the group style to it.
-            labelButtonJQ = $("#labelButtons button:exactlycontains('" + labels[i].code + "')");
-            // Assign a grid position, e.g. i=0 gets position [0,0], i=13 gets [1,3]
-            labelButtonJQ.attr('gridy', Math.floor(i / ATH.BUTTONS_PER_ROW));
-            labelButtonJQ.attr('gridx', i % ATH.BUTTONS_PER_ROW);
+            var label = labels[i];
+
+            // If this label's functional group doesn't have a style yet,
+            // then assign this group a style.
+            if (groupsWithStyles.indexOf(label.group) === -1) {
+                groupStyles[label.group] = 'group'+nextStyleNumber;
+                groupsWithStyles.push(label.group);
+                nextStyleNumber++;
+            }
+
+            // Get the label's button and apply the label's functional group style to it.
+            $labelButton = $("#labelButtons button:exactlycontains('{0}')".format(label.code));
+            $labelButton.addClass(groupStyles[label.group]);
+
+            // Assign a grid position to the label button.
+            // For example, i=0 gets position [0,0], i=13 gets [1,3]
+            $labelButton.attr('gridy', Math.floor(i / ATH.BUTTONS_PER_ROW));
+            $labelButton.attr('gridx', i % ATH.BUTTONS_PER_ROW);
+
+            // Add to an array of available label codes, which will
+            // be used for input checking purposes (in label fields).
+            ATH.labelCodes.push(label.code);
         }
 
         /*
@@ -244,11 +249,6 @@ var ATH = {
         ATH.imagePoints = imagePoints;
         ATH.numOfPoints = imagePoints.length;
         ATH.getCanvasPoints();
-
-        // Create array of available label codes
-        ATH.labelCodes = [];
-        for (i = 0; i < labels.length; i++)
-            ATH.labelCodes.push(labels[i].code);
 
         ATH.annotationFieldsJQ = $(ATH.annotationList).find('input');
         var annotationFieldRowsJQ = $(ATH.annotationList).find('tr');
