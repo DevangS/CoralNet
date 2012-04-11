@@ -91,7 +91,7 @@
 }
 
 #toolButtonArea {
-    margin: 5px 0;    /* top and bottom 5px */
+    margin-bottom: 5px;
     text-align: center;
 }
 #toolButtonArea input[type="image"] {

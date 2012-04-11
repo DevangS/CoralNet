@@ -169,11 +169,9 @@ var ATH = {
             "width": ATH.ANNOTATION_AREA_WIDTH + "px"
         });
 
-        // TODO: Use jQuery's outerHeight for a cleaner computation here?
         var annotationListMaxHeight =
-            ATH.ANNOTATION_AREA_HEIGHT
-            - 3*(24+(2*2)+2)    // toolButtonArea: 2 rows of buttons - 24px buttons, each with 2px top and bottom borders, and another 2px of space below for some reason
-            - (5*2);            // toolButtonArea: 5px margins around the area
+            ATH.ANNOTATION_AREA_HEIGHT - parseFloat($("#toolButtonArea").outerHeight(true));
+
         $(ATH.annotationList).css({
             "max-height": annotationListMaxHeight + "px"
         });
