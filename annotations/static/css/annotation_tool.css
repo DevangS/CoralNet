@@ -36,6 +36,11 @@
 }
 
 #labelButtons button {
+    /* Don't let HTML whitespace create extra horizontal space between button elements.
+    That will keep the horizontal space under our control (only left/right margins will
+    define the horizontal space). */
+    float: left;
+
     /* Width will be set dynamically; that way we can check for
     text overflow, and make the text smaller if there is overflow. */
 

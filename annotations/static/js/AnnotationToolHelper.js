@@ -110,11 +110,13 @@ var ATH = {
         // LABEL_BUTTON_WIDTH will represent a value that can be passed into jQuery's
         // width() and css('width'), and these jQuery functions deal with
         // inner width + padding + border only.
-        // So don't count the button's margins... and subtract another couple of pixels
+        // So don't count the button's margins... and subtract another pixel or two
         // to be safe, so that slightly imprecise rendering won't cause an overflow.
+        // (Chrome seems a bit more prone to this kind of imprecise rendering, compared
+        // to Firefox...)
         ATH.LABEL_BUTTON_WIDTH = horizontalSpacePerButton - (
-            $('#labelButtons button').css('margin_left')
-            + $('#labelButtons button').css('margin_right')
+            parseFloat($('#labelButtons button').css('margin-left'))
+            + parseFloat($('#labelButtons button').css('margin-right'))
             + 2
         );
 
@@ -147,7 +149,6 @@ var ATH = {
 
         ATH.BUTTON_GRID_MAX_Y = Math.floor(labels.length / ATH.BUTTONS_PER_ROW);
         ATH.BUTTON_GRID_MAX_X = ATH.BUTTONS_PER_ROW - 1;
-        ATH.LABEL_BUTTON_GRID_HEIGHT = parseFloat($("#labelButtons").outerHeight(true));
 
         ATH.annotationArea = $("#annotationArea")[0];
         ATH.annotationList = $("#annotationList")[0];
