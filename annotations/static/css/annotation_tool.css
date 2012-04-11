@@ -39,11 +39,9 @@
     /* Width will be set dynamically; that way we can check for
     text overflow, and make the text smaller if there is overflow. */
 
-    /* Set a fixed height, so that if we need to shrink the font size of any
-    buttons, those buttons won't become shorter than the other buttons. */
-    /*height: 24px;*/
-
-    /* Enlarge the clickable area of the button and lose the 3D button look. */
+    /* Set a transparent border that is the same size as the "current button"
+    border.  That way, the border size doesn't change (and thus elements
+    don't shift) when the button becomes the "current" button. */
     border: 3px solid transparent;
 
     /* Make left/right padding small to reduce chances of having to shrink the text.
@@ -58,7 +56,7 @@
     cursor: pointer;
 }
 #labelButtons button.current {
-    border: 3px solid #000000;
+    border-color: #000000;
 }
 
 /* TODO: Probably want to consider assigning a certain color for each functional group
@@ -76,16 +74,14 @@
 #mainColumn {
     float: left;
 
-    /* width and height are set dynamically. */
+    /* width is set dynamically. */
 }
 
 #rightSidebar {
-    float: left;
-
-    /* width and height are set dynamically. */
+    /* width is set dynamically. */
 }
 
-#dummyColumn {
+#columnContainer {
     /* height is set dynamically. */
 }
 
@@ -152,12 +148,18 @@ td.annotationFormLabelCell {
     text-align: center;
 }
 
+/* Place for ALL DONE text */
 #allDone {
     color: blue;
-    display: block;
     font-size: 1.3em;
     font-weight: bold;
-    margin: 5px;
+
+    /* Let this element have some height (enough to fit one line of text),
+       even when there is no text. This'll ensure that when the ALL DONE
+       text appears, it won't collide with any elements below it. */
+    height: 1em;
+
+    padding: 5px;
 }
 
 /* Instructions */

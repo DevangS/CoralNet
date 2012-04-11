@@ -62,15 +62,11 @@ var ATH = {
     // The canvas area, where drawing is allowed
     ANNOTATION_AREA_WIDTH: null,
     ANNOTATION_AREA_HEIGHT: null,
-    // Right sidebar (tool buttons, text fields, etc.)
-    RIGHT_SIDEBAR_WIDTH: 130,
     // Label button grid
     BUTTON_GRID_MAX_X: null,
     BUTTON_GRID_MAX_Y: null,
     BUTTONS_PER_ROW: 10,
     LABEL_BUTTON_WIDTH: null,
-    // Overall height of the annotation tool
-    ANNOTATION_TOOL_HEIGHT: null,
 
     // Display parameters of the image.
     // > 1 zoomFactor means larger than original image
@@ -153,8 +149,6 @@ var ATH = {
         ATH.BUTTON_GRID_MAX_X = ATH.BUTTONS_PER_ROW - 1;
         ATH.LABEL_BUTTON_GRID_HEIGHT = parseFloat($("#labelButtons").outerHeight(true));
 
-        ATH.ANNOTATION_TOOL_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT + ATH.LABEL_BUTTON_GRID_HEIGHT;
-
         ATH.annotationArea = $("#annotationArea")[0];
         ATH.annotationList = $("#annotationList")[0];
         ATH.annotationImage = $("#annotationImage")[0];
@@ -171,19 +165,7 @@ var ATH = {
         }
 
         $('#mainColumn').css({
-            "width": ATH.ANNOTATION_AREA_WIDTH + "px",
-
-            /* Spilling beyond this height is fine, but we define the height
-               so this element takes up space, thus forcing the rightSidebar to
-               stay on the right. */
-            "height": ATH.ANNOTATION_TOOL_HEIGHT + "px"
-        });
-        $('#rightSidebar').css({
-            "width": ATH.RIGHT_SIDEBAR_WIDTH + "px",
-            "height": ATH.ANNOTATION_TOOL_HEIGHT + "px"
-        });
-        $('#dummyColumn').css({
-            "height": ATH.ANNOTATION_TOOL_HEIGHT + "px"
+            "width": ATH.ANNOTATION_AREA_WIDTH + "px"
         });
 
         // TODO: Use jQuery's outerHeight for a cleaner computation here?
@@ -206,6 +188,20 @@ var ATH = {
             "height": ATH.IMAGE_AREA_HEIGHT + "px",
             "left": ATH.CANVAS_GUTTER + "px",
             "top": ATH.CANVAS_GUTTER + "px"
+        });
+
+        // Set the height for the element containing the two main columns.
+        // This ensures that the info below the annotation tool doesn't overlap with
+        // the annotation tool.  Overlap is possible because the main column floats,
+        // so the main column doesn't contribute to its container element's height.
+        //
+        // The container element's height will be set to the max of the
+        // columns' DOM (computed) heights.
+        $('#columnContainer').css({
+            "height": Math.max(
+                parseFloat($('#mainColumn').height()),
+                parseFloat($('#rightSidebar').height())
+            ).toString() + "px"
         });
 
         /* Initialization - Labels and label buttons */
