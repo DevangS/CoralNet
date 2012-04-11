@@ -124,27 +124,35 @@ var ATH = {
         for (i = 0; i < labels.length; i++) {
             $labelButton = $("#labelButtons button:exactlycontains('{0}')".format(labels[i].code));
 
-            // Set the button's width.  But first, check to see if the
-            // button text is going to overflow; if so, then shrink the text
-            // until it doesn't overflow.
-            var numOfSizeDecreases = 0;
-            var initialButtonHeight = $labelButton.outerHeight();
-            while (parseFloat($labelButton.outerWidth()) > ATH.LABEL_BUTTON_WIDTH) {
-                // Scale the font to 90% size of what it was before.
-                $labelButton.changeFontSize(0.9);
+            /* Set the button's width.  But first, check to see if the
+             button text is going to overflow; if so, then shrink the text
+             until it doesn't overflow.
 
-                numOfSizeDecreases++;
-                // Don't shrink the text so much that it'll become totally unreadable.
-                // Just accept the text overflow if we've already shrunk the text a lot.
-                if (numOfSizeDecreases > 8)
-                    break;
-            }
+             ... never mind that text shrinking thing for now.  Setting the
+             height of the button afterward is just not reliable at all, and
+             can destroy the layout of buttons below.
+             TODO: Need a robust way to support text shrinking in label buttons.
+             */
+
+//            var numOfSizeDecreases = 0;
+//            var initialButtonHeight = $labelButton.outerHeight();
+//            while (parseFloat($labelButton.outerWidth()) > ATH.LABEL_BUTTON_WIDTH) {
+//                // Scale the font to 90% size of what it was before.
+//                $labelButton.changeFontSize(0.9);
+//
+//                numOfSizeDecreases++;
+//                // Don't shrink the text so much that it'll become totally unreadable.
+//                // Just accept the text overflow if we've already shrunk the text a lot.
+//                if (numOfSizeDecreases > 8)
+//                    break;
+//            }
+//            // Need to reset the button's height to what it was before,
+//            // if we shrunk the button's text.
+//            if (numOfSizeDecreases > 0)
+//                $labelButton.css('height', initialButtonHeight);
+
             // Now set the button's width.
             $labelButton.css('width', ATH.LABEL_BUTTON_WIDTH.toString() + "px");
-            // Also need to reset the button's height to what it was before,
-            // if we shrunk the button's text.
-            if (numOfSizeDecreases > 0)
-                $labelButton.css('height', initialButtonHeight);
         }
 
         ATH.BUTTON_GRID_MAX_Y = Math.floor(labels.length / ATH.BUTTONS_PER_ROW);
