@@ -4,6 +4,9 @@ var ATH = {
     // If the appVersion contains the substring "Mac", then it's probably a mac...
     mac: util.osIsMac(),
 
+    // TODO: Change all null initializations to undefined.
+    // TODO: Change the naming convention of jQuery variables from -JQ to $-
+
     // HTML elements
     annotationArea: null,
     annotationList: null,
@@ -17,10 +20,9 @@ var ATH = {
     saveButton: null,
 
     // Annotation related
-    labelCodes: null,
+    labelCodes: [],
+    labelCodesToNames: {},
     currentLabelButton: null,
-    BUTTON_GRID_MAX_X: null,
-    BUTTON_GRID_MAX_Y: null,
 
     // Canvas related
 	context: null,
@@ -62,8 +64,11 @@ var ATH = {
     ANNOTATION_AREA_HEIGHT: null,
     // Right sidebar (tool buttons, text fields, etc.)
     RIGHT_SIDEBAR_WIDTH: 130,
-    // TODO: Make this height dynamic according to how many label buttons there are.
-    LABEL_BUTTON_GRID_HEIGHT: 150,
+    // Label button grid
+    BUTTON_GRID_MAX_X: null,
+    BUTTON_GRID_MAX_Y: null,
+    BUTTONS_PER_ROW: 10,
+    LABEL_BUTTON_WIDTH: null,
     // Overall height of the annotation tool
     ANNOTATION_TOOL_HEIGHT: null,
 
@@ -104,6 +109,50 @@ var ATH = {
         ATH.ANNOTATION_AREA_WIDTH = ATH.IMAGE_AREA_WIDTH + (ATH.CANVAS_GUTTER * 2);
         ATH.ANNOTATION_AREA_HEIGHT = ATH.IMAGE_AREA_HEIGHT + (ATH.CANVAS_GUTTER * 2);
 
+        var horizontalSpacePerButton = ATH.ANNOTATION_AREA_WIDTH / ATH.BUTTONS_PER_ROW;
+
+        // LABEL_BUTTON_WIDTH will represent a value that can be passed into jQuery's
+        // width() and css('width'), and these jQuery functions deal with
+        // inner width + padding + border only.
+        // So don't count the button's margins... and subtract another couple of pixels
+        // to be safe, so that slightly imprecise rendering won't cause an overflow.
+        ATH.LABEL_BUTTON_WIDTH = horizontalSpacePerButton - (
+            $('#labelButtons button').css('margin_left')
+            + $('#labelButtons button').css('margin_right')
+            + 2
+        );
+
+        var $labelButton;
+        for (i = 0; i < labels.length; i++) {
+            $labelButton = $("#labelButtons button:exactlycontains('{0}')".format(labels[i].code));
+
+            // Set the button's width.  But first, check to see if the
+            // button text is going to overflow; if so, then shrink the text
+            // until it doesn't overflow.
+            var numOfSizeDecreases = 0;
+            var initialButtonHeight = $labelButton.outerHeight();
+            while (parseFloat($labelButton.outerWidth()) > ATH.LABEL_BUTTON_WIDTH) {
+                // Scale the font to 90% size of what it was before.
+                $labelButton.changeFontSize(0.9);
+
+                numOfSizeDecreases++;
+                // Don't shrink the text so much that it'll become totally unreadable.
+                // Just accept the text overflow if we've already shrunk the text a lot.
+                if (numOfSizeDecreases > 8)
+                    break;
+            }
+            // Now set the button's width.
+            $labelButton.css('width', ATH.LABEL_BUTTON_WIDTH.toString() + "px");
+            // Also need to reset the button's height to what it was before,
+            // if we shrunk the button's text.
+            if (numOfSizeDecreases > 0)
+                $labelButton.css('height', initialButtonHeight);
+        }
+
+        ATH.BUTTON_GRID_MAX_Y = Math.floor(labels.length / ATH.BUTTONS_PER_ROW);
+        ATH.BUTTON_GRID_MAX_X = ATH.BUTTONS_PER_ROW - 1;
+        ATH.LABEL_BUTTON_GRID_HEIGHT = parseFloat($("#labelButtons").outerHeight(true));
+
         ATH.ANNOTATION_TOOL_HEIGHT = ATH.ANNOTATION_AREA_HEIGHT + ATH.LABEL_BUTTON_GRID_HEIGHT;
 
         ATH.annotationArea = $("#annotationArea")[0];
@@ -137,6 +186,7 @@ var ATH = {
             "height": ATH.ANNOTATION_TOOL_HEIGHT + "px"
         });
 
+        // TODO: Use jQuery's outerHeight for a cleaner computation here?
         var annotationListMaxHeight =
             ATH.ANNOTATION_AREA_HEIGHT
             - 3*(24+(2*2)+2)    // toolButtonArea: 2 rows of buttons - 24px buttons, each with 2px top and bottom borders, and another 2px of space below for some reason
@@ -160,17 +210,9 @@ var ATH = {
 
         /* Initialization - Labels and label buttons */
 
-        // Styling label buttons.
         var groupsWithStyles = [];
         var groupStyles = {};
         var nextStyleNumber = 1;
-        var $labelButton;
-
-        // TODO: Derive this magic number from the label-button space available, or vice versa.
-        ATH.BUTTONS_PER_ROW = 10;
-        ATH.BUTTON_GRID_MAX_Y = Math.floor(labels.length / ATH.BUTTONS_PER_ROW);
-        ATH.BUTTON_GRID_MAX_X = ATH.BUTTONS_PER_ROW - 1;
-        ATH.labelCodes = [];
 
         for (i = 0; i < labels.length; i++) {
             var label = labels[i];
@@ -192,9 +234,17 @@ var ATH = {
             $labelButton.attr('gridy', Math.floor(i / ATH.BUTTONS_PER_ROW));
             $labelButton.attr('gridx', i % ATH.BUTTONS_PER_ROW);
 
+            // When you mouseover the button, show the label name in a tooltip.
+            $labelButton.attr('title', label.name);
+
             // Add to an array of available label codes, which will
             // be used for input checking purposes (in label fields).
             ATH.labelCodes.push(label.code);
+
+            // Add to a mapping of label codes to names, which will
+            // be used to show a label name when you mouse over a
+            // label field with a valid code.
+            ATH.labelCodesToNames[label.code] = label.name;
         }
 
         /*
@@ -709,7 +759,9 @@ var ATH = {
 
             // Remove error styling, if any
             $(row).removeClass('error');
-            $(field).removeAttr('title');
+
+            // Field's mouseover text = label name
+            $(field).attr('title', ATH.labelCodesToNames[labelCode]);
         }
 
         var robotStatusChanged = (oldState['robot'] !== robotField.value);

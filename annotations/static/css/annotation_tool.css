@@ -36,8 +36,23 @@
 }
 
 #labelButtons button {
-    width: 75px;
+    /* Width will be set dynamically; that way we can check for
+    text overflow, and make the text smaller if there is overflow. */
+
+    /* Set a fixed height, so that if we need to shrink the font size of any
+    buttons, those buttons won't become shorter than the other buttons. */
+    /*height: 24px;*/
+
+    /* Enlarge the clickable area of the button and lose the 3D button look. */
     border: 3px solid transparent;
+
+    /* Make left/right padding small to reduce chances of having to shrink the text.
+    At the same time, though, make the padding large enough to reduce chances of
+    having the text overflow at certain browser zoom levels. */
+    padding-left: 1px;
+    padding-right: 1px;
+
+    /* Space the buttons out a little bit. */
     margin: 2px;
 
     cursor: pointer;

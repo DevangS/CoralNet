@@ -176,10 +176,10 @@ String.prototype.format = function() {
  *
  * Original source (though it's been slightly modified):
  * http://stackoverflow.com/a/4641390 (http://stackoverflow.com/questions/4641346/css-to-align-label-and-input)
- * http://www.jankoatwarpspeed.com/post/2008/07/09/Justify-elements-using-jQuery-and-CSS.aspx#id_b16cb791-5bd7-4bb3-abc2-dc414fc1bd07 (1 mistake: maxWidth >= settings.limitWidth should be $(this).width >= settings.limitWidth)
+ * http://www.jankoatwarpspeed.com/post/2008/07/09/Justify-elements-using-jQuery-and-CSS.aspx#id_b16cb791-5bd7-4bb3-abc2-dc414fc1bd07
+ * - (1 mistake: maxWidth >= settings.limitWidth should be $(this).width >= settings.limitWidth)
  */
-jQuery.fn.autoWidth = function(options)
-{
+jQuery.fn.autoWidth = function(options) {
   var settings = {
       limitWidth: false
   };
@@ -202,6 +202,26 @@ jQuery.fn.autoWidth = function(options)
   });
 
   this.width(maxWidth);
+};
+
+/* changeFontSize
+ *
+ * Change the font size of an element.
+ *
+ * Parameters:
+ * changeFactor - a number specifying how much to multiply the font size by.
+ *   For example, changeFactor = 0.9 will make the font 90% of its original size.
+ */
+jQuery.fn.changeFontSize = function(changeFactor) {
+    this.each( function(){
+        var oldFontSize = $(this).css('font-size');
+        var oldFontSizeNumber = parseFloat(oldFontSize);
+        var fontSizeUnits = oldFontSize.substring(oldFontSizeNumber.toString().length);
+
+        var newFontSizeNumber = oldFontSizeNumber * changeFactor;
+        var newFontSize = newFontSizeNumber.toString() + fontSizeUnits;
+        $(this).css('font-size', newFontSize);
+    });
 };
 
 /* Selector - exactlycontains

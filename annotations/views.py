@@ -415,9 +415,9 @@ def annotation_tool(request, image_id):
 
     # Get all labels, ordered first by functional group, then by short code.
     labels = source.labelset.labels.all().order_by('group', 'code')
-    # Get labels in the form {'code': <short code>, 'group': <functional group>}.
+    # Get labels in the form {'code': <short code>, 'group': <functional group>, 'name': <full name>}.
     # Convert from a ValuesQuerySet to a list to make the structure JSON-serializable.
-    labelValues = list(labels.values('code', 'group'))
+    labelValues = list(labels.values('code', 'group', 'name'))
 
     form = AnnotationForm(image=image, user=request.user)
 
@@ -476,7 +476,6 @@ def annotation_tool(request, image_id):
         'prev_image': need_human_anno_prev,
         'metadata': metadata,
         'labels': labelValues,
-        'labelsJSON': simplejson.dumps(labelValues),
         'form': form,
         'settings_form': settings_form,
         'annotations': annotations,

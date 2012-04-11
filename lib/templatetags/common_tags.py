@@ -10,6 +10,7 @@ from django import template
 from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.utils import simplejson
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
@@ -46,11 +47,16 @@ def get_form_media(parser, token):
 #
 # Pass a Django template variable through simplejson.dumps()
 # and return the result.
+# mark_safe() is used to prevent escaping of quote characters
+# in the JSON (so they stay as quotes, and don't become &quot;).
 #
 # Usage: <script> ATH.init({{ labels|jsonify }}); </script>
+#
+# Basic idea from:
+# http://djangosnippets.org/snippets/201/
 @register.filter
 def jsonify(object):
-    return simplejson.dumps(object)
+    return mark_safe(simplejson.dumps(object))
 
 
 # Usage: {% set_maintenance_time "9:00 PM" as maintenance_time %}
