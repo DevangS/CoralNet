@@ -28,34 +28,12 @@ def image_search_args_to_queryset_args(searchDict, source):
     querysetArgs = dict()
 
     for k in searchArgs:
-        print k
         if k.startswith('value'):
             querysetArgs['metadata__'+k+'__id'] = searchArgs[k]
         elif k == 'year':
             querysetArgs['metadata__photo_date__'+k] = int(searchArgs[k])
-        elif k == 'image_status':
-            value = int(searchArgs[k])
-            #All images wanted so just return
-            if not value:
-                continue
-            #Else do check for robot classified source options
-            elif source.enable_robot_classifier:
-                print "here"
-                if value == 1:
-                    querysetArgs['status__annotatedByHuman'] = False
-                    querysetArgs['status__annotatedByRobot'] = False
-                elif value == 2:
-                    querysetArgs['status__annotatedByHuman'] = False
-                    querysetArgs['status__annotatedByRobot'] = True
-                else:
-                    querysetArgs['status__annotatedByHuman'] = True
-            #Else do check for only human annotated source options
-            else:
-                print "else"
-                if value == 1:
-                    querysetArgs['status__annotatedByHuman'] = False
-                else:
-                    querysetArgs['status__annotatedByHuman'] = True
+
+
     return querysetArgs
 
 def image_search_args_to_url_arg_str(searchDict):
@@ -149,7 +127,29 @@ def visualize_source(request, source_id):
         #if user did not specify a label to generate patches for, assume they want to view whole images
         if not label:
             showPatches = False
+
+
             allSearchResults = Image.objects.filter(source=source, **imageArgs)
+
+            if form.is_valid():
+                value = int(form.cleaned_data.pop('image_status'))
+                #All images wanted so just return
+                if value:
+                    #Else do check for robot classified source options
+                    if source.enable_robot_classifier:
+                        if value == 1:
+                            allSearchResults.filter(status__annotatedByHuman=False, status__annotatedByRobot=False)
+                        elif value == 2:
+                            allSearchResults.filter(status__annotatedByHuman=False, status__annotatedByRobot=True)
+                        else:
+                            allSearchResults.filter(status__annotatedByHuman=True)
+                    #Else do check for only human annotated source options
+                    else:
+                        if value == 1:
+                            allSearchResults.filter(status__annotatedByHuman=False)
+                        else:
+                            allSearchResults.filter(status__annotatedByHuman=True)
+                        
             # Sort the images.
             # TODO: Stop duplicating this DB-specific extras query; put it in a separate function...
             # Also, despite the fact that we're dealing with images and not metadatas, selecting photo_date does indeed work.
@@ -165,7 +165,12 @@ def visualize_source(request, source_id):
             patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
             #get all annotations for the source that contain the label
-            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).exclude(user=get_robot_user())
+            annotator = int(form.cleaned_data.pop('annotator'))
+            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs)
+            if not annotator:
+                annotations.exclude(user=get_robot_user())
+            elif annotator == 1:
+                annotations.filter(user=get_robot_user())
 
             # Placeholder the image patches with the annotation objects for now.
             # We'll actually get the patches when we know which page we're showing.
