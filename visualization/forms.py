@@ -14,6 +14,11 @@ class VisualizationSearchForm(forms.Form):
     class Meta:
         fields = ('value1', 'value2', 'value3',
               'value4', 'value5', 'year', 'labels', 'image_status', 'annotator')
+    class Media:
+        js = (
+            # From app-specific static directory
+            "js/VisSearchFormHelper.js",
+            )
         
     def __init__(self,source_id,*args,**kwargs):
         super(VisualizationSearchForm,self).__init__(*args,**kwargs)

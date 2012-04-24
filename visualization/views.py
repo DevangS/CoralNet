@@ -229,7 +229,7 @@ def visualize_source(request, source_id):
 
     return render_to_response('visualization/visualize_source.html', {
         'errors': errors,
-        'form': form,
+        'searchForm': form,
         'source': source,
         'images': images,
         'showPatches': showPatches,
