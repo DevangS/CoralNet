@@ -264,6 +264,9 @@ SOUTH_MIGRATION_MODULES = {
 # SENTRY_TESTING enables usage of Sentry even when DEBUG = True
 SENTRY_TESTING = True
 
+# South settings
+SOUTH_TESTS_MIGRATE = settings_2.SOUTH_TESTS_MIGRATE
+
 # Dajaxice settings
 DAJAXICE_MEDIA_PREFIX = "dajaxice"
 DAJAXICE_DEBUG = settings_2.DAJAXICE_DEBUG

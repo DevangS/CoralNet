@@ -55,6 +55,16 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 # Example: "/home/media/media.lawrence.com/static/"
 STATIC_ROOT = ''
 
+# South settings
+#
+# SOUTH_TESTS_MIGRATE:
+# True to run all South migrations before running any unit tests.
+# False to not run South migrations, and instead run normal syncdb
+# to build the database tables before tests.  This is much faster,
+# but may miss important things from South data migrations, such as
+# creation of a special User.
+SOUTH_TESTS_MIGRATE = True
+
 # Dajaxice settings
 #
 # DAJAXICE_DEBUG: True means that dajaxice.core.js will be
