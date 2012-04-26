@@ -1,21 +1,16 @@
 from django.core.urlresolvers import reverse
-from django.test import TestCase
-from django.test.client import Client
+from lib.tests import ClientTest
 
 
-class IndexTest(TestCase):
-    def setUp(self):
-        self.client = Client()
-
-    def test_index(self):
-        response = self.client.get(reverse('index'))
-        self.assertEqual(response.status_code, 200)
-
-
-class SourceAboutTest(TestCase):
-    def setUp(self):
-        self.client = Client()
-
+class SourceAboutTest(ClientTest):
     def test_source_about(self):
         response = self.client.get(reverse('source_about'))
         self.assertEqual(response.status_code, 200)
+
+
+class SourceListTest(ClientTest):
+    def test_source_list(self):
+        # TODO: Add tests of this view for logged in users,
+        # as well as tests with actual sources in the database.
+        response = self.client.get(reverse('source_list'))
+        self.assertRedirects(response, reverse('source_about'))
