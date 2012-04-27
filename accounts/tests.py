@@ -5,7 +5,7 @@ from lib.tests import ClientTest
 
 
 class AddUserTest(ClientTest):
-    fixtures = ['test_users.json']
+    fixtures = ['test_users.yaml']
 
     def test_add_user_page(self):
         """Go to the add user page."""
@@ -14,6 +14,7 @@ class AddUserTest(ClientTest):
         self.assertEqual(response.status_code, 200)
 
     # TODO: Add tests that submit the Add User form with errors.
+    # TODO: Add a test (or modify an old test?) to check that a new, unactivated user can't login yet.
 
     def test_add_user_success(self):
         """
@@ -67,10 +68,20 @@ class AddUserTest(ClientTest):
         # ...and should log us in as the new user.
         response = self.client.get(activation_link, follow=True)
         self.assertEqual(response.context['user'].username, new_user_username)
-        # In the meantime, check that the new user isn't a superuser.
+
+        # Check various permissions.
         self.assertFalse(response.context['user'].is_superuser)
-        # TODO: Check various permissions.
-        # E.g., can change own email/password, can't change others' email/password, etc.
+        # Should be able to access own account or profile functions, but not
+        # others' account or profile functions.
+        for url_name in ['userena_email_change',
+                         'userena_password_change',
+                         'userena_profile_edit',
+                         ]:
+            response = self.client.get(reverse(url_name, kwargs={'username': new_user_username}))
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateNotUsed(response, 'permission_denied.html')
+            response = self.client.get(reverse(url_name, kwargs={'username': 'superuser_user'}))
+            self.assertEqual(response.status_code, 403)
 
         # Can we log out and then log back in as the new user?
         self.client.logout()
@@ -80,22 +91,48 @@ class AddUserTest(ClientTest):
         ))
 
 class SigninTest(ClientTest):
-    fixtures = ['test_users.json']
+    fixtures = ['test_users.yaml']
 
-    def test_signin_success(self):
+    def test_add_user_page(self):
+        """Go to the signin page while logged out."""
+        response = self.client.get(reverse('signin'))
+        self.assertEqual(response.status_code, 200)
+
+    # TODO: Add tests that submit the signin form with errors.
+
+    def signin_success(self, identification_method, remember_me):
         """
         Submit the Signin form correctly, then check that we're signed in.
         """
-        # TODO: Verify that signing in by email works too
+        if identification_method == 'username':
+            identification = 'normal_user'
+            user = User.objects.get(username=identification)
+        elif identification_method == 'email':
+            identification = 'normal_user_123@example.com'
+            user = User.objects.get(email=identification)
+        else:
+            raise ValueError('Invalid identification method.')
+
+        # TODO: Test for cookies when remember_me=True?
         response = self.client.post(reverse('signin'), follow=True, data=dict(
-            identification='normal_user',
+            identification=identification,
             password='secret',
+            remember_me=remember_me,
         ))
         # TODO: Test when the user has at least one source (should go to source list)
         self.assertRedirects(response, reverse('source_about'))
 
         # Check that we're signed in.
-        user = User.objects.get(username='normal_user')
         self.assertTrue(self.client.session.has_key('_auth_user_id'))
         self.assertEqual(self.client.session['_auth_user_id'], user.pk)
+
+        # Log out to prepare for a possible next test run of this function
+        # with different parameters.
+        self.client.logout()
+
+    def test_signin_success(self):
+        self.signin_success(identification_method='username', remember_me=True)
+        self.signin_success(identification_method='username', remember_me=False)
+        self.signin_success(identification_method='email', remember_me=True)
+        self.signin_success(identification_method='email', remember_me=False)
 

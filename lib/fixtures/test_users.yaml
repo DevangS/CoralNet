@@ -1,0 +1,51 @@
+# TODO: Upgrade to Django 1.4 and start using natural keys for Users.
+# User natural keys were added after 1.3: https://code.djangoproject.com/ticket/13914
+
+# A superuser.
+# password: secret
+- model: auth.user
+  pk: 1
+  fields:
+    username: superuser_user
+    first_name: ""
+    last_name: ""
+    is_active: true
+    is_superuser: true
+    is_staff: true
+    last_login: "2012-04-25 17:30:32"
+    groups: []
+    user_permissions: []
+    password: sha1$12345$99567ee91b2c7cabf607f10cb9f4a3634fa820e0
+    email: superuser_user_123@example.com
+    date_joined: "2012-04-25 17:30:32"
+- model: accounts.profile
+  pk: null
+  fields:
+    user: 1
+    about_me: ""
+    website: ""
+    location: ""
+# A normal user.
+# password: secret
+- model: auth.user
+  pk: 2
+  fields:
+    username: normal_user
+    first_name: ""
+    last_name: ""
+    is_active: true
+    is_superuser: false
+    is_staff: false
+    last_login: "2012-04-25 17:30:32"
+    groups: []
+    user_permissions: []
+    password: sha1$12345$99567ee91b2c7cabf607f10cb9f4a3634fa820e0
+    email: normal_user_123@example.com
+    date_joined: "2012-04-25 17:30:32"
+- model: accounts.profile
+  pk: null
+  fields:
+    user: 2
+    about_me: ""
+    website: ""
+    location: ""
