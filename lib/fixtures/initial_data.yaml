@@ -1,0 +1,8 @@
+# Since this fixture is named initial_data.<ext>, this fixture will be
+# automatically loaded on syncdb.
+
+# Empty labelset
+- model: annotations.labelset
+  pk: -1
+  fields:
+    description: Empty labelset. A dummy labelset for new sources.

@@ -105,10 +105,10 @@ class SigninTest(ClientTest):
         Submit the Signin form correctly, then check that we're signed in.
         """
         if identification_method == 'username':
-            identification = 'normal_user'
+            identification = 'user2'
             user = User.objects.get(username=identification)
         elif identification_method == 'email':
-            identification = 'normal_user_123@example.com'
+            identification = 'user2@example.com'
             user = User.objects.get(email=identification)
         else:
             raise ValueError('Invalid identification method.')

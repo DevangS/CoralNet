@@ -1,0 +1,79 @@
+- model: images.source
+  pk: 1
+  fields:
+    name: public1
+    visibility: b
+    create_date: "2012-04-25 17:30:32"
+    description: A public source.
+    labelset: -1    # Empty labelset
+    key1: Site
+    key2: Habitat
+    key3: Transect
+    key4: Quadrant
+    key5: ""
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""
+
+- model: images.source
+  pk: 2
+  fields:
+    name: public2
+    visibility: b
+    create_date: "2012-04-25 17:30:32"
+    description: A public source.
+    labelset: -1    # Empty labelset
+    key1: Site
+    key2: Habitat
+    key3: Transect
+    key4: Quadrant
+    key5: ""
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""
+
+- model: images.source
+  pk: 3
+  fields:
+    name: private1
+    visibility: v
+    create_date: "2012-04-25 17:30:32"
+    description: A private source.
+    labelset: -1    # Empty labelset
+    key1: Site
+    key2: Habitat
+    key3: Transect
+    key4: Quadrant
+    key5: ""
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""
+
+- model: images.source
+  pk: 4
+  fields:
+    name: private2
+    visibility: v
+    create_date: "2012-04-25 17:30:32"
+    description: A private source.
+    labelset: -1    # Empty labelset
+    key1: Site
+    key2: Habitat
+    key3: Transect
+    key4: Quadrant
+    key5: ""
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""
