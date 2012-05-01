@@ -60,10 +60,10 @@ STATIC_ROOT = ''
 # SOUTH_TESTS_MIGRATE:
 # True to run all South migrations before running any unit tests.
 # False to not run South migrations, and instead run normal syncdb
-# to build the database tables before tests.  This is much faster,
-# but may miss important things from South data migrations, such as
-# creation of a special User.
-SOUTH_TESTS_MIGRATE = True
+# to build the database tables before tests.  This is much, much
+# faster, but if the project has important initial data created by
+# South data migrations, then tests may fail.
+SOUTH_TESTS_MIGRATE = False
 
 # Dajaxice settings
 #

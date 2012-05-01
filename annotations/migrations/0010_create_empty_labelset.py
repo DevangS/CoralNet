@@ -7,12 +7,19 @@ from django.db import models
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        emptyLabelset = orm.LabelSet(id=-1, description="Empty labelset. A dummy labelset for new sources.")
-        emptyLabelset.save()
+        try:
+            orm.LabelSet.objects.get(pk=-1)
+        except orm.LabelSet.DoesNotExist:
+            emptyLabelset = orm.LabelSet(id=-1, description="Empty labelset. A dummy labelset for new sources.")
+            emptyLabelset.save()
 
 
     def backwards(self, orm):
-        orm.LabelSet.objects.get(id=-1).delete()
+        print """
+        -----
+        This backwards migration does nothing; no reason to get rid of the empty labelset.
+        -----
+        """
 
 
     models = {

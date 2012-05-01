@@ -12,50 +12,59 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         print "-----"
-
-        ct = orm['contenttypes.ContentType'].objects.get(model='source', app_label='images') # model must be lowercase
-
-        print "Will create the Source View and Edit permission types, if they don't already exist in the auth system."
-        print "NOTE: If you have any orphaned object permissions (permission to a source that doesn't exist), this migration might fail. To clean up those orphaned permissions, try:"
-        print "./manage.py clean_orphan_obj_perms"
-
-        view_perm, created = orm['auth.permission'].objects.get_or_create(
-            content_type=ct, codename=u'source_view', defaults={'name': u'View'})
-        if created:
-            print "Source View permission type created."
-        else:
-            print "Source View permission type already exists."
-
-        edit_perm, created = orm['auth.permission'].objects.get_or_create(
-            content_type=ct, codename=u'source_edit', defaults={'name': u'Edit'})
-        if created:
-            print "Source Edit permission type created."
-        else:
-            print "Source Edit permission type already exists."
-
+        print "This migration will create the Source View and Edit"
+        print "permission types, if they don't already exist in the"
+        print "auth system."
         print ""
-        print "Next, we'll grant View and Edit permissions for all current Source Admins."
 
-        admin_perm = orm['auth.permission'].objects.get(content_type=ct, codename=u'source_admin')
-        
-        for p in orm['guardian.userobjectpermission'].objects.filter(permission=admin_perm):
-            source = orm['images.source'].objects.get(pk=p.object_pk)
-
-            view_userobjperm, created = orm['guardian.userobjectpermission'].objects.get_or_create(
-                permission=view_perm, object_pk=p.object_pk, user=p.user, content_type=ct)
+        try:
+            ct = orm['contenttypes.ContentType'].objects.get(model='source', app_label='images') # model must be lowercase
+        except orm['contenttypes.ContentType'].DoesNotExist:
+            print "Didn't find a ContentType for the Source model, so we can deduce"
+            print "that the Source model has just been created during this series"
+            print "of migration runs.  The Admin, Edit, and View permissions"
+            print "should be auto-created later along with the Source"
+            print "model.  No need to do anything in this migration."
+        else:
+            view_perm, created = orm['auth.permission'].objects.get_or_create(
+                content_type=ct, codename=u'source_view', defaults={'name': u'View'})
             if created:
-                print "User %s has been granted View permission for Source %s." % (p.user.username, source.name)
+                print "Source View permission type created."
             else:
-                print "User %s already has View permission for Source %s." % (p.user.username, source.name)
+                print "Source View permission type already exists."
 
-            edit_userobjperm, created = orm['guardian.userobjectpermission'].objects.get_or_create(
-                permission=edit_perm, object_pk=p.object_pk, user=p.user, content_type=ct)
+            edit_perm, created = orm['auth.permission'].objects.get_or_create(
+                content_type=ct, codename=u'source_edit', defaults={'name': u'Edit'})
             if created:
-                print "User %s has been granted Edit permission for Source %s." % (p.user.username, source.name)
+                print "Source Edit permission type created."
             else:
-                print "User %s already has Edit permission for Source %s." % (p.user.username, source.name)
+                print "Source Edit permission type already exists."
 
-        print "Done."
+            print "Next, we'll grant View and Edit permissions for all current Source Admins."
+            print "NOTE: If you have any orphaned object permissions (permission to a source that doesn't exist), this might fail. To clean up those orphaned permissions, try:"
+            print "./manage.py clean_orphan_obj_perms"
+
+            admin_perm = orm['auth.permission'].objects.get(content_type=ct, codename=u'source_admin')
+
+            for p in orm['guardian.userobjectpermission'].objects.filter(permission=admin_perm):
+                source = orm['images.source'].objects.get(pk=p.object_pk)
+
+                view_userobjperm, created = orm['guardian.userobjectpermission'].objects.get_or_create(
+                    permission=view_perm, object_pk=p.object_pk, user=p.user, content_type=ct)
+                if created:
+                    print "User %s has been granted View permission for Source %s." % (p.user.username, source.name)
+                else:
+                    print "User %s already has View permission for Source %s." % (p.user.username, source.name)
+
+                edit_userobjperm, created = orm['guardian.userobjectpermission'].objects.get_or_create(
+                    permission=edit_perm, object_pk=p.object_pk, user=p.user, content_type=ct)
+                if created:
+                    print "User %s has been granted Edit permission for Source %s." % (p.user.username, source.name)
+                else:
+                    print "User %s already has Edit permission for Source %s." % (p.user.username, source.name)
+
+            print "Done granting permissions."
+
         print "-----"
 
 
