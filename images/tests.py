@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from guardian.shortcuts import get_objects_for_user
+from images.model_utils import PointGen
 from images.models import Source
 from lib.tests import ClientTest
 
@@ -128,3 +129,59 @@ class SourceListTestWithoutSources(ClientTest):
     def test_source_list(self):
         self.source_list_as_user(None, None)
         self.source_list_as_user('user2', 'secret')
+
+
+class SourceNewTest(ClientTest):
+    """
+    Test the New Source page.
+    """
+    fixtures = ['test_users.yaml']
+
+    def test_source_new_not_logged_in(self):
+        """
+        Going to the New Source page while logged out should trigger a
+        redirect to the login page.  Then once the user logs in, they
+        should be redirected to the New Source page.
+        """
+        response = self.client.get(reverse('source_new'))
+
+        # This URL isn't built with django.utils.http.urlencode() because
+        # (1) urlencode() unfortunately escapes the '/' in its arguments, and
+        # (2) str concatenation should be safe when there's no possibility of
+        # malicious input.
+        url_signin_with_source_new_next = reverse('signin') + '?next=' + reverse('source_new')
+        self.assertRedirects(response, url_signin_with_source_new_next)
+
+        response = self.client.post(url_signin_with_source_new_next, dict(
+            identification='user2',
+            password='secret',
+        ))
+        self.assertRedirects(response, reverse('source_new'))
+
+    def test_source_new_success(self):
+        """
+        Successful creation of a new source.
+        """
+        self.client.login(username='user2', password='secret')
+        response = self.client.get(reverse('source_new'))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(reverse('source_new'), dict(
+            name='Test Source',
+            visibility=Source.VisibilityTypes.PRIVATE,
+            point_generation_type=PointGen.Types.SIMPLE,
+            simple_number_of_points=200,
+            image_height_in_cm=50,
+            min_x=0,
+            max_x=100,
+            min_y=0,
+            max_y=100,
+        ))
+        self.assertRedirects(response, reverse('source_main',
+            kwargs={
+                'source_id': Source.objects.latest('create_date').pk
+            }
+        ))
+
+    # TODO: Test other successful and unsuccessful inputs for the
+    # new source form.

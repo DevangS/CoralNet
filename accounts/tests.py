@@ -93,7 +93,7 @@ class AddUserTest(ClientTest):
 class SigninTest(ClientTest):
     fixtures = ['test_users.yaml']
 
-    def test_add_user_page(self):
+    def test_signin_page(self):
         """Go to the signin page while logged out."""
         response = self.client.get(reverse('signin'))
         self.assertEqual(response.status_code, 200)
