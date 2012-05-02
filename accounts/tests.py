@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.urlresolvers import reverse
-from lib.tests import ClientTest
+from lib.test_utils import ClientTest
 
 
 class AddUserTest(ClientTest):
@@ -11,7 +11,7 @@ class AddUserTest(ClientTest):
         """Go to the add user page."""
         self.client.login(username='superuser_user', password='secret')
         response = self.client.get(reverse('signup'))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusOK(response)
 
     # TODO: Add tests that submit the Add User form with errors.
     # TODO: Add a test (or modify an old test?) to check that a new, unactivated user can't login yet.
@@ -78,7 +78,7 @@ class AddUserTest(ClientTest):
                          'userena_profile_edit',
                          ]:
             response = self.client.get(reverse(url_name, kwargs={'username': new_user_username}))
-            self.assertEqual(response.status_code, 200)
+            self.assertStatusOK(response)
             self.assertTemplateNotUsed(response, 'permission_denied.html')
             response = self.client.get(reverse(url_name, kwargs={'username': 'superuser_user'}))
             self.assertEqual(response.status_code, 403)
@@ -96,7 +96,7 @@ class SigninTest(ClientTest):
     def test_signin_page(self):
         """Go to the signin page while logged out."""
         response = self.client.get(reverse('signin'))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusOK(response)
 
     # TODO: Add tests that submit the signin form with errors.
 

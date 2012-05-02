@@ -3,7 +3,7 @@ from django.core.urlresolvers import reverse
 from guardian.shortcuts import get_objects_for_user
 from images.model_utils import PointGen
 from images.models import Source
-from lib.tests import ClientTest
+from lib.test_utils import ClientTest
 
 
 class SourceAboutTest(ClientTest):
@@ -12,7 +12,7 @@ class SourceAboutTest(ClientTest):
     """
     def test_source_about(self):
         response = self.client.get(reverse('source_about'))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusOK(response)
 
 
 class SourceListTestWithSources(ClientTest):
@@ -21,18 +21,12 @@ class SourceListTestWithSources(ClientTest):
     """
 
     fixtures = ['test_users.yaml', 'test_sources.yaml']
-
-    def setTestSpecificPerms(self):
-        source_member_roles = [
-            ('public1', 'user2', Source.PermTypes.ADMIN.code),
-            ('public1', 'user4', Source.PermTypes.EDIT.code),
-            ('private1', 'user3', Source.PermTypes.ADMIN.code),
-            ('private1', 'user4', Source.PermTypes.VIEW.code),
-        ]
-        for role in source_member_roles:
-            source = Source.objects.get(name=role[0])
-            user = User.objects.get(username=role[1])
-            source.assign_role(user, role[2])
+    source_member_roles = [
+        ('public1', 'user2', Source.PermTypes.ADMIN.code),
+        ('public1', 'user4', Source.PermTypes.EDIT.code),
+        ('private1', 'user3', Source.PermTypes.ADMIN.code),
+        ('private1', 'user4', Source.PermTypes.VIEW.code),
+    ]
 
     def source_list_as_user(self, username, password,
                             num_your_sources_predicted,
@@ -57,7 +51,7 @@ class SourceListTestWithSources(ClientTest):
                 self.assertEqual(source.visibility, Source.VisibilityTypes.PUBLIC)
         else:
             # Goes to source_list page
-            self.assertEqual(response.status_code, 200)
+            self.assertStatusOK(response)
             your_sources_predicted = get_objects_for_user(user, Source.PermTypes.VIEW.fullCode)
 
             # Sources this user is a member of
@@ -137,26 +131,12 @@ class SourceNewTest(ClientTest):
     """
     fixtures = ['test_users.yaml']
 
-    def test_source_new_not_logged_in(self):
-        """
-        Going to the New Source page while logged out should trigger a
-        redirect to the login page.  Then once the user logs in, they
-        should be redirected to the New Source page.
-        """
-        response = self.client.get(reverse('source_new'))
-
-        # This URL isn't built with django.utils.http.urlencode() because
-        # (1) urlencode() unfortunately escapes the '/' in its arguments, and
-        # (2) str concatenation should be safe when there's no possibility of
-        # malicious input.
-        url_signin_with_source_new_next = reverse('signin') + '?next=' + reverse('source_new')
-        self.assertRedirects(response, url_signin_with_source_new_next)
-
-        response = self.client.post(url_signin_with_source_new_next, dict(
-            identification='user2',
+    def test_source_new_permissions(self):
+        self.login_required_page_test(
+            protected_url=reverse('source_new'),
+            username='user2',
             password='secret',
-        ))
-        self.assertRedirects(response, reverse('source_new'))
+        )
 
     def test_source_new_success(self):
         """
@@ -164,7 +144,7 @@ class SourceNewTest(ClientTest):
         """
         self.client.login(username='user2', password='secret')
         response = self.client.get(reverse('source_new'))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusOK(response)
 
         response = self.client.post(reverse('source_new'), dict(
             name='Test Source',
@@ -177,6 +157,7 @@ class SourceNewTest(ClientTest):
             min_y=0,
             max_y=100,
         ))
+        # TODO: Check that the source_main context reflects the source info.
         self.assertRedirects(response, reverse('source_main',
             kwargs={
                 'source_id': Source.objects.latest('create_date').pk
@@ -185,3 +166,48 @@ class SourceNewTest(ClientTest):
 
     # TODO: Test other successful and unsuccessful inputs for the
     # new source form.
+
+
+class SourceEditTest(ClientTest):
+    """
+    Test the Edit Source page.
+    """
+    fixtures = ['test_users.yaml', 'test_sources.yaml']
+    source_member_roles = [
+        ('public1', 'user2', Source.PermTypes.ADMIN.code),
+        ('public1', 'user4', Source.PermTypes.EDIT.code),
+        ('private1', 'user3', Source.PermTypes.ADMIN.code),
+        ('private1', 'user4', Source.PermTypes.VIEW.code),
+    ]
+    PUBLIC1_PK = 1
+
+    def test_source_edit_permissions(self):
+        self.permission_required_page_test(
+            protected_url=reverse('source_edit', kwargs={'source_id': self.PUBLIC1_PK}),
+            denied_users=[dict(username='user3', password='secret')],
+            accepted_users=[dict(username='user2', password='secret')],
+        )
+
+    def test_source_edit_success(self):
+        """
+        Successful edit of an existing source.
+        """
+        self.client.login(username='user2', password='secret')
+        response = self.client.post(reverse('source_edit', kwargs={'source_id': self.PUBLIC1_PK}), dict(
+            name='Test Source',
+            visibility=Source.VisibilityTypes.PRIVATE,
+            point_generation_type=PointGen.Types.SIMPLE,
+            simple_number_of_points=200,
+            image_height_in_cm=50,
+            min_x=0,
+            max_x=100,
+            min_y=0,
+            max_y=100,
+        ))
+        # TODO: Check that the source_main context reflects the source edits.
+        self.assertRedirects(response, reverse('source_main',
+            kwargs={'source_id': self.PUBLIC1_PK}
+        ))
+
+    # TODO: Test other successful and unsuccessful inputs for the
+    # edit source form.
