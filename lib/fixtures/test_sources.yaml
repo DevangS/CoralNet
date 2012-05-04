@@ -1,5 +1,5 @@
 - model: images.source
-  pk: 1
+  pk: null
   fields:
     name: public1
     visibility: b
@@ -19,7 +19,7 @@
     latitude: ""
 
 - model: images.source
-  pk: 2
+  pk: null
   fields:
     name: public2
     visibility: b
@@ -39,7 +39,7 @@
     latitude: ""
 
 - model: images.source
-  pk: 3
+  pk: null
   fields:
     name: private1
     visibility: v
@@ -59,7 +59,7 @@
     latitude: ""
 
 - model: images.source
-  pk: 4
+  pk: null
   fields:
     name: private2
     visibility: v

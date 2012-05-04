@@ -1,10 +1,31 @@
 # Utility classes and functions for tests.
+import os
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.test.client import Client
+from django.test.simple import DjangoTestSuiteRunner
 from userena.managers import UserenaManager
 from images.models import Source
+
+
+class MyTestSuiteRunner(DjangoTestSuiteRunner):
+    def setup_test_environment(self, **kwargs):
+        DjangoTestSuiteRunner.setup_test_environment(self, **kwargs)
+
+        # Media used in unit tests.
+        abspath = lambda *p: os.path.abspath(os.path.join(*p))
+        settings.MEDIA_ROOT = abspath(settings.PROJECT_ROOT, 'media_test')
+
+        # The Celery daemon uses the regular Django database, while
+        # the testing framework uses a separate database.  Therefore,
+        # we can't get task results from the daemon during a test.
+        #
+        # The best solution for now is to not use the daemon, and
+        # simply block and wait for the result as the task runs.
+        # More info: http://docs.celeryproject.org/en/latest/django/unit-testing.html
+        settings.CELERY_ALWAYS_EAGER = True
 
 
 class BaseTest(TestCase):
@@ -14,6 +35,15 @@ class BaseTest(TestCase):
     def setUp(self):
         self.setAccountPerms()
         self.setTestSpecificPerms()
+
+    def tearDown(self):
+        # TODO: Delete any files created by the tests.
+        # To do this, perhaps maintain a list of files created
+        # during the tests.  Then in this method, iterate over
+        # that list and delete the files.  Remember to cover:
+        # (1) Task-created files.  (Preprocess results files, etc.)
+        # (2) Uploaded images.  (Might consider modifying upload_to()?)
+        pass
 
     def setAccountPerms(self):
         # TODO: is the below necessary, or is adding these permissions done by magic anyway?

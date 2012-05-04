@@ -242,6 +242,8 @@ AUTHENTICATION_BACKENDS = (
 
 )
 
+TEST_RUNNER = 'lib.test_utils.MyTestSuiteRunner'
+
 #Django-guardian settings
 ANONYMOUS_USER_ID = -1
 

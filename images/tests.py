@@ -2,7 +2,8 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from guardian.shortcuts import get_objects_for_user
 from images.model_utils import PointGen
-from images.models import Source
+from images.models import Source, Image
+from images.tasks import PreprocessImages
 from lib.test_utils import ClientTest
 
 
@@ -211,3 +212,31 @@ class SourceEditTest(ClientTest):
 
     # TODO: Test other successful and unsuccessful inputs for the
     # edit source form.
+
+
+# TODO: Commit test image files.
+# TODO: Create a test robot model file, and then generate robot annotations from it, to see if creating revisions still works.
+
+class PreprocessTest(ClientTest):
+    """
+    Test the image preprocessing task.
+    """
+    fixtures = ['test_users.yaml', 'test_sources.yaml', 'test_images.yaml']
+    PUBLIC1_PK = 1
+    IMAGE1_PK = 1
+
+    def test_preprocess_task(self):
+        self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).status.preprocessed, False)
+
+        PreprocessImages.delay(self.IMAGE1_PK)
+
+        # Should be preprocessed, and process_date should be set
+        self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).status.preprocessed, True)
+        process_date = Image.objects.get(pk=self.IMAGE1_PK).process_date
+        self.assertNotEqual(process_date, None)
+
+        PreprocessImages.delay(self.IMAGE1_PK)
+
+        # Should have exited without re-doing the preprocess
+        self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).status.preprocessed, True)
+        self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).process_date, process_date)

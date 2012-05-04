@@ -17,7 +17,15 @@ class ImageModelConstants():
     MAX_IMAGE_CM_HEIGHT = 100000
 
 
+class SourceManager(models.Manager):
+    def get_by_natural_key(self, name):
+        """
+        Allow fixtures to refer to Sources by name instead of by id.
+        """
+        return self.get(name=name)
+
 class Source(models.Model):
+    objects = SourceManager()
 
     class VisibilityTypes():
         PUBLIC = 'b'
