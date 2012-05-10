@@ -1,10 +1,12 @@
+import os
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from guardian.shortcuts import get_objects_for_user
 from images.model_utils import PointGen
 from images.models import Source, Image
 from images.tasks import PreprocessImages
-from lib.test_utils import ClientTest
+from lib.test_utils import ClientTest, BaseTest, MediaTestComponent, ProcessingTestComponent
 
 
 class SourceAboutTest(ClientTest):
@@ -180,7 +182,11 @@ class SourceEditTest(ClientTest):
         ('private1', 'user3', Source.PermTypes.ADMIN.code),
         ('private1', 'user4', Source.PermTypes.VIEW.code),
     ]
-    PUBLIC1_PK = 1
+    PUBLIC1_PK = None
+
+    def setUp(self):
+        ClientTest.setUp(self)
+        self.PUBLIC1_PK = Source.objects.get(name='public1').pk
 
     def test_source_edit_permissions(self):
         self.permission_required_page_test(
@@ -214,29 +220,62 @@ class SourceEditTest(ClientTest):
     # edit source form.
 
 
-# TODO: Commit test image files.
 # TODO: Create a test robot model file, and then generate robot annotations from it, to see if creating revisions still works.
 
-class PreprocessTest(ClientTest):
+class ImageProcessingTaskTest(ClientTest):
     """
-    Test the image preprocessing task.
+    Test the image processing tasks' logic with respect to
+    database interfacing and input/output files.
     """
-    fixtures = ['test_users.yaml', 'test_sources.yaml', 'test_images.yaml']
+    extra_components = [MediaTestComponent, ProcessingTestComponent]
+    fixtures = ['test_users.yaml', 'test_sources.yaml']
+    source_member_roles = [
+        ('public1', 'user2', Source.PermTypes.ADMIN.code),
+    ]
     PUBLIC1_PK = 1
     IMAGE1_PK = 1
+
+    def setUp(self):
+        BaseTest.setUp(self)
+
+        # Upload initial images
+        self.client.login(username='user2', password='secret')
+        sample_uploadable_path = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', '001_2012-05-01_color-grid-001.png')
+        #sample_uploadable_path = 'C:\\Users\\Stephen\\Documents\\CVCE\\Test_images\\Label_thumbnails\\hard-coral.jpg'
+        f = open(sample_uploadable_path, 'rb')
+        response = self.client.post(reverse('image_upload', kwargs={'source_id': self.PUBLIC1_PK}), dict(
+            files=f,
+            skip_or_replace_duplicates='skip',
+            specify_metadata='filenames',
+        ))
+        f.close()
+
+        # TODO: Move these asserts to a separate test that specifically
+        # tests uploads.
+        self.assertStatusOK(response)
+#        print ['message: '+m.message for m in list(response.context['messages'])]
+#        print ['imageForm error: ' + k + ': ' + str(error_list) for k,error_list in response.context['imageForm'].errors.iteritems()]
+#        print ['optionsForm error: ' + k + ': ' + str(error_list) for k,error_list in response.context['optionsForm'].errors.iteritems()]
+
+        self.assertEqual(len(response.context['uploadedImages']), 1)
 
     def test_preprocess_task(self):
         self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).status.preprocessed, False)
 
-        PreprocessImages.delay(self.IMAGE1_PK)
+        result = PreprocessImages.delay(self.IMAGE1_PK)
+        # Check that the task didn't encounter an exception
+        self.assertTrue(result.successful())
 
         # Should be preprocessed, and process_date should be set
         self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).status.preprocessed, True)
         process_date = Image.objects.get(pk=self.IMAGE1_PK).process_date
         self.assertNotEqual(process_date, None)
 
-        PreprocessImages.delay(self.IMAGE1_PK)
+        result = PreprocessImages.delay(self.IMAGE1_PK)
+        # Check that the task didn't encounter an exception
+        self.assertTrue(result.successful())
 
         # Should have exited without re-doing the preprocess
         self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).status.preprocessed, True)
+        # process_date should have stayed the same
         self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).process_date, process_date)

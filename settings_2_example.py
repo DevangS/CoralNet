@@ -22,7 +22,15 @@ PROJECT_ROOT = abspath(os.path.dirname(__file__))
 
 SLEEP_TIME_BETWEEN_IMAGE_PROCESSING = 5 * 60 # 60*60 on the server, but shorter on the dev. machines
 
-PROCESSING_ROOT = PROJECT_ROOT
+# Absolute filesystem path to the directory that will
+# hold input and output files for image processing tasks.
+# This directory is best kept out of the repository.
+# Example: "/home/mysite_processing/"
+PROCESSING_ROOT = abspath(PROJECT_ROOT, '../processing')
+
+# Processing Root to be used during unit tests.
+# This directory is best kept out of the repository.
+TEST_PROCESSING_ROOT = abspath(PROJECT_ROOT, '../test_files/processing')
 
 DEBUG = True
 
@@ -46,6 +54,10 @@ DATABASES = {
 # Default e-mail address to use for various automated correspondence from
 # the site managers.
 DEFAULT_FROM_EMAIL = 'webmaster@yourdomainhere'
+
+# Media Root to be used during unit tests.
+# This directory is best kept out of the repository.
+TEST_MEDIA_ROOT = abspath(PROJECT_ROOT, '../test_files/media')
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 

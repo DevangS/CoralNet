@@ -11,6 +11,7 @@ abspath = lambda *p: os.path.abspath(os.path.join(*p))
 PROJECT_ROOT = settings_2.PROJECT_ROOT
 
 PROCESSING_ROOT = settings_2.PROCESSING_ROOT
+TEST_PROCESSING_ROOT = settings_2.TEST_PROCESSING_ROOT
 
 SLEEP_TIME_BETWEEN_IMAGE_PROCESSING = settings_2.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING
 
@@ -69,7 +70,16 @@ USE_L10N = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
+# TODO: Might be better to move this directory out of the repository.
 MEDIA_ROOT = abspath(PROJECT_ROOT, 'media')
+
+# Media Root to be used during unit tests.
+# This directory is best kept out of the repository.
+TEST_MEDIA_ROOT = settings_2.TEST_MEDIA_ROOT
+
+# Directory for sample files to be uploaded during unit tests.
+# This directory should be in the repository.
+SAMPLE_UPLOADABLES_ROOT = abspath(PROJECT_ROOT, 'sample_uploadables')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
