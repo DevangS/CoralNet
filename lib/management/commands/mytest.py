@@ -10,5 +10,9 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         from django.conf import settings
+
+        print "Running tests for the following apps:\n{0}\n".format(
+            ', '.join(settings.MY_INSTALLED_APPS))
+
         call_command('test', *settings.MY_INSTALLED_APPS, **options)
 
