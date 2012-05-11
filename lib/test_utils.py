@@ -32,6 +32,9 @@ class MyTestSuiteRunner(DjangoTestSuiteRunner):
 
 
 class BaseTest(TestCase):
+    """
+    Base class for our test classes.
+    """
     fixtures = []
     source_member_roles = []
     extra_components = []
@@ -73,6 +76,11 @@ class BaseTest(TestCase):
 
 
 class ClientTest(BaseTest):
+    """
+    Base class for tests that use a test client.
+    """
+    PERMISSION_DENIED_TEMPLATE = 'permission_denied.html'
+
     def setUp(self):
         BaseTest.setUp(self)
         self.client = Client()
@@ -115,23 +123,43 @@ class ClientTest(BaseTest):
         self.client.logout()
         response = self.client.get(protected_url)
         self.assertStatusOK(response)
-        # TODO: Make permission_denied.html a constant
-        self.assertTemplateUsed(response, 'permission_denied.html')
+        self.assertTemplateUsed(response, self.PERMISSION_DENIED_TEMPLATE)
 
         for user in denied_users:
             self.client.login(username=user['username'], password=user['password'])
             response = self.client.get(protected_url)
             self.assertStatusOK(response)
-            self.assertTemplateUsed(response, 'permission_denied.html')
+            self.assertTemplateUsed(response, self.PERMISSION_DENIED_TEMPLATE)
 
         for user in accepted_users:
             self.client.login(username=user['username'], password=user['password'])
             response = self.client.get(protected_url)
             self.assertStatusOK(response)
-            self.assertTemplateNotUsed(response, 'permission_denied.html')
+            self.assertTemplateNotUsed(response, self.PERMISSION_DENIED_TEMPLATE)
+
+    @staticmethod
+    def print_response_messages(response):
+        """
+        Outputs (to console) the Django messages that were received in the given response.
+        """
+        print ['message: '+m.message for m in list(response.context['messages'])]
+
+    @staticmethod
+    def print_form_errors(response, form_name):
+        """
+        Outputs (to console) the errors of the given form in the given response.
+        response: the response object
+        form_name: the form's name in the response context (this is a string)
+        """
+        print ['{0} error: {1}: {2}'.format(form_name, field_name, str(error_list))
+               for field_name, error_list in response.context[form_name].errors.iteritems()]
 
 
 class FilesTestComponent(object):
+    """
+    Base class for test components that require a
+    directory for test files.
+    """
     test_directory = ''
     test_directory_name = ""
 
@@ -174,18 +202,10 @@ class FilesTestComponent(object):
 
         if unexpected_filenames:
             self.raise_testfile_directory_error(unexpected_filenames, self.testfile_directory_setup_error_fmtstr)
-#            raise TestfileDirectoryError("The test setup routine found files in the {0} directory ({1}):\n{2}"
-#            " Please check that {0} is set correctly, and that all files are cleared from this directory before running the test.".format(
-#                self.test_directory_name, self.test_directory, unexpected_filenames_str))
 
         # If you want to test the ability to detect unexpected files
         # on tearDown, stick some code right here to add files to the
         # test-file directory.
-
-#        if self.test_directory_name == 'TEST_PROCESSING_ROOT':
-#            for i in range(0,10):
-#                f = open(os.path.join(settings.TEST_PROCESSING_ROOT, 'stuff{0}.txt'.format(i)), 'w')
-#                f.close()
 
         # Save a timestamp just before the tests start.
         # This will allow an extra sanity check in tearDown().
@@ -213,41 +233,19 @@ class FilesTestComponent(object):
 
         if unexpected_filenames:
             self.raise_testfile_directory_error(unexpected_filenames, self.testfile_directory_teardown_error_fmtstr)
-#            if len(unexpected_filenames) > 10:
-#                unexpected_filenames_str = '\n'.join(unexpected_filenames[:10]) + "\n(And {0} others)".format(len(unexpected_filenames) - 10)
-#            else:
-#                unexpected_filenames_str = '\n'.join(unexpected_filenames)
-#            error_message = ("The test teardown routine found unexpected files in the {0} directory ({1})!:\n{2}".format(
-#                             self.test_directory_name, self.test_directory, unexpected_filenames_str)
-#                             + "These files seem to have been created prior to the test. Please delete these files or move them elsewhere.")
-#            raise TestfileDirectoryError(error_message)
 
 class MediaTestComponent(FilesTestComponent):
+    """
+    Include this class in a test class's extra_components list
+    if the test uses media (for file uploads, etc.).
+    """
     test_directory = settings.TEST_MEDIA_ROOT
     test_directory_name = "TEST_MEDIA_ROOT"
-#    def setUp(self):
-#        if os.listdir(settings.TEST_MEDIA_ROOT):
-#            raise ValueError("The TEST_MEDIA_ROOT directory ({0}) is not empty. Please make sure that this directory is empty before running this test.".format(settings.TEST_MEDIA_ROOT))
-#        self.time_before_tests = datetime.datetime.now()
-#    def tearDown(self):
-#        pass
 
 class ProcessingTestComponent(FilesTestComponent):
+    """
+    Include this class in a test class's extra_components list
+    if the test uses image processing tasks.
+    """
     test_directory = settings.TEST_PROCESSING_ROOT
     test_directory_name = "TEST_PROCESSING_ROOT"
-#    def setUp(self):
-#        if os.listdir(settings.TEST_PROCESSING_ROOT):
-#            raise ValueError("The TEST_PROCESSING_ROOT directory ({0}) is not empty. Please make sure that this directory is empty before running this test.".format(settings.TEST_PROCESSING_ROOT))
-#        self.timestamp_before_tests = datetime.datetime.now()
-#    def tearDown(self):
-#        unexpected_filenames = []
-#        for dirname, dirnames, filenames in os.walk(settings.TEST_PROCESSING_ROOT):
-#            for filename in filenames:
-#                leftover_test_filename = os.path.join(dirname, filename)
-#                if os.stat(leftover_test_filename).ctime < self.timestamp_before_tests:
-#                    # The file was created before the test started. There's a problem!
-#                    unexpected_filenames.append(leftover_test_filename)
-#                else:
-#                    os.remove(leftover_test_filename)
-#        if unexpected_filenames:
-#            raise ValueError("There were unexpected files in the TEST_PROCESSING_ROOT directory ({0})!".format(settings.TEST_PROCESSING_ROOT))

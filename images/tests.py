@@ -34,6 +34,10 @@ class SourceListTestWithSources(ClientTest):
     def source_list_as_user(self, username, password,
                             num_your_sources_predicted,
                             num_other_public_sources_predicted):
+        """
+        Test the source_list page as a certain user.
+        If username is None, then the test is done while logged out.
+        """
         # Sign in
         user = None
         if username is not None:
@@ -110,6 +114,10 @@ class SourceListTestWithoutSources(ClientTest):
     fixtures = ['test_users.yaml']
 
     def source_list_as_user(self, username, password):
+        """
+        Test the source_list page as a certain user.
+        If username is None, then the test is done while logged out.
+        """
         if username is not None:
             self.client.login(username=username, password=password)
 
@@ -135,6 +143,10 @@ class SourceNewTest(ClientTest):
     fixtures = ['test_users.yaml']
 
     def test_source_new_permissions(self):
+        """
+        Test that certain users are able to access the
+        page, and that certain other users are denied.
+        """
         self.login_required_page_test(
             protected_url=reverse('source_new'),
             username='user2',
@@ -182,15 +194,18 @@ class SourceEditTest(ClientTest):
         ('private1', 'user3', Source.PermTypes.ADMIN.code),
         ('private1', 'user4', Source.PermTypes.VIEW.code),
     ]
-    PUBLIC1_PK = None
 
     def setUp(self):
-        ClientTest.setUp(self)
-        self.PUBLIC1_PK = Source.objects.get(name='public1').pk
+        super(SourceEditTest, self).setUp()
+        self.source_id = Source.objects.get(name='public1').pk
 
     def test_source_edit_permissions(self):
+        """
+        Test that certain users are able to access the
+        page, and that certain other users are denied.
+        """
         self.permission_required_page_test(
-            protected_url=reverse('source_edit', kwargs={'source_id': self.PUBLIC1_PK}),
+            protected_url=reverse('source_edit', kwargs={'source_id': self.source_id}),
             denied_users=[dict(username='user3', password='secret')],
             accepted_users=[dict(username='user2', password='secret')],
         )
@@ -200,7 +215,7 @@ class SourceEditTest(ClientTest):
         Successful edit of an existing source.
         """
         self.client.login(username='user2', password='secret')
-        response = self.client.post(reverse('source_edit', kwargs={'source_id': self.PUBLIC1_PK}), dict(
+        response = self.client.post(reverse('source_edit', kwargs={'source_id': self.source_id}), dict(
             name='Test Source',
             visibility=Source.VisibilityTypes.PRIVATE,
             point_generation_type=PointGen.Types.SIMPLE,
@@ -213,11 +228,44 @@ class SourceEditTest(ClientTest):
         ))
         # TODO: Check that the source_main context reflects the source edits.
         self.assertRedirects(response, reverse('source_main',
-            kwargs={'source_id': self.PUBLIC1_PK}
+            kwargs={'source_id': self.source_id}
         ))
 
     # TODO: Test other successful and unsuccessful inputs for the
     # edit source form.
+
+
+class ImageUploadTest(ClientTest):
+    """
+    Test the image upload page.
+    """
+    extra_components = [MediaTestComponent]
+    fixtures = ['test_users.yaml', 'test_sources.yaml']
+    source_member_roles = [
+        ('public1', 'user2', Source.PermTypes.ADMIN.code),
+    ]
+
+    def setUp(self):
+        super(ImageUploadTest, self).setUp()
+        self.source_id = Source.objects.get(name='public1').pk
+
+    def test_image_upload_success(self):
+        self.client.login(username='user2', password='secret')
+
+        # Upload 1 image
+        sample_uploadable_path = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', '001_2012-05-01_color-grid-001.png')
+        f = open(sample_uploadable_path, 'rb')
+        response = self.client.post(reverse('image_upload', kwargs={'source_id': self.source_id}), dict(
+            files=f,
+            skip_or_replace_duplicates='skip',
+            specify_metadata='filenames',
+        ))
+        f.close()
+
+        self.assertStatusOK(response)
+        self.assertEqual(len(response.context['uploadedImages']), 1)
+
+    # TODO: Add more image upload tests, with error cases, different options, etc.
 
 
 # TODO: Create a test robot model file, and then generate robot annotations from it, to see if creating revisions still works.
@@ -232,50 +280,47 @@ class ImageProcessingTaskTest(ClientTest):
     source_member_roles = [
         ('public1', 'user2', Source.PermTypes.ADMIN.code),
     ]
-    PUBLIC1_PK = 1
-    IMAGE1_PK = 1
 
     def setUp(self):
-        BaseTest.setUp(self)
+        super(ImageProcessingTaskTest, self).setUp()
+        self.source_id = Source.objects.get(name='public1').pk
 
-        # Upload initial images
         self.client.login(username='user2', password='secret')
+
+        # Upload 1 image
         sample_uploadable_path = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', '001_2012-05-01_color-grid-001.png')
-        #sample_uploadable_path = 'C:\\Users\\Stephen\\Documents\\CVCE\\Test_images\\Label_thumbnails\\hard-coral.jpg'
         f = open(sample_uploadable_path, 'rb')
-        response = self.client.post(reverse('image_upload', kwargs={'source_id': self.PUBLIC1_PK}), dict(
+        response = self.client.post(reverse('image_upload', kwargs={'source_id': self.source_id}), dict(
             files=f,
             skip_or_replace_duplicates='skip',
             specify_metadata='filenames',
         ))
         f.close()
 
-        # TODO: Move these asserts to a separate test that specifically
-        # tests uploads.
-        self.assertStatusOK(response)
-#        print ['message: '+m.message for m in list(response.context['messages'])]
-#        print ['imageForm error: ' + k + ': ' + str(error_list) for k,error_list in response.context['imageForm'].errors.iteritems()]
-#        print ['optionsForm error: ' + k + ': ' + str(error_list) for k,error_list in response.context['optionsForm'].errors.iteritems()]
-
-        self.assertEqual(len(response.context['uploadedImages']), 1)
+        self.image_id = response.context['uploadedImages'][0].pk
 
     def test_preprocess_task(self):
-        self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).status.preprocessed, False)
+        # The uploaded image should start out not preprocessed.
+        # Otherwise, we need to change the setup code so that
+        # the prepared image has preprocessed == False.
+        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, False)
 
-        result = PreprocessImages.delay(self.IMAGE1_PK)
+        # Preprocess attempt 1.
+        result = PreprocessImages.delay(self.image_id)
         # Check that the task didn't encounter an exception
         self.assertTrue(result.successful())
 
         # Should be preprocessed, and process_date should be set
-        self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).status.preprocessed, True)
-        process_date = Image.objects.get(pk=self.IMAGE1_PK).process_date
+        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
+        process_date = Image.objects.get(pk=self.image_id).process_date
         self.assertNotEqual(process_date, None)
 
-        result = PreprocessImages.delay(self.IMAGE1_PK)
+        # Preprocess attempt 2.
+        result = PreprocessImages.delay(self.image_id)
         # Check that the task didn't encounter an exception
         self.assertTrue(result.successful())
 
         # Should have exited without re-doing the preprocess
-        self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).status.preprocessed, True)
+        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
         # process_date should have stayed the same
-        self.assertEqual(Image.objects.get(pk=self.IMAGE1_PK).process_date, process_date)
+        self.assertEqual(Image.objects.get(pk=self.image_id).process_date, process_date)

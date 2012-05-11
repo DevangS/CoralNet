@@ -31,19 +31,24 @@ class AddUserTest(ClientTest):
             email=new_user_email,
         ))
 
+        # Check that an activation email was sent.
         self.assertEqual(len(mail.outbox), 1)
+        # Check that the user was redirected to the add-user-complete page.
+        # (Yes, the reverse() name is still userena_signup_complete...)
         self.assertRedirects(response, reverse(
             'userena_signup_complete',
             kwargs={'username': new_user_username},
         ))
 
-        # Activation email checks.
+        # Check the activation email.
         activation_email = mail.outbox[0]
+        # Check that the intended recipient is the only recipient.
         self.assertEqual(len(activation_email.to), 1)
         self.assertEqual(activation_email.to[0], new_user_email)
+        # The requested username should be somewhere in the email body.
         self.assertTrue(new_user_username in activation_email.body)
 
-        # Search the email for the new user's password and activation link.
+        # From the email, get the new user's password and activation link.
         # Password: should be preceded with the words "password is:".
         # (Feels hackish to search this way though...)
         # Activation link: should be the only link in the email, i.e.
@@ -79,7 +84,7 @@ class AddUserTest(ClientTest):
                          ]:
             response = self.client.get(reverse(url_name, kwargs={'username': new_user_username}))
             self.assertStatusOK(response)
-            self.assertTemplateNotUsed(response, 'permission_denied.html')
+            self.assertTemplateNotUsed(response, self.PERMISSION_DENIED_TEMPLATE)
             response = self.client.get(reverse(url_name, kwargs={'username': 'superuser_user'}))
             self.assertEqual(response.status_code, 403)
 
@@ -104,6 +109,7 @@ class SigninTest(ClientTest):
         """
         Submit the Signin form correctly, then check that we're signed in.
         """
+        # Determine the info we'll use to sign in.
         if identification_method == 'username':
             identification = 'user2'
             user = User.objects.get(username=identification)
@@ -113,16 +119,18 @@ class SigninTest(ClientTest):
         else:
             raise ValueError('Invalid identification method.')
 
+        # Sign in using the signin form.
         # TODO: Test for cookies when remember_me=True?
         response = self.client.post(reverse('signin'), follow=True, data=dict(
             identification=identification,
             password='secret',
             remember_me=remember_me,
         ))
+        # Check that it redirects to the source_about page (assumes the user has no sources).
         # TODO: Test when the user has at least one source (should go to source list)
         self.assertRedirects(response, reverse('source_about'))
 
-        # Check that we're signed in.
+        # Check that we're signed in as the correct user.
         self.assertTrue(self.client.session.has_key('_auth_user_id'))
         self.assertEqual(self.client.session['_auth_user_id'], user.pk)
 
