@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 from guardian.shortcuts import get_objects_for_user
 from images.model_utils import PointGen
 from images.models import Source, Image
-from images.tasks import PreprocessImages
+from images.tasks import PreprocessImages, MakeFeatures, Classify, addLabelsToFeatures, trainRobot
 from lib.test_utils import ClientTest, BaseTest, MediaTestComponent, ProcessingTestComponent
 
 
@@ -268,12 +268,15 @@ class ImageUploadTest(ClientTest):
     # TODO: Add more image upload tests, with error cases, different options, etc.
 
 
-# TODO: Create a test robot model file, and then generate robot annotations from it, to see if creating revisions still works.
-
 class ImageProcessingTaskTest(ClientTest):
     """
     Test the image processing tasks' logic with respect to
-    database interfacing and input/output files.
+    database interfacing, preparation for subsequent tasks,
+    and final results.
+
+    Don't explicitly check for certain input/output files.
+    Simply check that running task n prepares for task n+1
+    in a sequence of tasks.
     """
     extra_components = [MediaTestComponent, ProcessingTestComponent]
     fixtures = ['test_users.yaml', 'test_sources.yaml']
@@ -305,7 +308,7 @@ class ImageProcessingTaskTest(ClientTest):
         # the prepared image has preprocessed == False.
         self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, False)
 
-        # Preprocess attempt 1.
+        # Run task, attempt 1.
         result = PreprocessImages.delay(self.image_id)
         # Check that the task didn't encounter an exception
         self.assertTrue(result.successful())
@@ -315,7 +318,7 @@ class ImageProcessingTaskTest(ClientTest):
         process_date = Image.objects.get(pk=self.image_id).process_date
         self.assertNotEqual(process_date, None)
 
-        # Preprocess attempt 2.
+        # Run task, attempt 2.
         result = PreprocessImages.delay(self.image_id)
         # Check that the task didn't encounter an exception
         self.assertTrue(result.successful())
@@ -324,3 +327,97 @@ class ImageProcessingTaskTest(ClientTest):
         self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
         # process_date should have stayed the same
         self.assertEqual(Image.objects.get(pk=self.image_id).process_date, process_date)
+
+    def test_make_features_task(self):
+        # Preprocess the image first.
+        result = PreprocessImages.delay(self.image_id)
+        self.assertTrue(result.successful())
+        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
+
+        # Sanity check: features have not been made yet
+        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, False)
+
+        # Run task, attempt 1.
+        result = MakeFeatures.delay(self.image_id)
+        # Check that the task didn't encounter an exception
+        self.assertTrue(result.successful())
+
+        # Should have extracted features
+        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
+
+        # Run task, attempt 2.
+        result = MakeFeatures.delay(self.image_id)
+        # Check that the task didn't encounter an exception
+        self.assertTrue(result.successful())
+
+        # Should have exited without re-doing the feature making
+        # TODO: Check file ctime/mtime to check that it wasn't redone?
+        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
+
+#    def test_add_feature_labels_task(self):
+#        # Preprocess and feature-extract first.
+#        result = PreprocessImages.delay(self.image_id)
+#        self.assertTrue(result.successful())
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
+#        result = MakeFeatures.delay(self.image_id)
+#        self.assertTrue(result.successful())
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
+#
+#        # TODO: The image needs to be human annotated first.
+#
+#        # Sanity check: haven't added labels to features yet
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featureFileHasHumanLabels, False)
+#
+#        # Run task, attempt 1.
+#        result = addLabelsToFeatures.delay(self.image_id)
+#        # Check that the task didn't encounter an exception
+#        self.assertTrue(result.successful())
+#
+#        # Should have added labels to features
+#        # TODO: Check file ctime/mtime to check that the file was changed
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featureFileHasHumanLabels, True)
+#
+#        # Run task, attempt 2.
+#        result = addLabelsToFeatures.delay(self.image_id)
+#        # Check that the task didn't encounter an exception
+#        self.assertTrue(result.successful())
+#
+#        # Should have exited without re-doing label adding
+#        # TODO: Check file ctime/mtime to check that it wasn't redone?
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featureFileHasHumanLabels, True)
+#
+#    def test_train_robot_task(self):
+#        # TODO
+#        #trainRobot
+#        pass
+#
+#    def test_classify_task(self):
+#        # Preprocess and feature-extract first.
+#        result = PreprocessImages.delay(self.image_id)
+#        self.assertTrue(result.successful())
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
+#        result = MakeFeatures.delay(self.image_id)
+#        self.assertTrue(result.successful())
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
+#
+#        # TODO: Do other preparation tasks.
+#
+#        # Sanity check: not classified yet
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.annotatedByRobot, False)
+#
+#        # Run task, attempt 1.
+#        result = Classify.delay(self.image_id)
+#        # Check that the task didn't encounter an exception
+#        self.assertTrue(result.successful())
+#
+#        # Should have classified the image
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.annotatedByRobot, True)
+#
+#        # Run task, attempt 2.
+#        result = Classify.delay(self.image_id)
+#        # Check that the task didn't encounter an exception
+#        self.assertTrue(result.successful())
+#
+#        # Should have exited without re-doing the classification
+#        # TODO: Check file ctime/mtime to check that it wasn't redone?
+#        self.assertEqual(Image.objects.get(pk=self.image_id).status.annotatedByRobot, True)
