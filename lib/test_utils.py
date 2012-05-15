@@ -159,9 +159,13 @@ class FilesTestComponent(object):
     """
     Base class for test components that require a
     directory for test files.
+
+    This should be considered an abstract class.  Don't use
+    FilesTestComponent as a test component, use one of its
+    subclasses instead.
     """
-    test_directory = ''
-    test_directory_name = ""
+    test_directory = None
+    test_directory_name = None
 
     testfile_directory_setup_error_fmtstr = (
         "The test setup routine found files in the {0} directory ({1}):\n"
