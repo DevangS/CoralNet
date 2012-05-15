@@ -1,6 +1,7 @@
 {% extends "images/base_source.html" %}
 {% load thumbnail %}
 {% load guardian_tags %}
+{% load common_tags %}
 
 {% block title %}{{ source.name }} - Visualization | CoralNet{% endblock %}
 
@@ -138,11 +139,11 @@ fieldset.fieldset_visualization label {
             </script>
         {% endif %}
 
-        <!-- Script in the body will run on page load. -->
-        <script type="text/javascript">
-            VSH.init();
-        </script>
-
     {% endif %}
+
+    <!-- Script in the body will run on page load. -->
+    <script type="text/javascript">
+        VSH.init({{ source.enable_robot_classifier|jsonify }});
+    </script>
 
 {% endblock %}

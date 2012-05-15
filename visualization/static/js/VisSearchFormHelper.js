@@ -3,10 +3,13 @@ var VSH = {
     $imageStatusFieldWrapper: undefined,
     $annotatorFieldWrapper: undefined,
 
-    init: function() {
+    sourceUsesRobotClassifier: undefined,
+
+    init: function(sourceUsesRobotClassifier) {
         VSH.$labelsField = $('#id_labels');
         VSH.$imageStatusFieldWrapper = $('#id_image_status_wrapper');
         VSH.$annotatorFieldWrapper = $('#id_annotator_wrapper');
+        VSH.sourceUsesRobotClassifier = sourceUsesRobotClassifier;
 
         // Based on initial value of the 'labels' field, show either the
         // image annotation status field or the annotator field.
@@ -24,7 +27,10 @@ var VSH = {
         }
         else {
             // Patches
-            VSH.$annotatorFieldWrapper.show();
+            if (VSH.sourceUsesRobotClassifier)
+                VSH.$annotatorFieldWrapper.show();
+            else
+                VSH.$annotatorFieldWrapper.hide();
             VSH.$imageStatusFieldWrapper.hide();
         }
     }
