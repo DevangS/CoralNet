@@ -22,7 +22,15 @@ PROJECT_ROOT = abspath(os.path.dirname(__file__))
 
 SLEEP_TIME_BETWEEN_IMAGE_PROCESSING = 5 * 60 # 60*60 on the server, but shorter on the dev. machines
 
-PROCESSING_ROOT = PROJECT_ROOT
+# Absolute filesystem path to the directory that will
+# hold input and output files for image processing tasks.
+# This directory is best kept out of the repository.
+# Example: "/home/mysite_processing/"
+PROCESSING_ROOT = abspath(PROJECT_ROOT, '../processing')
+
+# Processing Root to be used during unit tests.
+# This directory is best kept out of the repository.
+TEST_PROCESSING_ROOT = abspath(PROJECT_ROOT, '../test_files/processing')
 
 DEBUG = True
 
@@ -47,6 +55,10 @@ DATABASES = {
 # the site managers.
 DEFAULT_FROM_EMAIL = 'webmaster@yourdomainhere'
 
+# Media Root to be used during unit tests.
+# This directory is best kept out of the repository.
+TEST_MEDIA_ROOT = abspath(PROJECT_ROOT, '../test_files/media')
+
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 
 # Absolute path to the directory static files should be collected to.
@@ -54,6 +66,16 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
 STATIC_ROOT = ''
+
+# South settings
+#
+# SOUTH_TESTS_MIGRATE:
+# True to run all South migrations before running any unit tests.
+# False to not run South migrations, and instead run normal syncdb
+# to build the database tables before tests.  This is much, much
+# faster, but if the project has important initial data created by
+# South data migrations, then tests may fail.
+SOUTH_TESTS_MIGRATE = False
 
 # Dajaxice settings
 #

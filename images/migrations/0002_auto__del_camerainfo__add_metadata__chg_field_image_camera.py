@@ -7,9 +7,6 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
-        # Deleting model 'CameraInfo'
-        db.delete_table('images_camerainfo')
 
         # Adding model 'Metadata'
         db.create_table('images_metadata', (
@@ -27,6 +24,9 @@ class Migration(SchemaMigration):
         # Changing field 'Image.camera'
         db.alter_column('images_image', 'camera_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['images.Metadata']))
 
+        # Deleting model 'CameraInfo'
+        db.delete_table('images_camerainfo')
+
 
     def backwards(self, orm):
         
@@ -43,11 +43,11 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('images', ['CameraInfo'])
 
-        # Deleting model 'Metadata'
-        db.delete_table('images_metadata')
-
         # Changing field 'Image.camera'
         db.alter_column('images_image', 'camera_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['images.CameraInfo']))
+
+        # Deleting model 'Metadata'
+        db.delete_table('images_metadata')
 
 
     models = {

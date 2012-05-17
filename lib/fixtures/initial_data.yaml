@@ -1,0 +1,19 @@
+# Initial data for the database.  These are special data that must be in
+# the database for certain operations to work.
+#
+# Since this fixture is named initial_data.<ext>, this fixture will be
+# automatically loaded on syncdb.
+
+- model: auth.user
+  pk: -2
+  fields:
+    username: Imported
+- model: auth.user
+  pk: -3
+  fields:
+    username: robot
+
+- model: annotations.labelset
+  pk: -1
+  fields:
+    description: Empty labelset. A dummy labelset for new sources.

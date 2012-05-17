@@ -23,3 +23,15 @@ class FileContentError(Exception):
     not being able to read its contents, etc.
     """
     pass
+
+class TestfileDirectoryError(Exception):
+    """
+    When there's something wrong with a directory meant to hold
+    temporary test-generated files:
+    (1) The directory already has files in it before a test.
+    (2) After the test, the directory has a file that was created
+        before the test began. (Given (1), this is a serious corner
+        case, but still, we do not want to take chances with file
+        deletions.)
+    """
+    pass

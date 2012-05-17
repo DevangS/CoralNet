@@ -3,11 +3,11 @@ from django.contrib.auth.models import User
 
 class Feedback(models.Model):
 
-    FEEDBACK_TYPE_CHOICES = {
+    FEEDBACK_TYPE_CHOICES = (
         ('b', "Bug Report"),
         ('r', "Suggestion / Request"),
         ('f', "Feedback / Other"),
-    }
+    )
     type = models.CharField(max_length=1, choices=FEEDBACK_TYPE_CHOICES)
 
     comment = models.TextField('Description / Comment')
@@ -20,4 +20,3 @@ class Feedback(models.Model):
     
     # Browser info (get automatically)?
     # OS info (get automatically)?
-    # URL that they came from (get automatically)? (Would this even be useful?)

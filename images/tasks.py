@@ -36,7 +36,7 @@ CLASSIFY_ERROR_LOG = join_processing_root("logs/classify_error.txt")
 TRAIN_ERROR_LOG = join_processing_root("logs/train_error.txt")
 CV_LOG = join_processing_root("logs/cvlog.txt")
 
-ORIGINALIMAGES_DIR = join_project_root("media/")
+ORIGINALIMAGES_DIR = settings.MEDIA_ROOT
 PREPROCESS_DIR = join_processing_root("images/preprocess/")
 FEATURES_DIR = join_processing_root("images/features/")
 CLASSIFY_DIR = join_processing_root("images/classify/")

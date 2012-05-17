@@ -11,6 +11,7 @@ abspath = lambda *p: os.path.abspath(os.path.join(*p))
 PROJECT_ROOT = settings_2.PROJECT_ROOT
 
 PROCESSING_ROOT = settings_2.PROCESSING_ROOT
+TEST_PROCESSING_ROOT = settings_2.TEST_PROCESSING_ROOT
 
 SLEEP_TIME_BETWEEN_IMAGE_PROCESSING = settings_2.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING
 
@@ -69,7 +70,16 @@ USE_L10N = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
+# TODO: Might be better to move this directory out of the repository.
 MEDIA_ROOT = abspath(PROJECT_ROOT, 'media')
+
+# Media Root to be used during unit tests.
+# This directory is best kept out of the repository.
+TEST_MEDIA_ROOT = settings_2.TEST_MEDIA_ROOT
+
+# Directory for sample files to be uploaded during unit tests.
+# This directory should be in the repository.
+SAMPLE_UPLOADABLES_ROOT = abspath(PROJECT_ROOT, 'sample_uploadables')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
@@ -170,6 +180,20 @@ TEMPLATE_DIRS = (
     abspath(PROJECT_ROOT, 'templates')
 )
 
+# Define our project's installed apps separately from built-in and
+# third-party installed apps.  This'll make it easier to define a
+# custom test command that only runs our apps' tests.
+# http://stackoverflow.com/a/2329425/859858
+MY_INSTALLED_APPS = (
+    'accounts',
+    'images',
+    'annotations',
+    'visualization',
+    'bug_reporting',
+    'requests',
+    'lib',
+)
+
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -192,15 +216,10 @@ INSTALLED_APPS = (
     'dajaxice',
     'dajax',
     'djcelery',
-    'CoralNet.accounts',
-    'CoralNet.images',
-    'CoralNet.annotations',
-    'CoralNet.visualization',
-    'CoralNet.bug_reporting',
-    'CoralNet.requests',
-    'CoralNet.lib',
     'GChartWrapper.charts',
 )
+# Add MY_INSTALLED_APPS to INSTALLED_APPS, each with a 'CoralNet.' prefix.
+INSTALLED_APPS += tuple(['CoralNet.'+app_name for app_name in MY_INSTALLED_APPS])
 
 
 # A sample logging configuration. The only tangible logging
@@ -233,6 +252,8 @@ AUTHENTICATION_BACKENDS = (
 
 )
 
+TEST_RUNNER = 'lib.test_utils.MyTestSuiteRunner'
+
 #Django-guardian settings
 ANONYMOUS_USER_ID = -1
 
@@ -263,6 +284,9 @@ SOUTH_MIGRATION_MODULES = {
 # Sentry settings: http://readthedocs.org/docs/sentry/en/latest/config/index.html
 # SENTRY_TESTING enables usage of Sentry even when DEBUG = True
 SENTRY_TESTING = True
+
+# South settings
+SOUTH_TESTS_MIGRATE = settings_2.SOUTH_TESTS_MIGRATE
 
 # Dajaxice settings
 DAJAXICE_MEDIA_PREFIX = "dajaxice"
