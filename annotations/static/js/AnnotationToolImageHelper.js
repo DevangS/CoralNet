@@ -88,8 +88,6 @@ var ATI = {
         var brightnessValue = ATI.$fields.brightness.val();
         var contrastValue = ATI.$fields.contrast.val();
 
-        // TODO: Maintain the zoom level as you change bri/con.
-
         // TODO: Make the resulting canvas the same resolution as the source image.
         // To do this, change the image into an appropriately-sized canvas before applying
         // image processing.
@@ -103,13 +101,25 @@ var ATI = {
         //    };
         //    img.src = 'myImage.png'; // Set source path
 
-        // First, revert previous Pixastic operations, so we get the
-        // imageCanvas with the original image in it.
+        // Get the position/size properties of the current canvas.
+        // This is basically the zoom position and zoom level.
+        var propertyMap = {
+            left: $(ATI.imageCanvas).css('left'),
+            top: $(ATI.imageCanvas).css('top'),
+            height: $(ATI.imageCanvas).css('height')
+        };
+
+        // Revert previous Pixastic operations, so we get the
+        // imageCanvas element that we had before applying Pixastic.
         Pixastic.revert(ATI.imageCanvas);
 
         // After the revert, #imageCanvas is now a different DOM object,
         // so re-assign ATI.imageCanvas.
         ATI.imageCanvas = $('#imageCanvas')[0];
+
+        // Apply the current zoom position and zoom level, because they
+        // may have been changed since the last Pixastic operation.
+        $(ATI.imageCanvas).css(propertyMap);
 
         // Apply the new Pixastic operations.
         ATI.imageCanvas = Pixastic.process(
