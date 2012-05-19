@@ -58,6 +58,13 @@ to any value (except the empty string) to not include it.
     {% include "static-local-include.html" with type="js" path="js/jquery.hotkeys.js" %}
 {% endif %}
 
+{# Pixastic, for real-time image processing #}
+{# http://www.pixastic.com/lib/ #}
+{# Must be included after: jQuery (because we use Pixastic's jQuery plugin) #}
+{% if pixastic %}
+    {% include "static-local-include.html" with type="js" path="js/pixastic.custom.js" %}
+{% endif %}
+
 {# Our own utility functions and plugin modifications. #}
 {# Not just for JS-heavy pages, but also for some basic styling. #}
 {# Must be included after: Dajaxice, jQuery #}

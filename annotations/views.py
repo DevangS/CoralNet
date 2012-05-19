@@ -5,9 +5,10 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from django.utils import simplejson
+from easy_thumbnails.files import Thumbnailer
 from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
-from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm, AnnotationToolSettingsForm
+from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm, AnnotationToolSettingsForm, AnnotationImageToolsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess, AnnotationToolSettings
 from annotations.utils import get_annotation_version_user_display
@@ -456,15 +457,29 @@ def annotation_tool(request, image_id):
     settings_obj, created = AnnotationToolSettings.objects.get_or_create(user=request.user)
     settings_form = AnnotationToolSettingsForm(instance=settings_obj)
 
+    # Image tools form (brightness, contrast, etc.)
+    image_tools_form = AnnotationImageToolsForm()
+
     IMAGE_AREA_WIDTH = 800
     IMAGE_AREA_HEIGHT = 600
+
+    source_images = dict(full=dict(
+        url=image.original_file.url,
+        width=image.original_file.width,
+        height=image.original_file.height,
+    ))
     if image.original_width > IMAGE_AREA_WIDTH:
-        # Parameters into the easy_thumbnails template tag:
-        # (specific width, height that keeps the aspect ratio)
+        # Set scaled image's dimensions (Specific width, height that keeps the aspect ratio)
         thumbnail_dimensions = (IMAGE_AREA_WIDTH, 0)
-    else:
-        # No thumbnail needed
-        thumbnail_dimensions = False
+
+        # Generate the thumbnail if it doesn't exist, and get the thumbnail's URL and dimensions.
+        thumbnailer = Thumbnailer(image.original_file)
+        thumb = thumbnailer.get_thumbnail(dict(size=thumbnail_dimensions))
+        source_images.update(dict(scaled=dict(
+            url=thumb.url,
+            width=thumb.width,
+            height=thumb.height,
+        )))
 
     access = AnnotationToolAccess(image=image, source=source, user=request.user)
     access.save()
@@ -478,12 +493,14 @@ def annotation_tool(request, image_id):
         'labels': labelValues,
         'form': form,
         'settings_form': settings_form,
+        'image_tools_form': image_tools_form,
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
         'IMAGE_AREA_WIDTH': IMAGE_AREA_WIDTH,
         'IMAGE_AREA_HEIGHT': IMAGE_AREA_HEIGHT,
-        'has_thumbnail': bool(thumbnail_dimensions),
-        'thumbnail_dimensions': thumbnail_dimensions,
+        'source_images': source_images,
+        #'has_thumbnail': bool(thumbnail_dimensions),
+        #'thumbnail_dimensions': thumbnail_dimensions,
         'num_of_points': len(annotations),
         'num_of_annotations': len(annotationValues),
         },
