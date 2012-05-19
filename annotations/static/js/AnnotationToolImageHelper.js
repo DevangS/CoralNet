@@ -23,8 +23,12 @@ var ATI = {
 
         ATI.imageCanvas = $("#imageCanvas")[0];
 
-        // TODO: Check if there are separate scaled and full versions.
-        ATI.preloadAndUseSourceImage('scaled');
+        if (ATI.sourceImages.hasOwnProperty('scaled')) {
+            ATI.preloadAndUseSourceImage('scaled');
+        }
+        else {
+            ATI.preloadAndUseSourceImage('full');
+        }
 
         ATI.$fields.brightness.change( function() {
             ATI.updateBrightnessAndContrast();
@@ -111,7 +115,7 @@ var ATI = {
         var contrastValue = ATI.$fields.contrast.val();
 
         // Apply the Pixastic bri/con operations to the canvas.
-        // TODO: Don't hang the browser while doing this.
+        // TODO: Don't hang the browser while doing this.  Use periodic timeouts.
         // TODO: Have some progress text as this goes: "Applying..."
         ATI.imageCanvas = Pixastic.process(
             ATI.imageCanvas,

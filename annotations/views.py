@@ -499,8 +499,6 @@ def annotation_tool(request, image_id):
         'IMAGE_AREA_WIDTH': IMAGE_AREA_WIDTH,
         'IMAGE_AREA_HEIGHT': IMAGE_AREA_HEIGHT,
         'source_images': source_images,
-        #'has_thumbnail': bool(thumbnail_dimensions),
-        #'thumbnail_dimensions': thumbnail_dimensions,
         'num_of_points': len(annotations),
         'num_of_annotations': len(annotationValues),
         },
