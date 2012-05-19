@@ -22,21 +22,9 @@ var ATI = {
         $('#id_button_hide_image_tools').click(ATI.hideImageTools);
 
         ATI.imageCanvas = $("#imageCanvas")[0];
-        ATI.imageCanvas.width = ATI.sourceImages.scaled.width;
-        ATI.imageCanvas.height = ATI.sourceImages.scaled.height;
 
-        // Create a new img element.
-        ATI.sourceImages.scaled.imgBuffer = new Image();
-        // When the img element's src has loaded, draw it onto the image canvas.
-        ATI.sourceImages.scaled.imgBuffer.onload = function(){
-            ATI.imageCanvas.getContext("2d").drawImage(ATI.sourceImages.scaled.imgBuffer, 0, 0);
-            ATI.currentSourceImage = ATI.sourceImages.scaled;
-
-            // TODO: Check if there are separate scaled and full versions.
-            ATI.preloadAndSwapFullImage();
-        };
-        // Set the img element's src to make it start loading.
-        ATI.sourceImages.scaled.imgBuffer.src = ATI.sourceImages.scaled.url;
+        // TODO: Check if there are separate scaled and full versions.
+        ATI.preloadAndUseSourceImage('scaled');
 
         ATI.$fields.brightness.change( function() {
             ATI.updateBrightnessAndContrast();
@@ -55,50 +43,57 @@ var ATI = {
         $('#id_button_show_image_tools').show();
     },
 
-    /*
-     * Preload the full image; once it's loaded, swap it in as the annotation image.
-     * Code from: http://stackoverflow.com/a/1662153/859858
+    /* Preload a source image; once it's loaded, swap it in as the image
+     * used in the annotation tool.
+     *
+     * Parameters:
+     * code - Which version of the image it is: 'scaled' or 'full'.
+     *
+     * Basic code pattern from: http://stackoverflow.com/a/1662153/859858
      */
-    preloadAndSwapFullImage: function() {
+    preloadAndUseSourceImage: function(code) {
         // Create an Image object.
-        ATI.sourceImages.full.imgBuffer = new Image();
+        ATI.sourceImages[code].imgBuffer = new Image();
 
         // When image preloading is done, swap images.
-        ATI.sourceImages.full.imgBuffer.onload = function() {
-            ATI.imageCanvas.width = ATI.sourceImages.full.width;
-            ATI.imageCanvas.height = ATI.sourceImages.full.height;
-            ATI.imageCanvas.getContext("2d").drawImage(ATI.sourceImages.full.imgBuffer, 0, 0);
+        ATI.sourceImages[code].imgBuffer.onload = function() {
+            ATI.imageCanvas.width = ATI.sourceImages[code].width;
+            ATI.imageCanvas.height = ATI.sourceImages[code].height;
+            ATI.imageCanvas.getContext("2d").drawImage(ATI.sourceImages[code].imgBuffer, 0, 0);
 
-            ATI.currentSourceImage = ATI.sourceImages.full;
+            ATI.currentSourceImage = ATI.sourceImages[code];
 
-            ATI.updateBrightnessAndContrast();
+            ATI.applyBrightnessAndContrast();
+
+            // If we just finished loading the scaled image, then start loading
+            // the full image.
+            if (code === 'scaled') {
+                ATI.preloadAndUseSourceImage('full');
+            }
         };
 
         // Image preloading starts as soon as we set this src attribute.
-        ATI.sourceImages.full.imgBuffer.src = ATI.sourceImages.full.url;
+        ATI.sourceImages[code].imgBuffer.src = ATI.sourceImages[code].url;
 
         // For debugging, it sometimes helps to load an image that
         // (1) has different image content, so you can tell when it's swapped in, and/or
         // (2) is loaded after a delay, so you can zoom in first and then
         //     notice the resolution change when it happens.
-        // Here's (2) in action.  The second parameter to setTimeout() is milliseconds
-        // (thousandths of seconds) until the first parameter function is called.
-        // NOTE: only use this for debugging, not for production code.
+        // Here's (2) in action: uncomment the below code and comment out the
+        // preload line above to try it.  The second parameter to setTimeout()
+        // is milliseconds until the first-parameter function is called.
+        // NOTE: only use this for debugging, not for production.
         //setTimeout(function() {
-        //    ATI.sourceImages.full.imgBuffer.src = ATI.sourceImages.full.url;
+        //    ATI.sourceImages[code].imgBuffer.src = ATI.sourceImages[code].url;
         //}, 10000);
     },
 
+    /* Revert previous brightness/contrast operations, then apply bri/con
+       with the new parameters. */
     updateBrightnessAndContrast: function() {
-        // Get the values in the brightness and contrast fields.
-        var brightnessValue = ATI.$fields.brightness.val();
-        var contrastValue = ATI.$fields.contrast.val();
-
-        // TODO: Make sure that the initial image (the scaled one) is already drawn on the canvas.
-        // Perhaps make a boolean variable that is set to true onload?
-        // Also, shouldn't we prevent the image processing changes from being
-        // attempted while the image is still loading?  Like gray out the "apply"
-        // button or whatever it is.
+        // If we haven't loaded any image yet, don't do anything.
+        if (ATI.currentSourceImage === undefined)
+            return;
 
         // Revert the canvas to pre-image-processing by re-drawing
         // from the source image.
@@ -106,7 +101,18 @@ var ATI = {
         // enough for our purposes, so we're reverting manually.)
         ATI.imageCanvas.getContext("2d").drawImage(ATI.currentSourceImage.imgBuffer, 0, 0);
 
-        // Apply the Pixastic operations to the canvas.
+        ATI.applyBrightnessAndContrast();
+    },
+
+    /* Just apply bri/con, no reverting beforehand. */
+    applyBrightnessAndContrast: function() {
+        // Get the values in the bri/con fields.
+        var brightnessValue = ATI.$fields.brightness.val();
+        var contrastValue = ATI.$fields.contrast.val();
+
+        // Apply the Pixastic bri/con operations to the canvas.
+        // TODO: Don't hang the browser while doing this.
+        // TODO: Have some progress text as this goes: "Applying..."
         ATI.imageCanvas = Pixastic.process(
             ATI.imageCanvas,
             'brightness',
