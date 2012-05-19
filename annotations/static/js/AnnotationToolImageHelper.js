@@ -8,7 +8,7 @@ var ATI = {
         full: undefined,
         scaled: undefined
     },
-    sourceImgElmt: undefined,
+    currentSourceImage: undefined,
     imageCanvas: undefined,
 
     init: function(sourceImages) {
@@ -22,29 +22,27 @@ var ATI = {
         $('#id_button_hide_image_tools').click(ATI.hideImageTools);
 
         ATI.imageCanvas = $("#imageCanvas")[0];
-        // Set the number of pixels the canvas should hold.
-        // TODO: Might want to make this equal to the size of the
-        // actual img src, not the size of the img src if it were
-        // the full-res image.
-        //ATI.imageCanvas.width = $(ATI.sourceImgElmt).width();
-        //ATI.imageCanvas.height = $(ATI.sourceImgElmt).height();
         ATI.imageCanvas.width = ATI.sourceImages.scaled.width;
         ATI.imageCanvas.height = ATI.sourceImages.scaled.height;
 
         // Create a new img element.
-        ATI.sourceImgElmt = new Image();
+        ATI.sourceImages.scaled.imgBuffer = new Image();
         // When the img element's src has loaded, draw it onto the image canvas.
-        ATI.sourceImgElmt.onload = function(){
-            ATI.imageCanvas.getContext("2d").drawImage(ATI.sourceImgElmt, 0, 0);
+        ATI.sourceImages.scaled.imgBuffer.onload = function(){
+            ATI.imageCanvas.getContext("2d").drawImage(ATI.sourceImages.scaled.imgBuffer, 0, 0);
+            ATI.currentSourceImage = ATI.sourceImages.scaled;
+
+            // TODO: Check if there are separate scaled and full versions.
+            ATI.preloadAndSwapFullImage();
         };
         // Set the img element's src to make it start loading.
-        ATI.sourceImgElmt.src = ATI.sourceImages.scaled.url;
+        ATI.sourceImages.scaled.imgBuffer.src = ATI.sourceImages.scaled.url;
 
         ATI.$fields.brightness.change( function() {
-            ATI.changeBrightnessOrContrast();
+            ATI.updateBrightnessAndContrast();
         });
         ATI.$fields.contrast.change( function() {
-            ATI.changeBrightnessOrContrast();
+            ATI.updateBrightnessAndContrast();
         });
     },
 
@@ -63,65 +61,52 @@ var ATI = {
      */
     preloadAndSwapFullImage: function() {
         // Create an Image object.
-        var fullImagePreloader = new Image();
+        ATI.sourceImages.full.imgBuffer = new Image();
 
         // When image preloading is done, swap images.
-        fullImagePreloader.onload = function() {
-            ATH.imageCanvas.src = fullImagePreloader.src;
+        ATI.sourceImages.full.imgBuffer.onload = function() {
+            ATI.imageCanvas.width = ATI.sourceImages.full.width;
+            ATI.imageCanvas.height = ATI.sourceImages.full.height;
+            ATI.imageCanvas.getContext("2d").drawImage(ATI.sourceImages.full.imgBuffer, 0, 0);
+
+            ATI.currentSourceImage = ATI.sourceImages.full;
+
+            ATI.updateBrightnessAndContrast();
         };
 
         // Image preloading starts as soon as we set this src attribute.
-        fullImagePreloader.src = ATI.sourceImages.full.url;
+        ATI.sourceImages.full.imgBuffer.src = ATI.sourceImages.full.url;
 
-        // For debugging, it helps to load an image that is
-        // (1) totally different, so you can tell when it's swapped in, and
-        // (2) remotely hosted, in case loading a local image is not satisfactory for testing.
-        // Remember to refresh + clear cache (Ctrl+Shift+R in Firefox) on subsequent test runs.
-        // Uncomment the image of your choice:
-        //fullImagePreloader.src = "http://farm6.staticflickr.com/5015/5565696408_8819b64a61_b.jpg"; // 740 KB
-        //fullImagePreloader.src = "http://farm6.staticflickr.com/5018/5565067643_1c9686d932_o.jpg"; // 1,756 KB
-        //fullImagePreloader.src = "http://farm6.staticflickr.com/5015/5565696408_9849980bdb_o.jpg"; // 2,925 KB
+        // For debugging, it sometimes helps to load an image that
+        // (1) has different image content, so you can tell when it's swapped in, and/or
+        // (2) is loaded after a delay, so you can zoom in first and then
+        //     notice the resolution change when it happens.
+        // Here's (2) in action.  The second parameter to setTimeout() is milliseconds
+        // (thousandths of seconds) until the first parameter function is called.
+        // NOTE: only use this for debugging, not for production code.
+        //setTimeout(function() {
+        //    ATI.sourceImages.full.imgBuffer.src = ATI.sourceImages.full.url;
+        //}, 10000);
     },
 
-    changeBrightnessOrContrast: function() {
+    updateBrightnessAndContrast: function() {
         // Get the values in the brightness and contrast fields.
         var brightnessValue = ATI.$fields.brightness.val();
         var contrastValue = ATI.$fields.contrast.val();
 
-        // TODO: Make the resulting canvas the same resolution as the source image.
-        // To do this, change the image into an appropriately-sized canvas before applying
-        // image processing.
-        // (1) Change imageElmt back to imageCanvas, a canvas element.
-        // (2) Make the canvas appropriately sized.
-        // (3) Have ATH.init() (or ATI.init()?) take the image src as a parameter.
-        // (4) Use the following pattern to draw the image on the canvas:
-        //    var img = new Image();   // Create new img element
-        //    img.onload = function(){
-        //        // execute drawImage statements here
-        //    };
-        //    img.src = 'myImage.png'; // Set source path
+        // TODO: Make sure that the initial image (the scaled one) is already drawn on the canvas.
+        // Perhaps make a boolean variable that is set to true onload?
+        // Also, shouldn't we prevent the image processing changes from being
+        // attempted while the image is still loading?  Like gray out the "apply"
+        // button or whatever it is.
 
-        // Get the position/size properties of the current canvas.
-        // This is basically the zoom position and zoom level.
-        var propertyMap = {
-            left: $(ATI.imageCanvas).css('left'),
-            top: $(ATI.imageCanvas).css('top'),
-            height: $(ATI.imageCanvas).css('height')
-        };
+        // Revert the canvas to pre-image-processing by re-drawing
+        // from the source image.
+        // (Pixastic has a revert function, but it's not really flexible
+        // enough for our purposes, so we're reverting manually.)
+        ATI.imageCanvas.getContext("2d").drawImage(ATI.currentSourceImage.imgBuffer, 0, 0);
 
-        // Revert previous Pixastic operations, so we get the
-        // imageCanvas element that we had before applying Pixastic.
-        Pixastic.revert(ATI.imageCanvas);
-
-        // After the revert, #imageCanvas is now a different DOM object,
-        // so re-assign ATI.imageCanvas.
-        ATI.imageCanvas = $('#imageCanvas')[0];
-
-        // Apply the current zoom position and zoom level, because they
-        // may have been changed since the last Pixastic operation.
-        $(ATI.imageCanvas).css(propertyMap);
-
-        // Apply the new Pixastic operations.
+        // Apply the Pixastic operations to the canvas.
         ATI.imageCanvas = Pixastic.process(
             ATI.imageCanvas,
             'brightness',

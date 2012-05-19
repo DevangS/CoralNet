@@ -165,13 +165,6 @@ var ATH = {
 
         ATH.imageArea = $("#imageArea")[0];
 
-        // TODO: Make this work even with image processing
-//        if (hasThumbnail) {
-//            // Once the rest of the document has loaded,
-//            // load the full-resolution image and swap out the scaled-down image.
-//            util.addLoadEvent(ATH.preloadAndSwapFullImage);
-//        }
-
         $('#mainColumn').css({
             "width": ATH.ANNOTATION_AREA_WIDTH + "px"
         });
