@@ -315,7 +315,7 @@ def generate_statistics(request, source_id):
                             except ZeroDivisionError:
                                 percent_coverage = 0
                                 errors.append("There was a divide by zero error computing your statistics!")
-                            table_yearly_counts.append(round(percent_coverage,3))
+                            table_yearly_counts.append(round(percent_coverage,2))
                             table_yearly_counts.append(label_year_annotations_count)
                             graph_yearly_counts.append(int(percent_coverage))
 
@@ -348,7 +348,7 @@ def generate_statistics(request, source_id):
                             except ZeroDivisionError:
                                 percent_coverage = 0
                                 errors.append("There was a divide by zero error computing your statistics!")
-                            table_yearly_counts.append(round(percent_coverage,3))
+                            table_yearly_counts.append(round(percent_coverage,2))
                             table_yearly_counts.append(label_year_annotations_count)
                             graph_yearly_counts.append(int(percent_coverage))
 
