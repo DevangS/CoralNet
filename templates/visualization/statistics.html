@@ -63,9 +63,9 @@ table.sample td {
                     {% endfor %}
                 </ul>
             {% else %}
-                  <div align="center"><img src={{ graph }} />
+                  <div align="center"><img src={{ graph }} /><br/>
                     {% if label_table %}
-                        <h2>Labels</h2>
+                        <h3>Labels</h3>
                         <table class="sample">
                           <tr>
                               <td></td>
@@ -84,7 +84,7 @@ table.sample td {
                         </table>
                     {% endif %}
                     {% if group_table %}
-                        <h2>Functional Groups</h2>
+                        <h3>Functional Groups</h3>
                         <table class="sample">
                             <tr>
                                   <td></td>
@@ -100,9 +100,9 @@ table.sample td {
                                       {% endfor %}
                                   </tr>
                                {% endfor %}
-                        </table></div>
+                        </table>
                     {% endif %}
-
+            </div>
             {% endif %}
             <br/><br/><br/> &nbsp;
         </fieldset>
