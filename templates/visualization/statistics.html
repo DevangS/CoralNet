@@ -52,9 +52,8 @@ table.sample td {
     <p>Large queries may take a while so please be patient! Also note that choosing too many labels may cause some lines to have the same colour.</p>
     
     <hr/>
-
-    <!-- This is the menu to select descriptors to sort through the images -->
- {% if errors %}
+        <div>
+            {% if errors %}
                 <ul>
                     {% for error in errors %}
                     <li>{{ error }}</li>
@@ -81,7 +80,7 @@ table.sample td {
                         {% endfor %}
                         </table>
                     {% endif %}
-                  </div><br/><br/>
+                  </div><br/><br/><br/>
                   <div>
                     {% if group_table %}
                         <h3>Functional Groups</h3>
@@ -89,8 +88,8 @@ table.sample td {
                             <tr>
                                   <td></td>
                                   {% for year in years %}
-                                    <td>{{ year }} % coverage</td>
-                                    <td>{{ year }} total annotations</td>
+                                    <td>{{ year }} (% coverage)</td>
+                                    <td>{{ year }} (total annotations)</td>
                                   {% endfor %}
                               </tr>
                               {% for row in group_table %}
@@ -103,13 +102,15 @@ table.sample td {
                         </table>
                     {% endif %}
             </div>
-            <div align="center">
+                <div align="center">
                 {% if graph %}
                     <img src={{ graph }} />
                 {% endif %}
+                </div>
             {% endif %}
             <br/><br/><br/> &nbsp;
-            </div>
+        </div>
+        <!-- This is the menu to select descriptors to sort through the images -->
         <fieldset class="fieldset_statistics">
 
         <form action="" method="get">
