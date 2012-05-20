@@ -63,9 +63,8 @@ table.sample td {
                   <div>
                     {% if label_table %}
                         <table class="sample">
-                        <b>Labels</b>
                           <tr>
-                              <td></td>
+                              <td><b>Label</b></td>
                               {% for year in years %}
                                 <td>{{ year }} (% coverage) </td>
                                 <td>{{ year }} (total annotations) </td>
@@ -82,9 +81,8 @@ table.sample td {
                     {% endif %}
                     {% if group_table %}
                         <table class="sample">
-                            <b>Functional Groups</b>
                             <tr>
-                                  <td></td>
+                                  <td><b>Functional Group</b></td>
                                   {% for year in years %}
                                     <td>{{ year }} (% coverage)</td>
                                     <td>{{ year }} (total annotations)</td>
