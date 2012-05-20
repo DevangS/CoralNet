@@ -85,22 +85,22 @@ table.sample td {
                     {% endif %}
                     {% if group_table %}
                         <h2>Functional Groups</h2>
-                    <table class="sample">
-                        <tr>
-                              <td></td>
-                              {% for year in years %}
-                                <td>{{ year }} % coverage</td>
-                                <td>{{ year }} total annotations</td>
-                              {% endfor %}
-                          </tr>
-                          {% for row in group_table %}
-                              <tr>
-                                  {% for cell in row %}
-                                      <td>{{ cell }}</td>
+                        <table class="sample">
+                            <tr>
+                                  <td></td>
+                                  {% for year in years %}
+                                    <td>{{ year }} % coverage</td>
+                                    <td>{{ year }} total annotations</td>
                                   {% endfor %}
                               </tr>
-                           {% endfor %}
-                    </table></div>
+                              {% for row in group_table %}
+                                  <tr>
+                                      {% for cell in row %}
+                                          <td>{{ cell }}</td>
+                                      {% endfor %}
+                                  </tr>
+                               {% endfor %}
+                        </table></div>
                     {% endif %}
 
             {% endif %}
