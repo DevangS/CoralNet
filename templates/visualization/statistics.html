@@ -64,22 +64,45 @@ table.sample td {
                 </ul>
             {% else %}
                   <div align="center"><img src={{ graph }} />
-                  <table class="sample">
-                      <tr>
-                          <td></td>
-                          {% for year in years %}
-                            <td>{{ year }} % coverage</td>
-                            <td>{{ year }} total annotations</td>
-                          {% endfor %}
-                      </tr>
-                    {% for row in table %}
-                      <tr>
-                          {% for cell in row %}
-                              <td>{{ cell }}</td>
-                          {% endfor %}
-                      </tr>
-                    {% endfor %}
-                  </table></div>
+                    {% if label_table %}
+                        <h2>Labels</h2>
+                        <table class="sample">
+                          <tr>
+                              <td></td>
+                              {% for year in years %}
+                                <td>{{ year }} % coverage</td>
+                                <td>{{ year }} total annotations</td>
+                              {% endfor %}
+                          </tr>
+                          {% for row in label_table %}
+                              <tr>
+                                  {% for cell in row %}
+                                      <td>{{ cell }}</td>
+                                  {% endfor %}
+                              </tr>
+                        {% endfor %}
+                        </table>
+                    % endif %}
+                    {% if group_table %}
+                        <h2>Functional Groups</h2>
+                    <table class="sample">
+                        <tr>
+                              <td></td>
+                              {% for year in years %}
+                                <td>{{ year }} % coverage</td>
+                                <td>{{ year }} total annotations</td>
+                              {% endfor %}
+                          </tr>
+                          {% for row in group_table %}
+                              <tr>
+                                  {% for cell in row %}
+                                      <td>{{ cell }}</td>
+                                  {% endfor %}
+                              </tr>
+                        {% endfor %}
+                    </table></div>
+                    {% endif %}
+
             {% endif %}
             <br/><br/><br/> &nbsp;
         </fieldset>

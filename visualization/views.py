@@ -240,7 +240,8 @@ def visualize_source(request, source_id):
 def generate_statistics(request, source_id):
     errors = []
     years = []
-    table = []
+    label_table = []
+    group_table = []
     
     #default graph to show, gets overwritten later if sanity checks passed
     graph = Line([0]).title('Specify some data to view the statistics')
@@ -298,9 +299,6 @@ def generate_statistics(request, source_id):
                                years.append(date.year)
                     years.sort()
 
-                    if labels:
-                        table.append("Labels")
-
                     for label in labels:
                         table_yearly_counts = []
                         graph_yearly_counts = []
@@ -332,10 +330,7 @@ def generate_statistics(request, source_id):
                         #create table row to display
                         table_row = [name]
                         table_row.extend(table_yearly_counts)
-                        table.append(table_row)
-
-                    if groups:
-                        table.append("Functional Groups")
+                        label_table.append(table_row)
                         
                     for group in groups:
                         table_yearly_counts = []
@@ -368,7 +363,7 @@ def generate_statistics(request, source_id):
                         #create table row to display
                         table_row = [name]
                         table_row.extend(table_yearly_counts)
-                        table.append(table_row)
+                        group_table.append(table_row)
 
                     #Create string of colors
                     colors_string = str(bucket[0: (len(labels)+len(groups))]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
@@ -412,7 +407,8 @@ def generate_statistics(request, source_id):
         'form': form,
         'source': source,
         'years': years,
-        'table': table,
+        'label_table': label_table,
+        'group_table': group_table,
         'graph': graph
         },
         context_instance=RequestContext(request)
