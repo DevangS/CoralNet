@@ -128,7 +128,6 @@ def visualize_source(request, source_id):
         if not label:
             showPatches = False
 
-
             allSearchResults = Image.objects.filter(source=source, **imageArgs)
 
             if form.is_valid():
@@ -147,7 +146,7 @@ def visualize_source(request, source_id):
                     else:
                         if value == 1:
                             allSearchResults.filter(status__annotatedByHuman=False)
-                        else:
+                        elif value == 2:
                             allSearchResults.filter(status__annotatedByHuman=True)
                         
             # Sort the images.

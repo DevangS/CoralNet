@@ -1,13 +1,14 @@
 from images.models import Image
-try:
-    from PIL import Image as PILImage
-except ImportError:
-    import Image as PILImage
+from PIL import Image as PILImage
 
 def verifyAllImages(): 
 	for image in Image.objects.all():
 		try:
-			PILImage.open(image.original_file)
+			fp = open(image.original_file, "rb")
+			im = PILImage.open(fp) # open from file object
+			im.load() # make sure PIL has read the data
+			fp.close()
+			
 		except IOError:
 			yield image.original_file
 
