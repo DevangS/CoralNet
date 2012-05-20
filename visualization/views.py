@@ -362,7 +362,7 @@ def generate_statistics(request, source_id):
                         data.append(graph_yearly_counts)
 
                         #add label name to legends
-                        name = Label.objects.get(id=int(group)).name
+                        name = LabelGroup.objects.get(id=int(group)).name
                         legends.append(str(name))
 
                         #create table row to display
