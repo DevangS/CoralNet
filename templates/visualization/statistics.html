@@ -70,8 +70,8 @@ table.sample td {
                           <tr>
                               <td></td>
                               {% for year in years %}
-                                <td>{{ year }} % coverage</td>
-                                <td>{{ year }} total annotations</td>
+                                <td>{{ year }} (% coverage)</td>
+                                <td>{{ year }} (total annotations)</td>
                               {% endfor %}
                           </tr>
                           {% for row in label_table %}
@@ -131,7 +131,7 @@ table.sample td {
             </div>
             <br/>
 
-            <i>Groups</i>
+            <b><i>Groups</i></b>
             <br/><br/>
             {% for groupId, groupName in form.groups.field.choices %}
               <div class="grid_checkbox_field_wrapper">
@@ -141,7 +141,7 @@ table.sample td {
             {% endfor %}
             <br/><br/>
 
-            <i>Labels</i>
+            <b><i>Labels</i></b>
             <br/><br/>
             {% for labelId, labelName in form.labels.field.choices %}
               <div class="grid_checkbox_field_wrapper">
