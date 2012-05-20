@@ -62,8 +62,8 @@ table.sample td {
             {% else %}
                   <div>
                     {% if label_table %}
-                        <h3>Labels</h3>
                         <table class="sample">
+                        <tr>Labels</tr>
                           <tr>
                               <td></td>
                               {% for year in years %}
@@ -80,9 +80,9 @@ table.sample td {
                         {% endfor %}
                         </table>
                     {% endif %}
-                    <table class="sample"><tr><td>Functional Groups</td></tr></table>
                     {% if group_table %}
                         <table class="sample">
+                            <tr>Functional Groups</tr>
                             <tr>
                                   <td></td>
                                   {% for year in years %}
