@@ -8,7 +8,7 @@ img {
 }
 table.sample {
 	border-width: 1px;
-	border-spacing: 0px;
+	border-spacing: 1px;
 	border-style: outset;
 	border-color: gray;
 	border-collapse: separate;
@@ -63,7 +63,7 @@ table.sample td {
                     {% endfor %}
                 </ul>
             {% else %}
-                  <div align="center">
+                  <div>
                     {% if label_table %}
                         <h3>Labels</h3>
                         <table class="sample">
@@ -84,7 +84,7 @@ table.sample td {
                         </table>
                     {% endif %}
                   </div><br/><br/>
-                  <div align="center">
+                  <div>
                     {% if group_table %}
                         <h3>Functional Groups</h3>
                         <table class="sample">
@@ -131,7 +131,7 @@ table.sample td {
             </div>
             <br/>
 
-            Groups
+            <i>Groups</i>
             <br/><br/>
             {% for groupId, groupName in form.groups.field.choices %}
               <div class="grid_checkbox_field_wrapper">
@@ -141,7 +141,7 @@ table.sample td {
             {% endfor %}
             <br/><br/>
 
-            Labels
+            <i>Labels</i>
             <br/><br/>
             {% for labelId, labelName in form.labels.field.choices %}
               <div class="grid_checkbox_field_wrapper">
