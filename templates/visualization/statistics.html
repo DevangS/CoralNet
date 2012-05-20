@@ -63,7 +63,6 @@ table.sample td {
                     {% endfor %}
                 </ul>
             {% else %}
-                  <div align="center"><img src={{ graph }} /></div>
                   <div align="center">
                     {% if label_table %}
                         <h3>Labels</h3>
@@ -104,6 +103,7 @@ table.sample td {
                         </table>
                     {% endif %}
             </div>
+            <div align="center"><img src={{ graph }} /></div>
             {% endif %}
             <br/><br/><br/> &nbsp;
         </fieldset>
