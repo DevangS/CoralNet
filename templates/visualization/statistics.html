@@ -67,8 +67,8 @@ table.sample td {
                           <tr>
                               <td></td>
                               {% for year in years %}
-                                <td>{{ year }} (% coverage)</td>
-                                <td>{{ year }} (total annotations)</td>
+                                <td>{{ year }} (% coverage) </td>
+                                <td>{{ year }} (total annotations) </td>
                               {% endfor %}
                           </tr>
                           {% for row in label_table %}
@@ -80,8 +80,7 @@ table.sample td {
                         {% endfor %}
                         </table>
                     {% endif %}
-                  </div><br/><br/><br/>
-                  <div>
+                    <table><tr><td><h3>Functional Groups</h3></td></tr></table>
                     {% if group_table %}
                         <h3>Functional Groups</h3>
                         <table class="sample">
