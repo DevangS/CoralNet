@@ -54,9 +54,7 @@ table.sample td {
     <hr/>
 
     <!-- This is the menu to select descriptors to sort through the images -->
-
-        <fieldset class="fieldset_statistics">
-            {% if errors %}
+ {% if errors %}
                 <ul>
                     {% for error in errors %}
                     <li>{{ error }}</li>
@@ -111,7 +109,8 @@ table.sample td {
                 {% endif %}
             {% endif %}
             <br/><br/><br/> &nbsp;
-        </fieldset>
+        <fieldset class="fieldset_statistics">
+
         <form action="" method="get">
 
             <legend class="smaller">Specify some image search parameters <i>(optional)</i>:</legend>
@@ -157,4 +156,5 @@ table.sample td {
         </div>
     
     </form>
+    </fieldset>
 {% endblock %}
