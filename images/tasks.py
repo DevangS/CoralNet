@@ -429,7 +429,6 @@ def custom_listdir(path):
 
     return dirs
 
-
 def importCPCImage(prefix, dirName, imagesLoc, outputFilename, pickledLabelDictLoc):
     """
     Takes in prefix like Taiwan, directory of labels, directory of images,
@@ -443,6 +442,7 @@ def importCPCImage(prefix, dirName, imagesLoc, outputFilename, pickledLabelDictL
     coords = []
     labels = []
     count = 0
+    counts = [] 
     currImage = ""
     imagesDirList = custom_listdir(imagesLoc)
     for dataFilename in custom_listdir(dirName):
@@ -456,7 +456,7 @@ def importCPCImage(prefix, dirName, imagesLoc, outputFilename, pickledLabelDictL
         if imageName != currImage:
             count += 1
             currImage = imageName
-            newname = prefix + "_" + str(count) + "_" + imageName
+            newname = prefix + "_" + str(count) + "_2012-02-29_" + imageName
             os.rename(imagesLoc+imageName, imagesLoc+newname)
         if str(dataFile).count(".cpc") == 1:
             for index,words in enumerate(dataFile):
@@ -470,6 +470,7 @@ def importCPCImage(prefix, dirName, imagesLoc, outputFilename, pickledLabelDictL
                         if name:
                             #add label
                             labels.append(name)
+                            counts.append(count)
                             #rename file
                         else:
                             if not errors.count(labelName):
@@ -479,17 +480,19 @@ def importCPCImage(prefix, dirName, imagesLoc, outputFilename, pickledLabelDictL
     if not errors:
         for index,coord in enumerate(coords):
             coord = coord.split(',')
-            row = str(int(coord[0])/15) #todo automatically scale
-            col = str(int(coord[1])/15)
+            row = str(int(coord[1])/15) #todo automatically scale
+            col = str(int(coord[0])/15)
             name = labels[index]
-            output = prefix + ";" + str(index) + ";2012-02-29;" + row.strip() + ";" + col.strip() + ";" + name + "\n"
+            output = prefix + ";" + str(counts[index]) + ";2012-02-29;" + row.strip() + ";" + col.strip() + ";" + name + "\n"
             outputFile.write(str(output))
 
     outputFile.close()
     print errors
     print image_errors
 
-def importPhotoGridImage(prefix, dirName, imagesLoc, outputFilename, pickledLabelDictLoc):
+
+
+def importPhotoGridImage(prefix, dirName, imagesLoc, targetImgDir, outputFilename, pickledLabelDictLoc):
     """
     Takes in prefix like Taiwan, directory of labels, directory of images,
     output annotation filename, pickled label mapping file location,
@@ -523,7 +526,7 @@ def importPhotoGridImage(prefix, dirName, imagesLoc, outputFilename, pickledLabe
                     count += 1
                     currImage = imageName
                     newname = prefix + "_" + str(count) + "_" + "2012-02-29_" + imageName
-                    os.rename(imagesLoc+imageName, imagesLoc+newname)
+                    shutil.copyfile(imagesLoc+imageName, targetImgDir+newname)
                 x_coord = words[9]
                 y_coord = words[10]
                 labelName = str(words[11]).strip()
@@ -541,7 +544,6 @@ def importPhotoGridImage(prefix, dirName, imagesLoc, outputFilename, pickledLabe
 
         dataFile.close()
     outputFile.close()
-    print sorted(errorsFilename)
     print sorted(image_errors)
 
 def randomSampleImages(origImagesLoc, dirName, destImagesLoc, total):
