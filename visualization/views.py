@@ -242,9 +242,7 @@ def generate_statistics(request, source_id):
     years = []
     label_table = []
     group_table = []
-    
-    #default graph to show, gets overwritten later if sanity checks passed
-    graph = Line([0]).title('Specify some data to view the statistics')
+    graph = []
 
     #generate form to select images to compute statistics for
     source = get_object_or_404(Source, id=source_id)
