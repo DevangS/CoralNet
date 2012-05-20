@@ -68,7 +68,8 @@ table.sample td {
                       <tr>
                           <td></td>
                           {% for year in years %}
-                            <td>{{ year }}</td>
+                            <td>{{ year }} % coverage</td>
+                            <td>{{ year }} total annotations</td>
                           {% endfor %}
                       </tr>
                     {% for row in table %}

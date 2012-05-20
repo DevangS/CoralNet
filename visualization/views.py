@@ -58,7 +58,6 @@ def image_search_args_to_url_arg_str(searchDict):
 
     return '&'.join(argsList)
 
-
 @source_visibility_required('source_id')
 def visualize_source(request, source_id):
     """
@@ -299,8 +298,12 @@ def generate_statistics(request, source_id):
                                years.append(date.year)
                     years.sort()
 
+                    if labels:
+                        table.append("Labels")
+
                     for label in labels:
-                        yearly_counts = []
+                        table_yearly_counts = []
+                        graph_yearly_counts = []
                         #get yearly counts that become y values for the label's line
                         for year in years:
                             #get the most recent for each point for every label specified
@@ -312,12 +315,15 @@ def generate_statistics(request, source_id):
                             # done the way it is b/c we need to cast either num or denom as float to get float result,
                             # convert to %, round, then truncate by casting to int
                             try:
-                                percent_coverage = int(round((float(label_year_annotations_count)/total_year_annotations_count)*100))
+                                percent_coverage = (float(label_year_annotations_count)/total_year_annotations_count)*100
                             except ZeroDivisionError:
                                 percent_coverage = 0
-                            yearly_counts.append(percent_coverage)
+                                errors.append("There was a divide by zero error computing your statistics!")
+                            table_yearly_counts.append(percent_coverage)
+                            table_yearly_counts.append(label_year_annotations_count)
+                            graph_yearly_counts.append(int(percent_coverage))
 
-                        data.append(yearly_counts)
+                        data.append(graph_yearly_counts)
 
                         #add label name to legends
                         name = Label.objects.get(id=int(label)).name
@@ -325,11 +331,15 @@ def generate_statistics(request, source_id):
 
                         #create table row to display
                         table_row = [name]
-                        table_row.extend(yearly_counts)
+                        table_row.extend(table_yearly_counts)
                         table.append(table_row)
 
+                    if groups:
+                        table.append("Functional Groups")
+                        
                     for group in groups:
-                        yearly_counts = []
+                        table_yearly_counts = []
+                        graph_yearly_counts = []
                         #get yearly counts that become y values for the label's line
                         for year in years:
                             #get the most recent for each point for every label specified
@@ -341,20 +351,23 @@ def generate_statistics(request, source_id):
                             # done the way it is b/c we need to cast either num or denom as float to get float result,
                             # convert to %, round, then truncate by casting to int
                             try:
-                                percent_coverage = int(round((float(label_year_annotations_count)/total_year_annotations_count)*100))
+                                percent_coverage = (float(label_year_annotations_count)/total_year_annotations_count)*100
                             except ZeroDivisionError:
                                 percent_coverage = 0
-                            yearly_counts.append(percent_coverage)
+                                errors.append("There was a divide by zero error computing your statistics!")
+                            table_yearly_counts.append(percent_coverage)
+                            table_yearly_counts.append(label_year_annotations_count)
+                            graph_yearly_counts.append(int(percent_coverage))
 
-                        data.append(yearly_counts)
+                        data.append(graph_yearly_counts)
 
-                        #add group name to legends
-                        name = LabelGroup.objects.get(id=int(group)).name
+                        #add label name to legends
+                        name = Label.objects.get(id=int(group)).name
                         legends.append(str(name))
 
                         #create table row to display
                         table_row = [name]
-                        table_row.extend(yearly_counts)
+                        table_row.extend(table_yearly_counts)
                         table.append(table_row)
 
                     #Create string of colors
