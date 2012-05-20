@@ -129,7 +129,6 @@ def visualize_source(request, source_id):
             showPatches = False
 
             allSearchResults = Image.objects.filter(source=source, **imageArgs)
-
             if form.is_valid():
                 value = int(form.cleaned_data.pop('image_status'))
                 #All images wanted so just return
@@ -137,17 +136,17 @@ def visualize_source(request, source_id):
                     #Else do check for robot classified source options
                     if source.enable_robot_classifier:
                         if value == 1:
-                            allSearchResults.filter(status__annotatedByHuman=False, status__annotatedByRobot=False)
+                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=False, status__annotatedByRobot=False)
                         elif value == 2:
-                            allSearchResults.filter(status__annotatedByHuman=False, status__annotatedByRobot=True)
+                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=False, status__annotatedByRobot=True)
                         else:
-                            allSearchResults.filter(status__annotatedByHuman=True)
+                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=True)
                     #Else do check for only human annotated source options
                     else:
                         if value == 1:
-                            allSearchResults.filter(status__annotatedByHuman=False)
+                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=False)
                         elif value == 2:
-                            allSearchResults.filter(status__annotatedByHuman=True)
+                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=True)
                         
             # Sort the images.
             # TODO: Stop duplicating this DB-specific extras query; put it in a separate function...
