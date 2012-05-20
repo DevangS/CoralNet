@@ -595,3 +595,17 @@ def pickle_labels(inputFileLoc, outputFileLoc):
     #can be unpickled by doing dict = pickle.load(outputFile)
     dataFile.close()
     outputFile.close()
+
+def image_status_overview():
+	sources = Source.objects.filter()
+	for s in sources:
+		nAnnotated = 0
+		nTotal = 0
+		images = Image.objects.filter(source = s)
+		for i in images:
+			nTotal = nTotal + 1
+			if i.status.annotatedByHuman:
+				nAnnotated = nAnnotated + 1
+		
+		
+		print s.name + ". Num annotated images: " + str(nAnnotated) + ", num total images: " + str(nTotal) + "."
