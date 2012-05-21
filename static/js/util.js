@@ -59,6 +59,14 @@ var util = {
     },
 
     /*
+    Converts an arguments object to an array.
+    Source: http://javascriptweblog.wordpress.com/2010/04/05/curry-cooking-up-tastier-functions/
+    */
+    toArray: function(argumentsObj) {
+        return Array.prototype.slice.call(argumentsObj);
+    },
+
+    /*
     Trim leading and trailing spaces from a string.
 
     From http://blog.stevenlevithan.com/archives/faster-trim-javascript
@@ -124,16 +132,16 @@ if (!Array.prototype.indexOf) {
  * var fahrenheitToCelsius = converter.curry('degrees C',0.5556, -32);
  * fahrenheitToCelsius(98); //"36.67 degrees C"
  *
- * Source: http://javascriptweblog.wordpress.com/2010/10/25/understanding-javascript-closures/
+ * Source: http://javascriptweblog.wordpress.com/2010/04/05/curry-cooking-up-tastier-functions/
  */
 Function.prototype.curry = function() {
     if (arguments.length<1) {
         return this; //nothing to curry with - return function
     }
     var __method = this;
-    var args = toArray(arguments);
+    var args = util.toArray(arguments);
     return function() {
-        return __method.apply(this, args.concat([].slice.apply(null, arguments)));
+        return __method.apply(this, args.concat(util.toArray(arguments)));
     }
 };
 

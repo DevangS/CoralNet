@@ -213,8 +213,8 @@ class AnnotationImageToolsForm(Form):
     class Media:
         js = ('js/AnnotationToolImageHelper.js',)
 
-    brightness = IntegerField(widget=TextInput(attrs={'size': 3}))
-    contrast = DecimalField(widget=TextInput(attrs={'size': 3}))
+    brightness = IntegerField(initial='0', widget=TextInput(attrs={'size': 3}))
+    contrast = DecimalField(initial='0', widget=TextInput(attrs={'size': 3}))
 
 
 class AnnotationAreaPercentsForm(Form):
