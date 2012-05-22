@@ -8,7 +8,7 @@ from django.utils import simplejson
 from easy_thumbnails.files import Thumbnailer
 from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
-from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm, AnnotationToolSettingsForm, AnnotationImageToolsForm
+from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm, AnnotationToolSettingsForm, AnnotationImageOptionsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess, AnnotationToolSettings
 from annotations.utils import get_annotation_version_user_display
@@ -458,7 +458,7 @@ def annotation_tool(request, image_id):
     settings_form = AnnotationToolSettingsForm(instance=settings_obj)
 
     # Image tools form (brightness, contrast, etc.)
-    image_tools_form = AnnotationImageToolsForm()
+    image_options_form = AnnotationImageOptionsForm()
 
     IMAGE_AREA_WIDTH = 800
     IMAGE_AREA_HEIGHT = 600
@@ -493,7 +493,7 @@ def annotation_tool(request, image_id):
         'labels': labelValues,
         'form': form,
         'settings_form': settings_form,
-        'image_tools_form': image_tools_form,
+        'image_options_form': image_options_form,
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
         'IMAGE_AREA_WIDTH': IMAGE_AREA_WIDTH,

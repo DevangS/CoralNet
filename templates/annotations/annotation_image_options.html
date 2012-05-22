@@ -1,0 +1,10 @@
+<legend>Image Tools</legend>
+<form id="annotationImageOptionsForm"
+      action="" method="post">{% csrf_token %}
+
+    {% include "form_generic.html" with form=image_options_form dont_mark_required='yes' %}
+
+    <div class="submit_button_wrapper_column_form">
+        <button id="applyImageOptionsButton" type="button">Apply</button>
+    </div>
+</form>

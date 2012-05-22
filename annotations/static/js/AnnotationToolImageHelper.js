@@ -1,5 +1,7 @@
 var ATI = {
 
+    $applyButton: undefined,
+
     $fields: {
         brightness: undefined,
         contrast: undefined
@@ -18,6 +20,8 @@ var ATI = {
     redrawSignal: false,
 
     init: function(sourceImages) {
+        ATI.$applyButton = $('#applyImageOptionsButton');
+
         ATI.$fields.brightness = $('#id_brightness');
         ATI.$fields.contrast = $('#id_contrast');
 
@@ -53,10 +57,13 @@ var ATI = {
             ATI.$fields[fieldName].change( function() {
                 // Validate the image option fields' values.
                 ATI.updateImageOptionsObj();
-                // Re-draw the source image and re-apply bri/con operations.
-                ATI.redrawImage();
             });
         }
+
+        ATI.$applyButton.click( function(){
+            // Re-draw the source image and re-apply bri/con operations.
+            ATI.redrawImage();
+        });
     },
 
     showImageTools: function() {

@@ -208,7 +208,7 @@ class AnnotationToolSettingsForm(ModelForm):
             field.widget.attrs.update({'class': 'color'})
 
 
-class AnnotationImageToolsForm(Form):
+class AnnotationImageOptionsForm(Form):
 
     class Media:
         js = ('js/AnnotationToolImageHelper.js',)
