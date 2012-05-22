@@ -14,6 +14,9 @@ var ATI = {
     currentSourceImage: undefined,
     imageCanvas: undefined,
 
+    nowApplyingProcessing: false,
+    redrawSignal: false,
+
     init: function(sourceImages) {
         ATI.$fields.brightness = $('#id_brightness');
         ATI.$fields.contrast = $('#id_contrast');
@@ -50,13 +53,8 @@ var ATI = {
             ATI.$fields[fieldName].change( function() {
                 // Validate the image option fields' values.
                 ATI.updateImageOptionsObj();
-                // Revert the canvas to pre-image-processing by re-drawing
-                // from the source image.
-                // (Pixastic has a revert function, but it's not really flexible
-                // enough for our purposes, so we're reverting manually.)
+                // Re-draw the source image and re-apply bri/con operations.
                 ATI.redrawImage();
-                // Apply brightness and contrast operations.
-                ATI.applyBrightnessAndContrast();
             });
         }
     },
@@ -112,7 +110,6 @@ var ATI = {
 
             ATI.currentSourceImage = ATI.sourceImages[code];
             ATI.redrawImage();
-            ATI.applyBrightnessAndContrast();
 
             // If we just finished loading the scaled image, then start loading
             // the full image.
@@ -137,18 +134,26 @@ var ATI = {
         //}, 10000);
     },
 
+    /* Redraw the source image, and apply brightness and contrast operations. */
     redrawImage: function() {
         // If we haven't loaded any image yet, don't do anything.
         if (ATI.currentSourceImage === undefined)
             return;
 
+        // If processing is currently going on, emit the redraw signal to
+        // tell it to stop processing and re-call this function.
+        if (ATI.nowApplyingProcessing === true) {
+            ATI.redrawSignal = true;
+            return;
+        }
+
+        // Redraw the source image.
+        // (Pixastic has a revert function that's supposed to do this,
+        // but it's not really flexible enough for our purposes, so
+        // we're reverting manually.)
         ATI.imageCanvas.getContext("2d").drawImage(ATI.currentSourceImage.imgBuffer, 0, 0);
-    },
 
-    /* Apply brightness and contrast operations.
-       Assumes that ATI.imageCanvas has already been reset to the source image. */
-    applyBrightnessAndContrast: function() {
-
+        // bri == 0 and con == 0 means it's just the original image, so return.
         if (ATI.imageOptions.brightness === 0 && ATI.imageOptions.contrast === 0) {
             return;
         }
@@ -169,7 +174,7 @@ var ATI = {
         var Y_MAX = ATI.imageCanvas.height - 1;
 
         // TODO: Make the rect size configurable somehow.
-        var RECT_SIZE = 1500;
+        var RECT_SIZE = 1400;
 
         var x1 = 0, y1 = 0, xRanges = [], yRanges = [];
         while (x1 <= X_MAX) {
@@ -195,6 +200,8 @@ var ATI = {
             }
         }
 
+        ATI.nowApplyingProcessing = true;
+
         ATI.applyBrightnessAndContrastToRects(
             ATI.imageOptions.brightness,
             ATI.imageOptions.contrast,
@@ -203,6 +210,13 @@ var ATI = {
     },
 
     applyBrightnessAndContrastToRects: function(brightness, contrast, rects) {
+        if (ATI.redrawSignal === true) {
+            ATI.nowApplyingProcessing = false;
+            ATI.redrawSignal = false;
+            ATI.redrawImage();
+            return;
+        }
+
         // "Pop" the first element from rects.
         var rect = rects.shift();
 
@@ -243,9 +257,14 @@ var ATI = {
             // Slightly delay the processing of the next rect, so we
             // don't lock up the browser for an extended period of time.
             // Note the use of curry() to produce a function.
-            setTimeout(ATI.applyBrightnessAndContrastToRects.curry(brightness, contrast, rects), 50);
+            setTimeout(
+                ATI.applyBrightnessAndContrastToRects.curry(brightness, contrast, rects),
+                50
+            );
         }
-        // Else, we're done processing.
+        else {
+            ATI.nowApplyingProcessing = false;
+        }
     },
 
     // TODO: Check for valid number format and valid number range.
