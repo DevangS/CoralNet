@@ -2,15 +2,8 @@ var ATI = {
 
     $applyButton: undefined,
 
-    $fields: {
-        brightness: undefined,
-        contrast: undefined
-    },
-    imageOptions: {
-        brightness: undefined,
-        contrast: undefined
-    },
-    validators: {},
+    form: undefined,
+    fields: undefined,
 
     sourceImages: {},
     currentSourceImage: undefined,
@@ -22,11 +15,19 @@ var ATI = {
     init: function(sourceImages) {
         ATI.$applyButton = $('#applyImageOptionsButton');
 
-        ATI.$fields.brightness = $('#id_brightness');
-        ATI.$fields.contrast = $('#id_contrast');
-
-        ATI.validators.brightness = ATI.brightnessIsValid;
-        ATI.validators.contrast = ATI.contrastIsValid;
+        ATI.form = util.Form({
+            brightness: util.Field(
+                $('#id_brightness'),
+                'signedInt',
+                [util.validators.inNumberRange.curry(-150, 150)]
+            ),
+            contrast: util.Field(
+                $('#id_contrast'),
+                'signedFloat',
+                [util.validators.inNumberRange.curry(-1.0, 3.0)]
+            )
+        });
+        ATI.fields = ATI.form.fields;
 
         ATI.sourceImages = sourceImages;
 
@@ -37,8 +38,18 @@ var ATI = {
         $('#id_button_show_image_tools').click(ATI.showImageTools);
         $('#id_button_hide_image_tools').click(ATI.hideImageTools);
 
-        // Initialize image options
-        ATI.updateImageOptionsObj();
+        // Initialize fields.
+        for (var fieldName in ATI.fields) {
+            if (!ATI.fields.hasOwnProperty(fieldName)){ continue; }
+
+            var field = ATI.fields[fieldName];
+
+            // Initialize the stored field value.
+            field.updateValue();
+            // When the element's value is changed, update the stored field value
+            // (or revert the element's value if the value is invalid).
+            field.$element.change(field.updateValue);
+        }
 
         if (ATI.sourceImages.hasOwnProperty('scaled')) {
             ATI.preloadAndUseSourceImage('scaled');
@@ -47,21 +58,9 @@ var ATI = {
             ATI.preloadAndUseSourceImage('full');
         }
 
-        // When an image option field is changed:
-        // - update the options object
-        // - redraw the image
-        // - apply the new image processing options
-        for (var fieldName in ATI.$fields) {
-            if (!ATI.$fields.hasOwnProperty(fieldName)){ continue; }
-
-            ATI.$fields[fieldName].change( function() {
-                // Validate the image option fields' values.
-                ATI.updateImageOptionsObj();
-            });
-        }
-
+        // When the Apply button is clicked, re-draw the source image
+        // and re-apply bri/con operations.
         ATI.$applyButton.click( function(){
-            // Re-draw the source image and re-apply bri/con operations.
             ATI.redrawImage();
         });
     },
@@ -73,29 +72,6 @@ var ATI = {
     hideImageTools: function() {
         $('#id_image_tools_wrapper').hide();
         $('#id_button_show_image_tools').show();
-    },
-
-    updateImageOptionsObj: function() {
-        for (var fieldName in ATI.$fields) {
-            if (!ATI.$fields.hasOwnProperty(fieldName)){ continue; }
-
-            var $field = ATI.$fields[fieldName];
-
-            if (ATI.validators.hasOwnProperty(fieldName)) {
-                var fieldIsValid = ATI.validators[fieldName]();
-                if (fieldIsValid === false) {
-                    ATI.revertField(fieldName);
-                    continue;
-                }
-            }
-
-            // Update the setting
-            if ($field.attr('type') === 'text')
-                // Other text fields: only float fields right now
-                ATI.imageOptions[fieldName] = parseFloat($field.val());
-            else
-                ATI.imageOptions[fieldName] = $field.val();
-        }
     },
 
     /* Preload a source image; once it's loaded, swap it in as the image
@@ -161,12 +137,11 @@ var ATI = {
         ATI.imageCanvas.getContext("2d").drawImage(ATI.currentSourceImage.imgBuffer, 0, 0);
 
         // bri == 0 and con == 0 means it's just the original image, so return.
-        if (ATI.imageOptions.brightness === 0 && ATI.imageOptions.contrast === 0) {
+        if (ATI.fields.brightness.value === 0 && ATI.fields.contrast.value === 0) {
             return;
         }
 
         // TODO: Have some progress text as this goes: "Applying..."
-        // - And gray out the 'apply' button until it's done.
 
         // TODO: Work on reducing browser memory usage.
         // Abandoning Pixastic.process() was probably a good start, since that
@@ -210,8 +185,8 @@ var ATI = {
         ATI.nowApplyingProcessing = true;
 
         ATI.applyBrightnessAndContrastToRects(
-            ATI.imageOptions.brightness,
-            ATI.imageOptions.contrast,
+            ATI.fields.brightness.value,
+            ATI.fields.contrast.value,
             rects
         )
     },
@@ -272,14 +247,5 @@ var ATI = {
         else {
             ATI.nowApplyingProcessing = false;
         }
-    },
-
-    // TODO: Check for valid number format and valid number range.
-    // TODO: Instead of '25', display '+25' in the field. Auto-transform a manually-typed '25' to '+25' too.
-    brightnessIsValid: function() {
-        return true;
-    },
-    contrastIsValid: function() {
-        return true;
     }
 };

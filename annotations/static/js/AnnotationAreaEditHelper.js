@@ -170,7 +170,7 @@ var AAH = {
         for (var fieldName in d) {
             if (!d.hasOwnProperty(fieldName)){ continue; }
 
-            if (!util.isIntStr(d[fieldName])) {
+            if (!util.representsInt(d[fieldName])) {
                 AAH.revertFormValues([fieldName]);
                 return;
             }

@@ -108,7 +108,7 @@ var ATS = {
                 ATS.settings[fieldName] = '#' + $field.val();
             else if ($field.attr('type') === 'text')
                 // Other text fields: only integer fields right now
-                ATS.settings[fieldName] = parseInt($field.val());
+                ATS.settings[fieldName] = parseInt($field.val(), 10);
             else
                 ATS.settings[fieldName] = $field.val();
         }
@@ -117,16 +117,16 @@ var ATS = {
     pointMarkerSizeIsValid: function() {
         var fieldValue = ATS.$fields.pointMarkerSize.val();
 
-        return (util.isIntStr(fieldValue)
-                && parseInt(fieldValue) >= 1
-                && parseInt(fieldValue) <= 30);
+        return (util.representsInt(fieldValue)
+                && parseInt(fieldValue, 10) >= 1
+                && parseInt(fieldValue, 10) <= 30);
     },
     pointNumberSizeIsValid: function() {
         var fieldValue = ATS.$fields.pointNumberSize.val();
 
-        return (util.isIntStr(fieldValue)
-            && parseInt(fieldValue) >= 1
-            && parseInt(fieldValue) <= 40);
+        return (util.representsInt(fieldValue)
+            && parseInt(fieldValue, 10) >= 1
+            && parseInt(fieldValue, 10) <= 40);
     },
     revertField: function(fieldName) {
         ATS.$fields[fieldName].val(ATS.settings[fieldName]);

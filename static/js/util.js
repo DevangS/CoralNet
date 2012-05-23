@@ -45,10 +45,19 @@ var util = {
     },
 
     /*
-    Checks a string to see if it represents an integer.
+    Checks a string or number to see if it represents a number.
+    Source: http://stackoverflow.com/a/1830844/859858
     */
-    isIntStr: function(s) {
-        return (s === parseInt(s).toString()) && (s !== 'NaN');
+    representsNumber: function(x) {
+        return !isNaN(parseFloat(x)) && isFinite(x);
+    },
+
+    /*
+    Checks a string or number to see if it represents an integer.
+    Based on: http://stackoverflow.com/a/3886106/859858
+    */
+    representsInt: function(x) {
+        return util.representsNumber(x) && parseFloat(x) % 1 === 0;
     },
 
     /*
@@ -73,8 +82,148 @@ var util = {
     */
     trimSpaces: function(str) {
         return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-    }
+    },
 
+
+    /*
+    Utility classes.
+    See here for basic patterns on writing Javascript 'classes', including
+    use of 'that' instead of 'this':
+    http://stackoverflow.com/questions/1595611/how-to-properly-create-a-custom-object-in-javascript/1598077#1598077
+    */
+
+
+    /* A form field class. */
+    Field: function($element, type, validators) {
+        var that = {};
+
+        /* Object initialization */
+        that.$element = $element;
+        that.type = type;
+        that.validators = validators;
+        that.value = undefined;
+
+
+        /* Revert the field's value to what it was previously
+         (i.e. revert it to the saved value in that.value). */
+        that.revertField = function() {
+            that.$element.val(that.value);
+            that.formatField();
+        };
+
+        that.updateValue = function() {
+            // Run the validators
+
+            for (var i = 0; i < that.validators.length; i++) {
+                var isValid = that.validators[i](that.$element.val());
+                if (isValid === false) {
+                    that.revertField();
+                    return;
+                }
+            }
+
+            // Update the value
+
+            var type = that.type;
+            if (type === 'checkbox')
+                that.value = that.$element.prop('checked');
+            else if (type === 'color')
+                that.value = '#' + that.$element.val();
+            else if (type === 'float' || type === 'signedFloat')
+                that.value = parseFloat(that.$element.val());
+            else if (type === 'int' || type === 'signedInt')
+                that.value = parseInt(that.$element.val(), 10);
+            else
+                that.value = that.$element.val();
+
+            that.formatField();
+        };
+
+        /* Transform the display value to a consistent format */
+        that.formatField = function() {
+            var type = that.type;
+
+            if (type === 'float' || type === 'signedFloat') {
+                // TODO: Create a FloatField class where the number of
+                // decimal places can be specified in the constructor.
+                that.$element.val(that.value.toFixed(1))
+            }
+            else if (type === 'int' || type === 'signedInt') {
+                that.$element.val(that.value.toFixed(0))
+            }
+
+            if (type === 'signedFloat' || type === 'signedInt') {
+                // Add + to front of positive numbers: e.g. 25 becomes +25
+                if (that.value > 0) {
+                    that.$element.val('+' + that.$element.val())
+                }
+            }
+        };
+
+        return that;
+    },
+
+    /* A form class.
+     * fields - an associative array with the Field names as the keys.
+     */
+    Form: function(fields) {
+        var that = {};
+
+        /* Form initialization */
+        that.fields = fields;
+
+        that.init = function() {
+            for (var fieldName in that.fields) {
+                if (!that.fields.hasOwnProperty(fieldName)){ continue; }
+
+                var field = that.fields[fieldName];
+
+                // For certain field types, the input needs to be validated
+                // as representing the correct type.  Add the type validation
+                // function as the field's first validator.
+                if (field.type === 'int' || field.type === 'signedInt')
+                    field.validators.unshift(util.validators.representsInt);
+                if (field.type === 'float' || field.type === 'signedFloat')
+                    field.validators.unshift(util.validators.representsFloat);
+            }
+        };
+
+        that.init();
+        return that;
+    },
+
+    /*
+     * Field validators.
+     * For validators that take arguments other than the Field value,
+     * the Field value should be the last argument, and the other arguments
+     * should be supplied with Function.prototype.curry() when the Field
+     * is instantiated.
+     */
+    validators: {
+
+        representsInt: function(value) {
+            return util.representsInt(value);
+        },
+
+        representsFloat: function(value) {
+            return util.representsNumber(value);
+        },
+
+        /*
+         Returns true if min <= fieldValue <= max,
+         false otherwise.  If either min or max is null,
+         then that boundary won't be checked.
+         */
+        inNumberRange: function(min, max, value) {
+            if (min !== null && value < min) {
+                return false;
+            }
+            else if (max !== null && value > max) {
+                return false;
+            }
+            return true;
+        }
+    }
 };
 
 
