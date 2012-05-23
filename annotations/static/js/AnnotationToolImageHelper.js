@@ -27,13 +27,13 @@ var ATI = {
         ATI.$resetButton = $('#resetImageOptionsButton');
         ATI.$applyingText = $('#applyingText');
 
-        ATI.form = util.Form({
-            brightness: util.Field({
+        ATI.form = util.forms.Form({
+            brightness: util.forms.Field({
                 $element: $('#id_brightness'),
                 type: 'signedInt',
                 defaultValue: 0,
-                validators: [util.validators.inNumberRange.curry(ATI.MIN_BRIGHTNESS, ATI.MAX_BRIGHTNESS)],
-                extraWidget: util.SliderWidget(
+                validators: [util.forms.validators.inNumberRange.curry(ATI.MIN_BRIGHTNESS, ATI.MAX_BRIGHTNESS)],
+                extraWidget: util.forms.SliderWidget(
                     $('#brightness_slider'),
                     $('#id_brightness'),
                     ATI.MIN_BRIGHTNESS,
@@ -41,12 +41,12 @@ var ATI = {
                     ATI.BRIGHTNESS_STEP
                 )
             }),
-            contrast: util.FloatField({
+            contrast: util.forms.FloatField({
                 $element: $('#id_contrast'),
                 type: 'signedFloat',
                 defaultValue: 0.0,
-                validators: [util.validators.inNumberRange.curry(ATI.MIN_CONTRAST, ATI.MAX_CONTRAST)],
-                extraWidget: util.SliderWidget(
+                validators: [util.forms.validators.inNumberRange.curry(ATI.MIN_CONTRAST, ATI.MAX_CONTRAST)],
+                extraWidget: util.forms.SliderWidget(
                     $('#contrast_slider'),
                     $('#id_contrast'),
                     ATI.MIN_CONTRAST,

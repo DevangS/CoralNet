@@ -71,3 +71,9 @@ to any value (except the empty string) to not include it.
 {% if not no_util %}
     {% include "static-local-include.html" with type="js" path="js/util.js" %}
 {% endif %}
+
+{# Our utility classes for forms and fields. #}
+{# Must be included after: util.js #}
+{% if util_forms %}
+    {% include "static-local-include.html" with type="js" path="js/util-forms.js" %}
+{% endif %}
