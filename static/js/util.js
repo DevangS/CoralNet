@@ -98,7 +98,7 @@ var util = {
         var that = {};
 
         /* Object initialization */
-        var requiredParams = ['$element', 'type', 'validators'];
+        var requiredParams = ['$element', 'type', 'defaultValue', 'validators'];
         var optionalParams = ['extraWidget'];
         var paramName, i;
 
@@ -125,13 +125,6 @@ var util = {
             }
         };
 
-        /* Revert the field's value to what it was previously
-         (i.e. revert it to the saved value in that.value). */
-        that.revertField = function() {
-            that.$element.val(that.value);
-            that.formatField();
-        };
-
         that.onFieldChange = function() {
             // Run the validators
             for (var i = 0; i < that.validators.length; i++) {
@@ -146,7 +139,7 @@ var util = {
             // (the value for calculation, not for display)
             that.updateValue();
 
-            // Update an ExtraWidget if applicable.
+            // Update the extraWidget if applicable.
             if (that.extraWidget !== null)
                 that.extraWidget.update(that.value);
         };
@@ -194,6 +187,26 @@ var util = {
                     that.$element.val('+' + that.$element.val())
                 }
             }
+        };
+
+        /* Revert the field's value to what it was previously
+         (i.e. revert it to the saved value in that.value). */
+        that.revertField = function() {
+            that.$element.val(that.value);
+            that.formatField();
+        };
+
+        /* Reset the value to the default value. */
+        that.reset = function() {
+            // Reset the internal value.
+            that.value = that.defaultValue;
+
+            // Reset the field display value.
+            that.formatField();
+
+            // Reset the extraWidget if applicable.
+            if (that.extraWidget !== null)
+                that.extraWidget.update(that.value);
         };
 
         that._init();

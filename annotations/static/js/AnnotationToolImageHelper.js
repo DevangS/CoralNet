@@ -1,6 +1,7 @@
 var ATI = {
 
     $applyButton: undefined,
+    $resetButton: undefined,
 
     form: undefined,
     fields: undefined,
@@ -22,11 +23,13 @@ var ATI = {
 
     init: function(sourceImages) {
         ATI.$applyButton = $('#applyImageOptionsButton');
+        ATI.$resetButton = $('#resetImageOptionsButton');
 
         ATI.form = util.Form({
             brightness: util.Field({
                 $element: $('#id_brightness'),
                 type: 'signedInt',
+                defaultValue: 0,
                 validators: [util.validators.inNumberRange.curry(ATI.MIN_BRIGHTNESS, ATI.MAX_BRIGHTNESS)],
                 extraWidget: util.SliderWidget(
                     $('#brightness_slider'),
@@ -39,6 +42,7 @@ var ATI = {
             contrast: util.FloatField({
                 $element: $('#id_contrast'),
                 type: 'signedFloat',
+                defaultValue: 0.0,
                 validators: [util.validators.inNumberRange.curry(ATI.MIN_CONTRAST, ATI.MAX_CONTRAST)],
                 extraWidget: util.SliderWidget(
                     $('#contrast_slider'),
@@ -84,6 +88,17 @@ var ATI = {
         // When the Apply button is clicked, re-draw the source image
         // and re-apply bri/con operations.
         ATI.$applyButton.click( function(){
+            ATI.redrawImage();
+        });
+
+        // When the Reset button is clicked, reset image processing parameters
+        // to default values, and redraw the image.
+        ATI.$resetButton.click( function() {
+            for (var fieldName in ATI.fields) {
+                if (!ATI.fields.hasOwnProperty(fieldName)){ continue; }
+
+                ATI.fields[fieldName].reset();
+            }
             ATI.redrawImage();
         });
     },
