@@ -5,6 +5,14 @@ var ATI = {
     form: undefined,
     fields: undefined,
 
+    MIN_BRIGHTNESS: -150,
+    MAX_BRIGHTNESS: 150,
+    BRIGHTNESS_STEP: 1,
+
+    MIN_CONTRAST: -1.0,
+    MAX_CONTRAST: 3.0,
+    CONTRAST_STEP: 0.1,
+
     sourceImages: {},
     currentSourceImage: undefined,
     imageCanvas: undefined,
@@ -16,17 +24,31 @@ var ATI = {
         ATI.$applyButton = $('#applyImageOptionsButton');
 
         ATI.form = util.Form({
-            brightness: util.Field(
-                $('#id_brightness'),
-                'signedInt',
-                [util.validators.inNumberRange.curry(-150, 150)]
-            ),
-            contrast: util.FloatField(
-                $('#id_contrast'),
-                'signedFloat',
-                [util.validators.inNumberRange.curry(-1.0, 3.0)],
-                1
-            )
+            brightness: util.Field({
+                $element: $('#id_brightness'),
+                type: 'signedInt',
+                validators: [util.validators.inNumberRange.curry(ATI.MIN_BRIGHTNESS, ATI.MAX_BRIGHTNESS)],
+                extraWidget: util.SliderWidget(
+                    $('#brightness_slider'),
+                    $('#id_brightness'),
+                    ATI.MIN_BRIGHTNESS,
+                    ATI.MAX_BRIGHTNESS,
+                    ATI.BRIGHTNESS_STEP
+                )
+            }),
+            contrast: util.FloatField({
+                $element: $('#id_contrast'),
+                type: 'signedFloat',
+                validators: [util.validators.inNumberRange.curry(ATI.MIN_CONTRAST, ATI.MAX_CONTRAST)],
+                extraWidget: util.SliderWidget(
+                    $('#contrast_slider'),
+                    $('#id_contrast'),
+                    ATI.MIN_CONTRAST,
+                    ATI.MAX_CONTRAST,
+                    ATI.CONTRAST_STEP
+                ),
+                decimalPlaces: 1
+            })
         });
         ATI.fields = ATI.form.fields;
 
@@ -46,10 +68,10 @@ var ATI = {
             var field = ATI.fields[fieldName];
 
             // Initialize the stored field value.
-            field.updateValue();
+            field.onFieldChange();
             // When the element's value is changed, update the stored field value
             // (or revert the element's value if the value is invalid).
-            field.$element.change(field.updateValue);
+            field.$element.change(field.onFieldChange);
         }
 
         if (ATI.sourceImages.hasOwnProperty('scaled')) {
@@ -138,7 +160,7 @@ var ATI = {
         ATI.imageCanvas.getContext("2d").drawImage(ATI.currentSourceImage.imgBuffer, 0, 0);
 
         // bri == 0 and con == 0 means it's just the original image, so return.
-        if (ATI.fields.brightness.value === 0 && ATI.fields.contrast.value === 0) {
+        if (ATI.fields.brightness.value === 0 && ATI.fields.contrast.value === 0.0) {
             return;
         }
 

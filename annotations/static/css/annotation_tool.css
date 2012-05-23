@@ -202,3 +202,9 @@ kbd {
     background-color: #DDDDDD;
     border: 2px solid black;
 }
+
+/* jQuery-UI sliders. */
+.ui-slider {
+    margin: 3px 0 3px 254px;  /* top right bottom left */
+    width: 250px;
+}

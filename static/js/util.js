@@ -94,15 +94,36 @@ var util = {
 
 
     /* A form field class. */
-    Field: function($element, type, validators) {
+    Field: function(params) {
         var that = {};
 
         /* Object initialization */
-        that.$element = $element;
-        that.type = type;
-        that.validators = validators;
-        that.value = undefined;
+        var requiredParams = ['$element', 'type', 'validators'];
+        var optionalParams = ['extraWidget'];
+        var paramName, i;
 
+        for (i = 0; i < requiredParams.length; i++) {
+            paramName = requiredParams[i];
+            if (params.hasOwnProperty(paramName))
+                that[paramName] = params[paramName];
+            else
+                console.log("Required parameter missing: {0}".format(paramName));
+        }
+        for (i = 0; i < optionalParams.length; i++) {
+            paramName = optionalParams[i];
+            if (params.hasOwnProperty(paramName))
+                that[paramName] = params[paramName];
+            else
+                that[paramName] = null;
+        }
+
+        that.value = null;
+
+        that._init = function() {
+            if (that.extraWidget !== null) {
+                that.extraWidget.$element.bind("slide", that.onExtraWidgetChange);
+            }
+        };
 
         /* Revert the field's value to what it was previously
          (i.e. revert it to the saved value in that.value). */
@@ -111,9 +132,8 @@ var util = {
             that.formatField();
         };
 
-        that.updateValue = function() {
+        that.onFieldChange = function() {
             // Run the validators
-
             for (var i = 0; i < that.validators.length; i++) {
                 var isValid = that.validators[i](that.$element.val());
                 if (isValid === false) {
@@ -122,9 +142,25 @@ var util = {
                 }
             }
 
-            // Update the value
+            // Update the stored value
+            // (the value for calculation, not for display)
+            that.updateValue();
 
+            // Update an ExtraWidget if applicable.
+            if (that.extraWidget !== null)
+                that.extraWidget.update(that.value);
+        };
+
+        that.onExtraWidgetChange = function(event, ui) {
+            that.$element.val(ui.value);
+            that.updateValue();
+        };
+
+        /* Update the stored value
+         (the value for calculation, not for display). */
+        that.updateValue = function() {
             var type = that.type;
+
             if (type === 'checkbox')
                 that.value = that.$element.prop('checked');
             else if (type === 'color')
@@ -160,13 +196,23 @@ var util = {
             }
         };
 
+        that._init();
         return that;
     },
 
-    FloatField: function($element, type, validators, decimalPlaces) {
-        var that = util.Field($element, type, validators);
+    FloatField: function(params) {
+        var that = util.Field(params);
 
-        that.decimalPlaces = decimalPlaces;
+        var requiredParams = ['decimalPlaces'];
+        var paramName, i;
+
+        for (i = 0; i < requiredParams.length; i++) {
+            paramName = requiredParams[i];
+            if (params.hasOwnProperty(paramName))
+                that[paramName] = params[paramName];
+            else
+                console.log("Required parameter missing: {0}".format(paramName));
+        }
 
         return that;
     },
@@ -180,7 +226,7 @@ var util = {
         /* Form initialization */
         that.fields = fields;
 
-        that.init = function() {
+        that._init = function() {
             for (var fieldName in that.fields) {
                 if (!that.fields.hasOwnProperty(fieldName)){ continue; }
 
@@ -196,7 +242,37 @@ var util = {
             }
         };
 
-        that.init();
+        that._init();
+        return that;
+    },
+
+    ExtraWidget: function($element, type) {
+        var that = {};
+
+        that.$element = $element;
+        that.type = type;
+
+        that.update = function(value) {
+            console.log("This extra widget doesn't have an implementation of update().  Please add one.\nIn the meantime, the value received was: {0}".format(value));
+        };
+
+        return that;
+    },
+
+    SliderWidget: function($element, $fieldElement, min, max, step) {
+        var that = util.ExtraWidget($element, 'slider');
+
+        $element.slider({
+            value: $fieldElement.value,
+            min: min,
+            max: max,
+            step: step
+        });
+
+        that.update = function(value) {
+            that.$element.slider("value", value);
+        };
+
         return that;
     },
 

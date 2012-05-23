@@ -2,7 +2,13 @@
 <form id="annotationImageOptionsForm"
       action="" method="post">{% csrf_token %}
 
-    {% include "form_generic.html" with form=image_options_form dont_mark_required='yes' %}
+    {% for field in image_options_form %}
+        {% include "form_generic_one_field.html" with field=field dont_mark_required='yes' %}
+
+        {% if field.name == "brightness" or field.name == "contrast" %}
+            <div id="{{ field.name }}_slider"></div>
+        {% endif %}
+    {% endfor %}
 
     <div class="submit_button_wrapper_column_form">
         <button id="applyImageOptionsButton" type="button">Apply</button>
