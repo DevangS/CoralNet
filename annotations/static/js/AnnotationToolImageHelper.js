@@ -2,6 +2,7 @@ var ATI = {
 
     $applyButton: undefined,
     $resetButton: undefined,
+    $applyingText: undefined,
 
     form: undefined,
     fields: undefined,
@@ -24,6 +25,7 @@ var ATI = {
     init: function(sourceImages) {
         ATI.$applyButton = $('#applyImageOptionsButton');
         ATI.$resetButton = $('#resetImageOptionsButton');
+        ATI.$applyingText = $('#applyingText');
 
         ATI.form = util.Form({
             brightness: util.Field({
@@ -174,12 +176,12 @@ var ATI = {
         // we're reverting manually.)
         ATI.imageCanvas.getContext("2d").drawImage(ATI.currentSourceImage.imgBuffer, 0, 0);
 
-        // bri == 0 and con == 0 means it's just the original image, so return.
-        if (ATI.fields.brightness.value === 0 && ATI.fields.contrast.value === 0.0) {
+        // If processing parameters are the default values, then we just need
+        // the original image, so we're done.
+        if (ATI.fields.brightness.value === ATI.fields.brightness.defaultValue
+           && ATI.fields.contrast.value === ATI.fields.contrast.defaultValue) {
             return;
         }
-
-        // TODO: Have some progress text as this goes: "Applying..."
 
         // TODO: Work on reducing browser memory usage.
         // Abandoning Pixastic.process() was probably a good start, since that
@@ -221,6 +223,7 @@ var ATI = {
         }
 
         ATI.nowApplyingProcessing = true;
+        ATI.$applyingText.append('<span>').text("Applying...");
 
         ATI.applyBrightnessAndContrastToRects(
             ATI.fields.brightness.value,
@@ -233,6 +236,8 @@ var ATI = {
         if (ATI.redrawSignal === true) {
             ATI.nowApplyingProcessing = false;
             ATI.redrawSignal = false;
+            ATI.$applyingText.empty();
+
             ATI.redrawImage();
             return;
         }
@@ -284,6 +289,7 @@ var ATI = {
         }
         else {
             ATI.nowApplyingProcessing = false;
+            ATI.$applyingText.empty();
         }
     }
 };

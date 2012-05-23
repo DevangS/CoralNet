@@ -208,3 +208,15 @@ kbd {
     margin: 3px 0 3px 254px;  /* top right bottom left */
     width: 250px;
 }
+
+/* Place for "Applying..." text for image options/tools form */
+#applyingText {
+    margin-left: 254px;
+
+    /* Let this element have some height (enough to fit one line of text),
+       even when there is no text. This'll ensure that when the text appears,
+       elements below won't shift, overlap, etc. */
+    height: 1em;
+
+    padding: 5px;
+}
