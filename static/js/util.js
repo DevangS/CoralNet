@@ -129,8 +129,10 @@ var util = {
                 that.value = that.$element.prop('checked');
             else if (type === 'color')
                 that.value = '#' + that.$element.val();
-            else if (type === 'float' || type === 'signedFloat')
-                that.value = parseFloat(that.$element.val());
+            else if (type === 'float' || type === 'signedFloat') {
+                var unroundedValue = parseFloat(that.$element.val());
+                that.value = parseFloat(unroundedValue.toFixed(that.decimalPlaces));
+            }
             else if (type === 'int' || type === 'signedInt')
                 that.value = parseInt(that.$element.val(), 10);
             else
@@ -144,9 +146,7 @@ var util = {
             var type = that.type;
 
             if (type === 'float' || type === 'signedFloat') {
-                // TODO: Create a FloatField class where the number of
-                // decimal places can be specified in the constructor.
-                that.$element.val(that.value.toFixed(1))
+                that.$element.val(that.value.toFixed(that.decimalPlaces))
             }
             else if (type === 'int' || type === 'signedInt') {
                 that.$element.val(that.value.toFixed(0))
@@ -159,6 +159,14 @@ var util = {
                 }
             }
         };
+
+        return that;
+    },
+
+    FloatField: function($element, type, validators, decimalPlaces) {
+        var that = util.Field($element, type, validators);
+
+        that.decimalPlaces = decimalPlaces;
 
         return that;
     },

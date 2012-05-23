@@ -21,10 +21,11 @@ var ATI = {
                 'signedInt',
                 [util.validators.inNumberRange.curry(-150, 150)]
             ),
-            contrast: util.Field(
+            contrast: util.FloatField(
                 $('#id_contrast'),
                 'signedFloat',
-                [util.validators.inNumberRange.curry(-1.0, 3.0)]
+                [util.validators.inNumberRange.curry(-1.0, 3.0)],
+                1
             )
         });
         ATI.fields = ATI.form.fields;
