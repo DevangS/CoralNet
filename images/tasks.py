@@ -623,4 +623,4 @@ def verifyAllImages():
 
 def verifyAllAndPrint():
     for errorFile in verifyAllImages():
-        print errorFile.name
+        print errorFile.original_file.name
