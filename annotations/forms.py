@@ -208,6 +208,15 @@ class AnnotationToolSettingsForm(ModelForm):
             field.widget.attrs.update({'class': 'color'})
 
 
+class AnnotationImageOptionsForm(Form):
+
+    class Media:
+        js = ('js/AnnotationToolImageHelper.js',)
+
+    brightness = IntegerField(initial='0', widget=TextInput(attrs={'size': 3}))
+    contrast = DecimalField(initial='0', widget=TextInput(attrs={'size': 3}))
+
+
 class AnnotationAreaPercentsForm(Form):
 
     min_x = DecimalField(label="Left boundary X",

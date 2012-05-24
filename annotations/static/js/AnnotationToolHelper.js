@@ -14,7 +14,7 @@ var ATH = {
     annotationFields: [],
     annotationRobotFields: [],
     annotationFieldsJQ: null,
-    annotationImage: null,
+    imageArea: undefined,
     pointsCanvas: null,
     listenerElmt: null,
     saveButton: null,
@@ -53,7 +53,7 @@ var ATH = {
     POINTMODE_SELECTED: 1,
     POINTMODE_NONE: 2,
 
-    // The original image dimensions
+    // The original image's dimensions
     IMAGE_FULL_WIDTH: null,
     IMAGE_FULL_HEIGHT: null,
     // The area that the image is permitted to fill
@@ -89,7 +89,6 @@ var ATH = {
 
     init: function(fullHeight, fullWidth,
                    IMAGE_AREA_WIDTH, IMAGE_AREA_HEIGHT,
-                   hasThumbnail, fullImageUrl,
                    imagePoints, labels) {
         var i, j, n;    // Loop variables...
 
@@ -160,18 +159,11 @@ var ATH = {
 
         ATH.annotationArea = $("#annotationArea")[0];
         ATH.annotationList = $("#annotationList")[0];
-        ATH.annotationImage = $("#annotationImage")[0];
         ATH.pointsCanvas = $("#pointsCanvas")[0];
         ATH.listenerElmt = $("#listenerElmt")[0];
         ATH.saveButton = $("#saveButton")[0];
 
-        ATH.fullImageUrl = fullImageUrl;
-
-        if (hasThumbnail) {
-            // Once the rest of the document has loaded,
-            // load the full-resolution image and swap out the scaled-down image.
-            util.addLoadEvent(ATH.preloadAndSwapFullImage);
-        }
+        ATH.imageArea = $("#imageArea")[0];
 
         $('#mainColumn').css({
             "width": ATH.ANNOTATION_AREA_WIDTH + "px"
@@ -190,7 +182,7 @@ var ATH = {
             "background-color": ATH.CANVAS_GUTTER_COLOR
         });
 
-        $('#imageArea').css({
+        $(ATH.imageArea).css({
             "width": ATH.IMAGE_AREA_WIDTH + "px",
             "height": ATH.IMAGE_AREA_HEIGHT + "px",
             "left": ATH.CANVAS_GUTTER + "px",
@@ -581,32 +573,6 @@ var ATH = {
     },
 
     /*
-     * Preload the full image; once it's loaded, swap it in as the annotation image.
-     * Code from: http://stackoverflow.com/a/1662153/859858
-     */
-    preloadAndSwapFullImage: function() {
-        // Create an Image object.
-        var fullImagePreloader = new Image();
-
-        // When image preloading is done, swap images.
-        fullImagePreloader.onload = function() {
-            ATH.annotationImage.src = fullImagePreloader.src;
-        };
-
-        // Image preloading starts as soon as we set this src attribute.
-        fullImagePreloader.src = ATH.fullImageUrl;
-
-        // For debugging, it helps to load an image that is
-        // (1) totally different, so you can tell when it's swapped in, and
-        // (2) remotely hosted, in case loading a local image is not satisfactory for testing.
-        // Remember to refresh + clear cache (Ctrl+Shift+R in Firefox) on subsequent test runs.
-        // Uncomment the image of your choice:
-        //fullImagePreloader.src = "http://farm6.staticflickr.com/5015/5565696408_8819b64a61_b.jpg"; // 740 KB
-        //fullImagePreloader.src = "http://farm6.staticflickr.com/5018/5565067643_1c9686d932_o.jpg"; // 1,756 KB
-        //fullImagePreloader.src = "http://farm6.staticflickr.com/5015/5565696408_9849980bdb_o.jpg"; // 2,925 KB
-    },
-
-    /*
      * Based on the current zoom level and focus of the zoom, position and
      * set up the image and on-image listener elements.
      */
@@ -659,8 +625,8 @@ var ATH = {
         ATH.imageLeftOffset = parseFloat(ATH.imageLeftOffset.toFixed(3));
         ATH.imageTopOffset = parseFloat(ATH.imageTopOffset.toFixed(3));
 
-        // Set styling properties for the image.
-        $(ATH.annotationImage).css({
+        // Set styling properties for the image canvas.
+        $(ATI.imageCanvas).css({
             "height": ATH.imageDisplayHeight,
             "left": ATH.imageLeftOffset,
             "top": ATH.imageTopOffset,
@@ -1100,7 +1066,7 @@ var ATH = {
 		}
 
         // Get the x,y relative to the upper-left corner of the image
-        var elmt = ATH.annotationImage;
+        var elmt = ATI.imageCanvas;
         while (elmt !== null) {
             x -= elmt.offsetLeft;
             y -= elmt.offsetTop;

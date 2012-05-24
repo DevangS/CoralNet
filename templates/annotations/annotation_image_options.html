@@ -1,0 +1,19 @@
+<legend>Image Tools</legend>
+<form id="annotationImageOptionsForm"
+      action="" method="post">{% csrf_token %}
+
+    {% for field in image_options_form %}
+        {% include "form_generic_one_field.html" with field=field dont_mark_required='yes' %}
+
+        {% if field.name == "brightness" or field.name == "contrast" %}
+            <div id="{{ field.name }}_slider"></div>
+        {% endif %}
+    {% endfor %}
+
+    <div class="submit_button_wrapper_column_form">
+        <button id="applyImageOptionsButton" type="button">Apply</button>
+        <button id="resetImageOptionsButton" type="button">Reset Parameters</button>
+    </div>
+
+    <div id="applyingText"></div>
+</form>
