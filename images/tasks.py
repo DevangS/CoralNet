@@ -612,7 +612,7 @@ def verifyAllImages():
     errorImages = []
     for image in Image.objects.all():
         try:
-            fp = open(ORIGINALIMAGES_DIR + str(image.original_file), "rb")
+            fp = open(ORIGINALIMAGES_DIR + "/" + str(image.original_file), "rb")
             im = PILImage.open(fp) # open from file object
             im.load() # make sure PIL has read the data
             fp.close()
