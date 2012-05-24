@@ -608,16 +608,20 @@ def image_status_overview():
 
         print s.name + ". Num annotated images: " + str(nAnnotated) + ", num total images: " + str(nTotal) + "."
 
+def verifyImage(image):
+    try:
+        fp = open(ORIGINALIMAGES_DIR + "/" + str(image.original_file), "rb")
+        im = PILImage.open(fp) # open from file object
+        im.load() # make sure PIL has read the data
+        fp.close()
+        return True
+    except IOError:
+        return False
+
 def verifyAllImages():
     errorImages = []
     for image in Image.objects.all():
-        try:
-            fp = open(ORIGINALIMAGES_DIR + "/" + str(image.original_file), "rb")
-            im = PILImage.open(fp) # open from file object
-            im.load() # make sure PIL has read the data
-            fp.close()
-
-        except IOError:
+        if not verifyImage(image):
             errorImages.append(image)
     return errorImages
 
