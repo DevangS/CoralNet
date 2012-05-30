@@ -167,7 +167,7 @@ def visualize_source(request, source_id):
             except ValueError:
                 annotator = -1
                 errors.append("Invalid annotator specified")
-            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs)
+            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).order_by('?')
             if not annotator:
                 annotations.exclude(user=get_robot_user())
             elif annotator == 1:
