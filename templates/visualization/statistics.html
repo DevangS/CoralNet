@@ -34,12 +34,20 @@ table.sample td {
 
 {% block javascript-functions %}
     <script type="text/javascript">
-        called = true;
-        function checkAll(field)
+        groupCalled = true;
+        function checkAllGroups(field)
         {
             for (i = 0; i < field.length; i++)
-                field[i].checked = called ;
-            called = !called;
+                field[i].checked = groupCalled ;
+            groupCalled = !groupCalled;
+        }
+
+        labelCalled = true;
+        function checkAllLabels(field)
+        {
+            for (i = 0; i < field.length; i++)
+                field[i].checked = labelCalled ;
+            labelCalled = !labelCalled;
         }
 
     </script>
@@ -126,8 +134,8 @@ table.sample td {
             <br/>
 
             <div style="text-align: center;">
-                <input type="checkbox" id="selectAll" onclick="checkAll(document.statisticsform.labels)">
-                 <label for="selectAll">Select/Unselect All</label>
+                <input type="checkbox" id="selectAll" onclick="checkAllGroups(document.statisticsform.groups)">
+                 <label for="selectAll">Select/Unselect All Groups</label>
             </div>
             <br/>
 
@@ -135,11 +143,16 @@ table.sample td {
             <br/><br/>
             {% for groupId, groupName in form.groups.field.choices %}
               <div class="grid_checkbox_field_wrapper">
-                <input id="id_groups_{{ groupId }}" type="checkbox" value="{{ groupId }}" name="labels">
+                <input id="id_groups_{{ groupId }}" type="checkbox" value="{{ groupId }}" name="groups">
                 <label class="grid_checkbox" for="id_groups_{{ groupId }}">{{ groupName }}</label>
               </div>
             {% endfor %}
             <br/><br/>
+
+            <div style="text-align: center;">
+                <input type="checkbox" id="selectAll" onclick="checkAllLabels(document.statisticsform.labels)">
+                 <label for="selectAll">Select/Unselect All Labels</label>
+            </div>
 
             <b><i>Labels</i></b>
             <br/><br/>
