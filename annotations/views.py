@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from django.utils import simplejson
-from easy_thumbnails.files import Thumbnailer
+from easy_thumbnails.files import get_thumbnailer
 from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
 from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm, AnnotationToolSettingsForm, AnnotationImageOptionsForm
@@ -473,7 +473,7 @@ def annotation_tool(request, image_id):
         thumbnail_dimensions = (IMAGE_AREA_WIDTH, 0)
 
         # Generate the thumbnail if it doesn't exist, and get the thumbnail's URL and dimensions.
-        thumbnailer = Thumbnailer(image.original_file)
+        thumbnailer = get_thumbnailer(image.original_file)
         thumb = thumbnailer.get_thumbnail(dict(size=thumbnail_dimensions))
         source_images.update(dict(scaled=dict(
             url=thumb.url,
