@@ -242,7 +242,7 @@ def generate_statistics(request, source_id):
     years = []
     label_table = []
     group_table = []
-    graph = []
+    #graph = []
 
     #generate form to select images to compute statistics for
     source = get_object_or_404(Source, id=source_id)
@@ -314,7 +314,6 @@ def generate_statistics(request, source_id):
                                 percent_coverage = (float(label_year_annotations_count)/total_year_annotations_count)*100
                             except ZeroDivisionError:
                                 percent_coverage = 0
-                                errors.append("There was a divide by zero error computing your statistics!")
                             table_yearly_counts.append(round(percent_coverage,2))
                             table_yearly_counts.append(label_year_annotations_count)
                             graph_yearly_counts.append(int(percent_coverage))
@@ -347,7 +346,6 @@ def generate_statistics(request, source_id):
                                 percent_coverage = (float(label_year_annotations_count)/total_year_annotations_count)*100
                             except ZeroDivisionError:
                                 percent_coverage = 0
-                                errors.append("There was a divide by zero error computing your statistics!")
                             table_yearly_counts.append(round(percent_coverage,2))
                             table_yearly_counts.append(label_year_annotations_count)
                             graph_yearly_counts.append(int(percent_coverage))
@@ -362,7 +360,7 @@ def generate_statistics(request, source_id):
                         table_row = [name]
                         table_row.extend(table_yearly_counts)
                         group_table.append(table_row)
-
+                    """
                     #Create string of colors
                     colors_string = str(bucket[0: (len(labels)+len(groups))]).replace(' ', '').replace('[','').replace(']','').replace('\'', '')
 
@@ -391,6 +389,7 @@ def generate_statistics(request, source_id):
                     while count > 0:
                         graph.line(3,0,0)
                         count -= 1
+                    """
                 else:
                     errors.append("No data found!")
 
@@ -406,8 +405,7 @@ def generate_statistics(request, source_id):
         'source': source,
         'years': years,
         'label_table': label_table,
-        'group_table': group_table,
-        'graph': graph
+        'group_table': group_table
         },
         context_instance=RequestContext(request)
     )
