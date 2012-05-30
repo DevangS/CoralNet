@@ -162,7 +162,11 @@ def visualize_source(request, source_id):
             patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
             #get all annotations for the source that contain the label
-            annotator = int(form.cleaned_data.pop('annotator'))
+            try:
+                annotator = int(form.cleaned_data.pop('annotator'))
+            except ValueError:
+                annotator = -1
+                errors.append("Invalid annotator specified")
             annotations = Annotation.objects.filter(source=source, label=label, **patchArgs)
             if not annotator:
                 annotations.exclude(user=get_robot_user())
