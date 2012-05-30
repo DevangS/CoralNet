@@ -268,6 +268,43 @@ class ImageUploadTest(ClientTest):
     # TODO: Add more image upload tests, with error cases, different options, etc.
 
 
+class ImageViewTest(ClientTest):
+    """
+    Test the image view page.
+    This is an abstract class that doesn't actually have any tests.
+    """
+    extra_components = [MediaTestComponent]
+    fixtures = ['test_users.yaml', 'test_sources.yaml']
+    source_member_roles = [
+        ('public1', 'user2', Source.PermTypes.ADMIN.code),
+    ]
+
+    def setUp(self):
+        super(ImageViewTest, self).setUp()
+        self.source_id = Source.objects.get(name='public1').pk
+
+    def view_page_with_image(self, image_file):
+        self.client.login(username='user2', password='secret')
+
+        self.image_id = self.upload_image(self.source_id, image_file)
+
+        response = self.client.get(reverse('image_detail', kwargs={'image_id': self.image_id}))
+        self.assertStatusOK(response)
+
+        # Try fetching the page a second time, to make sure thumbnail
+        # generation doesn't go nuts.
+        response = self.client.get(reverse('image_detail', kwargs={'image_id': self.image_id}))
+        self.assertStatusOK(response)
+
+        # TODO: Add more checks.
+
+    def test_view_page_with_small_image(self):
+        self.view_page_with_image('001_2012-05-01_color-grid-001.png')
+
+    def test_view_page_with_large_image(self):
+        self.view_page_with_image('002_2012-05-29_color-grid-001_large.png')
+
+
 class ImageProcessingTaskTest(ClientTest):
     """
     Test the image processing tasks' logic with respect to
@@ -290,17 +327,7 @@ class ImageProcessingTaskTest(ClientTest):
 
         self.client.login(username='user2', password='secret')
 
-        # Upload 1 image
-        sample_uploadable_path = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', '001_2012-05-01_color-grid-001.png')
-        f = open(sample_uploadable_path, 'rb')
-        response = self.client.post(reverse('image_upload', kwargs={'source_id': self.source_id}), dict(
-            files=f,
-            skip_or_replace_duplicates='skip',
-            specify_metadata='filenames',
-        ))
-        f.close()
-
-        self.image_id = response.context['uploadedImages'][0].pk
+        self.image_id = self.upload_image(self.source_id, '001_2012-05-01_color-grid-001.png')
 
     def test_preprocess_task(self):
         # The uploaded image should start out not preprocessed.

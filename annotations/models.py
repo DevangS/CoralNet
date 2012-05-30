@@ -13,7 +13,17 @@ def get_label_thumbnail_upload_path(instance, filename):
     """
     return generate_random_filename(settings.LABEL_THUMBNAIL_DIR, filename, numOfChars=10)
 
+
+class LabelGroupManager(models.Manager):
+    def get_by_natural_key(self, code):
+        """
+        Allow fixtures to refer to Label Groups by short code instead of by id.
+        """
+        return self.get(code=code)
+
 class LabelGroup(models.Model):
+    objects = LabelGroupManager()
+
     name = models.CharField(max_length=45, blank=True)
     code = models.CharField(max_length=10, blank=True)
 
@@ -23,7 +33,17 @@ class LabelGroup(models.Model):
         """
         return self.name
 
+
+class LabelManager(models.Manager):
+    def get_by_natural_key(self, code):
+        """
+        Allow fixtures to refer to Labels by short code instead of by id.
+        """
+        return self.get(code=code)
+
 class Label(models.Model):
+    objects = LabelManager()
+
     name = models.CharField(max_length=45)
     code = models.CharField('Short Code', max_length=10)
     group = models.ForeignKey(LabelGroup, verbose_name='Functional Group')
