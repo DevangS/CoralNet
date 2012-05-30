@@ -275,9 +275,9 @@ SOUTH_MIGRATION_MODULES = {
     # Specify a nonexistent path like 'ignore' if an app has a migrations
     # folder in the default location and you want South to ignore it.
 
-    # easy_thumbnails has migrations modules, but South has issues
-    # getting to them because the easy_thumbnails egg is zip-safe
-    # (as of version 1.0 alpha 17).
+    # easy_thumbnails has South migrations, but they're not that well
+    # maintained; the project's GitHub page has several open issues
+    # related to South migrations (as of easy_thumbnails 1.0.3).
     'easy_thumbnails': 'ignore',
 }
 

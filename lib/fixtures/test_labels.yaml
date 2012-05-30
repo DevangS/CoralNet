@@ -1,0 +1,49 @@
+- model: annotations.labelgroup
+  pk: null
+  fields:
+    name: Red colors
+    code: Red
+
+- model: annotations.labelgroup
+  pk: null
+  fields:
+    name: Green colors
+    code: Green
+
+- model: annotations.labelgroup
+  pk: null
+  fields:
+    name: Blue colors
+    code: Blue
+
+
+# For color ideas, see
+# http://en.wikipedia.org/wiki/Category:Shades_of_color
+
+- model: annotations.label
+  pk: null
+  fields:
+    name: Scarlet
+    code: Scarlet
+    group: [Red]
+
+- model: annotations.label
+  pk: null
+  fields:
+    name: Lime Green
+    code: Lime
+    group: [Green]
+
+- model: annotations.label
+  pk: null
+  fields:
+    name: Ultramarine
+    code: UMarine
+    group: [Blue]
+
+- model: annotations.label
+  pk: null
+  fields:
+    name: Turquoise
+    code: Turq
+    group: [Blue]

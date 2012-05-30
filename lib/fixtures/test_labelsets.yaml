@@ -1,0 +1,7 @@
+- model: annotations.labelset
+  pk: 1
+  fields:
+    description: A small labelset.
+    location: ""
+    labels: [[Scarlet], [Lime], [UMarine], [Turq]]
+    edit_date: "2012-05-29 21:00:52"

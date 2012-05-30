@@ -137,6 +137,27 @@ class ClientTest(BaseTest):
             self.assertStatusOK(response)
             self.assertTemplateNotUsed(response, self.PERMISSION_DENIED_TEMPLATE)
 
+    def upload_image(self, source_id, filename):
+        """
+        Upload a test image.
+
+        Requires logging in as a user with upload permissions in
+        the source, first.
+
+        Returns the id of the uploaded image.
+        """
+        sample_uploadable_path = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', filename)
+        f = open(sample_uploadable_path, 'rb')
+        response = self.client.post(reverse('image_upload', kwargs={'source_id': source_id}), dict(
+            files=f,
+            skip_or_replace_duplicates='skip',
+            specify_metadata='filenames',
+        ))
+        f.close()
+
+        image_id = response.context['uploadedImages'][0].pk
+        return image_id
+
     @staticmethod
     def print_response_messages(response):
         """

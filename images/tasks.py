@@ -8,7 +8,12 @@ import shutil
 from celery.task import task
 import os
 from django.conf import settings
-from PIL import Image as PILImage
+
+try:
+    from PIL import Image as PILImage
+except ImportError:
+    import Image as PILImage
+
 from django.db import transaction
 import reversion
 from accounts.utils import get_robot_user
