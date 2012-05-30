@@ -72,6 +72,24 @@ table.sample td {
                 </ul>
             {% else %}
                   <div>
+                  {% if group_table %}
+                        <table class="sample">
+                            <tr>
+                                  <td><b>Functional Group</b></td>
+                                  {% for year in years %}
+                                    <td>{{ year }} (% coverage)</td>
+                                    <td>{{ year }} (total annotations)</td>
+                                  {% endfor %}
+                              </tr>
+                              {% for row in group_table %}
+                                  <tr>
+                                      {% for cell in row %}
+                                          <td>{{ cell }}</td>
+                                      {% endfor %}
+                                  </tr>
+                               {% endfor %}
+                        </table>
+                    {% endif %}
                     {% if label_table %}
                         <table class="sample">
                           <tr>
@@ -90,30 +108,7 @@ table.sample td {
                         {% endfor %}
                         </table>
                     {% endif %}
-                    {% if group_table %}
-                        <table class="sample">
-                            <tr>
-                                  <td><b>Functional Group</b></td>
-                                  {% for year in years %}
-                                    <td>{{ year }} (% coverage)</td>
-                                    <td>{{ year }} (total annotations)</td>
-                                  {% endfor %}
-                              </tr>
-                              {% for row in group_table %}
-                                  <tr>
-                                      {% for cell in row %}
-                                          <td>{{ cell }}</td>
-                                      {% endfor %}
-                                  </tr>
-                               {% endfor %}
-                        </table>
-                    {% endif %}
             </div>
-                <div align="center">
-                {% if graph %}
-                    <img src={{ graph }} />
-                {% endif %}
-                </div>
             {% endif %}
             <br/><br/><br/> &nbsp;
         </div>
