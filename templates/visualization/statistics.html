@@ -34,11 +34,14 @@ table.sample td {
 
 {% block javascript-functions %}
     <script type="text/javascript">
-       $(document).ready(function(){
-            $("#selectAll").change(function() {
-                $(".:checkbox").attr('checked', this.checked);
-            });
-       });
+        called = true;
+        function checkAll(field)
+        {
+            for (i = 0; i < field.length; i++)
+                field[i].checked = called ;
+            called = !called;
+        }
+
     </script>
 {% endblock %}
 
@@ -109,7 +112,7 @@ table.sample td {
         <!-- This is the menu to select descriptors to sort through the images -->
         <fieldset class="fieldset_statistics">
 
-        <form action="" method="get">
+        <form action="" method="get" name="statisticsform">
 
             <legend class="smaller">Specify some image search parameters <i>(optional)</i>:</legend>
             <br/>
@@ -123,8 +126,8 @@ table.sample td {
             <br/>
 
             <div style="text-align: center;">
-                <input type="checkbox" id="selectAll">
-                <label for="selectAll">SELECT ALL</label>
+                <input type="checkbox" id="selectAll" onclick="checkAll(document.statisticsform.labels)">
+                 <label for="selectAll">Select/Unselect All</label>
             </div>
             <br/>
 
@@ -132,7 +135,7 @@ table.sample td {
             <br/><br/>
             {% for groupId, groupName in form.groups.field.choices %}
               <div class="grid_checkbox_field_wrapper">
-                <input id="id_groups_{{ groupId }}" type="checkbox" value="{{ groupId }}" name="groups">
+                <input id="id_groups_{{ groupId }}" type="checkbox" value="{{ groupId }}" name="labels">
                 <label class="grid_checkbox" for="id_groups_{{ groupId }}">{{ groupName }}</label>
               </div>
             {% endfor %}
