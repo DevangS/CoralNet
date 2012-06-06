@@ -129,7 +129,13 @@ def visualize_source(request, source_id):
 
             allSearchResults = Image.objects.filter(source=source, **imageArgs)
             if form.is_valid():
-                value = int(form.cleaned_data.pop('image_status'))
+                
+                try:
+                    value = int(form.cleaned_data.pop('image_status'))
+                except ValueError:
+                    value = -1
+                    errors.append('Invalid image status specified')
+                    
                 #All images wanted so just return
                 if value:
                     #Else do check for robot classified source options
