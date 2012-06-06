@@ -133,8 +133,7 @@ def visualize_source(request, source_id):
                 try:
                     value = int(form.cleaned_data.pop('image_status'))
                 except ValueError:
-                    value = -1
-                    errors.append('Invalid image status specified')
+                    value = 0
                     
                 #All images wanted so just return
                 if value:
@@ -171,8 +170,7 @@ def visualize_source(request, source_id):
             try:
                 annotator = int(form.cleaned_data.pop('annotator'))
             except ValueError:
-                annotator = -1
-                errors.append("Invalid annotator specified")
+                annotator = 2
             annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).order_by('?')
             if not annotator:
                 annotations.exclude(user=get_robot_user())
