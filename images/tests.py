@@ -249,23 +249,173 @@ class ImageUploadTest(ClientTest):
         super(ImageUploadTest, self).setUp()
         self.source_id = Source.objects.get(name='public1').pk
 
-    def test_image_upload_success(self):
+#    def assertSourceImageCount(self, expected_count):
+#        self.assertEqual(Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count(), expected_count)
+
+    def upload_images_test(self, filenames, expect_success=True,
+                           expected_new_images=None, **options):
+        """
+        Unlike ClientTest's upload_image method,
+        this method includes assert statements, the ability to upload
+        multiple images, and the ability to specify alternate options
+        in the upload form.
+        """
+        if isinstance(filenames, basestring):
+            filenames = [filenames]
+
+        old_source_image_count = Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
+
         self.client.login(username='user2', password='secret')
 
-        # Upload 1 image
-        sample_uploadable_path = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', '001_2012-05-01_color-grid-001.png')
-        f = open(sample_uploadable_path, 'rb')
-        response = self.client.post(reverse('image_upload', kwargs={'source_id': self.source_id}), dict(
-            files=f,
+        files_to_upload = []
+        for filename in filenames:
+            sample_uploadable_path = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', filename)
+            f = open(sample_uploadable_path, 'rb')
+            files_to_upload.append(f)
+
+        post_dict = dict(
+            files=files_to_upload,
             skip_or_replace_duplicates='skip',
             specify_metadata='filenames',
-        ))
-        f.close()
+        )
+        post_dict.update(options)
+
+        response = self.client.post(reverse('image_upload', kwargs={'source_id': self.source_id}), post_dict)
+        for uploaded_file in files_to_upload:
+            uploaded_file.close()
 
         self.assertStatusOK(response)
-        self.assertEqual(len(response.context['uploadedImages']), 1)
 
-    # TODO: Add more image upload tests, with error cases, different options, etc.
+        new_source_image_count = Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
+
+        # TODO: If it's not None, use the parameter expected_new_images
+        # when checking the source image count, to accommodate
+        # the possibility of skipping or replacing images.
+        #
+        # TODO: Accommodate partial successes (some uploaded, some not)?
+
+        if expect_success:
+            self.assertEqual(len(response.context['uploadedImages']), len(filenames))
+            self.assertEqual(new_source_image_count, len(filenames) + old_source_image_count)
+        else:
+            self.assertEqual(len(response.context['uploadedImages']), 0)
+            self.assertEqual(new_source_image_count, old_source_image_count)
+
+        # TODO: Test that the correct message(s) and error(s) were displayed?
+
+        return response
+
+#    def single_image_test(self, filenames, expect_success=True):
+#        """
+#        Test a single image upload.
+#        Call this method only once per unit test, since it checks for
+#        0 or 1 images existing in the source to determine success or failure.
+#        """
+#        response = self.upload_images_test(self.source_id, [filename], expect_success)
+#        if expect_success:
+#            self.assertImageCount(1)
+#        else:
+#            self.assertImageCount(0)
+
+
+    def test_valid_png(self):
+        """ .png created using the PIL. """
+        self.upload_images_test('001_2012-05-01_color-grid-001.png')
+
+    def test_unloadable_corrupt_png_1(self):
+        """ .png with some bytes swapped around.
+        PIL load() would get IOError: broken data stream when reading image file """
+        self.upload_images_test('001_2012-05-01_color-grid-001_png-corrupt-unloadable-1.png',
+                                expect_success=False)
+
+    def test_unloadable_corrupt_png_2(self):
+        """ .png with some bytes deleted from the end.
+        PIL load() would get IndexError: string index out of range """
+        self.upload_images_test('001_2012-05-01_color-grid-001_png-corrupt-unloadable-2.png',
+                                expect_success=False)
+
+    def test_unopenable_corrupt_png(self):
+        """ .png with some bytes deleted near the beginning.
+        PIL open() would get IOError: cannot identify image file """
+        self.upload_images_test('001_2012-05-01_color-grid-001_png-corrupt-unopenable.png',
+                                expect_success=False)
+
+    def test_valid_jpg(self):
+        """ .jpg created using the PIL. """
+        self.upload_images_test('001_2012-05-01_color-grid-001_jpg-valid.jpg')
+
+    def test_unloadable_corrupt_jpg(self):
+        """ .jpg with bytes deleted from the end.
+        PIL load() would get IOError: image file is truncated (4 bytes not processed) """
+        self.upload_images_test('001_2012-05-01_color-grid-001_jpg-corrupt-unloadable.jpg',
+                                expect_success=False)
+
+    def test_unopenable_corrupt_jpg(self):
+        """ .jpg with bytes deleted near the beginning.
+        PIL open() would get IOError: cannot identify image file """
+        self.upload_images_test('001_2012-05-01_color-grid-001_jpg-corrupt-unopenable.jpg',
+                                expect_success=False)
+
+    def test_non_image(self):
+        """ .txt in UTF-8 created using Notepad++. """
+        self.upload_images_test('sample_text_file.txt',
+                                expect_success=False)
+
+    # Multi-file upload tests.
+
+    def test_multiple_valid(self):
+        self.upload_images_test(['001_2012-05-01_color-grid-001.png',
+                                 '002_2012-05-29_color-grid-001_large.png'])
+
+    def test_multiple_invalid(self):
+        self.upload_images_test(['001_2012-05-01_color-grid-001_jpg-corrupt-unloadable.jpg',
+                                 '001_2012-05-01_color-grid-001_png-corrupt-unopenable.png'],
+                                expect_success=False)
+
+    def test_valid_and_non_image(self):
+        self.upload_images_test(['001_2012-05-01_color-grid-001.png',
+                                 'sample_text_file.txt'],
+                                expect_success=False)
+
+    def test_valid_and_unopenable_image(self):
+        self.upload_images_test(['001_2012-05-01_color-grid-001.png',
+                                 '001_2012-05-01_color-grid-001_png-corrupt-unopenable.png'],
+                                expect_success=False)
+
+    def test_valid_and_unloadable_image(self):
+        self.upload_images_test(['001_2012-05-01_color-grid-001.png',
+                                 '001_2012-05-01_color-grid-001_jpg-corrupt-unloadable.jpg'],
+                                expect_success=False)
+
+    # The order of the files in the list actually matters, because the
+    # FileInput class validates only the last item of the list (and we
+    # want to make sure we don't have this behavior).
+
+    def test_non_image_and_valid(self):
+        self.upload_images_test(['sample_text_file.txt',
+                                 '001_2012-05-01_color-grid-001.png'],
+                                expect_success=False)
+
+    def test_unopenable_image_and_valid(self):
+        self.upload_images_test(['001_2012-05-01_color-grid-001_jpg-corrupt-unopenable.jpg',
+                                 '001_2012-05-01_color-grid-001.png'],
+                                expect_success=False)
+
+    def test_unloadable_image_and_valid(self):
+        self.upload_images_test(['001_2012-05-01_color-grid-001_png-corrupt-unloadable-1.png',
+                                 '001_2012-05-01_color-grid-001.png'],
+                                expect_success=False)
+
+    # TODO: Test uploading a nonexistent file (i.e. filling the file field with
+    # a nonexistent filename).  However, this will probably have to be done
+    # with a Selenium test.
+
+    def test_no_images_specified(self):
+        self.upload_images_test([],
+                                expect_success=False)
+
+    # TODO: Add more image upload tests:
+    # invalid filename formats, different options, etc.
 
 
 class ImageViewTest(ClientTest):
