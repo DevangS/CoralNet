@@ -1,8 +1,8 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.forms import Form, ModelForm, TextInput, FileInput, CharField
-from django.forms.fields import ChoiceField, ImageField, FileField, IntegerField, BooleanField
-from django.forms.widgets import Select
+from django.forms import Form, ModelForm
+from django.forms.fields import BooleanField, CharField, ChoiceField, FileField, ImageField, IntegerField
+from django.forms.widgets import FileInput, Select, TextInput
 from annotations.model_utils import AnnotationAreaUtils
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
@@ -163,11 +163,62 @@ class SourceInviteForm(Form):
         return super(SourceInviteForm, self).clean()
 
 
+class MultipleFileInput(FileInput):
+    """
+    Modifies the built-in FileInput widget by allowing validation of multi-file input.
+    (When FileInput takes multiple files, it only validates the last one.)
+    """
+    def __init__(self, attrs=None):
+        # Include the attr multiple = 'multiple' by default.
+        # (For reference, TextArea.__init__ adds default attrs in the same way.)
+        default_attrs = {'multiple': 'multiple'}
+        if attrs is not None:
+            default_attrs.update(attrs)
+        super(MultipleFileInput, self).__init__(attrs=default_attrs)
+
+    def value_from_datadict(self, data, files, name):
+        """
+        FileInput's method only uses get() here, which means only 1 file is gotten.
+        We need getlist to get all the files.
+        """
+        if not files:
+            # files is the empty dict {} instead of a MultiValueDict.
+            # That will happen if the files parameter passed into the
+            # form is an empty MultiValueDict, because Field.__init__()
+            # has the code 'self.files = files or {}'.
+            return []
+        else:
+            # In any other case, we'll have a MultiValueDict, which has
+            # the method getlist() to get the values as a list.
+            return files.getlist(name)
+
+class MultipleImageField(ImageField):
+    """
+    Modifies the built-in ImageField by allowing validation of multi-file input.
+    (When ImageField takes multiple files, it only validates the last one.)
+
+    Must be used with the MultipleFileInput widget.
+    """
+    def to_python(self, data):
+        """
+        Checks that each file of the file-upload field data contains a valid
+        image (GIF, JPG, PNG, possibly others -- whatever the Python Imaging
+        Library supports).
+        """
+        data_out = []
+
+        for list_item in data:
+            f = super(MultipleImageField, self).to_python(list_item)
+            data_out.append(f)
+
+        return data_out
+
 class ImageUploadForm(Form):
-    files = ImageField(
+    files = MultipleImageField(
         label='Image files',
-        widget=FileInput(attrs={'multiple': 'multiple'}))
-    #TODO: Add helptext saying which file formats are acceptable.
+        widget=MultipleFileInput(),
+        help_text="Accepted file formats: JPG, PNG, GIF, and possibly others"
+    )
 
     class Media:
         css = {

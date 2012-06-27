@@ -140,6 +140,7 @@ class ClientTest(BaseTest):
     def upload_image(self, source_id, filename):
         """
         Upload a test image.
+        Default options will be used.
 
         Requires logging in as a user with upload permissions in
         the source, first.
