@@ -88,6 +88,75 @@ class ClientTest(BaseTest):
     def assertStatusOK(self, response):
         self.assertEqual(response.status_code, 200)
 
+    def assertMessages(self, response, expected_messages):
+        """
+        Asserts that a specific set of messages (to display at the top
+        of the page) are in the response.
+
+        Actual and expected messages are sorted before being compared,
+        so message order does not matter.
+
+        response: the response object to check, which must have messages
+            in its context
+        expected_messages: a list of strings
+        """
+        messages = response.context['messages']
+        actual_messages = [m.message for m in messages]
+
+        actual_messages.sort()
+        expected_messages.sort()
+
+        if not expected_messages == actual_messages:
+            # Must explicitly specify each message's format string as a unicode
+            # string, so that if the message is a lazy translation object, the
+            # message doesn't appear as <django.utils.functional...>
+            # See https://docs.djangoproject.com/en/1.4/topics/i18n/translation/#working-with-lazy-translation-objects
+            actual_messages_str = ", ".join(u'"{m}"'.format(m=m) for m in actual_messages)
+            expected_messages_str = ", ".join(u'"{m}"'.format(m=m) for m in expected_messages)
+
+            self.fail("Message mismatch.\n" \
+                      "Expected messages were: {expected}\n" \
+                      "Actual messages were:   {actual}".format(
+                expected=expected_messages_str,
+                actual=actual_messages_str,
+            ))
+
+    def assertFormErrors(self, response, form_name, expected_errors):
+        """
+        Asserts that a specific form in the response context has a specific
+        set of errors.
+
+        Actual and expected messages are sorted before being compared,
+        so message order does not matter.
+
+        response: the response object to check, which must have the form
+            named form_name in its context
+        form_name: the name of the form in the context
+        expected_errors: a dict like
+            {'fieldname1': ["error1"], 'fieldname2': ["error1", "error2"], ...}
+        """
+        if form_name not in response.context:
+            self.fail("There was no form called {form_name} in the response context.".format(
+                form_name=form_name,
+            ))
+
+        actual_errors = response.context[form_name].errors
+
+        for field_name, field_errors in expected_errors.iteritems():
+            expected_errors[field_name].sort()
+        for field_name, field_errors in actual_errors.iteritems():
+            actual_errors[field_name].sort()
+
+        if not expected_errors == actual_errors:
+            actual_errors_printable = dict( [(k,list(errors)) for k,errors in actual_errors.items() if len(errors) > 0] )
+            self.fail("Error mismatch in the form {form_name}.\n" \
+                      "Expected errors were: {expected}\n" \
+                      "Actual errors were:   {actual}".format(
+                form_name=form_name,
+                expected=expected_errors,
+                actual=actual_errors_printable,
+            ))
+
     def login_required_page_test(self, protected_url, username, password):
         """
         Going to a login-required page while logged out should trigger a

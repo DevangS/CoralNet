@@ -427,3 +427,28 @@ def generate_points(img):
     status = img.status
     status.hasRandomPoints = True
     status.save()
+
+
+def image_upload_success_message(num_images_uploaded,
+                                 num_dupes, dupe_option,
+                                 num_annotations):
+    """
+    Construct the message for a successful image upload operation.
+    """
+    uploaded_msg = "{num} images uploaded.".format(num=num_images_uploaded)
+
+    if num_dupes > 0:
+        if dupe_option == 'replace':
+            duplicate_msg = "{num} duplicate images replaced.".format(num=num_dupes)
+        else:
+            duplicate_msg = "{num} duplicate images skipped.".format(num=num_dupes)
+    else:
+        duplicate_msg = None
+
+    if num_annotations > 0:
+        annotation_msg = "{num} annotations imported.".format(num=num_annotations)
+    else:
+        annotation_msg = None
+
+    return ' '.join([msg for msg in [uploaded_msg, duplicate_msg, annotation_msg]
+                     if msg is not None])

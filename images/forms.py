@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm
 from django.forms.fields import BooleanField, CharField, ChoiceField, FileField, ImageField, IntegerField
 from django.forms.widgets import FileInput, Select, TextInput
+from django.utils.translation import ugettext_lazy as _
 from annotations.model_utils import AnnotationAreaUtils
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
@@ -199,6 +200,11 @@ class MultipleImageField(ImageField):
 
     Must be used with the MultipleFileInput widget.
     """
+    default_error_messages = {
+        'error_on': _(u"Error on file {0}: "),  # To be used as an error prefix
+        'invalid_image': _(u"The file either is not in a supported image format, or is a corrupted image."),
+    }
+
     def to_python(self, data):
         """
         Checks that each file of the file-upload field data contains a valid
@@ -208,7 +214,15 @@ class MultipleImageField(ImageField):
         data_out = []
 
         for list_item in data:
-            f = super(MultipleImageField, self).to_python(list_item)
+            try:
+                f = super(MultipleImageField, self).to_python(list_item)
+            except ValidationError, err:
+                raise ValidationError(
+                    u"{0}{1}".format(
+                        self.error_messages['error_on'].format(list_item),
+                        err.messages[0],
+                    )
+                )
             data_out.append(f)
 
         return data_out

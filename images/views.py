@@ -23,8 +23,9 @@ from decorators import source_permission_required, image_visibility_required, im
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationImportOptionsForm
 from images.model_utils import PointGen
-from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points, get_first_image, get_next_image, get_prev_image
+from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points, get_first_image, get_next_image, get_prev_image, image_upload_success_message
 import json
+from lib import msg_consts
 
 def source_list(request):
     """
@@ -826,25 +827,33 @@ def image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, so
         imagesUploaded += 1
 
     # Construct success message.
-    if duplicates > 0:
-        if dupeOption == 'replace':
-            duplicateMsg = "%d duplicate images replaced." % duplicates
-        else:
-            duplicateMsg = "%d duplicate images skipped." % duplicates
-    else:
-        duplicateMsg = ''
+    success_message = image_upload_success_message(
+        num_images_uploaded=imagesUploaded,
+        num_dupes=duplicates,
+        dupe_option=dupeOption,
+        num_annotations=annotationsImported,
+    )
 
-    if annotationsImported > 0:
-        annotationMsg = "%d annotations imported." % annotationsImported
-    else:
-        annotationMsg = ''
-
-    uploadedMsg = "%d images uploaded." % imagesUploaded
-    successMsg = uploadedMsg + ' ' + duplicateMsg + ' ' + annotationMsg
+#    uploaded_msg = "{num} images uploaded.".format(num=imagesUploaded)
+#
+#    if duplicates > 0:
+#        if dupeOption == 'replace':
+#            duplicate_msg = "{num} duplicate images replaced.".format(num=duplicates)
+#        else:
+#            duplicate_msg = "{num} duplicate images skipped.".format(num=duplicates)
+#    else:
+#        duplicate_msg = ''
+#
+#    if annotationsImported > 0:
+#        annotation_msg = "{num} annotations imported.".format(num=annotationsImported)
+#    else:
+#        annotation_msg = ''
+#
+#    success_msg = ' '.join([uploaded_msg, duplicate_msg, annotation_msg])
 
     return dict(error=False,
         uploadedImages=uploadedImages,
-        message=successMsg,
+        message=success_message,
     )
 
 
@@ -866,8 +875,6 @@ def image_upload(request, source_id):
         # multiple files.
         imageFiles = request.FILES.getlist('files')
 
-        # TODO: imageForm.is_valid() just validates the first image file.
-        # Make sure all image files are checked to be valid images.
         if imageForm.is_valid() and optionsForm.is_valid():
 
             resultDict = image_upload_process(
@@ -887,7 +894,7 @@ def image_upload(request, source_id):
                 messages.success(request, resultDict['message'])
 
         else:
-            messages.error(request, 'Please correct the errors below.')
+            messages.error(request, msg_consts.FORM_ERRORS)
 
     else:
         imageForm = ImageUploadForm()
