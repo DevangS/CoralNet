@@ -114,9 +114,9 @@ class ClientTest(BaseTest):
             actual_messages_str = ", ".join(u'"{m}"'.format(m=m) for m in actual_messages)
             expected_messages_str = ", ".join(u'"{m}"'.format(m=m) for m in expected_messages)
 
-            self.fail("Message mismatch.\n" \
-                      "Expected messages were: {expected}\n" \
-                      "Actual messages were:   {actual}".format(
+            self.fail(u"Message mismatch.\n" \
+                      u"Expected messages were: {expected}\n" \
+                      u"Actual messages were:   {actual}".format(
                 expected=expected_messages_str,
                 actual=actual_messages_str,
             ))
@@ -149,9 +149,9 @@ class ClientTest(BaseTest):
 
         if not expected_errors == actual_errors:
             actual_errors_printable = dict( [(k,list(errors)) for k,errors in actual_errors.items() if len(errors) > 0] )
-            self.fail("Error mismatch in the form {form_name}.\n" \
-                      "Expected errors were: {expected}\n" \
-                      "Actual errors were:   {actual}".format(
+            self.fail(u"Error mismatch in the form {form_name}.\n" \
+                      u"Expected errors were: {expected}\n" \
+                      u"Actual errors were:   {actual}".format(
                 form_name=form_name,
                 expected=expected_errors,
                 actual=actual_errors_printable,

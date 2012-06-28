@@ -2,6 +2,7 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.forms.fields import FileField, Field
 from guardian.shortcuts import get_objects_for_user
 from images.forms import MultipleImageField
 from images.model_utils import PointGen
@@ -253,13 +254,28 @@ class ImageUploadTest(ClientTest):
         self.source_id = Source.objects.get(name='public1').pk
 
     def upload_images_test(self, filenames, expect_success=True,
-                           expected_new_images=None, expected_invalid=None,
+                           expected_new_images=None,
+                           expected_errors=None, expected_invalid=None,
                            **options):
         """
-        Unlike ClientTest's upload_image method,
-        this method includes assert statements, the ability to upload
-        multiple images, and the ability to specify alternate options
-        in the upload form.
+        Upload a number of images.
+
+        filenames - The filename as a string, if uploading one file; the
+            filenames as a list of strings, if uploading multiple files.
+        expect_success - True if expecting to successfully upload, False
+            if expecting errors upon submitting the form.  An
+            AssertionError is thrown if any of the checks for
+            success/non-success do not pass.
+        expected_new_images - If specified, this list of filenames are the
+            files expected to be new images, and the rest of the filenames
+            are the ones expected to be duplicates.  An AssertionError is
+            thrown if expected new/dupe images != actual new/dupe images.
+        expected_errors - A dict of expected form errors.  An AssertionError
+            is thrown if expected errors != actual errors.
+        expected_invalid - Filename string of a file that is expected to get
+            an invalid-image error.  Basically, a shortcut for expected_errors
+            in the special case that we're expecting a single invalid-image
+            error.
         """
         if isinstance(filenames, basestring):
             filenames = [filenames]
@@ -309,8 +325,12 @@ class ImageUploadTest(ClientTest):
             self.assertEqual(new_source_image_count, old_source_image_count)
             self.assertMessages(response, [msg_consts.FORM_ERRORS])
 
-        # If we expect a particular image to trigger an invalid-image error,
-        # then check that the response contains the relevant error message.
+        if expected_errors:
+            self.assertFormErrors(
+                response,
+                'imageForm',
+                expected_errors,
+            )
         if expected_invalid:
             self.assertFormErrors(
                 response,
@@ -385,6 +405,19 @@ class ImageUploadTest(ClientTest):
             expected_invalid=filename,
         )
 
+    def test_empty_file(self):
+        """ 0-byte .png. """
+        filename = 'empty.png'
+        self.upload_images_test(
+            filename, expect_success=False,
+            expected_errors={
+                'files': [u"{0}{1}".format(
+                    MultipleImageField.default_error_messages['error_on'].format(filename),
+                    FileField.default_error_messages['empty'],
+                )]
+            }
+        )
+
     # Multi-file upload tests.
 
     def test_multiple_valid(self):
@@ -456,8 +489,14 @@ class ImageUploadTest(ClientTest):
     # with a Selenium test.
 
     def test_no_images_specified(self):
-        self.upload_images_test([],
-                                expect_success=False)
+        self.upload_images_test(
+            [], expect_success=False,
+            expected_errors={
+                'files': [
+                    u"{m}".format(m=Field.default_error_messages['required'])
+                ]
+            }
+        )
 
     # TODO: Add more image upload tests:
     # invalid filename formats (location keys or date missing, etc.),

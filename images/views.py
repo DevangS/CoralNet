@@ -834,23 +834,6 @@ def image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, so
         num_annotations=annotationsImported,
     )
 
-#    uploaded_msg = "{num} images uploaded.".format(num=imagesUploaded)
-#
-#    if duplicates > 0:
-#        if dupeOption == 'replace':
-#            duplicate_msg = "{num} duplicate images replaced.".format(num=duplicates)
-#        else:
-#            duplicate_msg = "{num} duplicate images skipped.".format(num=duplicates)
-#    else:
-#        duplicate_msg = ''
-#
-#    if annotationsImported > 0:
-#        annotation_msg = "{num} annotations imported.".format(num=annotationsImported)
-#    else:
-#        annotation_msg = ''
-#
-#    success_msg = ' '.join([uploaded_msg, duplicate_msg, annotation_msg])
-
     return dict(error=False,
         uploadedImages=uploadedImages,
         message=success_message,
