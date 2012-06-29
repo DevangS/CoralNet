@@ -1,0 +1,52 @@
+- model: images.source
+  pk: null
+  fields:
+    name: 1 key
+    visibility: b
+    create_date: "2012-04-25 17:30:32"
+    description: A source with 2 location keys.
+    labelset: -1    # Empty labelset
+    key1: Number
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""
+
+- model: images.source
+  pk: null
+  fields:
+    name: 2 keys
+    visibility: b
+    create_date: "2012-04-25 17:30:32"
+    description: A source with 2 location keys.
+    labelset: -1    # Empty labelset
+    key1: Form
+    key2: Number
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""
+
+- model: images.source
+  pk: null
+  fields:
+    name: 5 keys
+    visibility: b
+    create_date: "2012-04-25 17:30:32"
+    description: A source with 5 location keys.
+    labelset: -1    # Empty labelset
+    key1: Form
+    key2: Image Size
+    key3: Element Size
+    key4: Color Range
+    key5: Number
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""

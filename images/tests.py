@@ -239,54 +239,69 @@ class SourceEditTest(ClientTest):
     # edit source form.
 
 
-class ImageUploadTest(ClientTest):
+class ImageUploadBaseTest(ClientTest):
     """
-    Test the image upload page.
+    Base test class for the image upload page.
+
+    This is an abstract class of sorts, as it doesn't actually contain
+    any test methods.  However, its subclasses have test methods.
     """
     extra_components = [MediaTestComponent]
-    fixtures = ['test_users.yaml', 'test_sources.yaml']
+    fixtures = ['test_users.yaml', 'test_sources_with_different_keys.yaml']
     source_member_roles = [
-        ('public1', 'user2', Source.PermTypes.ADMIN.code),
+        ('1 key', 'user2', Source.PermTypes.ADMIN.code),
+        ('2 keys', 'user2', Source.PermTypes.ADMIN.code),
+        ('5 keys', 'user2', Source.PermTypes.ADMIN.code),
     ]
 
     def setUp(self):
-        super(ImageUploadTest, self).setUp()
-        self.source_id = Source.objects.get(name='public1').pk
+        super(ImageUploadBaseTest, self).setUp()
 
-    def upload_images_test(self, filenames, expect_success=True,
-                           expected_new_images=None,
+        # Default user; individual tests are free to change it
+        self.client.login(username='user2', password='secret')
+
+        # Default source; individual tests are free to change it
+        self.source_id = Source.objects.get(name='1 key').pk
+
+    def upload_images_test(self, filenames, subdirectory=None,
+                           expect_success=True, expected_dupes=0,
                            expected_errors=None, expected_invalid=None,
                            **options):
         """
         Upload a number of images.
 
+        subdirectory - If the files to upload are in a subdirectory of
+            /sample_uploadables/data, as opposed to directly in
+            /sample_uploadables/data, then this is the name of the
+            subdirectory it's in.  Should be a string with no slash.
         filenames - The filename as a string, if uploading one file; the
             filenames as a list of strings, if uploading multiple files.
         expect_success - True if expecting to successfully upload, False
             if expecting errors upon submitting the form.  An
             AssertionError is thrown if any of the checks for
             success/non-success do not pass.
-        expected_new_images - If specified, this list of filenames are the
-            files expected to be new images, and the rest of the filenames
-            are the ones expected to be duplicates.  An AssertionError is
-            thrown if expected new/dupe images != actual new/dupe images.
+        expected_dupes - Number of the uploaded images that are expected to
+            be duplicates of existing images.
         expected_errors - A dict of expected form errors.  An AssertionError
             is thrown if expected errors != actual errors.
         expected_invalid - Filename string of a file that is expected to get
             an invalid-image error.  Basically, a shortcut for expected_errors
             in the special case that we're expecting a single invalid-image
-            error.
+            error.  Usage should be disjoint from expected_errors.
         """
         if isinstance(filenames, basestring):
             filenames = [filenames]
 
         old_source_image_count = Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
 
-        self.client.login(username='user2', password='secret')
+        if subdirectory:
+            sample_uploadable_directory = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', subdirectory)
+        else:
+            sample_uploadable_directory = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data')
 
         files_to_upload = []
         for filename in filenames:
-            sample_uploadable_path = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', filename)
+            sample_uploadable_path = os.path.join(sample_uploadable_directory, filename)
             f = open(sample_uploadable_path, 'rb')
             files_to_upload.append(f)
 
@@ -305,32 +320,50 @@ class ImageUploadTest(ClientTest):
 
         new_source_image_count = Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
 
-        # TODO: If it's not None, use the parameter expected_new_images
-        # when checking the source image count, to accommodate
-        # the possibility of skipping or replacing images.
-        #
         # TODO: Accommodate partial successes (some uploaded, some not)?
 
         if expect_success:
-            self.assertEqual(len(response.context['uploadedImages']), len(filenames))
-            self.assertEqual(new_source_image_count, len(filenames) + old_source_image_count)
+
+            dupe_option = post_dict['skip_or_replace_duplicates']
+            if dupe_option == 'skip':
+                expected_num_images_uploaded = len(filenames) - expected_dupes
+            else:  # 'replace'
+                expected_num_images_uploaded = len(filenames)
+
+            # The 'uploaded images' display on the success page should include
+            # up to 5 images.
+            # TODO: If more than 5 were uploaded, check that the correct 5 images are shown?
+            self.assertEqual(len(response.context['uploadedImages']), min(expected_num_images_uploaded, 5))
+
+            # The number of images in the source should be correct.
+            self.assertEqual(new_source_image_count, len(filenames)+old_source_image_count-expected_dupes)
+
+            # The correct page-top messages should be in the context.
             self.assertMessages(response, [image_upload_success_message(
-                num_images_uploaded=len(filenames),
-                num_dupes=0,
-                dupe_option='skip',
+                num_images_uploaded=expected_num_images_uploaded,
+                num_dupes=expected_dupes,
+                dupe_option=dupe_option,
                 num_annotations=0,
             )])
         else:
+            # There should be no images in the 'uploaded images' display.
             self.assertEqual(len(response.context['uploadedImages']), 0)
+
+            # The number of images in the source should have stayed the same.
             self.assertEqual(new_source_image_count, old_source_image_count)
+
+            # The correct page-top messages should be in the context.
             self.assertMessages(response, [msg_consts.FORM_ERRORS])
 
+        # Check that the appropriate form errors have been raised.
         if expected_errors:
             self.assertFormErrors(
                 response,
                 'imageForm',
                 expected_errors,
             )
+        # TODO: Put the invalid-image special case in ImageUploadImageErrorTest,
+        # instead of in this general test method?
         if expected_invalid:
             self.assertFormErrors(
                 response,
@@ -341,13 +374,55 @@ class ImageUploadTest(ClientTest):
                 )]}
             )
 
+        # If the rest of the test wants to do anything else with the response,
+        # then it can.
         return response
 
 
+class ImageUploadGeneralTest(ImageUploadBaseTest):
+    """
+    Image upload tests: general.
+    """
     def test_valid_png(self):
         """ .png created using the PIL. """
         self.upload_images_test('001_2012-05-01_color-grid-001.png')
 
+    def test_valid_jpg(self):
+        """ .jpg created using the PIL. """
+        self.upload_images_test('001_2012-05-01_color-grid-001_jpg-valid.jpg')
+
+    # Multi-file upload tests.
+
+    def test_valid_two(self):
+        self.upload_images_test(['001_2012-05-01_color-grid-001.png',
+                                 '002_2012-06-28_color-grid-002.png',])
+
+    def test_valid_five(self):
+        self.upload_images_test(['001_2012-05-01_color-grid-001.png',
+                                 '002_2012-06-28_color-grid-002.png',
+                                 '003_2012-06-28_color-grid-003.png',
+                                 '004_2012-06-28_color-grid-004.png',
+                                 '005_2012-06-28_color-grid-005.png',])
+
+    def test_valid_six(self):
+        """After upload, there should be only five just-uploaded images linked
+        on the success page."""
+        self.upload_images_test(['001_2012-05-01_color-grid-001.png',
+                                 '002_2012-06-28_color-grid-002.png',
+                                 '003_2012-06-28_color-grid-003.png',
+                                 '004_2012-06-28_color-grid-004.png',
+                                 '005_2012-06-28_color-grid-005.png',
+                                 '006_2012-06-28_color-grid-006.png',])
+
+    # TODO: Test a fairly large upload (at least 50 MB, or whatever
+    # the upload limit is when memory is used for temp storage)?
+
+
+class ImageUploadImageErrorTest(ImageUploadBaseTest):
+    """
+    Image upload tests: errors related to the image files, such as errors
+    about corrupt images, non-images, etc.
+    """
     def test_unloadable_corrupt_png_1(self):
         """ .png with some bytes swapped around.
         PIL load() would get IOError: broken data stream when reading image file """
@@ -375,10 +450,6 @@ class ImageUploadTest(ClientTest):
             expected_invalid=filename,
         )
 
-    def test_valid_jpg(self):
-        """ .jpg created using the PIL. """
-        self.upload_images_test('001_2012-05-01_color-grid-001_jpg-valid.jpg')
-
     def test_unloadable_corrupt_jpg(self):
         """ .jpg with bytes deleted from the end.
         PIL load() would get IOError: image file is truncated (4 bytes not processed) """
@@ -398,7 +469,9 @@ class ImageUploadTest(ClientTest):
         )
 
     def test_non_image(self):
-        """ .txt in UTF-8 created using Notepad++. """
+        """ .txt in UTF-8 created using Notepad++.
+        NOTE: the filename will have to be valid for an
+        equivalent Selenium test."""
         filename = 'sample_text_file.txt'
         self.upload_images_test(
             filename, expect_success=False,
@@ -406,7 +479,9 @@ class ImageUploadTest(ClientTest):
         )
 
     def test_empty_file(self):
-        """ 0-byte .png. """
+        """ 0-byte .png.
+        NOTE: the filename will have to be valid for an
+        equivalent Selenium test."""
         filename = 'empty.png'
         self.upload_images_test(
             filename, expect_success=False,
@@ -420,11 +495,7 @@ class ImageUploadTest(ClientTest):
 
     # Multi-file upload tests.
 
-    def test_multiple_valid(self):
-        self.upload_images_test(['001_2012-05-01_color-grid-001.png',
-                                 '002_2012-05-29_color-grid-001_large.png'])
-
-    def test_multiple_invalid(self):
+    def test_invalid_two(self):
         filename1 = '001_2012-05-01_color-grid-001_jpg-corrupt-unloadable.jpg'
         filename2 = '001_2012-05-01_color-grid-001_png-corrupt-unopenable.png'
         self.upload_images_test(
@@ -456,9 +527,11 @@ class ImageUploadTest(ClientTest):
             expected_invalid=filename2,
         )
 
-    # The order of the files in the list actually matters, because the
-    # FileInput class validates only the last item of the list (and we
-    # want to make sure we don't have this behavior).
+    # Do the valid-invalid pairs again, with the image order swapped.
+    #
+    # The image order actually matters, because the FileInput class
+    # validates only the last item of the list (and we want to make
+    # sure we don't have this behavior).
 
     def test_non_image_and_valid(self):
         filename1 = 'sample_text_file.txt'
@@ -498,9 +571,99 @@ class ImageUploadTest(ClientTest):
             }
         )
 
-    # TODO: Add more image upload tests:
-    # invalid filename formats (location keys or date missing, etc.),
-    # different form options, etc.
+
+class ImageUploadKeysTest(ImageUploadBaseTest):
+    """
+    Image upload tests: related to location keys, such as checking for
+    duplicate images, checking for correct specification of keys and date
+    in the filename, and so on.
+    """
+    # Tests with duplicate images.
+
+    def duplicate_test(self, dupe_option):
+        self.upload_images_test(
+            ['001_2012-05-01_color-grid-001.png',
+             '002_2012-06-28_color-grid-002.png',],
+            skip_or_replace_duplicates=dupe_option,
+        )
+
+        # Duplicate
+        self.upload_images_test(
+            ['001_2012-05-01_color-grid-001_jpg-valid.jpg',],
+            expected_dupes=1,
+            skip_or_replace_duplicates=dupe_option,
+        )
+        # Check that we really did/didn't replace the original
+        image_001_name = Image.objects.get(source__pk=self.source_id, metadata__value1='001').metadata.name
+        if dupe_option == 'skip':
+            self.assertEqual(image_001_name, 'color-grid-001.png')
+        else:  # 'replace'
+            self.assertEqual(image_001_name, 'color-grid-001_jpg-valid.jpg')
+
+        # Non-duplicate
+        self.upload_images_test(
+            ['003_2012-06-28_color-grid-003.png',],
+            skip_or_replace_duplicates=dupe_option,
+        )
+
+        # Multiple duplicates + non-duplicate
+        self.upload_images_test(
+            ['001_2012-05-01_color-grid-001.png',
+             '002_2012-06-28_color-grid-002.png',
+             '004_2012-06-28_color-grid-004.png',],
+            expected_dupes=2,
+            skip_or_replace_duplicates=dupe_option,
+        )
+
+    def test_duplicates_skip(self):
+        self.duplicate_test('skip')
+
+    def test_duplicates_replace(self):
+        self.duplicate_test('replace')
+
+    def test_duplicates_within_same_upload(self):
+        """
+        At least two images in the same upload are duplicates
+        of each other. This is an error case, and the JS side should really
+        catch this before the upload is allowed to start, but a server
+        side check is still a good idea just in case.
+
+        The first image should be uploaded and subsequent duplicates
+        should be skipped.
+        """
+        pass  # TODO
+
+
+    # Filename format tests (on the server side).
+    #
+    # Actually, filename formats should mainly be tested on the Javascript
+    # side, through Selenium.  It's not a bad idea to test these on the server
+    # side too, though, in case the JS is bypassed by some hacker, or in
+    # case the JS fails for some reason.
+
+    def test_filename_zero_location_keys(self):
+        pass  # TODO
+
+    def test_filename_one_location_key(self):
+        pass  # TODO
+
+    def test_filename_two_location_keys(self):
+        pass  # TODO
+
+    def test_filename_five_location_keys(self):
+        pass  # TODO
+
+    def test_filename_with_original_filename(self):
+        pass  # TODO
+
+    def test_filename_not_enough_location_keys(self):
+        pass  # TODO
+
+    def test_filename_too_many_location_keys(self):
+        pass  # TODO
+
+    def test_filename_incorrect_date_format(self):
+        pass  # TODO (Might want multiple incorrect date tests?)
 
 
 class ImageViewTest(ClientTest):
