@@ -256,9 +256,10 @@ class ImageUploadOptionsForm(Form):
 
     skip_or_replace_duplicates = ChoiceField(
         label='Skip or replace duplicate images',
-        help_text="Skip (don't upload) or replace (re-upload) images that have duplicates in your Source.\n"
-                  "Duplicates are defined as images with the same location keys and year.",
-        choices=(('skip', 'Skip'), ('replace', 'Replace')),
+        help_text="If your image has the same location keys and year as an " \
+                  "image that's already in your Source, that image is " \
+                  "considered a duplicate.",
+        choices=(('skip', "Skip (don't re-upload)"), ('replace', "Replace (re-upload)")),
         required=True)
 
     def __init__(self, *args, **kwargs):
