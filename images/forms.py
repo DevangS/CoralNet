@@ -228,6 +228,10 @@ class MultipleImageField(ImageField):
         return data_out
 
 class ImageUploadForm(Form):
+    error_messages = {
+        'duplicate_image': _(u"This has the same location keys and year as another image in the same upload operation."),
+    }
+
     files = MultipleImageField(
         label='Image files',
         widget=MultipleFileInput(),

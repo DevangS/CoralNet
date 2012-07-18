@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.forms.fields import FileField, Field
 from guardian.shortcuts import get_objects_for_user
-from images.forms import MultipleImageField
+from images.forms import MultipleImageField, ImageUploadForm
 from images.model_utils import PointGen
 from images.models import Source, Image
 from images.tasks import PreprocessImages, MakeFeatures, Classify, addLabelsToFeatures, trainRobot
@@ -378,6 +378,21 @@ class ImageUploadBaseTest(ClientTest):
         # then it can.
         return response
 
+    def files_error_dict(self, filenames_and_errors):
+        """
+        Takes a list of (filename, error message without "filename: " prefix)
+        tuples. Returns an error dict with the "files" field's errors filled
+        in accordingly.  This error dict can then be passed in as the
+        expected_errors of the image upload function.
+        """
+        return {'files':
+            [u"{0}{1}".format(
+                MultipleImageField.default_error_messages['error_on'].format(filename),
+                error
+            )
+            for filename, error in filenames_and_errors]
+        }
+
 
 class ImageUploadGeneralTest(ImageUploadBaseTest):
     """
@@ -423,13 +438,19 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
     Image upload tests: errors related to the image files, such as errors
     about corrupt images, non-images, etc.
     """
+    def invalid_files_error_dict(self, filenames):
+        return self.files_error_dict(
+            [(filename, MultipleImageField.default_error_messages['invalid_image'])
+             for filename in filenames]
+        )
+
     def test_unloadable_corrupt_png_1(self):
         """ .png with some bytes swapped around.
         PIL load() would get IOError: broken data stream when reading image file """
         filename = '001_2012-05-01_color-grid-001_png-corrupt-unloadable-1.png'
         self.upload_images_test(
             filename, expect_success=False,
-            expected_invalid=filename,
+            expected_errors=self.invalid_files_error_dict([filename]),
         )
 
     def test_unloadable_corrupt_png_2(self):
@@ -438,7 +459,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename = '001_2012-05-01_color-grid-001_png-corrupt-unloadable-2.png'
         self.upload_images_test(
             filename, expect_success=False,
-            expected_invalid=filename,
+            expected_errors=self.invalid_files_error_dict([filename]),
         )
 
     def test_unopenable_corrupt_png(self):
@@ -447,7 +468,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename = '001_2012-05-01_color-grid-001_png-corrupt-unopenable.png'
         self.upload_images_test(
             filename, expect_success=False,
-            expected_invalid=filename,
+            expected_errors=self.invalid_files_error_dict([filename]),
         )
 
     def test_unloadable_corrupt_jpg(self):
@@ -456,7 +477,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename = '001_2012-05-01_color-grid-001_jpg-corrupt-unloadable.jpg'
         self.upload_images_test(
             filename, expect_success=False,
-            expected_invalid=filename,
+            expected_errors=self.invalid_files_error_dict([filename]),
         )
 
     def test_unopenable_corrupt_jpg(self):
@@ -465,7 +486,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename = '001_2012-05-01_color-grid-001_jpg-corrupt-unopenable.jpg'
         self.upload_images_test(
             filename, expect_success=False,
-            expected_invalid=filename,
+            expected_errors=self.invalid_files_error_dict([filename]),
         )
 
     def test_non_image(self):
@@ -475,7 +496,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename = 'sample_text_file.txt'
         self.upload_images_test(
             filename, expect_success=False,
-            expected_invalid=filename,
+            expected_errors=self.invalid_files_error_dict([filename]),
         )
 
     def test_empty_file(self):
@@ -485,12 +506,9 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename = 'empty.png'
         self.upload_images_test(
             filename, expect_success=False,
-            expected_errors={
-                'files': [u"{0}{1}".format(
-                    MultipleImageField.default_error_messages['error_on'].format(filename),
-                    FileField.default_error_messages['empty'],
-                )]
-            }
+            expected_errors=self.files_error_dict([
+                (filename, FileField.default_error_messages['empty'])
+            ])
         )
 
     # Multi-file upload tests.
@@ -500,7 +518,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename2 = '001_2012-05-01_color-grid-001_png-corrupt-unopenable.png'
         self.upload_images_test(
             [filename1, filename2], expect_success=False,
-            expected_invalid=filename1,
+            expected_errors=self.invalid_files_error_dict([filename1]),
         )
 
     def test_valid_and_non_image(self):
@@ -508,7 +526,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename2 = 'sample_text_file.txt'
         self.upload_images_test(
             [filename1, filename2], expect_success=False,
-            expected_invalid=filename2,
+            expected_errors=self.invalid_files_error_dict([filename2]),
         )
 
     def test_valid_and_unopenable_image(self):
@@ -516,7 +534,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename2 = '001_2012-05-01_color-grid-001_png-corrupt-unopenable.png'
         self.upload_images_test(
             [filename1, filename2], expect_success=False,
-            expected_invalid=filename2,
+            expected_errors=self.invalid_files_error_dict([filename2]),
         )
 
     def test_valid_and_unloadable_image(self):
@@ -524,7 +542,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename2 = '001_2012-05-01_color-grid-001_jpg-corrupt-unloadable.jpg'
         self.upload_images_test(
             [filename1, filename2], expect_success=False,
-            expected_invalid=filename2,
+            expected_errors=self.invalid_files_error_dict([filename2]),
         )
 
     # Do the valid-invalid pairs again, with the image order swapped.
@@ -538,7 +556,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename2 = '001_2012-05-01_color-grid-001.png'
         self.upload_images_test(
             [filename1, filename2], expect_success=False,
-            expected_invalid=filename1,
+            expected_errors=self.invalid_files_error_dict([filename1]),
         )
 
     def test_unopenable_image_and_valid(self):
@@ -546,7 +564,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename2 = '001_2012-05-01_color-grid-001.png'
         self.upload_images_test(
             [filename1, filename2], expect_success=False,
-            expected_invalid=filename1,
+            expected_errors=self.invalid_files_error_dict([filename1]),
         )
 
     def test_unloadable_image_and_valid(self):
@@ -554,7 +572,7 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
         filename2 = '001_2012-05-01_color-grid-001.png'
         self.upload_images_test(
             [filename1, filename2], expect_success=False,
-            expected_invalid=filename1,
+            expected_errors=self.invalid_files_error_dict([filename1]),
         )
 
     # TODO: Test uploading a nonexistent file (i.e. filling the file field with
@@ -631,7 +649,17 @@ class ImageUploadKeysTest(ImageUploadBaseTest):
         The first image should be uploaded and subsequent duplicates
         should be skipped.
         """
-        pass  # TODO
+        self.upload_images_test(
+            ['001_2012-05-01_color-grid-001.png',
+             '001_2012-05-01_color-grid-001_jpg-valid.jpg',
+             '002_2012-05-29_color-grid-001_large.png',
+             '002_2012-06-28_color-grid-002.png',
+             '003_2012-06-28_color-grid-003.png',],
+            expected_errors=self.files_error_dict([
+                ('001_2012-05-01_color-grid-001_jpg-valid.jpg', ImageUploadForm.error_messages['duplicate_image']),
+                ('002_2012-06-28_color-grid-002.png', ImageUploadForm.error_messages['duplicate_image']),
+            ])
+        )
 
 
     # Filename format tests (on the server side).
