@@ -265,7 +265,7 @@ class ImageUploadBaseTest(ClientTest):
 
     def upload_images_test(self, filenames, subdirectory=None,
                            expect_success=True, expected_dupes=0,
-                           expected_errors=None, expected_invalid=None,
+                           expected_errors=None,
                            **options):
         """
         Upload a number of images.
@@ -284,10 +284,6 @@ class ImageUploadBaseTest(ClientTest):
             be duplicates of existing images.
         expected_errors - A dict of expected form errors.  An AssertionError
             is thrown if expected errors != actual errors.
-        expected_invalid - Filename string of a file that is expected to get
-            an invalid-image error.  Basically, a shortcut for expected_errors
-            in the special case that we're expecting a single invalid-image
-            error.  Usage should be disjoint from expected_errors.
         """
         if isinstance(filenames, basestring):
             filenames = [filenames]
@@ -361,17 +357,6 @@ class ImageUploadBaseTest(ClientTest):
                 response,
                 'imageForm',
                 expected_errors,
-            )
-        # TODO: Put the invalid-image special case in ImageUploadImageErrorTest,
-        # instead of in this general test method?
-        if expected_invalid:
-            self.assertFormErrors(
-                response,
-                'imageForm',
-                {'files': [u"{0}{1}".format(
-                        MultipleImageField.default_error_messages['error_on'].format(expected_invalid),
-                        MultipleImageField.default_error_messages['invalid_image'],
-                )]}
             )
 
         # If the rest of the test wants to do anything else with the response,
