@@ -229,7 +229,7 @@ class MultipleImageField(ImageField):
 
 class ImageUploadForm(Form):
     error_messages = {
-        'duplicate_image': _(u"This has the same location keys and year as another image in the same upload operation."),
+        'duplicate_image': _(u"This has the same location keys and year as another image in this upload."),
     }
 
     files = MultipleImageField(
