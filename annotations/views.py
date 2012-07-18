@@ -520,22 +520,27 @@ def annotation_history(request, image_id):
     annotation_values = Annotation.objects.filter(image=image, source=source).values('pk', 'point__point_number')
     annotation_ids = [v['pk'] for v in annotation_values]
 
+    # Prefetch versions from the DB.
     versions_queryset = Version.objects.filter(object_id__in=list(annotation_ids))
-    versions = list(versions_queryset)   # Purely for prefetching from the DB
+    versions = list(versions_queryset)   # list() prefetches.
 
-    revision_ids = versions_queryset.values_list('revision', flat=True).distinct()
-    revisions = list(Revision.objects.filter(pk__in=list(revision_ids)))
+    # label_pks_to_codes maps Label pks to the corresponding Label's short code.
+    label_pks = set([v.field_dict['label'] for v in versions])
+    labels = Label.objects.filter(pk__in=label_pks).values_list('pk', 'code')
+    label_pks_to_codes = dict(labels)
+    for pk in label_pks:
+        if pk not in label_pks_to_codes:
+            label_pks_to_codes[pk] = "(Deleted label)"
 
-    # point_number_map maps annotation IDs to point numbers.
+    revision_pks = versions_queryset.values_list('revision', flat=True).distinct()
+    revisions = list(Revision.objects.filter(pk__in=list(revision_pks)))
+
+    # anno_pks_to_pointnums maps each Annotation's pk to the corresponding
+    # Point's point number.
     point_number_tuples = [(v['pk'], v['point__point_number']) for v in annotation_values]
-    point_number_map = dict()
+    anno_pks_to_pointnums = dict()
     for tup in point_number_tuples:
-        point_number_map[tup[0]] = tup[1]
-
-    # label_code_map maps label IDs to label codes.
-    label_code_map = dict()
-    for label in source.labelset.labels.all():
-        label_code_map[label.id] = label.code
+        anno_pks_to_pointnums[tup[0]] = tup[1]
 
     event_log = []
 
@@ -543,17 +548,22 @@ def annotation_history(request, image_id):
         # Get Versions under this Revision
         rev_versions = list(versions_queryset.filter(revision=rev))
         # Sort by the point number of the annotation
-        rev_versions.sort( key=lambda x: point_number_map[int(x.object_id)] )
+        rev_versions.sort( key=lambda x: anno_pks_to_pointnums[int(x.object_id)] )
+
         # Create a log entry for this Revision
+        events = ["Point {num}: {code}".format(
+                num=anno_pks_to_pointnums[int(v.object_id)],
+                code=label_pks_to_codes[v.field_dict['label']],
+            )
+            for v in rev_versions
+        ]
+        if rev.comment:
+            events.append(rev.comment)
         event_log.append(
             dict(
                 date=rev.date_created,
                 user=get_annotation_version_user_display(rev_versions[0]),  # Any Version will do
-                events=["Point %s: %s" % (
-                            point_number_map[int(v.object_id)],
-                            label_code_map[v.field_dict['label']],
-                        )
-                        for v in rev_versions],
+                events=events,
             )
         )
 
