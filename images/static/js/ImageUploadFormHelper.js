@@ -1,64 +1,17 @@
-var ImageUploadFormHelper = {
+/* The following design pattern is from
+ * http://stackoverflow.com/a/1479341/859858 */
+var ImageUploadFormHelper = (function() {
 
-    previewArea: null,
-    previewTable: null,
+    var previewArea = null;
+    var previewTable = null;
 
-    sourceId: null,
-    hasAnnotations: null,
+    var sourceId = null;
+    var hasAnnotations = null;
 
-    numOfDupes: 0,
-    numOfErrors: 0,
+    var numOfDupes = 0;
+    var numOfErrors = 0;
 
-    initForm: function(sourceId, hasAnnotations){
-
-        // Initializing.
-        this.previewArea = $('#previewArea');
-        this.sourceId = sourceId;
-        this.hasAnnotations = hasAnnotations;
-
-        this.previewTable = $("<table>").attr("id", "previewTable");
-        this.previewArea.append(this.previewTable);
-
-        // Initialize the status of form fields (show/hide, etc.).
-        this.updateFormFields();
-
-        // Set onchange handlers for form fields.
-        $("#id_files").change( function(){
-            ImageUploadFormHelper.previewUpload();
-            ImageUploadFormHelper.updateFormFields();
-        });
-
-        // This'll become relevant again when we support other methods of specifying metadata
-/*        $("#id_specify_metadata").change( function(){
-            ImageUploadFormHelper.previewUpload();
-            ImageUploadFormHelper.updateFormFields();
-        });*/
-
-        // "(More info)" link on the 'specify metadata' field
-        var metadataHelptextJQ = $("#metadata_short_helptext");
-        var metadataExtraHelptextLinkJQ = $("<a>").text("(More info)");
-        metadataHelptextJQ.append(" ");
-        metadataHelptextJQ.append($("<span>").append(metadataExtraHelptextLinkJQ));
-
-        // Extra help text is initially hidden
-        $("#metadata_extra_helptext").hide();
-
-        // (More info) shows the extra help text, (Less info) hides it
-        metadataExtraHelptextLinkJQ.click(function() {
-            var extraHelptextJQ = $("#metadata_extra_helptext");
-            
-            if (extraHelptextJQ.is(':hidden')) {
-                extraHelptextJQ.show();
-                $(this).text("(Less info)");
-            }
-            else {
-                extraHelptextJQ.hide();
-                $(this).text("(More info)");
-            }
-        });
-    },
-
-    filesizeDisplay: function(bytes) {
+    function filesizeDisplay(bytes) {
         var KILO = 1024;
         var MEGA = 1024*1024;
 
@@ -71,21 +24,21 @@ var ImageUploadFormHelper = {
         else {
             return (Math.floor(bytes * 100 / MEGA) / 100) + " MB";
         }
-    },
+    }
 
     /*
     Get the file details from the form field, and
     display the files in a list.
     */
-    previewUpload: function() {
-        this.previewTable.empty();
+    function previewUpload() {
+        previewTable.empty();
 
         var fileField = $("#id_files").get(0);
         var files = fileField.files;
 
         if (!files) {
-            this.numOfDupes = 0;
-            this.numOfErrors = 0;
+            numOfDupes = 0;
+            numOfErrors = 0;
             return;
         }
 
@@ -98,9 +51,9 @@ var ImageUploadFormHelper = {
 
         var tableHeader = $("<tr>");
         tableHeader.append($("<th>").text(files.length + " files"));
-        tableHeader.append($("<th>").text(this.filesizeDisplay(totalBytes)));
+        tableHeader.append($("<th>").text(filesizeDisplay(totalBytes)));
         tableHeader.append($("<th>").attr("id", "previewColHeader_status"));
-        this.previewTable.append(tableHeader);
+        previewTable.append(tableHeader);
 
         for (i = 0; i < files.length; i++) {
 
@@ -109,14 +62,14 @@ var ImageUploadFormHelper = {
 
             // filename, filesize, dupe or not (last one is filled in with AJAX)
             fileDetails = [files[i].name,
-                           this.filesizeDisplay(files[i].size)];
+                           filesizeDisplay(files[i].size)];
 
             for (j = 0; j < fileDetails.length; j++) {
                 fileEntry.append($("<td>").text(fileDetails[j]));
             }
             fileEntry.append($("<td>").attr("id", "previewFile"+i+"_status"));
 
-            this.previewTable.append(fileEntry);
+            previewTable.append(fileEntry);
         }
 
         var filenameList = new Array(files.length);
@@ -127,9 +80,9 @@ var ImageUploadFormHelper = {
         // AJAX call to a Django method in ajax.py of this app
         if ($("#id_specify_metadata").val() == 'filenames') {
             Dajaxice.CoralNet.images.ajax_assess_file_status(
-                this.ajaxUpdateStatus,    // JS callback that the ajax.py method returns to.
+                ajaxUpdateStatus,    // JS callback that the ajax.py method returns to.
                 {'filenames': filenameList,
-                 'sourceId': this.sourceId,
+                 'sourceId': sourceId,
                  'checkDupes': true}    // Args to the ajax.py method.
             );
         }
@@ -138,11 +91,11 @@ var ImageUploadFormHelper = {
             for (i = 0; i < files.length; i++) {
                 statusList[i] = {'status':'Ready'};
             }
-            this.updateStatus(statusList);
+            updateStatus(statusList);
         }
-    },
+    }
 
-    updateFormFields: function() {
+    function updateFormFields() {
         if ($("#id_specify_metadata").val() == 'filenames') {
             $("#id_skip_or_replace_duplicates_wrapper").show();
         }
@@ -150,23 +103,23 @@ var ImageUploadFormHelper = {
             $("#id_skip_or_replace_duplicates_wrapper").hide();
         }
 
-        if (this.numOfErrors > 0) {
+        if (numOfErrors > 0) {
             $("#id_upload_submit").attr('disabled', true);
             $("#id_upload_submit").attr('value', "Cannot upload with errors");
         }
         else {
             $("#id_upload_submit").attr('disabled', false);
 
-            if (this.hasAnnotations) {
+            if (hasAnnotations) {
                 $("#id_upload_submit").attr('value', "Upload Images and Annotations");
             }
             else {
                 $("#id_upload_submit").attr('value', "Upload Images");
             }
         }
-    },
+    }
 
-    updateStatus: function(statusList) {
+    function updateStatus(statusList) {
         var i;
         var numOfDupes = 0, numOfErrors = 0;
 
@@ -202,9 +155,6 @@ var ImageUploadFormHelper = {
             }
         }
 
-        this.numOfDupes = numOfDupes;
-        this.numOfErrors = numOfErrors;
-
         var overallStatus = "", errorStatus = "", dupeStatus = "";
 
         if (numOfErrors > 0)
@@ -216,15 +166,75 @@ var ImageUploadFormHelper = {
         $("#previewColHeader_status").text(overallStatus);
 
         // Make sure to update the form once more after the AJAX call completes
-        this.updateFormFields();
-    },
+        updateFormFields();
+    }
 
     /*
     This AJAX callback function is called by the browser window object.
     It's not called by the ImageUploadFormHelper object.  Therefore, don't
     use "this" in this function to refer to an ImageUploadFormHelper member.
      */
-    ajaxUpdateStatus: function(data) {
-        ImageUploadFormHelper.updateStatus(data.statusList);
+    function ajaxUpdateStatus(data) {
+        updateStatus(data.statusList);
     }
-};
+
+    /* Public methods.
+     * These are the only methods that need to be referred to as
+     * ImageUploadFormHelper.methodname. */
+    return {
+
+        initForm: function(sourceIdIn, hasAnnotationsIn){
+
+            // Initializing.
+            previewArea = $('#previewArea');
+            sourceId = sourceIdIn;
+            hasAnnotations = hasAnnotationsIn;
+
+            previewTable = $("<table>").attr("id", "previewTable");
+            previewArea.append(previewTable);
+
+            // Initialize the status of form fields (show/hide, etc.).
+            updateFormFields();
+
+            // Set onchange handlers for form fields.
+            $("#id_files").change( function(){
+                previewUpload();
+                updateFormFields();
+            });
+
+            // This'll become relevant again when we support other methods of specifying metadata
+            /*        $("#id_specify_metadata").change( function(){
+             previewUpload();
+             updateFormFields();
+             });*/
+
+            // "(More info)" link on the 'specify metadata' field
+            var metadataHelptextJQ = $("#metadata_short_helptext");
+            var metadataExtraHelptextLinkJQ = $("<a>").text("(More info)");
+            metadataHelptextJQ.append(" ");
+            metadataHelptextJQ.append($("<span>").append(metadataExtraHelptextLinkJQ));
+
+            // Extra help text is initially hidden
+            $("#metadata_extra_helptext").hide();
+
+            // (More info) shows the extra help text, (Less info) hides it
+            metadataExtraHelptextLinkJQ.click(function() {
+                var extraHelptextJQ = $("#metadata_extra_helptext");
+
+                if (extraHelptextJQ.is(':hidden')) {
+                    extraHelptextJQ.show();
+                    $(this).text("(Less info)");
+                }
+                else {
+                    extraHelptextJQ.hide();
+                    $(this).text("(More info)");
+                }
+            });
+
+            /*        // Attach ajax upload handler
+             $("#id_upload_submit").click(
+
+             )*/
+        }
+    }
+})();
