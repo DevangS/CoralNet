@@ -4,12 +4,16 @@ var ImageUploadFormHelper = (function() {
 
     var previewArea = null;
     var previewTable = null;
+    var filesField = null;
 
     var sourceId = null;
     var hasAnnotations = null;
 
     var numOfDupes = 0;
     var numOfErrors = 0;
+
+    var uploadStartUrl = null;
+    //var uploadProgressUrl = null;
 
     function filesizeDisplay(bytes) {
         var KILO = 1024;
@@ -33,8 +37,7 @@ var ImageUploadFormHelper = (function() {
     function previewUpload() {
         previewTable.empty();
 
-        var fileField = $("#id_files").get(0);
-        var files = fileField.files;
+        var files = filesField.files;
 
         if (!files) {
             numOfDupes = 0;
@@ -178,26 +181,83 @@ var ImageUploadFormHelper = (function() {
         updateStatus(data.statusList);
     }
 
+    function ajaxUpload() {
+
+        // Submit the form.
+        var options = {
+            dataType: 'json',    // Expected datatype of response
+            url: uploadStartUrl,
+            beforeSubmit: addFileToAjaxRequest,
+            success: ajaxUploadHandleResponse    // Callback
+        };
+        $('#id_upload_form').ajaxSubmit(options);
+
+        // Remnants of an attempt at a progress bar...
+/*        var $ajaxUploadID = $('#id_ajax_upload_id');
+        $ajaxUploadID.val(util.randomString(10));
+
+        var options = {
+            dataType: 'xml',
+            url: uploadStartUrl + '?ajax-upload-id=' + $ajaxUploadID.val(),
+            beforeSubmit: prepareProgressBar,
+            success: ajaxUploadHandleResponse
+        };*/
+    }
+
+    // Remnants of an attempt at a progress bar...
+/*    function prepareProgressBar() {
+        $('#progress_bar').progressBar();
+    }*/
+
+    function addFileToAjaxRequest(arr, $form, options) {
+        // Push the file as 'files' so that it can be validated
+        // on the server-side with an ImageUploadForm.
+        //
+        // Just push the first file onto the Ajax request.
+        // TODO: Implement submitting multiple files, one by one.
+        arr.push({
+            name: 'files',
+            type: 'files',
+            value: filesField.files[0]
+        });
+    }
+
+    function ajaxUploadHandleResponse(response) {
+
+        // TODO: Show this upload status message in a results table
+        // on the page.
+        console.log(response.message);
+
+        // Remnants of an attempt at a progress bar...
+/*        // Get the completion percentage from the response, and then
+        // update the progress bar accordingly.
+        $('#progress_bar').progressBar(percentage);*/
+    }
+
     /* Public methods.
      * These are the only methods that need to be referred to as
      * ImageUploadFormHelper.methodname. */
     return {
 
-        initForm: function(sourceIdIn, hasAnnotationsIn){
+        initForm: function(params){
 
             // Initializing.
-            previewArea = $('#previewArea');
-            sourceId = sourceIdIn;
-            hasAnnotations = hasAnnotationsIn;
+            sourceId = params.sourceId;
+            hasAnnotations = params.hasAnnotations;
+            uploadStartUrl = params.uploadStartUrl;
+            //uploadProgressUrl = params.uploadProgressUrl;
 
+            previewArea = $('#previewArea');
             previewTable = $("<table>").attr("id", "previewTable");
             previewArea.append(previewTable);
+
+            filesField = $('#id_files')[0];
 
             // Initialize the status of form fields (show/hide, etc.).
             updateFormFields();
 
             // Set onchange handlers for form fields.
-            $("#id_files").change( function(){
+            $(filesField).change( function(){
                 previewUpload();
                 updateFormFields();
             });
@@ -231,10 +291,8 @@ var ImageUploadFormHelper = (function() {
                 }
             });
 
-            /*        // Attach ajax upload handler
-             $("#id_upload_submit").click(
-
-             )*/
+            // Attach ajax upload handler
+            $("#id_upload_submit").click(ajaxUpload);
         }
     }
 })();

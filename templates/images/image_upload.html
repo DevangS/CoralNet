@@ -4,7 +4,8 @@
 {% block title %}Upload Images | CoralNet{% endblock %}
 
 {% block js-includes %}
-    {% include "javascript-includes.html" with dajaxice="yes" %}
+    {% include "javascript-includes.html" with dajaxice="yes" jquery_form="yes" %}
+{#    {% include "javascript-includes.html" with dajaxice="yes" jquery_form="yes" jquery_progressbar="yes" %}#}
 {% endblock %}
 
 {% block page-specific-includes %}
@@ -32,17 +33,29 @@
 
     <legend>Upload Images</legend>
 
-    <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-        {% include "form_generic.html" with form=imageForm %}
+    {% comment %}
+    The imageForm's multi-file field itself is not part of the form below.
+    We will be submitting files one by one via Ajax manually, and the
+    imageForm's file field will only be used to let the user pick files
+    to upload.
+    {% endcomment %}
+    {% include "form_generic.html" with form=imageForm %}
+
+    <form id="id_upload_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
         {% include "images/form_image_upload_options.html" with form=optionsForm %}
         {% for detail in optionsForm.additional_details %}
             <span class="helptext">{{ detail|linebreaksbr }}</span>
         {% endfor %}
 
         <div class="submit_button_wrapper_column_form">
-            <input type="submit" id="id_upload_submit" value="Upload Images" />
+            <button type="button" class="submit" id="id_upload_submit">Upload Images</button>
         </div>
     </form>
+
+{# Remnants of an attempt at a progress bar... #}
+{% comment %}    <div id="progress_bar_area">
+        <span id="progress_bar"></span>
+    </div>{% endcomment %}
 
     <!-- Preview the files selected for upload. -->
     <div id="previewArea">
@@ -52,7 +65,12 @@
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
 
-        ImageUploadFormHelper.initForm({{ source.id }}, false);
+        ImageUploadFormHelper.initForm({
+            sourceId: {{ source.id }},
+            hasAnnotations: false,
+            uploadStartUrl: "{% url image_upload_ajax source.id %}"
+{#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
+        });
 
     </script>
 

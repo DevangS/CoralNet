@@ -239,7 +239,7 @@ class ImageUploadForm(Form):
     files = MultipleImageField(
         label='Image files',
         widget=MultipleFileInput(),
-        help_text="Accepted file formats: JPG, PNG, GIF, and possibly others"
+        help_text="Accepted file formats: JPG, PNG, GIF, and possibly others",
     )
 
     class Media:
@@ -247,6 +247,27 @@ class ImageUploadForm(Form):
             'all': ("css/uploadForm.css",)
         }
         js = ("js/ImageUploadFormHelper.js",)
+
+
+# Remnants of an attempt at a progress bar...
+
+# Upload id field for tracking the upload progress.
+#
+# Might need to ensure the input element's name is X-Progress-ID in
+# order to get this working with UploadProgressCacheHandler, which
+# demands that exact name.  Not sure where UPCH got that name came
+# from, but it might have something to do with nginx.
+#
+# Is it even necessary to have this upload id in the form class?
+# It seems that UploadProgressCachedHandler.handle_raw_input() looks
+# for the upload id as a GET parameter only (and Django fields are only
+# needed for POST parameters).
+# http://www.laurentluce.com/posts/upload-to-django-with-progress-bar-using-ajax-and-jquery/#comment-1192
+
+#    ajax_upload_id = CharField(
+#        label='',
+#        widget=HiddenInput(),
+#    )
 
 
 class ImageUploadOptionsForm(Form):

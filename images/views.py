@@ -26,6 +26,7 @@ from images.model_utils import PointGen
 from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points, get_first_image, get_next_image, get_prev_image, image_upload_success_message
 import json
 from lib import msg_consts
+from lib.utils import JsonResponse
 
 def source_list(request):
     """
@@ -840,17 +841,108 @@ def image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, so
     )
 
 
+def single_image_upload_process(imageFile, imageOptionsForm,
+                                annotationOptionsForm, source,
+                                currentUser, annoFile):
+
+    dupeOption = imageOptionsForm.cleaned_data['skip_or_replace_duplicates']
+
+    filename = imageFile.name
+    metadataDict = None
+    annotationData = None
+    metadata = Metadata(height_in_cm=source.image_height_in_cm)
+
+    if imageOptionsForm.cleaned_data['specify_metadata'] == 'filenames':
+
+        try:
+            metadataDict = filename_to_metadata(filename, source)
+
+        # Filename parse error.
+        except (ValueError, StopIteration):
+            return dict(error=True,
+                message='Upload failed - Error when parsing the filename %s for metadata.' % filename,
+            )
+
+        # Detect duplicate images and handle them
+        dupe = find_dupe_image(source, **metadataDict)
+        if dupe:
+            if dupeOption == 'skip':
+                # Skip uploading this file.
+                return dict(
+                    message="Skipped (duplicate found)",
+                    id=dupe.id,
+                )
+            elif dupeOption == 'replace':
+                # Proceed uploading this file, and delete the dupe.
+                dupe.delete()
+
+        # Set the metadata
+        valueDict = get_location_value_objs(source, metadataDict['values'], createNewValues=True)
+        photoDate = datetime.date(
+            year = int(metadataDict['year']),
+            month = int(metadataDict['month']),
+            day = int(metadataDict['day'])
+        )
+
+        metadata.name = metadataDict['name']
+        metadata.photo_date = photoDate
+        for key, value in valueDict.iteritems():
+            setattr(metadata, key, value)
+    else:
+        # Not specifying data from filenames.
+        # *** Unused case for now ***
+        metadata.name = filename
+        dupe = None
+
+    if annotationData:
+        # Image + annotation import form
+        # Assumes we got the images' metadata (from filenames or otherwise)
+        # TODO
+        return
+    else:
+        # Image upload form, no annotations
+        status = ImageStatus()
+        status.save()
+
+        metadata.annotation_area = source.image_annotation_area
+        metadata.save()
+
+        # Save the image into the DB
+        img = Image(original_file=imageFile,
+            uploaded_by=currentUser,
+            point_generation_method=source.default_point_generation_method,
+            metadata=metadata,
+            source=source,
+            status=status,
+        )
+        img.save()
+
+        # Generate and save points
+        generate_points(img)
+
+    if dupe:
+        return dict(
+            message="Uploaded (replaced duplicate)",
+            id=img.id,
+        )
+    else:
+        return dict(
+            message="Uploaded",
+            id=img.id,
+        )
+
+
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload(request, source_id):
     """
     View for uploading images to a source.
-    Should be improved later to have AJAX uploading.
     """
 
     source = get_object_or_404(Source, id=source_id)
     uploadedImages = []
 
     if request.method == 'POST':
+
         imageForm = ImageUploadForm(request.POST, request.FILES)
         optionsForm = ImageUploadOptionsForm(request.POST, source=source)
 
@@ -880,6 +972,7 @@ def image_upload(request, source_id):
             messages.error(request, msg_consts.FORM_ERRORS)
 
     else:
+        # Just reached the page.
         imageForm = ImageUploadForm()
         optionsForm = ImageUploadOptionsForm(source=source)
 
@@ -891,6 +984,38 @@ def image_upload(request, source_id):
         },
         context_instance=RequestContext(request)
     )
+
+
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
+def image_upload_ajax(request, source_id):
+    source = get_object_or_404(Source, id=source_id)
+
+    imageForm = ImageUploadForm(request.POST, request.FILES)
+    optionsForm = ImageUploadOptionsForm(request.POST, source=source)
+
+    # Check for validity of the file (filetype and non-corruptness) and
+    # the options form.
+    if imageForm.is_valid():
+        if optionsForm.is_valid():
+            resultDict = single_image_upload_process(
+                imageFile=request.FILES['files'],
+                imageOptionsForm=optionsForm,
+                annotationOptionsForm=None,
+                source=source,
+                currentUser=request.user,
+                annoFile=None
+            )
+            return JsonResponse(resultDict)
+        else:
+            return JsonResponse(dict(
+                message="Error: Options form is invalid",
+                id=None,
+            ))
+    else:
+        return JsonResponse(dict(
+            message="Error: {error}".format(error=imageForm.errors['files'][0]),
+            id=None,
+        ))
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)

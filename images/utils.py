@@ -61,7 +61,7 @@ def find_dupe_image(source, values=None, year=None, **kwargs):
 
     if not valueObjDict:
         # One or more of the values weren't found; no dupe image in DB.
-        return False
+        return None
 
     # Get all the metadata objects in the DB with these location values and year
     metaMatches = Metadata.objects.filter(photo_date__year=year, **valueObjDict)
@@ -69,12 +69,10 @@ def find_dupe_image(source, values=None, year=None, **kwargs):
     # Get the images from our source that have this metadata.
     imageMatches = Image.objects.filter(source=source, metadata__in=metaMatches)
 
-    if len(imageMatches) > 1:
-        raise ValueError("Something's not right - this set of metadata has multiple image matches.")
-    elif len(imageMatches) == 1:
+    if len(imageMatches) >= 1:
         return imageMatches[0]
     else:
-        return False
+        return None
 
 
 def filename_to_metadata(filename, source):
