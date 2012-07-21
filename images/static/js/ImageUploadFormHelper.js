@@ -7,12 +7,15 @@ var ImageUploadFormHelper = (function() {
     var $uploadTableArea = null;
     var $uploadTable = null;
     var $uploadTableRowArray = [];
+    var $numFilesHeader = null;
     var $totalSizeHeader = null;
     var $uploadStatusHeader = null;
     var $uploadStatusCellArray = [];
 
     var filesField = null;
+    var dupeOptionFieldId = 'id_skip_or_replace_duplicates';
     var dupeOptionField = null;
+    var metadataOptionFieldId = 'id_specify_metadata';
     var metadataOptionField = null;
     var $uploadButton = null;
 
@@ -24,11 +27,11 @@ var ImageUploadFormHelper = (function() {
 
     var $formClone = null;
     var uploadOptions = null;
-    var files = null;
+    var files = [];
     var currentFileIndex = null;
 
     var statusArray = [];
-    var uploadableArray = [];
+    var isUploadableArray = [];
     var atLeastOneUploadable = false;
 
 
@@ -51,8 +54,10 @@ var ImageUploadFormHelper = (function() {
     Get the file details and display them in a table.
     */
     function refreshFiles() {
-        // Clear the table of all elements
-        $uploadTable.empty();
+        // Clear the table rows
+        for (i = 0; i < $uploadTableRowArray.length; i++) {
+            $uploadTableRowArray[i].remove();
+        }
         // Clear the arrays pointing to table elements
         $uploadTableRowArray.length = 0;
         $uploadStatusCellArray.length = 0;
@@ -63,21 +68,10 @@ var ImageUploadFormHelper = (function() {
             return;
         }
 
-        // Initialize upload statuses to null
-        statusArray.length = 0;
-        for (i = 0; i < files.length; i++) {
-            statusArray.push(null);
-        }
-        updatePreUploadSummary();
+        // Update number-of-files header
+        $numFilesHeader.text(files.length + " file(s)");
 
-        // Create first row of the upload table.
-        var $tableHeaderRow = $("<tr>");
-        $tableHeaderRow.append($("<th>").text(files.length + " file(s)"));
-        $totalSizeHeader = $("<th>");
-        $uploadStatusHeader = $("<th>");
-        $tableHeaderRow.append($uploadStatusHeader);
-        $uploadTable.append($tableHeaderRow);
-
+        // Make a table row for each file
         for (i = 0; i < files.length; i++) {
 
             // Create a table row containing file details
@@ -96,13 +90,24 @@ var ImageUploadFormHelper = (function() {
             $uploadTableRowArray.push($uploadTableRow);
         }
 
+        // Initialize upload statuses to null
+        statusArray.length = 0;
+        for (i = 0; i < files.length; i++) {
+            statusArray.push(null);
+        }
+        // Ensure the files are marked as non-uploadable until we check
+        // for their uploadability
+        updatePreUploadSummary();
+
         var filenameList = new Array(files.length);
         for (i = 0; i < files.length; i++) {
             filenameList[i] = files[i].name;
         }
 
-        // AJAX call to a Django method in ajax.py of this app
         if ($(metadataOptionField).val() === 'filenames') {
+
+            // Ask the server (via Ajax) about the filenames: are they in the
+            // right format? Do they have duplicate keys with existing files?
             Dajaxice.CoralNet.images.ajax_assess_file_status(
                 ajaxUpdateFilenameStatuses,    // JS callback that the ajax.py method returns to.
                 {'filenames': filenameList,
@@ -138,7 +143,7 @@ var ImageUploadFormHelper = (function() {
                 $uploadTableRowArray[i].addClass('not-uploadable');
             }
 
-            uploadableArray[i] = isUploadable;
+            isUploadableArray[i] = isUploadable;
         }
     }
 
@@ -151,7 +156,7 @@ var ImageUploadFormHelper = (function() {
 
         var totalSize = 0;
         for (i = 0; i < files.length; i++) {
-            if (uploadableArray[i])
+            if (isUploadableArray[i])
                 totalSize += files[i].size;
         }
         $totalSizeHeader.text(filesizeDisplay(totalSize));
@@ -219,6 +224,8 @@ var ImageUploadFormHelper = (function() {
             else if (statusStr === 'ok') {
                 uploadStatusCell.text("Ready");
             }
+
+            statusArray[i] = statusStr;
         }
 
         // Update the status summary.
@@ -247,10 +254,8 @@ var ImageUploadFormHelper = (function() {
 
     function ajaxUpload() {
 
-        $(filesField).disable();
-        $(dupeOptionField).disable();
-        $(metadataOptionField).disable();
-        $uploadButton.disable();
+        $(filesField).prop('disabled', true);
+        $uploadButton.prop('disabled', true);
         $uploadButton.text("Uploading...");
 
         // Submit the form.
@@ -261,10 +266,27 @@ var ImageUploadFormHelper = (function() {
             url: uploadStartUrl,
 
             // Callbacks
-            beforeSubmit: addFileToAjaxRequest,
+            beforeSubmit: beforeAjaxUploadSubmit,
             success: ajaxUploadHandleResponse
         };
+
+        // Create a clone of the form, passing in true, true to copy all
+        // elements' data (i.e. the actual values of the fields) and
+        // event handlers (not needed, but not harmful either, since we're
+        // not going to change the clone form's fields at any time).
         $formClone = $('#id_upload_form').clone();
+        // clone() doesn't copy values of select inputs for some reason,
+        // even when the data parameter to clone() is true. So copy these
+        // values manually...
+        $formClone.find('#'+dupeOptionFieldId).val($(dupeOptionField).val());
+        $formClone.find('#'+metadataOptionFieldId).val($(metadataOptionField).val());
+
+        // Now that the form's cloned, go ahead and disable the option fields
+        // on the actual form. (ajaxSubmit() won't add form fields if they're
+        // disabled.)
+        $(dupeOptionField).prop('disabled', true);
+        $(metadataOptionField).prop('disabled', true);
+
         currentFileIndex = 0;
         uploadFile();
 
@@ -297,7 +319,8 @@ var ImageUploadFormHelper = (function() {
      * arr - the form data in array format
      * $form - the jQuery-wrapped form object
      * options - the options object used in the form submit call */
-    function addFileToAjaxRequest(arr, $form, options) {
+    function beforeAjaxUploadSubmit(arr, $form, options) {
+        // Add the next file to this upload request.
         // Push the file as 'files' so that it can be validated
         // on the server-side with an ImageUploadForm.
         arr.push({
@@ -311,18 +334,23 @@ var ImageUploadFormHelper = (function() {
      * the server upload and processing are done. */
     function ajaxUploadHandleResponse(response) {
 
-        // TODO: Show this upload status message in a results table
-        // on the page.
+        // Update the table with the upload status from the server.
         var $uploadStatusCell = $uploadStatusCellArray[currentFileIndex];
         $uploadStatusCell.empty();
         $uploadStatusCell.text(response.message);
 
+        // Find the next file to upload, if any.
+        // Note that the file index starts from 0.
         currentFileIndex++;
-        // Note that this index starts from 0.
-        if (currentFileIndex < files.length)
-            uploadFile();
-        else
-            $uploadButton.text("Upload Complete");
+        while (currentFileIndex < files.length) {
+            if (isUploadableArray[currentFileIndex]) {
+                uploadFile();
+                return;
+            }
+            currentFileIndex++;
+        }
+        // Reached the end of the files array, so the upload's done.
+        $uploadButton.text("Upload Complete");
 
         // Remnants of an attempt at a progress bar...
 /*        // Get the completion percentage from the response, and then
@@ -343,13 +371,25 @@ var ImageUploadFormHelper = (function() {
             uploadStartUrl = params.uploadStartUrl;
             //uploadProgressUrl = params.uploadProgressUrl;
 
+            // Create upload table.
+            // TODO: Just make this static HTML, instead of Javascript-built?
             $uploadTableArea = $('#uploadTableArea');
             $uploadTable = $("<table>").attr("id", "uploadTable");
             $uploadTableArea.append($uploadTable);
 
+            // Create first row of the upload table.
+            var $tableHeaderRow = $("<tr>");
+            $numFilesHeader = $("<th>");
+            $totalSizeHeader = $("<th>");
+            $uploadStatusHeader = $("<th>");
+            $tableHeaderRow.append($numFilesHeader)
+                           .append($totalSizeHeader)
+                           .append($uploadStatusHeader);
+            $uploadTable.append($tableHeaderRow);
+
             filesField = $('#id_files')[0];
-            dupeOptionField = $('#id_skip_or_replace_duplicates')[0];
-            metadataOptionField = $('#id_specify_metadata')[0];
+            dupeOptionField = $('#' + dupeOptionFieldId)[0];
+            metadataOptionField = $('#' + metadataOptionFieldId)[0];
             $uploadButton = $('#id_upload_submit');
 
             updatePreUploadSummary();

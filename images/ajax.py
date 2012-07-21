@@ -15,6 +15,9 @@ def ajax_assess_file_status(request, filenames, sourceId, checkDupes):
     - Number of duplicates, if that was asked for
     """
 
+    # TODO: Check if any two files in the request are duplicates of
+    # each other; don't just compare against the images on the server.
+
     statusList = []
 
     source = Source.objects.get(id=sourceId)
