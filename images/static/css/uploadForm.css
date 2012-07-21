@@ -1,12 +1,19 @@
-#previewTable th{
+#uploadTable th{
     padding-left: 20px;
     padding-right: 20px;
     padding-bottom: 5px;
 }
 
-#previewTable td{
+#uploadTable td{
     padding-left: 20px;
     padding-right: 20px;
+}
+
+#uploadTable tr.not-uploadable{
+    background-color: #888888;
+}
+#uploadTable tr.upload-started{
+    background-color: #ffff88;
 }
 
 span.dupeStatus a{

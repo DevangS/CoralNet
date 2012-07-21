@@ -25,17 +25,17 @@ def ajax_assess_file_status(request, filenames, sourceId, checkDupes):
             fileMetadata = filename_to_metadata(filename, source)
         except ValueError:
             # Failed to parse the filename for metadata
-            statusList.append({'status': 'Filename error'})
+            statusList.append({'status': 'error'})
 
         else:
             if checkDupes:
                 dupeImage = find_dupe_image(source, **fileMetadata)
                 if dupeImage:
-                    statusList.append({'status': 'Duplicate found',
+                    statusList.append({'status': 'dupe',
                                        'url': reverse('image_detail', args=[dupeImage.id])
                     })
                 else:
-                    statusList.append({'status': 'Ready'})
+                    statusList.append({'status': 'ok'})
 
     # return a dictionary to the JS callback
     return simplejson.dumps({
