@@ -15,6 +15,11 @@ var ImageUploadFormHelper = (function() {
     var uploadStartUrl = null;
     //var uploadProgressUrl = null;
 
+    var $formClone = null;
+    var uploadOptions = null;
+    var files = null;
+    var currentFileIndex = null;
+
     function filesizeDisplay(bytes) {
         var KILO = 1024;
         var MEGA = 1024*1024;
@@ -172,11 +177,6 @@ var ImageUploadFormHelper = (function() {
         updateFormFields();
     }
 
-    /*
-    This AJAX callback function is called by the browser window object.
-    It's not called by the ImageUploadFormHelper object.  Therefore, don't
-    use "this" in this function to refer to an ImageUploadFormHelper member.
-     */
     function ajaxUpdateStatus(data) {
         updateStatus(data.statusList);
     }
@@ -184,13 +184,20 @@ var ImageUploadFormHelper = (function() {
     function ajaxUpload() {
 
         // Submit the form.
-        var options = {
-            dataType: 'json',    // Expected datatype of response
+        uploadOptions = {
+            // Expected datatype of response
+            dataType: 'json',
+            // URL to submit to
             url: uploadStartUrl,
+
+            // Callbacks
             beforeSubmit: addFileToAjaxRequest,
-            success: ajaxUploadHandleResponse    // Callback
+            success: ajaxUploadHandleResponse
         };
-        $('#id_upload_form').ajaxSubmit(options);
+        $formClone = $('#id_upload_form').clone();
+        files = filesField.files;
+        currentFileIndex = 0;
+        uploadFile();
 
         // Remnants of an attempt at a progress bar...
 /*        var $ajaxUploadID = $('#id_ajax_upload_id');
@@ -204,29 +211,43 @@ var ImageUploadFormHelper = (function() {
         };*/
     }
 
+    function uploadFile() {
+        $formClone.ajaxSubmit(uploadOptions);
+    }
+
     // Remnants of an attempt at a progress bar...
 /*    function prepareProgressBar() {
         $('#progress_bar').progressBar();
     }*/
 
+    /* Callback before the Ajax form is submitted.
+     * arr - the form data in array format
+     * $form - the jQuery-wrapped form object
+     * options - the options object used in the form submit call */
     function addFileToAjaxRequest(arr, $form, options) {
         // Push the file as 'files' so that it can be validated
         // on the server-side with an ImageUploadForm.
-        //
-        // Just push the first file onto the Ajax request.
-        // TODO: Implement submitting multiple files, one by one.
         arr.push({
             name: 'files',
             type: 'files',
-            value: filesField.files[0]
+            value: files[currentFileIndex]
         });
     }
 
+    /* Callback after the Ajax response is received, indicating that
+     * the server upload and processing are done. */
     function ajaxUploadHandleResponse(response) {
 
         // TODO: Show this upload status message in a results table
         // on the page.
         console.log(response.message);
+
+        currentFileIndex++;
+        // Note that this index starts from 0.
+        if (currentFileIndex < files.length)
+            uploadFile();
+        else
+            console.log("Done uploading.");
 
         // Remnants of an attempt at a progress bar...
 /*        // Get the completion percentage from the response, and then
