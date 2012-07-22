@@ -9,17 +9,22 @@
     padding-right: 20px;
 }
 
-#uploadTable tr.not-uploadable{
-    background-color: #888888;
+#uploadTable tr.dupe-skip{
+    background-color: #cccccc;
 }
-#uploadTable tr.upload-started{
-    background-color: #ffff88;
-}
-
-span.dupeStatus a{
+#uploadTable tr.dupe-skip td.status-cell a,
+#uploadTable tr.preupload-dupe-replace td.status-cell a{
     color: green;
 }
-
-span.errorStatus{
-    color: red;
+#uploadTable tr.preupload-error{
+    background-color: #ff8888;
+}
+#uploadTable tr.uploading{
+    background-color: #ffff88;
+}
+#uploadTable tr.upload-error{
+    background-color: #ff8888;
+}
+#uploadTable tr.uploaded{
+    background-color: #88ff88;
 }

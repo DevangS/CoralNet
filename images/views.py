@@ -859,8 +859,11 @@ def single_image_upload_process(imageFile, imageOptionsForm,
 
         # Filename parse error.
         except (ValueError, StopIteration):
-            return dict(error=True,
-                message='Upload failed - Error when parsing the filename %s for metadata.' % filename,
+            return dict(
+                status='error',
+                message="Error when parsing filename for metadata",
+                link=None,
+                title=None,
             )
 
         # Detect duplicate images and handle them
@@ -868,9 +871,13 @@ def single_image_upload_process(imageFile, imageOptionsForm,
         if dupe:
             if dupeOption == 'skip':
                 # Skip uploading this file.
+                # This should never happen if the pre-upload status
+                # checking is doing its job, but just in case...
                 return dict(
+                    status='error',
                     message="Skipped (duplicate found)",
-                    id=dupe.id,
+                    link=reverse('image_detail', args=[dupe.id]),
+                    title=dupe.get_image_element_title(),
                 )
             elif dupeOption == 'replace':
                 # Proceed uploading this file, and delete the dupe.
@@ -922,13 +929,17 @@ def single_image_upload_process(imageFile, imageOptionsForm,
 
     if dupe:
         return dict(
+            status='ok',
             message="Uploaded (replaced duplicate)",
-            id=img.id,
+            link=reverse('image_detail', args=[img.id]),
+            title=img.get_image_element_title(),
         )
     else:
         return dict(
+            status='ok',
             message="Uploaded",
-            id=img.id,
+            link=reverse('image_detail', args=[img.id]),
+            title=img.get_image_element_title(),
         )
 
 
@@ -1008,13 +1019,19 @@ def image_upload_ajax(request, source_id):
             return JsonResponse(resultDict)
         else:
             return JsonResponse(dict(
-                message="Error: Options form is invalid",
-                id=None,
+                status='error',
+                message="Options form is invalid",
+                link=None,
+                title=None,
             ))
     else:
+        # File error: filetype is not an image,
+        # file is corrupt, file is empty, etc.
         return JsonResponse(dict(
-            message="Error: {error}".format(error=imageForm.errors['files'][0]),
-            id=None,
+            status='error',
+            message=imageForm.errors['files'][0],
+            link=None,
+            title=None,
         ))
 
 

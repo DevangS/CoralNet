@@ -50,6 +50,16 @@ var ImageUploadFormHelper = (function() {
         }
     }
 
+    /* Makes cssClass the only style class of the row (tr) of index rowIndex.
+     * Pass in '' as the cssClass to just remove the style.
+     *
+     * Assumes we only need up to 1 style on any row at any given time.
+     * If that assumption is no longer valid, then this function should be
+     * changed. */
+    function styleRow(rowIndex, cssClass) {
+        $uploadTableRowArray[rowIndex].attr('class', cssClass);
+    }
+
     /*
     Get the file details and display them in a table.
     */
@@ -83,6 +93,7 @@ var ImageUploadFormHelper = (function() {
 
             // filename status, to be filled in with an Ajax response
             var $statusCell = $("<td>");
+            $statusCell.addClass('status-cell');
             $uploadTableRow.append($statusCell);
             $uploadStatusCellArray.push($statusCell);
 
@@ -136,14 +147,30 @@ var ImageUploadFormHelper = (function() {
             );
 
             if (isUploadable) {
-                $uploadTableRowArray[i].removeClass('not-uploadable');
                 atLeastOneUploadable = true;
-            }
-            else {
-                $uploadTableRowArray[i].addClass('not-uploadable');
             }
 
             isUploadableArray[i] = isUploadable;
+        }
+    }
+
+    function updatePreUploadStyle() {
+        for (i = 0; i < files.length; i++) {
+            if (statusArray[i] === 'ok') {
+                styleRow(i, '');
+            }
+            else if (statusArray[i] === 'dupe') {
+                if ($(dupeOptionField).val() === 'skip') {
+                    styleRow(i, 'dupe-skip');
+                }
+                else {  // 'replace'
+                    styleRow(i, 'preupload-dupe-replace');
+                }
+            }
+            else {
+                // 'error' status
+                styleRow(i, 'preupload-error');
+            }
         }
     }
 
@@ -184,6 +211,9 @@ var ImageUploadFormHelper = (function() {
         // Are the files uploadable or not?
         updateUploadability();
 
+        // Update table row styles according to file status
+        updatePreUploadStyle();
+
         // Compute the combined size of the uploadable files
         updateUploadSize();
 
@@ -200,24 +230,19 @@ var ImageUploadFormHelper = (function() {
             uploadStatusCell.empty();
 
             var statusStr = statusList[i].status;
-            var containerElmt;
 
             if (statusStr === 'dupe') {
 
                 var linkToDupe = $("<a>").text("Duplicate found");
-                linkToDupe.attr("href", statusList[i].url);    // Link to the image's page
-                linkToDupe.attr("target", "_blank");    // Open in new window
-
-                containerElmt = $("<span>").addClass("dupeStatus");
-                containerElmt.append(linkToDupe);
-                uploadStatusCell.append(containerElmt);
+                linkToDupe.attr('href', statusList[i].url);    // Link to the image's page
+                linkToDupe.attr('target', '_blank');    // Open in new window
+                linkToDupe.attr('title', statusList[i].title);
+                uploadStatusCell.append(linkToDupe);
 
                 numOfDupes += 1;
             }
             else if (statusStr === 'error') {
-                containerElmt = $("<span>").addClass("errorStatus");
-                containerElmt.text("Filename error");
-                uploadStatusCell.append(containerElmt);
+                uploadStatusCell.text("Filename error");
 
                 numOfErrors += 1;
             }
@@ -306,7 +331,7 @@ var ImageUploadFormHelper = (function() {
         $formClone.ajaxSubmit(uploadOptions);
         var $uploadStatusCell = $uploadStatusCellArray[currentFileIndex];
         $uploadStatusCell.empty();
-        $uploadTableRowArray[currentFileIndex].addClass('upload-started');
+        styleRow(currentFileIndex, 'uploading');
         $uploadStatusCell.text("Uploading...");
     }
 
@@ -337,7 +362,24 @@ var ImageUploadFormHelper = (function() {
         // Update the table with the upload status from the server.
         var $uploadStatusCell = $uploadStatusCellArray[currentFileIndex];
         $uploadStatusCell.empty();
-        $uploadStatusCell.text(response.message);
+
+        if (response.link !== null) {
+            var linkToImage = $('<a>').text(response.message);
+            linkToImage.attr('href', response.link);
+            linkToImage.attr('target', '_blank');
+            linkToImage.attr('title', response.title);
+            $uploadStatusCell.append(linkToImage);
+        }
+        else {
+            $uploadStatusCell.text(response.message);
+        }
+
+        if (response.status === 'ok') {
+            styleRow(currentFileIndex, 'uploaded');
+        }
+        else {  // 'error'
+            styleRow(currentFileIndex, 'upload-error');
+        }
 
         // Find the next file to upload, if any.
         // Note that the file index starts from 0.

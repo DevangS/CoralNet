@@ -34,9 +34,11 @@ def ajax_assess_file_status(request, filenames, sourceId, checkDupes):
             if checkDupes:
                 dupeImage = find_dupe_image(source, **fileMetadata)
                 if dupeImage:
-                    statusList.append({'status': 'dupe',
-                                       'url': reverse('image_detail', args=[dupeImage.id])
-                    })
+                    statusList.append(dict(
+                        status='dupe',
+                        url=reverse('image_detail', args=[dupeImage.id]),
+                        title=dupeImage.get_image_element_title(),
+                    ))
                 else:
                     statusList.append({'status': 'ok'})
 
