@@ -33,33 +33,41 @@
 
     <legend>Upload Images</legend>
 
-    {% comment %}
-    The imageForm's multi-file field itself is not part of the form below.
-    We will be submitting files one by one via Ajax manually, and the
-    imageForm's file field will only be used to let the user pick files
-    to upload.
-    {% endcomment %}
-    {% include "form_generic.html" with form=imageForm %}
-
     <form id="id_upload_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-        {% include "images/form_image_upload_options.html" with form=optionsForm %}
+        <legend class="small">Options</legend>
+        {% include "images/form_image_upload_options.html" with form=optionsForm dont_mark_required="yes" %}
         {% for detail in optionsForm.additional_details %}
             <span class="helptext">{{ detail|linebreaksbr }}</span>
         {% endfor %}
-
-        <div class="submit_button_wrapper_column_form">
-            <button type="button" class="submit" id="id_upload_submit">Upload Images</button>
-        </div>
     </form>
 
-{# Remnants of an attempt at a progress bar... #}
-{% comment %}    <div id="progress_bar_area">
-        <span id="progress_bar"></span>
-    </div>{% endcomment %}
+    <div class="page_section">
+        <h3>Images to upload</h3>
 
-    <!-- Table showing the files selected for upload. -->
-    <div id="uploadTableArea">
+        {% comment %}
+        The imageForm's multi-file field is not part of the actual form element.
+        We will be submitting files one by one via Ajax manually, and the
+        imageForm's file field will only be used to let the user pick files
+        to upload.
+        {% endcomment %}
+        {% include "form_generic.html" with form=imageForm dont_mark_required="yes" %}
 
+        {# Remnants of an attempt at a progress bar... #}
+        {% comment %}
+        <div id="progress_bar_area">
+            <span id="progress_bar"></span>
+        </div>
+        {% endcomment %}
+
+        {# Submit button #}
+        <div class="submit_button_wrapper_column_form">
+            <button type="button" class="submit" id="id_upload_submit"></button>
+        </div>
+
+        {# Table showing the files selected for upload. #}
+        <div id="uploadTableArea">
+
+        </div>
     </div>
 
     <!-- Script in the body will run on page load. -->

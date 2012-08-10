@@ -296,6 +296,22 @@ h3{
     margin: 0 0 5px;
 }
 
+/* This is intended as an alternative to legend.small, particularly when
+   a certain element isn't allowed to hold a legend inside it. */
+.page_section h3{
+    /* This keeps the bottom border's width confined to the text's width
+       (which block doesn't do), and allows margins and padding to actually
+       take effect (which inline doesn't do). */
+    display: inline-block;
+
+    padding: 5px 0 6px 0;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 5px;
+    font-size: 1.2em;
+    color: #ab292a;
+    font-weight: bold;
+    text-transform: none;
+}
 
 h4{
     font-size: 1.2em;
@@ -383,7 +399,7 @@ hr.light {
 /*	Forms
 ................................... */
 
-form {
+form, div.page_section {
     margin: 15px auto 20px;
     padding: 12px 0;
     width: 800px;
@@ -586,8 +602,9 @@ fieldset {
     border-bottom: 1px solid #ddd;
 }
 /* A special header, conventionally for fieldsets */
+/* Note: legends are only supposed to be in fieldsets, according to W3C.
+   In contrast, h1, h2, etc. can go anywhere. */
 legend {
-    width: auto;
     padding: 5px 0 6px 0;
     border-bottom: 1px solid #ddd;
     margin-bottom: 5px;
