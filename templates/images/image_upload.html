@@ -63,11 +63,19 @@
         <div class="submit_button_wrapper_column_form">
             <button type="button" class="submit" id="id_upload_submit"></button>
         </div>
+    </div>
+
+    <div class="page_section">
+        {# 1x2 table showing the summary of the upload. #}
+        <table id="upload_summary_table">
+            <tr>
+                <td id="pre_upload_summary"></td>
+                <td id="during_upload_summary"></td>
+            </tr>
+        </table>
 
         {# Table showing the files selected for upload. #}
-        <div id="uploadTableArea">
-
-        </div>
+        <table id="uploadTable"></table>
     </div>
 
     <!-- Script in the body will run on page load. -->

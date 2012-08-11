@@ -4,12 +4,10 @@ var ImageUploadFormHelper = (function() {
 
     var i;
 
-    var $uploadTableArea = null;
+    var $preUploadSummary = null;
+    var $duringUploadSummary = null;
     var $uploadTable = null;
     var $uploadTableRowArray = [];
-    var $numFilesHeader = null;
-    var $totalSizeHeader = null;
-    var $uploadStatusHeader = null;
     var $uploadStatusCellArray = [];
 
     var filesField = null;
@@ -77,9 +75,6 @@ var ImageUploadFormHelper = (function() {
         if (!files) {
             return;
         }
-
-        // Update number-of-files header
-        $numFilesHeader.text(files.length + " file(s)");
 
         // Make a table row for each file
         for (i = 0; i < files.length; i++) {
@@ -174,19 +169,42 @@ var ImageUploadFormHelper = (function() {
         }
     }
 
-    /* Figure out the combined size of all the files selected for upload. */
-    function updateUploadSize() {
+    function updatePreUploadSummaryText() {
+        $preUploadSummary.empty();
+
         if (files.length === 0) {
-            $totalSizeHeader.text("");
             return;
         }
 
-        var totalSize = 0;
+        var summaryTextLines = [];
+
+        var uploadableTotalSize = 0;
         for (i = 0; i < files.length; i++) {
             if (isUploadableArray[i])
-                totalSize += files[i].size;
+                uploadableTotalSize += files[i].size;
         }
-        $totalSizeHeader.text(filesizeDisplay(totalSize));
+
+        summaryTextLines.push(files.length + " file(s) total");
+        // TODO: Fill in x, y, and z with appropriate variables
+        summaryTextLines.push("{0} ({1}) can be uploaded".format("x", filesizeDisplay(uploadableTotalSize)));
+        // TODO: If any duplicates, and duplicates are being skipped...
+        if (true) {
+            summaryTextLines.push("{0} are duplicates that will be skipped".format("y"));
+        }
+        // TODO: If any filename errors...
+        if (true) {
+            summaryTextLines.push("{0} have filename errors".format("z"));
+        }
+
+        for (i = 0; i < summaryTextLines.length; i++) {
+            // If not the first line, append a <br> first.
+            // That way, the lines are separated by linebreaks.
+            if (i > 0) {
+                $preUploadSummary.append('<br>');
+            }
+
+            $preUploadSummary.append(summaryTextLines[i]);
+        }
     }
 
     function updateFormFields() {
@@ -199,10 +217,12 @@ var ImageUploadFormHelper = (function() {
 
         if (atLeastOneUploadable) {
             $uploadButton.attr('disabled', false);
+            //$uploadButton.css('display', 'auto');
             $uploadButton.text("Start Upload");
         }
         else {
             $uploadButton.attr('disabled', true);
+            //$uploadButton.css('display', 'none');
             $uploadButton.text("");
         }
     }
@@ -214,8 +234,8 @@ var ImageUploadFormHelper = (function() {
         // Update table row styles according to file status
         updatePreUploadStyle();
 
-        // Compute the combined size of the uploadable files
-        updateUploadSize();
+        // Update the summary text above the files table
+        updatePreUploadSummaryText();
 
         // Make sure to update the form once more after the AJAX call completes
         updateFormFields();
@@ -254,21 +274,21 @@ var ImageUploadFormHelper = (function() {
         }
 
         // Update the status summary.
-        var statusSummary = "";
-        var statusMessages = [];
-
-        if (numOfErrors > 0)
-            statusMessages.push(numOfErrors + " error(s)");
-        if (numOfDupes > 0)
-            statusMessages.push(numOfDupes + " duplicate(s)");
-
-        for (i = 0; i < statusMessages.length; i++) {
-            if (i === 0)
-                statusSummary += statusMessages[i];
-            else
-                statusSummary += (', ' + statusMessages[i])
-        }
-        $uploadStatusHeader.text(statusSummary);
+//        var statusSummary = "";
+//        var statusMessages = [];
+//
+//        if (numOfErrors > 0)
+//            statusMessages.push(numOfErrors + " error(s)");
+//        if (numOfDupes > 0)
+//            statusMessages.push(numOfDupes + " duplicate(s)");
+//
+//        for (i = 0; i < statusMessages.length; i++) {
+//            if (i === 0)
+//                statusSummary += statusMessages[i];
+//            else
+//                statusSummary += (', ' + statusMessages[i])
+//        }
+//        $uploadStatusHeader.text(statusSummary);
 
         updatePreUploadSummary();
     }
@@ -413,21 +433,12 @@ var ImageUploadFormHelper = (function() {
             uploadStartUrl = params.uploadStartUrl;
             //uploadProgressUrl = params.uploadProgressUrl;
 
-            // Create upload table.
-            // TODO: Just make this static HTML, instead of Javascript-built?
-            $uploadTableArea = $('#uploadTableArea');
-            $uploadTable = $("<table>").attr("id", "uploadTable");
-            $uploadTableArea.append($uploadTable);
+            // Upload status summary.
+            $preUploadSummary = $('td#pre_upload_summary');
+            $duringUploadSummary = $('td#during_upload_summary');
 
-            // Create first row of the upload table.
-            var $tableHeaderRow = $("<tr>");
-            $numFilesHeader = $("<th>");
-            $totalSizeHeader = $("<th>");
-            $uploadStatusHeader = $("<th>");
-            $tableHeaderRow.append($numFilesHeader)
-                           .append($totalSizeHeader)
-                           .append($uploadStatusHeader);
-            $uploadTable.append($tableHeaderRow);
+            // The upload file table.
+            $uploadTable = $('table#uploadTable');
 
             filesField = $('#id_files')[0];
             dupeOptionField = $('#' + dupeOptionFieldId)[0];
