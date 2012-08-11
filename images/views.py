@@ -950,22 +950,22 @@ def image_upload(request, source_id):
     """
 
     source = get_object_or_404(Source, id=source_id)
-    uploadedImages = []
+    uploaded_images = []
 
     if request.method == 'POST':
 
-        imageForm = ImageUploadForm(request.POST, request.FILES)
-        optionsForm = ImageUploadOptionsForm(request.POST, source=source)
+        image_form = ImageUploadForm(request.POST, request.FILES)
+        options_form = ImageUploadOptionsForm(request.POST, source=source)
 
         # Need getlist instead of simply request.FILES, in order to handle
         # multiple files.
-        imageFiles = request.FILES.getlist('files')
+        image_files = request.FILES.getlist('files')
 
-        if imageForm.is_valid() and optionsForm.is_valid():
+        if image_form.is_valid() and options_form.is_valid():
 
             resultDict = image_upload_process(
-                imageFiles=imageFiles,
-                imageOptionsForm=optionsForm,
+                imageFiles=image_files,
+                imageOptionsForm=options_form,
                 annotationOptionsForm=None,
                 source=source,
                 currentUser=request.user,
@@ -976,7 +976,7 @@ def image_upload(request, source_id):
                 messages.error(request, resultDict['message'])
                 transaction.rollback()
             else:
-                uploadedImages = resultDict['uploadedImages']
+                uploaded_images = resultDict['uploadedImages']
                 messages.success(request, resultDict['message'])
 
         else:
@@ -984,14 +984,14 @@ def image_upload(request, source_id):
 
     else:
         # Just reached the page.
-        imageForm = ImageUploadForm()
-        optionsForm = ImageUploadOptionsForm(source=source)
+        image_form = ImageUploadForm()
+        options_form = ImageUploadOptionsForm(source=source)
 
     return render_to_response('images/image_upload.html', {
         'source': source,
-        'imageForm': imageForm,
-        'optionsForm': optionsForm,
-        'uploadedImages': uploadedImages,
+        'image_form': image_form,
+        'options_form': options_form,
+        'uploaded_images': uploaded_images,
         },
         context_instance=RequestContext(request)
     )

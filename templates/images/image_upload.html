@@ -9,15 +9,15 @@
 {% endblock %}
 
 {% block page-specific-includes %}
-    {% include "form_media_versioned.html" with form=imageForm %}
+    {% include "form_media_versioned.html" with form=image_form %}
 {% endblock %}
 
 {% block content %}
 
-    {% if uploadedImages %}
+    {% if uploaded_images %}
     <div>
       <h2>Just uploaded (up to 5 shown):</h2>
-      {% for image in uploadedImages %}
+      {% for image in uploaded_images %}
         <span class="thumb_small_wrapper">
         <a href="{% url image_detail image.id %}" target="_blank">
           <img class="thumb_small"
@@ -35,8 +35,8 @@
 
     <form id="id_upload_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
         <legend class="small">Options</legend>
-        {% include "images/form_image_upload_options.html" with form=optionsForm dont_mark_required="yes" %}
-        {% for detail in optionsForm.additional_details %}
+        {% include "images/form_image_upload_options.html" with form=options_form dont_mark_required="yes" %}
+        {% for detail in options_form.additional_details %}
             <span class="helptext">{{ detail|linebreaksbr }}</span>
         {% endfor %}
     </form>
@@ -75,7 +75,7 @@
         </table>
 
         {# Table showing the files selected for upload. #}
-        <table id="uploadTable"></table>
+        <table id="files_table"></table>
     </div>
 
     <!-- Script in the body will run on page load. -->

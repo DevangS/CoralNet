@@ -1,37 +1,37 @@
-#uploadTable{
+#files_table {
     border: 2px solid #999;
     border-collapse: collapse;
     border-spacing: 0;
 }
 
-#uploadTable th, #uploadTable td{
+#files_table th, #files_table td{
     border: 2px solid #999;
     padding-left: 20px;
     padding-right: 20px;
     padding-top: 2px;
     padding-bottom: 2px;
 }
-#uploadTable td{
+#files_table td{
     font-size: 0.9em;
 }
 
-#uploadTable tr.dupe-skip{
+#files_table tr.dupe_skip{
     background-color: #cccccc;
 }
-#uploadTable tr.dupe-skip td.status-cell a,
-#uploadTable tr.preupload-dupe-replace td.status-cell a{
+#files_table tr.dupe_skip td.status_cell a,
+#files_table tr.preupload_dupe_replace td.status_cell a{
     color: green;
 }
-#uploadTable tr.preupload-error{
+#files_table tr.preupload_error{
     background-color: #cccccc;
 }
-#uploadTable tr.uploading{
+#files_table tr.uploading{
     background-color: #ffff88;
 }
-#uploadTable tr.upload-error{
+#files_table tr.upload_error{
     background-color: #ff8888;
 }
-#uploadTable tr.uploaded{
+#files_table tr.uploaded{
     background-color: #88ff88;
 }
 

@@ -6,7 +6,7 @@ var ImageUploadFormHelper = (function() {
 
     var $preUploadSummary = null;
     var $duringUploadSummary = null;
-    var $uploadTable = null;
+    var $filesTable = null;
     var $uploadTableRowArray = [];
     var $uploadStatusCellArray = [];
 
@@ -88,7 +88,7 @@ var ImageUploadFormHelper = (function() {
 
             // filename status, to be filled in with an Ajax response
             var $statusCell = $("<td>");
-            $statusCell.addClass('status-cell');
+            $statusCell.addClass('status_cell');
             $uploadTableRow.append($statusCell);
             $uploadStatusCellArray.push($statusCell);
 
@@ -156,15 +156,15 @@ var ImageUploadFormHelper = (function() {
             }
             else if (statusArray[i] === 'dupe') {
                 if ($(dupeOptionField).val() === 'skip') {
-                    styleRow(i, 'dupe-skip');
+                    styleRow(i, 'dupe_skip');
                 }
                 else {  // 'replace'
-                    styleRow(i, 'preupload-dupe-replace');
+                    styleRow(i, 'preupload_dupe_replace');
                 }
             }
             else {
                 // 'error' status
-                styleRow(i, 'preupload-error');
+                styleRow(i, 'preupload_error');
             }
         }
     }
@@ -398,7 +398,7 @@ var ImageUploadFormHelper = (function() {
             styleRow(currentFileIndex, 'uploaded');
         }
         else {  // 'error'
-            styleRow(currentFileIndex, 'upload-error');
+            styleRow(currentFileIndex, 'upload_error');
         }
 
         // Find the next file to upload, if any.
@@ -438,7 +438,7 @@ var ImageUploadFormHelper = (function() {
             $duringUploadSummary = $('td#during_upload_summary');
 
             // The upload file table.
-            $uploadTable = $('table#uploadTable');
+            $filesTable = $('table#files_table');
 
             filesField = $('#id_files')[0];
             dupeOptionField = $('#' + dupeOptionFieldId)[0];
