@@ -92,7 +92,7 @@ var ImageUploadFormHelper = (function() {
             $uploadTableRow.append($statusCell);
             $uploadStatusCellArray.push($statusCell);
 
-            $uploadTable.append($uploadTableRow);
+            $filesTable.append($uploadTableRow);
             $uploadTableRowArray.push($uploadTableRow);
         }
 
