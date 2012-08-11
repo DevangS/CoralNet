@@ -7,8 +7,6 @@ var ImageUploadFormHelper = (function() {
     var $preUploadSummary = null;
     var $duringUploadSummary = null;
     var $filesTable = null;
-    var $uploadTableRowArray = [];
-    var $uploadStatusCellArray = [];
 
     var filesField = null;
     var dupeOptionFieldId = 'id_skip_or_replace_duplicates';
@@ -28,8 +26,6 @@ var ImageUploadFormHelper = (function() {
     var files = [];
     var currentFileIndex = null;
 
-    var statusArray = [];
-    var isUploadableArray = [];
     var atLeastOneUploadable = false;
 
 
@@ -55,7 +51,7 @@ var ImageUploadFormHelper = (function() {
      * If that assumption is no longer valid, then this function should be
      * changed. */
     function styleRow(rowIndex, cssClass) {
-        $uploadTableRowArray[rowIndex].attr('class', cssClass);
+        files[rowIndex].$tableRow.attr('class', cssClass);
     }
 
     /*
@@ -63,15 +59,19 @@ var ImageUploadFormHelper = (function() {
     */
     function refreshFiles() {
         // Clear the table rows
-        for (i = 0; i < $uploadTableRowArray.length; i++) {
-            $uploadTableRowArray[i].remove();
+        for (i = 0; i < files.length; i++) {
+            files[i].$tableRow.remove();
         }
-        // Clear the arrays pointing to table elements
-        $uploadTableRowArray.length = 0;
-        $uploadStatusCellArray.length = 0;
+        // Clear the file array
+        files.length = 0;
 
-        files = filesField.files;
+        // Re-build the file array.
+        // Set the image files as files[0].file, files[1].file, etc.
+        for (i = 0; i < filesField.files.length; i++) {
+            files.push({'file': filesField.files[i]});
+        }
 
+        // TODO: What is this for exactly? Do we need it anymore?
         if (!files) {
             return;
         }
@@ -80,26 +80,26 @@ var ImageUploadFormHelper = (function() {
         for (i = 0; i < files.length; i++) {
 
             // Create a table row containing file details
-            var $uploadTableRow = $("<tr>");
+            var $filesTableRow = $("<tr>");
 
             // filename, filesize
-            $uploadTableRow.append($("<td>").text(files[i].name));
-            $uploadTableRow.append($("<td>").text(filesizeDisplay(files[i].size)));
+            $filesTableRow.append($("<td>").text(files[i].file.name));
+            $filesTableRow.append($("<td>").text(filesizeDisplay(files[i].file.size)));
 
             // filename status, to be filled in with an Ajax response
             var $statusCell = $("<td>");
             $statusCell.addClass('status_cell');
-            $uploadTableRow.append($statusCell);
-            $uploadStatusCellArray.push($statusCell);
+            $filesTableRow.append($statusCell);
+            files[i].$statusCell = $statusCell;
 
-            $filesTable.append($uploadTableRow);
-            $uploadTableRowArray.push($uploadTableRow);
+            $filesTable.append($filesTableRow);
+            files[i].$tableRow = $filesTableRow;
         }
 
         // Initialize upload statuses to null
-        statusArray.length = 0;
         for (i = 0; i < files.length; i++) {
-            statusArray.push(null);
+            //statusArray.push(null);
+            files[i].status = null;
         }
         // Ensure the files are marked as non-uploadable until we check
         // for their uploadability
@@ -107,7 +107,7 @@ var ImageUploadFormHelper = (function() {
 
         var filenameList = new Array(files.length);
         for (i = 0; i < files.length; i++) {
-            filenameList[i] = files[i].name;
+            filenameList[i] = files[i].file.name;
         }
 
         if ($(metadataOptionField).val() === 'filenames') {
@@ -137,24 +137,24 @@ var ImageUploadFormHelper = (function() {
             // Uploadable: ok, dupe+replace
             // Not uploadable: dupe+skip, error, null(uninitialized status)
             var isUploadable = (
-                statusArray[i] === 'ok'
-                || (statusArray[i] === 'dupe' && $(dupeOptionField).val() === 'replace')
+                files[i].status === 'ok'
+                || (files[i].status === 'dupe' && $(dupeOptionField).val() === 'replace')
             );
 
             if (isUploadable) {
                 atLeastOneUploadable = true;
             }
 
-            isUploadableArray[i] = isUploadable;
+            files[i].isUploadable = isUploadable;
         }
     }
 
     function updatePreUploadStyle() {
         for (i = 0; i < files.length; i++) {
-            if (statusArray[i] === 'ok') {
+            if (files[i].status === 'ok') {
                 styleRow(i, '');
             }
-            else if (statusArray[i] === 'dupe') {
+            else if (files[i].status === 'dupe') {
                 if ($(dupeOptionField).val() === 'skip') {
                     styleRow(i, 'dupe_skip');
                 }
@@ -180,8 +180,8 @@ var ImageUploadFormHelper = (function() {
 
         var uploadableTotalSize = 0;
         for (i = 0; i < files.length; i++) {
-            if (isUploadableArray[i])
-                uploadableTotalSize += files[i].size;
+            if (files[i].isUploadable)
+                uploadableTotalSize += files[i].file.size;
         }
 
         summaryTextLines.push(files.length + " file(s) total");
@@ -246,8 +246,8 @@ var ImageUploadFormHelper = (function() {
 
         for (i = 0; i < statusList.length; i++) {
 
-            var uploadStatusCell = $uploadStatusCellArray[i];
-            uploadStatusCell.empty();
+            var $statusCell = files[i].$statusCell;
+            $statusCell.empty();
 
             var statusStr = statusList[i].status;
 
@@ -257,38 +257,21 @@ var ImageUploadFormHelper = (function() {
                 linkToDupe.attr('href', statusList[i].url);    // Link to the image's page
                 linkToDupe.attr('target', '_blank');    // Open in new window
                 linkToDupe.attr('title', statusList[i].title);
-                uploadStatusCell.append(linkToDupe);
+                $statusCell.append(linkToDupe);
 
                 numOfDupes += 1;
             }
             else if (statusStr === 'error') {
-                uploadStatusCell.text("Filename error");
+                $statusCell.text("Filename error");
 
                 numOfErrors += 1;
             }
             else if (statusStr === 'ok') {
-                uploadStatusCell.text("Ready");
+                $statusCell.text("Ready");
             }
 
-            statusArray[i] = statusStr;
+            files[i].status = statusStr;
         }
-
-        // Update the status summary.
-//        var statusSummary = "";
-//        var statusMessages = [];
-//
-//        if (numOfErrors > 0)
-//            statusMessages.push(numOfErrors + " error(s)");
-//        if (numOfDupes > 0)
-//            statusMessages.push(numOfDupes + " duplicate(s)");
-//
-//        for (i = 0; i < statusMessages.length; i++) {
-//            if (i === 0)
-//                statusSummary += statusMessages[i];
-//            else
-//                statusSummary += (', ' + statusMessages[i])
-//        }
-//        $uploadStatusHeader.text(statusSummary);
 
         updatePreUploadSummary();
     }
@@ -349,10 +332,11 @@ var ImageUploadFormHelper = (function() {
 
     function uploadFile() {
         $formClone.ajaxSubmit(uploadOptions);
-        var $uploadStatusCell = $uploadStatusCellArray[currentFileIndex];
-        $uploadStatusCell.empty();
+
+        var $statusCell = files[currentFileIndex].$statusCell;
+        $statusCell.empty();
         styleRow(currentFileIndex, 'uploading');
-        $uploadStatusCell.text("Uploading...");
+        $statusCell.text("Uploading...");
     }
 
     // Remnants of an attempt at a progress bar...
@@ -371,7 +355,7 @@ var ImageUploadFormHelper = (function() {
         arr.push({
             name: 'files',
             type: 'files',
-            value: files[currentFileIndex]
+            value: files[currentFileIndex].file
         });
     }
 
@@ -380,18 +364,18 @@ var ImageUploadFormHelper = (function() {
     function ajaxUploadHandleResponse(response) {
 
         // Update the table with the upload status from the server.
-        var $uploadStatusCell = $uploadStatusCellArray[currentFileIndex];
-        $uploadStatusCell.empty();
+        var $statusCell = files[currentFileIndex].$statusCell;
+        $statusCell.empty();
 
         if (response.link !== null) {
             var linkToImage = $('<a>').text(response.message);
             linkToImage.attr('href', response.link);
             linkToImage.attr('target', '_blank');
             linkToImage.attr('title', response.title);
-            $uploadStatusCell.append(linkToImage);
+            $statusCell.append(linkToImage);
         }
         else {
-            $uploadStatusCell.text(response.message);
+            $statusCell.text(response.message);
         }
 
         if (response.status === 'ok') {
@@ -405,7 +389,7 @@ var ImageUploadFormHelper = (function() {
         // Note that the file index starts from 0.
         currentFileIndex++;
         while (currentFileIndex < files.length) {
-            if (isUploadableArray[currentFileIndex]) {
+            if (files[currentFileIndex].isUploadable) {
                 uploadFile();
                 return;
             }
