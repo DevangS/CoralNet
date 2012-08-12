@@ -360,13 +360,13 @@ var ImageUploadFormHelper = (function() {
         $(dupeOptionField).prop('disabled', true);
         $(metadataOptionField).prop('disabled', true);
 
-        currentFileIndex = 0;
         numUploaded = 0;
         numUploadSuccesses = 0;
         numUploadErrors = 0;
         uploadedTotalSize = 0;
         updateMidUploadSummary();
 
+        currentFileIndex = 0;
         uploadFile();
 
         // Remnants of an attempt at a progress bar...
@@ -381,13 +381,31 @@ var ImageUploadFormHelper = (function() {
         };*/
     }
 
+    /* Find a file to upload, starting from the current currentFileIndex.
+     * If the current file is not uploadable, increment the currentFileIndex
+     * and try the next file.  Once an uploadable file is found, begin
+     * uploading that file. */
     function uploadFile() {
-        $formClone.ajaxSubmit(uploadOptions);
+        while (currentFileIndex < files.length) {
 
-        var $statusCell = files[currentFileIndex].$statusCell;
-        $statusCell.empty();
-        styleRow(currentFileIndex, 'uploading');
-        $statusCell.text("Uploading...");
+            if (files[currentFileIndex].isUploadable) {
+                // An uploadable file was found, so upload it.
+                $formClone.ajaxSubmit(uploadOptions);
+
+                // In the files table, update the status for that file.
+                var $statusCell = files[currentFileIndex].$statusCell;
+                $statusCell.empty();
+                styleRow(currentFileIndex, 'uploading');
+                $statusCell.text("Uploading...");
+                return;
+            }
+
+            // No uploadable file was found yet; keep looking.
+            currentFileIndex++;
+        }
+
+        // Reached the end of the files array.
+        $uploadButton.text("Upload Complete");
     }
 
     // Remnants of an attempt at a progress bar...
@@ -442,18 +460,9 @@ var ImageUploadFormHelper = (function() {
 
         updateMidUploadSummary();
 
-        // Find the next file to upload, if any.
-        // Note that the file index starts from 0.
+        // Find the next file to upload, if any, and upload it.
         currentFileIndex++;
-        while (currentFileIndex < files.length) {
-            if (files[currentFileIndex].isUploadable) {
-                uploadFile();
-                return;
-            }
-            currentFileIndex++;
-        }
-        // Reached the end of the files array, so the upload's done.
-        $uploadButton.text("Upload Complete");
+        uploadFile();
 
         // Remnants of an attempt at a progress bar...
 /*        // Get the completion percentage from the response, and then
