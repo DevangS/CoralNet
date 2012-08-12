@@ -205,8 +205,7 @@ class MultipleImageField(ImageField):
     Must be used with the MultipleFileInput widget.
     """
     default_error_messages = {
-        'error_on': _(u"Error on file {0}: "),  # To be used as an error prefix
-        'invalid_image': _(u"The file either is not in a supported image format, or is a corrupted image."),
+        'invalid_image': _(u"The file is either a corrupt image, or in a file format that we don't support."),
     }
 
     def to_python(self, data):
@@ -221,12 +220,7 @@ class MultipleImageField(ImageField):
             try:
                 f = super(MultipleImageField, self).to_python(list_item)
             except ValidationError, err:
-                raise ValidationError(
-                    u"{0}{1}".format(
-                        self.error_messages['error_on'].format(list_item),
-                        err.messages[0],
-                    )
-                )
+                raise ValidationError(err.messages[0])
             data_out.append(f)
 
         return data_out
