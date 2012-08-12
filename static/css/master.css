@@ -170,6 +170,11 @@ ul.nav li.button_prominent a:active span {
 }
 
 
+div.narrow_column {
+    width: 800px;
+    margin: 0 auto;  /* top/bottom left/right */
+}
+
 
 #xtra-info{
     text-align: center;

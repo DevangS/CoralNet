@@ -33,51 +33,50 @@
 
     <legend>Upload Images</legend>
 
-    {# TODO: Please either find a better CSS solution or just make this a CSS rule... #}
-    <div id="main_page_content" style="width: 800px; margin: 0 auto;">
+    <div class="narrow_column">
 
-    <form id="id_upload_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-        <legend class="small">Options</legend>
-        {% include "images/form_image_upload_options.html" with form=options_form dont_mark_required="yes" %}
-        {% for detail in options_form.additional_details %}
-            <span class="helptext">{{ detail|linebreaksbr }}</span>
-        {% endfor %}
-    </form>
+        <form id="id_upload_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+            <legend class="small">Options</legend>
+            {% include "images/form_image_upload_options.html" with form=options_form dont_mark_required="yes" %}
+            {% for detail in options_form.additional_details %}
+                <span class="helptext">{{ detail|linebreaksbr }}</span>
+            {% endfor %}
+        </form>
 
-    <div class="page_section">
-        <h3>Images to upload</h3>
+        <div class="page_section">
+            <h3>Images to upload</h3>
 
-        {% comment %}
-        The image_form's multi-file field is not part of the actual form element.
-        We will be submitting files one by one via Ajax manually, and the
-        image_form's file field will only be used to let the user pick files
-        to upload.
-        {% endcomment %}
-        {% include "form_generic.html" with form=image_form dont_mark_required="yes" %}
+            {% comment %}
+            The image_form's multi-file field is not part of the actual form element.
+            We will be submitting files one by one via Ajax manually, and the
+            image_form's file field will only be used to let the user pick files
+            to upload.
+            {% endcomment %}
+            {% include "form_generic.html" with form=image_form dont_mark_required="yes" %}
 
-        {# Remnants of an attempt at a progress bar... #}
-        {% comment %}
-        <div id="progress_bar_area">
-            <span id="progress_bar"></span>
+            {# Remnants of an attempt at a progress bar... #}
+            {% comment %}
+            <div id="progress_bar_area">
+                <span id="progress_bar"></span>
+            </div>
+            {% endcomment %}
+
+            {# Submit button #}
+            <div class="submit_button_wrapper_column_form">
+                <button type="button" class="submit" id="id_upload_submit"></button>
+            </div>
+
+            {# 1x2 table showing the summary of the upload. #}
+            <table id="upload_summary_table">
+                <tr>
+                    <td id="pre_upload_summary"></td>
+                    <td id="mid_upload_summary"></td>
+                </tr>
+            </table>
+
+            {# Table showing the files selected for upload. #}
+            <table id="files_table"></table>
         </div>
-        {% endcomment %}
-
-        {# Submit button #}
-        <div class="submit_button_wrapper_column_form">
-            <button type="button" class="submit" id="id_upload_submit"></button>
-        </div>
-
-        {# 1x2 table showing the summary of the upload. #}
-        <table id="upload_summary_table">
-            <tr>
-                <td id="pre_upload_summary"></td>
-                <td id="mid_upload_summary"></td>
-            </tr>
-        </table>
-
-        {# Table showing the files selected for upload. #}
-        <table id="files_table"></table>
-    </div>
 
     </div>
 
