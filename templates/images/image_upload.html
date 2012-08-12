@@ -33,6 +33,9 @@
 
     <legend>Upload Images</legend>
 
+    {# TODO: Please either find a better CSS solution or just make this a CSS rule... #}
+    <div id="main_page_content" style="width: 800px; margin: 0 auto;">
+
     <form id="id_upload_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
         <legend class="small">Options</legend>
         {% include "images/form_image_upload_options.html" with form=options_form dont_mark_required="yes" %}
@@ -63,9 +66,7 @@
         <div class="submit_button_wrapper_column_form">
             <button type="button" class="submit" id="id_upload_submit"></button>
         </div>
-    </div>
 
-    <div class="page_section">
         {# 1x2 table showing the summary of the upload. #}
         <table id="upload_summary_table">
             <tr>
@@ -76,6 +77,8 @@
 
         {# Table showing the files selected for upload. #}
         <table id="files_table"></table>
+    </div>
+
     </div>
 
     <!-- Script in the body will run on page load. -->

@@ -42,7 +42,7 @@ var ImageUploadFormHelper = (function() {
         var MEGA = 1024*1024;
 
         if (bytes < KILO) {
-            return bytes + " bytes";
+            return bytes + " B";
         }
         else if (bytes < MEGA) {
             return Math.floor(bytes / KILO) + " KB";
@@ -73,15 +73,15 @@ var ImageUploadFormHelper = (function() {
         // Clear the file array
         files.length = 0;
 
+        // No need to do anything more if there are no files anyway.
+        if (filesField.files.length === 0) {
+            return;
+        }
+
         // Re-build the file array.
         // Set the image files as files[0].file, files[1].file, etc.
         for (i = 0; i < filesField.files.length; i++) {
             files.push({'file': filesField.files[i]});
-        }
-
-        // TODO: What is this for exactly? Do we need it anymore?
-        if (!files) {
-            return;
         }
 
         // Make a table row for each file
@@ -92,7 +92,11 @@ var ImageUploadFormHelper = (function() {
 
             // filename, filesize
             $filesTableRow.append($("<td>").text(files[i].file.name));
-            $filesTableRow.append($("<td>").text(filesizeDisplay(files[i].file.size)));
+
+            var $sizeCell = $("<td>");
+            $sizeCell.addClass('size_cell');
+            $sizeCell.text(filesizeDisplay(files[i].file.size));
+            $filesTableRow.append($sizeCell);
 
             // filename status, to be filled in with an Ajax response
             var $statusCell = $("<td>");
@@ -221,15 +225,20 @@ var ImageUploadFormHelper = (function() {
             $("#id_skip_or_replace_duplicates_wrapper").hide();
         }
 
-        if (numUploadables > 0) {
-            $uploadButton.attr('disabled', false);
-            //$uploadButton.css('display', 'auto');
-            $uploadButton.text("Start Upload");
+        if (files.length === 0) {
+            // No files
+            $uploadButton.attr('disabled', true);
+            $uploadButton.text("No files selected yet");
+        }
+        else if (numUploadables === 0) {
+            // No uploadable files
+            $uploadButton.attr('disabled', true);
+            $uploadButton.text("Cannot upload any of these files");
         }
         else {
-            $uploadButton.attr('disabled', true);
-            //$uploadButton.css('display', 'none');
-            $uploadButton.text("");
+            // Uploadable files present
+            $uploadButton.attr('disabled', false);
+            $uploadButton.text("Start Upload");
         }
     }
 

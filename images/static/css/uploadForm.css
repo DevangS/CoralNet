@@ -1,4 +1,13 @@
-#files_table {
+#upload_summary_table{
+    margin: 10px 0;  /* top/bottom left/right */
+}
+#upload_summary_table td{
+    padding: 0 10px;  /* top/bottom left/right */
+}
+
+#files_table{
+    margin: 10px 0;  /* top/bottom left/right */
+
     border: 2px solid #999;
     border-collapse: collapse;
     border-spacing: 0;
@@ -6,13 +15,20 @@
 
 #files_table th, #files_table td{
     border: 2px solid #999;
-    padding-left: 20px;
-    padding-right: 20px;
-    padding-top: 2px;
-    padding-bottom: 2px;
+    padding: 2px 10px;  /* top/bottom left/right */
 }
 #files_table td{
     font-size: 0.9em;
+}
+#files_table td.size_cell{
+    /* In general, don't let the size spill into 2 lines; that looks bad.
+
+       Assuming 0.9em font size, 60px should always fit '16.25 MB' in the
+       cell.  The only situation that would spill it to 2 lines is when it's
+       '162.50 MB' or longer, and the other table columns are wide enough to
+       make the table expand to its full width, thus clamping the size column
+       to the min-width. */
+    min-width: 60px;
 }
 
 #files_table tr.dupe_skip{
@@ -35,7 +51,10 @@
     background-color: #88ff88;
 }
 
-/*
-#id_upload_submit{
-    display: none;
-}*/
+/* TODO: Merge this rule into master.css at some point. */
+form, div.page_section {
+    margin: 20px 0 30px;  /* top left/right bottom */
+    padding: 0;
+
+    width: auto;
+}
