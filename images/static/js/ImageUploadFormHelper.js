@@ -278,7 +278,7 @@ var ImageUploadFormHelper = (function() {
                 numDupes += 1;
             }
             else if (statusStr === 'error') {
-                $statusCell.text("Filename error");
+                $statusCell.text("Could not extract metadata from filename");
 
                 numPreUploadErrors += 1;
             }

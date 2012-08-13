@@ -155,6 +155,36 @@ def metadata_to_filename(values=None,
     return filename
 
 
+def check_image_filename(filename, source):
+    """
+    When gathering uploaded-image metadata from filenames, this function
+    checks the filename and determines whether the file:
+    - Has a filename error
+    - Is a duplicate of an existing image
+    - Neither
+    """
+    try:
+        metadata_dict = filename_to_metadata(filename, source)
+    except (ValueError, StopIteration):
+        # Filename parse error.
+        return dict(
+            status='error',
+        )
+
+    dupe = find_dupe_image(source, **metadata_dict)
+    if dupe:
+        return dict(
+            status='dupe',
+            metadata_dict=metadata_dict,
+            dupe=dupe,
+        )
+    else:
+        return dict(
+            status='ok',
+            metadata_dict=metadata_dict,
+        )
+
+
 def get_first_image(source, conditions=None):
     """
     Gets the first image in the source.

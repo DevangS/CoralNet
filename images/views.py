@@ -23,7 +23,7 @@ from decorators import source_permission_required, image_visibility_required, im
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationImportOptionsForm, MultiImageUploadForm
 from images.model_utils import PointGen
-from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points, get_first_image, get_next_image, get_prev_image, image_upload_success_message
+from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points, get_first_image, get_next_image, get_prev_image, image_upload_success_message, check_image_filename
 import json
 from lib import msg_consts
 from lib.utils import JsonResponse
@@ -848,99 +848,99 @@ def image_upload_process(imageFile, imageOptionsForm,
     dupeOption = imageOptionsForm.cleaned_data['skip_or_replace_duplicates']
 
     filename = imageFile.name
-    metadataDict = None
-    annotationData = None
-    metadata = Metadata(height_in_cm=source.image_height_in_cm)
+    is_dupe = False
+    metadata_dict = None
+    annotation_data = None
+    metadata_obj = Metadata(height_in_cm=source.image_height_in_cm)
 
     if imageOptionsForm.cleaned_data['specify_metadata'] == 'filenames':
 
-        try:
-            metadataDict = filename_to_metadata(filename, source)
+        filename_check_result = check_image_filename(filename, source)
+        filename_status = filename_check_result['status']
+        metadata_dict = filename_check_result['metadata_dict']
 
-        # Filename parse error.
-        except (ValueError, StopIteration):
+        if filename_status == 'error':
+            # This case should never happen if the pre-upload
+            # status checking is doing its job, but just in case...
             return dict(
-                status='error',
-                message="Error when parsing filename for metadata",
+                status=filename_status,
+                message="Could not extract metadata from filename",
                 link=None,
                 title=None,
             )
 
-        # Detect duplicate images and handle them
-        dupe = find_dupe_image(source, **metadataDict)
-        if dupe:
+        elif filename_status == 'dupe':
+            is_dupe = True
+            dupe_image = filename_check_result['dupe']
+
             if dupeOption == 'skip':
-                # Skip uploading this file.
-                # This should never happen if the pre-upload status
-                # checking is doing its job, but just in case...
+                # This case should never happen if the pre-upload
+                # status checking is doing its job, but just in case...
                 return dict(
                     status='error',
                     message="Skipped (duplicate found)",
-                    link=reverse('image_detail', args=[dupe.id]),
-                    title=dupe.get_image_element_title(),
+                    link=reverse('image_detail', args=[dupe_image.id]),
+                    title=dupe_image.get_image_element_title(),
                 )
             elif dupeOption == 'replace':
-                # Proceed uploading this file, and delete the dupe.
-                dupe.delete()
+                # Delete the dupe, and proceed with uploading this file.
+                dupe_image.delete()
 
         # Set the metadata
-        valueDict = get_location_value_objs(source, metadataDict['values'], createNewValues=True)
-        photoDate = datetime.date(
-            year = int(metadataDict['year']),
-            month = int(metadataDict['month']),
-            day = int(metadataDict['day'])
+        value_dict = get_location_value_objs(source, metadata_dict['values'], createNewValues=True)
+        photo_date = datetime.date(
+            year = int(metadata_dict['year']),
+            month = int(metadata_dict['month']),
+            day = int(metadata_dict['day'])
         )
 
-        metadata.name = metadataDict['name']
-        metadata.photo_date = photoDate
-        for key, value in valueDict.iteritems():
-            setattr(metadata, key, value)
+        metadata_obj.name = metadata_dict['name']
+        metadata_obj.photo_date = photo_date
+        for key, value in value_dict.iteritems():
+            setattr(metadata_obj, key, value)
     else:
         # Not specifying data from filenames.
         # *** Unused case for now ***
-        metadata.name = filename
-        dupe = None
+        metadata_obj.name = filename
+        is_dupe = False
 
-    if annotationData:
+    if annotation_data:
         # Image + annotation import form
         # Assumes we got the images' metadata (from filenames or otherwise)
         # TODO
         return
     else:
         # Image upload form, no annotations
-        status = ImageStatus()
-        status.save()
+        image_status = ImageStatus()
+        image_status.save()
 
-        metadata.annotation_area = source.image_annotation_area
-        metadata.save()
+        metadata_obj.annotation_area = source.image_annotation_area
+        metadata_obj.save()
 
         # Save the image into the DB
         img = Image(original_file=imageFile,
             uploaded_by=currentUser,
             point_generation_method=source.default_point_generation_method,
-            metadata=metadata,
+            metadata=metadata_obj,
             source=source,
-            status=status,
+            status=image_status,
         )
         img.save()
 
         # Generate and save points
         generate_points(img)
 
-    if dupe:
-        return dict(
-            status='ok',
-            message="Uploaded (replaced duplicate)",
-            link=reverse('image_detail', args=[img.id]),
-            title=img.get_image_element_title(),
-        )
+    if is_dupe:
+        success_message = "Uploaded (replaced duplicate)"
     else:
-        return dict(
-            status='ok',
-            message="Uploaded",
-            link=reverse('image_detail', args=[img.id]),
-            title=img.get_image_element_title(),
-        )
+        success_message = "Uploaded"
+
+    return dict(
+        status='ok',
+        message=success_message,
+        link=reverse('image_detail', args=[img.id]),
+        title=img.get_image_element_title(),
+    )
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
