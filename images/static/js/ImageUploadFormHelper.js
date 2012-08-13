@@ -419,10 +419,10 @@ var ImageUploadFormHelper = (function() {
      * options - the options object used in the form submit call */
     function beforeAjaxUploadSubmit(arr, $form, options) {
         // Add the next file to this upload request.
-        // Push the file as 'files' so that it can be validated
+        // Push the file as 'file' so that it can be validated
         // on the server-side with an ImageUploadForm.
         arr.push({
-            name: 'files',
+            name: 'file',
             type: 'files',
             value: files[currentFileIndex].file
         });

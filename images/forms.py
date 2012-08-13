@@ -204,9 +204,6 @@ class MultipleImageField(ImageField):
 
     Must be used with the MultipleFileInput widget.
     """
-    default_error_messages = {
-        'invalid_image': _(u"The file is either a corrupt image, or in a file format that we don't support."),
-    }
 
     def to_python(self, data):
         """
@@ -225,7 +222,7 @@ class MultipleImageField(ImageField):
 
         return data_out
 
-class ImageUploadForm(Form):
+class MultiImageUploadForm(Form):
     error_messages = {
         'duplicate_image': _(u"This has the same location keys and year as another image in this upload."),
     }
@@ -234,13 +231,21 @@ class ImageUploadForm(Form):
         label='Image files',
         widget=MultipleFileInput(),
         help_text="Accepted file formats: JPG, PNG, GIF, and possibly others",
+        error_messages={
+            'invalid_image': _(u"The file is either a corrupt image, or in a file format that we don't support."),
+        },
     )
 
-    class Media:
-        css = {
-            'all': ("css/uploadForm.css",)
-        }
-        js = ("js/ImageUploadFormHelper.js",)
+
+class ImageUploadForm(Form):
+    file = ImageField(
+        label='Image file',
+        widget=FileInput(),
+        help_text="Accepted file formats: JPG, PNG, GIF, and possibly others",
+        error_messages={
+            'invalid_image': _(u"The file is either a corrupt image, or in a file format that we don't support."),
+        },
+    )
 
 
 # Remnants of an attempt at a progress bar...

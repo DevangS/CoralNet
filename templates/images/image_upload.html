@@ -9,7 +9,8 @@
 {% endblock %}
 
 {% block page-specific-includes %}
-    {% include "form_media_versioned.html" with form=image_form %}
+    {% include "static-local-include.html" with type="css" path="css/uploadForm.css" %}
+    {% include "static-local-include.html" with type="js" path="js/ImageUploadFormHelper.js" %}
 {% endblock %}
 
 {% block content %}
@@ -47,12 +48,12 @@
             <h3>Images to upload</h3>
 
             {% comment %}
-            The image_form's multi-file field is not part of the actual form element.
+            The images_form's multi-file field is not part of the actual form element.
             We will be submitting files one by one via Ajax manually, and the
-            image_form's file field will only be used to let the user pick files
+            images_form's file field will only be used to let the user pick files
             to upload.
             {% endcomment %}
-            {% include "form_generic.html" with form=image_form dont_mark_required="yes" %}
+            {% include "form_generic.html" with form=images_form dont_mark_required="yes" %}
 
             {# Remnants of an attempt at a progress bar... #}
             {% comment %}

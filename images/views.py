@@ -21,7 +21,7 @@ from annotations.utils import image_annotation_area_is_editable, image_has_any_h
 from decorators import source_permission_required, image_visibility_required, image_permission_required, source_labelset_required, source_visibility_required
 
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
-from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationImportOptionsForm
+from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationImportOptionsForm, MultiImageUploadForm
 from images.model_utils import PointGen
 from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points, get_first_image, get_next_image, get_prev_image, image_upload_success_message
 import json
@@ -669,7 +669,7 @@ def annotations_file_to_python(annoFile, source):
     return annotationsDict
 
 
-def image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, source, currentUser, annoFile):
+def multi_image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, source, currentUser, annoFile):
     """
     Helper method for the image upload view and the image+annotation
     import view.
@@ -841,9 +841,9 @@ def image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, so
     )
 
 
-def single_image_upload_process(imageFile, imageOptionsForm,
-                                annotationOptionsForm, source,
-                                currentUser, annoFile):
+def image_upload_process(imageFile, imageOptionsForm,
+                         annotationOptionsForm, source,
+                         currentUser, annoFile):
 
     dupeOption = imageOptionsForm.cleaned_data['skip_or_replace_duplicates']
 
@@ -952,44 +952,48 @@ def image_upload(request, source_id):
     source = get_object_or_404(Source, id=source_id)
     uploaded_images = []
 
-    if request.method == 'POST':
+    # The below code is unused now that image upload is done through Ajax.
+#    if request.method == 'POST':
+#
+#        image_form = ImageUploadForm(request.POST, request.FILES)
+#        options_form = ImageUploadOptionsForm(request.POST, source=source)
+#
+#        # Need getlist instead of simply request.FILES, in order to handle
+#        # multiple files.
+#        image_files = request.FILES.getlist('files')
+#
+#        if image_form.is_valid() and options_form.is_valid():
+#
+#            resultDict = multi_image_upload_process(
+#                imageFiles=image_files,
+#                imageOptionsForm=options_form,
+#                annotationOptionsForm=None,
+#                source=source,
+#                currentUser=request.user,
+#                annoFile=None
+#            )
+#
+#            if resultDict['error']:
+#                messages.error(request, resultDict['message'])
+#                transaction.rollback()
+#            else:
+#                uploaded_images = resultDict['uploadedImages']
+#                messages.success(request, resultDict['message'])
+#
+#        else:
+#            messages.error(request, msg_consts.FORM_ERRORS)
+#
+#    else:
+#        # Just reached the page.
+#        image_form = ImageUploadForm()
+#        options_form = ImageUploadOptionsForm(source=source)
 
-        image_form = ImageUploadForm(request.POST, request.FILES)
-        options_form = ImageUploadOptionsForm(request.POST, source=source)
-
-        # Need getlist instead of simply request.FILES, in order to handle
-        # multiple files.
-        image_files = request.FILES.getlist('files')
-
-        if image_form.is_valid() and options_form.is_valid():
-
-            resultDict = image_upload_process(
-                imageFiles=image_files,
-                imageOptionsForm=options_form,
-                annotationOptionsForm=None,
-                source=source,
-                currentUser=request.user,
-                annoFile=None
-            )
-
-            if resultDict['error']:
-                messages.error(request, resultDict['message'])
-                transaction.rollback()
-            else:
-                uploaded_images = resultDict['uploadedImages']
-                messages.success(request, resultDict['message'])
-
-        else:
-            messages.error(request, msg_consts.FORM_ERRORS)
-
-    else:
-        # Just reached the page.
-        image_form = ImageUploadForm()
-        options_form = ImageUploadOptionsForm(source=source)
+    images_form = MultiImageUploadForm()
+    options_form = ImageUploadOptionsForm(source=source)
 
     return render_to_response('images/image_upload.html', {
         'source': source,
-        'image_form': image_form,
+        'images_form': images_form,
         'options_form': options_form,
         'uploaded_images': uploaded_images,
         },
@@ -1008,8 +1012,8 @@ def image_upload_ajax(request, source_id):
     # the options form.
     if imageForm.is_valid():
         if optionsForm.is_valid():
-            resultDict = single_image_upload_process(
-                imageFile=request.FILES['files'],
+            resultDict = image_upload_process(
+                imageFile=request.FILES['file'],
                 imageOptionsForm=optionsForm,
                 annotationOptionsForm=None,
                 source=source,
@@ -1029,7 +1033,7 @@ def image_upload_ajax(request, source_id):
         # file is corrupt, file is empty, etc.
         return JsonResponse(dict(
             status='error',
-            message=imageForm.errors['files'][0],
+            message=imageForm.errors['file'][0],
             link=None,
             title=None,
         ))
@@ -1066,7 +1070,7 @@ def annotation_import(request, source_id):
 
             annoFile = request.FILES['annotations_file']
 
-            resultDict = image_upload_process(
+            resultDict = multi_image_upload_process(
                 imageFiles=imageFiles,
                 imageOptionsForm=imageOptionsForm,
                 annotationOptionsForm=annotationOptionsForm,
