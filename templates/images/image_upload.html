@@ -4,8 +4,8 @@
 {% block title %}Upload Images | CoralNet{% endblock %}
 
 {% block js-includes %}
-    {% include "javascript-includes.html" with dajaxice="yes" jquery_form="yes" %}
-{#    {% include "javascript-includes.html" with dajaxice="yes" jquery_form="yes" jquery_progressbar="yes" %}#}
+    {% include "javascript-includes.html" with jquery_form="yes" %}
+{#    {% include "javascript-includes.html" with jquery_form="yes" jquery_progressbar="yes" %}#}
 {% endblock %}
 
 {% block page-specific-includes %}
@@ -87,6 +87,7 @@
         ImageUploadFormHelper.initForm({
             sourceId: {{ source.id }},
             hasAnnotations: false,
+            uploadPreviewUrl: "{% url image_upload_preview_ajax source.id %}",
             uploadStartUrl: "{% url image_upload_ajax source.id %}"
 {#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
         });

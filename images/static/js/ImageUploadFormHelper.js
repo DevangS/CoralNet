@@ -18,6 +18,7 @@ var ImageUploadFormHelper = (function() {
     var sourceId = null;
     var hasAnnotations = null;
 
+    var uploadPreviewUrl = null;
     var uploadStartUrl = null;
     //var uploadProgressUrl = null;
 
@@ -125,12 +126,20 @@ var ImageUploadFormHelper = (function() {
 
             // Ask the server (via Ajax) about the filenames: are they in the
             // right format? Do they have duplicate keys with existing files?
-            Dajaxice.CoralNet.images.ajax_assess_file_status(
-                ajaxUpdateFilenameStatuses,    // JS callback that the ajax.py method returns to.
-                {'filenames': filenameList,
-                 'sourceId': sourceId,
-                 'checkDupes': true}    // Args to the ajax.py method.
-            );
+            $.ajax({
+                // Data to send in the request
+                data: {
+                    filenames: filenameList
+                },
+
+                // Callback on successful response
+                success: ajaxUpdateFilenameStatuses,
+
+                type: 'POST',
+
+                // URL to make request to
+                url: uploadPreviewUrl
+            });
         }
         else {
             var statusList = new Array(files.length);
@@ -480,6 +489,7 @@ var ImageUploadFormHelper = (function() {
             // Initializing.
             sourceId = params.sourceId;
             hasAnnotations = params.hasAnnotations;
+            uploadPreviewUrl = params.uploadPreviewUrl;
             uploadStartUrl = params.uploadStartUrl;
             //uploadProgressUrl = params.uploadProgressUrl;
 

@@ -1002,6 +1002,54 @@ def image_upload(request, source_id):
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
+def image_upload_preview_ajax(request, source_id):
+    """
+    Called when a user selects files to upload in the image upload form.
+
+    Looks at the files' filenames and returns a dict containing:
+    statusList - List containing the status of each file
+    """
+
+    source = get_object_or_404(Source, id=source_id)
+
+    if request.method == 'POST':
+
+        filenames = request.POST.getlist('filenames[]')
+
+        statusList = []
+
+        # TODO: Check if any two files in the request are duplicates of
+        # each other; don't just compare against the images on the server.
+
+        for filename in filenames:
+
+            result = check_image_filename(filename, source)
+            status = result['status']
+
+            if status == 'error' or status == 'ok':
+                statusList.append(dict(
+                    status=status,
+                ))
+            elif status == 'dupe':
+                dupe_image = result['dupe']
+                statusList.append(dict(
+                    status=status,
+                    url=reverse('image_detail', args=[dupe_image.id]),
+                    title=dupe_image.get_image_element_title(),
+                ))
+
+        return JsonResponse(dict(
+            statusList=statusList,
+        ))
+
+    else:
+
+        return JsonResponse(dict(
+            error="Filenames not found in the request",
+        ))
+
+
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload_ajax(request, source_id):
     source = get_object_or_404(Source, id=source_id)
 
