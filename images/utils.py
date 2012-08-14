@@ -131,7 +131,9 @@ def filename_to_metadata(filename, source):
         # out of valid range (e.g. month 13)
         raise dateError
 
-    metadataDict['values'] = valueList
+    # Make the values into a tuple, so the metadata can potentially be
+    # hashed and used in lookups.
+    metadataDict['values'] = tuple(valueList)
 
     metadataDict['year'] = year
     metadataDict['month'] = month
@@ -153,6 +155,12 @@ def metadata_to_filename(values=None,
     filename = '_'.join(values + [dateStr])
 
     return filename
+
+
+def metadata_dict_to_dupe_comparison_key(metadata_dict):
+    metadata_frozenset = frozenset([(k, v) for k, v in metadata_dict.items()
+                                    if k in ['values', 'year']])
+    return metadata_frozenset
 
 
 def check_image_filename(filename, source):

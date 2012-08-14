@@ -23,7 +23,7 @@ from decorators import source_permission_required, image_visibility_required, im
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
 from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationImportOptionsForm, MultiImageUploadForm
 from images.model_utils import PointGen
-from images.utils import filename_to_metadata, find_dupe_image, get_location_value_objs, generate_points, get_first_image, get_next_image, get_prev_image, image_upload_success_message, check_image_filename
+from images.utils import *
 import json
 from lib import msg_consts
 from lib.utils import JsonResponse
@@ -1016,17 +1016,43 @@ def image_upload_preview_ajax(request, source_id):
 
         filenames = request.POST.getlist('filenames[]')
 
+        # List of filename statuses.
         statusList = []
-
-        # TODO: Check if any two files in the request are duplicates of
-        # each other; don't just compare against the images on the server.
+        # Dict that keeps track of the filenames and their metadata. Used for
+        # detecting duplicate images within the same upload.
+        metadata_lookup = dict()
 
         for filename in filenames:
 
             result = check_image_filename(filename, source)
             status = result['status']
 
-            if status == 'error' or status == 'ok':
+            if 'metadata_dict' in result:
+                # We successfully extracted metadata from the filename.
+
+                # Now, there is one filename check that the single-image
+                # checker couldn't do, that we need to do here.
+                # Check that there isn't already another image in the same
+                # upload with the same location keys and year.
+
+                #metadata_frozenset = frozenset([(v, k) for k, v in result['metadata_dict'].items()])
+                metadata_lookup_key = metadata_dict_to_dupe_comparison_key(result['metadata_dict'])
+
+                if metadata_lookup_key in metadata_lookup:
+                    statusList.append(dict(
+                        status='error',
+                        message="Duplicate of {other_file}".format(other_file=metadata_lookup[metadata_lookup_key]),
+                    ))
+                    continue
+                else:
+                    metadata_lookup[metadata_lookup_key] = filename
+
+            if status == 'error':
+                statusList.append(dict(
+                    status=status,
+                    message="Could not extract metadata from filename",
+                ))
+            elif status == 'ok':
                 statusList.append(dict(
                     status=status,
                 ))
