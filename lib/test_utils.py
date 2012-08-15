@@ -8,9 +8,9 @@ from django.test import TestCase
 from django.test.client import Client
 from django.test.simple import DjangoTestSuiteRunner
 from userena.managers import UserenaManager
-from CoralNet.exceptions import TestfileDirectoryError
 from CoralNet.utils import *
 from images.models import Source
+from lib.exceptions import TestfileDirectoryError
 
 
 class MyTestSuiteRunner(DjangoTestSuiteRunner):

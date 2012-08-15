@@ -17,7 +17,7 @@ from accounts.utils import get_imported_user
 from annotations.forms import AnnotationAreaPercentsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
-from CoralNet.exceptions import FileContentError, FilenameError
+from lib.exceptions import FileContentError, FilenameError
 from annotations.utils import image_annotation_area_is_editable, image_has_any_human_annotations
 from decorators import source_permission_required, image_visibility_required, image_permission_required, source_labelset_required, source_visibility_required
 
@@ -26,7 +26,6 @@ from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailFor
 from images.model_utils import PointGen
 from images.utils import *
 import json
-from lib import msg_consts
 from lib.utils import JsonResponse
 
 def source_list(request):

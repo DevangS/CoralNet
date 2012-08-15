@@ -6,7 +6,7 @@ from os.path import splitext
 from accounts.utils import get_robot_user
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Annotation
-from CoralNet.exceptions import FilenameError
+from lib.exceptions import FilenameError
 from images.model_utils import PointGen
 from images.models import Point, Metadata, Image, Value1, Value2, Value3, Value4, Value5
 
