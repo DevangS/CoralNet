@@ -1,3 +1,4 @@
+from collections import defaultdict
 import datetime
 
 from django.contrib.auth.decorators import login_required
@@ -980,34 +981,25 @@ def image_upload_preview_ajax(request, source_id):
 
         # List of filename statuses.
         statusList = []
-        # Dict that keeps track of the filenames and their metadata. Used for
-        # detecting duplicate images within the same upload.
-        metadata_lookup = dict()
+        # Dict that keeps track of which filenames have the same metadata
+        # Each key is a set of metadata, each value is a list of file indices
+        # of files with that metadata.
+        # If 2 or more filenames have the same metadata, that's an error.
+        metadata_match_finder = defaultdict(list)
 
-        for filename in filenames:
+        for index, filename in enumerate(filenames):
 
             result = check_image_filename(filename, source)
             status = result['status']
 
             if 'metadata_dict' in result:
                 # We successfully extracted metadata from the filename.
-
-                # Now, there is one filename check that the single-image
-                # checker couldn't do, that we need to do here.
-                # Check that there isn't already another image in the same
-                # upload with the same location keys and year.
-
-                #metadata_frozenset = frozenset([(v, k) for k, v in result['metadata_dict'].items()])
-                metadata_lookup_key = metadata_dict_to_dupe_comparison_key(result['metadata_dict'])
-
-                if metadata_lookup_key in metadata_lookup:
-                    statusList.append(dict(
-                        status='error',
-                        message="Duplicate of {other_file}".format(other_file=metadata_lookup[metadata_lookup_key]),
-                    ))
-                    continue
+                # Add this to the metadata_match_finder.
+                metadata_key = metadata_dict_to_dupe_comparison_key(result['metadata_dict'])
+                if metadata_key in metadata_match_finder:
+                    metadata_match_finder[metadata_key].append(index)
                 else:
-                    metadata_lookup[metadata_lookup_key] = filename
+                    metadata_match_finder[metadata_key] = [index]
 
             if status == 'error':
                 statusList.append(dict(
@@ -1025,6 +1017,20 @@ def image_upload_preview_ajax(request, source_id):
                     url=reverse('image_detail', args=[dupe_image.id]),
                     title=dupe_image.get_image_element_title(),
                 ))
+
+        # Check if 2 or more filenames have the same metadata (at least
+        # metadata that counts for duplicate detection - location
+        # values and year).
+        # If so, mark all such filenames as errored.
+        for metadata_key, file_index_list in metadata_match_finder.items():
+            if len(file_index_list) > 1:
+                for index in file_index_list:
+                    statusList[index] = dict(
+                        status='error',
+                        message="Multiple images with same metadata: {metadata}".format(
+                            metadata=metadata_dupe_comparison_key_to_display(metadata_key)
+                        ),
+                    )
 
         return JsonResponse(dict(
             statusList=statusList,

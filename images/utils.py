@@ -171,6 +171,22 @@ def metadata_dict_to_dupe_comparison_key(metadata_dict):
     return metadata_frozenset
 
 
+def metadata_dupe_comparison_key_to_display(metadata_key):
+    """
+    metadata_key is a result of metadata_dict_to_dupe_comparison_key().
+    This function turns the key into a displayable string.
+    """
+    metadata_dict = dict(metadata_key)
+    metadata_strings = []
+
+    metadata_strings.append(metadata_dict['year'])
+
+    for location_value in metadata_dict['values']:
+        metadata_strings.append(location_value)
+
+    return ' '.join(metadata_strings)
+
+
 def check_image_filename(filename, source):
     """
     When gathering uploaded-image metadata from filenames, this function
