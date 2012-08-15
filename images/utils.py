@@ -6,6 +6,7 @@ from os.path import splitext
 from accounts.utils import get_robot_user
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Annotation
+from CoralNet.exceptions import FilenameError
 from images.model_utils import PointGen
 from images.models import Point, Metadata, Image, Value1, Value2, Value3, Value4, Value5
 
@@ -86,8 +87,8 @@ def filename_to_metadata(filename, source):
 
     metadataDict = dict()
 
-    parseError = ValueError('Could not properly extract metadata from the filename "%s".' % filename)
-    dateError = ValueError('Invalid date format or values.')
+    parseError = FilenameError("Could not extract metadata from filename")
+    dateValueError = FilenameError("Invalid date in filename")
     numOfKeys = source.num_of_keys()
 
     # value1_value2_..._YYYY-MM-DD
@@ -118,10 +119,17 @@ def filename_to_metadata(filename, source):
     try:
         year, month, day = dateToken.split("-")
     except ValueError:
-        raise dateError
+        # Too few or too many dash-separated tokens.
+        # Just raise a generic-sounding error, instead of an error
+        # specifically referring to the date format.  This could just
+        # be an underscore counting issue, where the token that ended
+        # up as the date token is something the user didn't even mean
+        # to be a date - in which case 'incorrect date format' would
+        # just confuse the user.
+        raise parseError
     # YYYYMMDD parsing:
 #    if len(dateToken) != 8:
-#        raise dateError
+#        raise dateFormatError
 #    year, month, day = dateToken[:4], dateToken[4:6], dateToken[6:8]
 
     try:
@@ -129,7 +137,7 @@ def filename_to_metadata(filename, source):
     except ValueError:
         # Either non-integer date params, or date params are
         # out of valid range (e.g. month 13)
-        raise dateError
+        raise dateValueError
 
     # Make the values into a tuple, so the metadata can potentially be
     # hashed and used in lookups.
@@ -173,10 +181,11 @@ def check_image_filename(filename, source):
     """
     try:
         metadata_dict = filename_to_metadata(filename, source)
-    except (ValueError, StopIteration):
+    except FilenameError as error:
         # Filename parse error.
         return dict(
             status='error',
+            message=error.message,
         )
 
     dupe = find_dupe_image(source, **metadata_dict)

@@ -16,7 +16,7 @@ from accounts.utils import get_imported_user
 from annotations.forms import AnnotationAreaPercentsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
-from CoralNet.exceptions import FileContentError
+from CoralNet.exceptions import FileContentError, FilenameError
 from annotations.utils import image_annotation_area_is_editable, image_has_any_human_annotations
 from decorators import source_permission_required, image_visibility_required, image_permission_required, source_labelset_required, source_visibility_required
 
@@ -687,9 +687,9 @@ def multi_image_upload_process(imageFiles, imageOptionsForm, annotationOptionsFo
     if annoFile:
         try:
             annotationData = annotations_file_to_python(annoFile, source)
-        except FileContentError as errorDetail:
+        except FileContentError as error:
             return dict(error=True,
-                message='Error reading labels file %s. %s' % (annoFile.name, errorDetail),
+                message="Error reading labels file {filename} - {error}.".format(filename=annoFile.name, error=error.message),
             )
 
     for imageFile in imageFiles:
@@ -702,12 +702,10 @@ def multi_image_upload_process(imageFiles, imageOptionsForm, annotationOptionsFo
 
             try:
                 metadataDict = filename_to_metadata(filename, source)
-
-            # Filename parse error.
-            # TODO: check for validity of the file type and contents, too.
-            except (ValueError, StopIteration):
+            except FilenameError as error:
+                # Filename parse error.
                 return dict(error=True,
-                    message='Upload failed - Error when parsing the filename %s for metadata.' % filename,
+                    message="Upload failed on {filename} - {error}.".format(filename=filename, error=error.message),
                 )
 
             # Detect duplicate images and handle them
@@ -864,7 +862,7 @@ def image_upload_process(imageFile, imageOptionsForm,
             # status checking is doing its job, but just in case...
             return dict(
                 status=filename_status,
-                message="Could not extract metadata from filename",
+                message=filename_check_result['message'],
                 link=None,
                 title=None,
             )
@@ -952,42 +950,6 @@ def image_upload(request, source_id):
     source = get_object_or_404(Source, id=source_id)
     uploaded_images = []
 
-    # The below code is unused now that image upload is done through Ajax.
-#    if request.method == 'POST':
-#
-#        image_form = ImageUploadForm(request.POST, request.FILES)
-#        options_form = ImageUploadOptionsForm(request.POST, source=source)
-#
-#        # Need getlist instead of simply request.FILES, in order to handle
-#        # multiple files.
-#        image_files = request.FILES.getlist('files')
-#
-#        if image_form.is_valid() and options_form.is_valid():
-#
-#            resultDict = multi_image_upload_process(
-#                imageFiles=image_files,
-#                imageOptionsForm=options_form,
-#                annotationOptionsForm=None,
-#                source=source,
-#                currentUser=request.user,
-#                annoFile=None
-#            )
-#
-#            if resultDict['error']:
-#                messages.error(request, resultDict['message'])
-#                transaction.rollback()
-#            else:
-#                uploaded_images = resultDict['uploadedImages']
-#                messages.success(request, resultDict['message'])
-#
-#        else:
-#            messages.error(request, msg_consts.FORM_ERRORS)
-#
-#    else:
-#        # Just reached the page.
-#        image_form = ImageUploadForm()
-#        options_form = ImageUploadOptionsForm(source=source)
-
     images_form = MultiImageUploadForm()
     options_form = ImageUploadOptionsForm(source=source)
 
@@ -1050,7 +1012,7 @@ def image_upload_preview_ajax(request, source_id):
             if status == 'error':
                 statusList.append(dict(
                     status=status,
-                    message="Could not extract metadata from filename",
+                    message=result['message'],
                 ))
             elif status == 'ok':
                 statusList.append(dict(

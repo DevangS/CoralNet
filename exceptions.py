@@ -13,6 +13,14 @@ exception, for more self-documenting code.  (It's advised to not go
 overboard and create tons of exception types, though.)
 """
 
+class FilenameError(Exception):
+    """
+    When a filename isn't of the expected format; for example, perhaps 2
+    or more underscore-separated tokens are expected, and there are no
+    underscores in the filename.
+    """
+    pass
+
 class FileContentError(Exception):
     """
     When file contents are not as expected; for example, a line in a text
