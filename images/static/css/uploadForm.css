@@ -6,16 +6,15 @@
 }
 
 #files_table_container{
-    max-height: 20em;
+    margin: 10px 0;  /* top/bottom left/right */
 
     /* scrollbars will appear only if the files table
        exceeds the container's max height. */
     overflow: auto;
+    max-height: 20em;
 }
 
 #files_table{
-    margin: 10px 0;  /* top/bottom left/right */
-
     border: 2px solid #999;
     border-collapse: collapse;
     border-spacing: 0;

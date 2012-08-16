@@ -7,6 +7,7 @@ var ImageUploadFormHelper = (function() {
     var $preUploadSummary = null;
     var $midUploadSummary = null;
     var $filesTable = null;
+    var $filesTableContainer = null;
 
     var filesField = null;
     var dupeOptionFieldId = 'id_skip_or_replace_duplicates';
@@ -406,6 +407,16 @@ var ImageUploadFormHelper = (function() {
                 $statusCell.empty();
                 styleRow(currentFileIndex, 'uploading');
                 $statusCell.text("Uploading...");
+
+                // Scroll the upload table's window to the file
+                // that's being uploaded.
+                // Specifically, scroll the file to the
+                // middle of the table view.
+                var scrollRowToTop = files[currentFileIndex].$tableRow[0].offsetTop;
+                var tableContainerHalfMaxHeight = parseInt($filesTableContainer.css('max-height')) / 2;
+                var scrollRowToMiddle = Math.max(scrollRowToTop - tableContainerHalfMaxHeight, 0);
+                $filesTableContainer.scrollTop(scrollRowToMiddle);
+
                 return;
             }
 
@@ -499,6 +510,8 @@ var ImageUploadFormHelper = (function() {
 
             // The upload file table.
             $filesTable = $('table#files_table');
+            // And its container element.
+            $filesTableContainer = $('div#files_table_container');
 
             filesField = $('#id_files')[0];
             dupeOptionField = $('#' + dupeOptionFieldId)[0];
