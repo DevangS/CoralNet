@@ -5,6 +5,14 @@
     padding: 0 10px;  /* top/bottom left/right */
 }
 
+#files_table_container{
+    max-height: 20em;
+
+    /* scrollbars will appear only if the files table
+       exceeds the container's max height. */
+    overflow: auto;
+}
+
 #files_table{
     margin: 10px 0;  /* top/bottom left/right */
 
