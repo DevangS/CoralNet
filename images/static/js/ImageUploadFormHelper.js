@@ -314,6 +314,10 @@ var ImageUploadFormHelper = (function() {
         updatePreUploadStatus();
     }
 
+    function ajaxUpdateFilenameStatuses(data) {
+        updateFilenameStatuses(data.statusList);
+    }
+
     function updateMidUploadSummary() {
         $midUploadSummary.empty();
 
@@ -343,8 +347,23 @@ var ImageUploadFormHelper = (function() {
         }
     }
 
-    function ajaxUpdateFilenameStatuses(data) {
-        updateFilenameStatuses(data.statusList);
+    function enablePageLeaveWarning() {
+        // When the user tries to leave the page by clicking a link,
+        // closing the tab, etc., a confirmation dialog will pop up, with
+        // the specified message and a generic message from the browser
+        // like "Are you sure you want to leave this page?".
+        window.onbeforeunload = function (e) {
+            var message = "The upload is still going.";
+
+            // Apparently some browsers take the message with e.returnValue,
+            // and other browsers take it with this function's return value.
+            // (Other browsers don't take any message...)
+            e.returnValue = message;
+            return message;
+        };
+    }
+    function disablePageLeaveWarning() {
+        window.onbeforeunload = null;
     }
 
     function ajaxUpload() {
@@ -387,6 +406,10 @@ var ImageUploadFormHelper = (function() {
         numUploadErrors = 0;
         uploadedTotalSize = 0;
         updateMidUploadSummary();
+
+        // Warn the user if they're trying to
+        // leave the page during the upload.
+        enablePageLeaveWarning();
 
         currentFileIndex = 0;
         uploadFile();
@@ -440,6 +463,8 @@ var ImageUploadFormHelper = (function() {
 
         // Reached the end of the files array.
         $uploadButton.text("Upload Complete");
+
+        disablePageLeaveWarning();
     }
 
     // Remnants of an attempt at a progress bar...
