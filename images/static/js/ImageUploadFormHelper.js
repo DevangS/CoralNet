@@ -8,6 +8,8 @@ var ImageUploadFormHelper = (function() {
     var $midUploadSummary = null;
     var $filesTable = null;
     var $filesTableContainer = null;
+    var $filesTableAutoScrollCheckbox = null;
+    var $filesTableAutoScrollCheckboxContainer = null;
 
     var filesField = null;
     var dupeOptionFieldId = 'id_skip_or_replace_duplicates';
@@ -250,6 +252,16 @@ var ImageUploadFormHelper = (function() {
             $uploadButton.attr('disabled', false);
             $uploadButton.text("Start Upload");
         }
+
+        if ($filesTableContainer[0].scrollHeight > $filesTableContainer[0].clientHeight) {
+            // There is overflow in the files table container, such that
+            // it has a scrollbar. So the auto-scroll option is relevant.
+            $filesTableAutoScrollCheckboxContainer.show();
+        }
+        else {
+            // The auto-scroll option is not relevant.
+            $filesTableAutoScrollCheckboxContainer.hide();
+        }
     }
 
     function updatePreUploadStatus() {
@@ -262,7 +274,7 @@ var ImageUploadFormHelper = (function() {
         // Update the summary text above the files table
         updatePreUploadSummary();
 
-        // Make sure to update the form once more after the AJAX call completes
+        // Update form fields, upload button, etc.
         updateFormFields();
     }
 
@@ -408,14 +420,16 @@ var ImageUploadFormHelper = (function() {
                 styleRow(currentFileIndex, 'uploading');
                 $statusCell.text("Uploading...");
 
-                // Scroll the upload table's window to the file
-                // that's being uploaded.
-                // Specifically, scroll the file to the
-                // middle of the table view.
-                var scrollRowToTop = files[currentFileIndex].$tableRow[0].offsetTop;
-                var tableContainerHalfMaxHeight = parseInt($filesTableContainer.css('max-height')) / 2;
-                var scrollRowToMiddle = Math.max(scrollRowToTop - tableContainerHalfMaxHeight, 0);
-                $filesTableContainer.scrollTop(scrollRowToMiddle);
+                if ($filesTableAutoScrollCheckbox.prop('checked')) {
+                    // Scroll the upload table's window to the file
+                    // that's being uploaded.
+                    // Specifically, scroll the file to the
+                    // middle of the table view.
+                    var scrollRowToTop = files[currentFileIndex].$tableRow[0].offsetTop;
+                    var tableContainerHalfMaxHeight = parseInt($filesTableContainer.css('max-height')) / 2;
+                    var scrollRowToMiddle = Math.max(scrollRowToTop - tableContainerHalfMaxHeight, 0);
+                    $filesTableContainer.scrollTop(scrollRowToMiddle);
+                }
 
                 return;
             }
@@ -511,7 +525,12 @@ var ImageUploadFormHelper = (function() {
             // The upload file table.
             $filesTable = $('table#files_table');
             // And its container element.
-            $filesTableContainer = $('div#files_table_container');
+            $filesTableContainer = $('#files_table_container');
+            // The checkbox to enable/disable auto-scrolling
+            // of the files table.
+            $filesTableAutoScrollCheckbox = $('input#files_table_auto_scroll_checkbox');
+            // And its container element.
+            $filesTableAutoScrollCheckboxContainer = $('#files_table_auto_scroll_checkbox_container');
 
             filesField = $('#id_files')[0];
             dupeOptionField = $('#' + dupeOptionFieldId)[0];

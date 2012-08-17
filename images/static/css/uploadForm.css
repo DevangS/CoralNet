@@ -14,6 +14,12 @@
     max-height: 20em;
 }
 
+#files_table_auto_scroll_checkbox_container{
+    /* The checkbox starts out hidden, and may be shown later
+       once some files are selected. */
+    display: none;
+}
+
 #files_table{
     border: 2px solid #999;
     border-collapse: collapse;
