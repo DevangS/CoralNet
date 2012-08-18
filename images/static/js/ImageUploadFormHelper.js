@@ -16,7 +16,8 @@ var ImageUploadFormHelper = (function() {
     var dupeOptionField = null;
     var metadataOptionFieldId = 'id_specify_metadata';
     var metadataOptionField = null;
-    var $uploadButton = null;
+    var $uploadStartButton = null;
+    var $uploadAbortButton = null;
 
     var $metadataExtraHelpText = null;
     var $metadataExtraHelpTextLink = null;
@@ -44,6 +45,7 @@ var ImageUploadFormHelper = (function() {
     var numUploadErrors = 0;
     var uploadedTotalSize = 0;
     var currentFileIndex = null;
+    var uploadXhrObj = null;
 
 
     function filesizeDisplay(bytes) {
@@ -244,18 +246,18 @@ var ImageUploadFormHelper = (function() {
 
         if (files.length === 0) {
             // No files
-            $uploadButton.attr('disabled', true);
-            $uploadButton.text("No files selected yet");
+            $uploadStartButton.attr('disabled', true);
+            $uploadStartButton.text("No files selected yet");
         }
         else if (numUploadables === 0) {
             // No uploadable files
-            $uploadButton.attr('disabled', true);
-            $uploadButton.text("Cannot upload any of these files");
+            $uploadStartButton.attr('disabled', true);
+            $uploadStartButton.text("Cannot upload any of these files");
         }
         else {
             // Uploadable files present
-            $uploadButton.attr('disabled', false);
-            $uploadButton.text("Start Upload");
+            $uploadStartButton.attr('disabled', false);
+            $uploadStartButton.text("Start upload");
         }
 
         if ($filesTableContainer[0].scrollHeight > $filesTableContainer[0].clientHeight) {
@@ -374,8 +376,12 @@ var ImageUploadFormHelper = (function() {
     function ajaxUpload() {
 
         $(filesField).prop('disabled', true);
-        $uploadButton.prop('disabled', true);
-        $uploadButton.text("Uploading...");
+
+        $uploadStartButton.prop('disabled', true);
+        $uploadStartButton.text("Uploading...");
+
+        $uploadAbortButton.prop('disabled', false);
+        $uploadAbortButton.show();
 
         // Submit the form.
         uploadOptions = {
@@ -385,7 +391,8 @@ var ImageUploadFormHelper = (function() {
             url: uploadStartUrl,
 
             // Callbacks
-            beforeSubmit: beforeAjaxUploadSubmit,
+            beforeSend: ajaxUploadBeforeSend,
+            beforeSubmit: ajaxUploadBeforeSubmit,
             success: ajaxUploadHandleResponse
         };
 
@@ -431,6 +438,36 @@ var ImageUploadFormHelper = (function() {
         };*/
     }
 
+    /* Abort the Ajax upload.
+     *
+     * Notes:
+     *
+     * - If a file has finished uploading and is currently processing on
+     * the server, and the user clicks Abort, that file MAY still finish
+     * getting processed, and the result won't be received by the client
+     * because it is no longer listening for the response.  This is
+     * undesired behavior, but there is not much that can be done about this.
+     *
+     * - There should be no concurrency issues, because Javascript is single
+     * threaded, and event handling code is guaranteed to complete before the
+     * invocation of an AJAX callback or a later event's callback.  At least
+     * in the absence of Web Workers.
+     * http://stackoverflow.com/questions/9999056/are-event-handlers-guaranteed-to-complete-before-ajax-callbacks-are-invoked */
+    function abortAjaxUpload() {
+        var confirmation = window.confirm("Are you sure you want to abort the upload?");
+
+        if (confirmation) {
+            if (uploadXhrObj !== null) {
+                uploadXhrObj.abort();
+                $uploadStartButton.text("Upload aborted");
+                postUploadCleanup();
+            }
+            // Else, the upload finished before the user could confirm the
+            // abort.  This could happen in Firefox, where scripts don't
+            // stop even when a confirmation dialog is showing.
+        }
+    }
+
     /* Find a file to upload, starting from the current currentFileIndex.
      * If the current file is not uploadable, increment the currentFileIndex
      * and try the next file.  Once an uploadable file is found, begin
@@ -467,7 +504,16 @@ var ImageUploadFormHelper = (function() {
         }
 
         // Reached the end of the files array.
-        $uploadButton.text("Upload Complete");
+        $uploadStartButton.text("Upload Complete");
+
+        postUploadCleanup();
+    }
+
+    function postUploadCleanup() {
+        uploadXhrObj = null;
+
+        $uploadAbortButton.hide();
+        $uploadAbortButton.prop('disabled', true);
 
         disablePageLeaveWarning();
     }
@@ -481,7 +527,7 @@ var ImageUploadFormHelper = (function() {
      * arr - the form data in array format
      * $form - the jQuery-wrapped form object
      * options - the options object used in the form submit call */
-    function beforeAjaxUploadSubmit(arr, $form, options) {
+    function ajaxUploadBeforeSubmit(arr, $form, options) {
         // Add the next file to this upload request.
         // Push the file as 'file' so that it can be validated
         // on the server-side with an ImageUploadForm.
@@ -490,6 +536,12 @@ var ImageUploadFormHelper = (function() {
             type: 'files',
             value: files[currentFileIndex].file
         });
+    }
+
+    /* Callback before the Ajax form is submitted.
+     * Provides access to the XHR object. */
+    function ajaxUploadBeforeSend(jqXHR, settings) {
+        uploadXhrObj = jqXHR;
     }
 
     /* Callback after the Ajax response is received, indicating that
@@ -565,7 +617,8 @@ var ImageUploadFormHelper = (function() {
             filesField = $('#id_files')[0];
             dupeOptionField = $('#' + dupeOptionFieldId)[0];
             metadataOptionField = $('#' + metadataOptionFieldId)[0];
-            $uploadButton = $('#id_upload_submit');
+            $uploadStartButton = $('#id_upload_submit');
+            $uploadAbortButton = $('#id_upload_abort_button');
 
             updatePreUploadStatus();
 
@@ -618,7 +671,8 @@ var ImageUploadFormHelper = (function() {
             });
 
             // Attach ajax upload handler
-            $uploadButton.click(ajaxUpload);
+            $uploadStartButton.click(ajaxUpload);
+            $uploadAbortButton.click(abortAjaxUpload);
         }
     }
 })();
