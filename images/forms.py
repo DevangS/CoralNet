@@ -223,30 +223,42 @@ class MultipleImageField(ImageField):
         return data_out
 
 class MultiImageUploadForm(Form):
-    error_messages = {
-        'duplicate_image': _(u"This has the same location keys and year as another image in this upload."),
-    }
+    """
+    Takes multiple image files.
 
+    This is used only for the frontend of the image upload form.
+    """
     files = MultipleImageField(
         label='Image files',
         widget=MultipleFileInput(),
-        help_text="Accepted file formats: JPG, PNG, GIF, and possibly others",
-        error_messages={
-            'invalid_image': _(u"The file is either a corrupt image, or in a file format that we don't support."),
-        },
     )
+
+    def __init__(self, *args, **kwargs):
+        """
+        - Add extra_help_text to the file field.
+        """
+        super(MultiImageUploadForm, self).__init__(*args, **kwargs)
+
+        self.fields['files'].extra_help_text = (
+            "Accepted file formats: JPG, PNG, GIF, and possibly others.\n"
+            "You can select multiple files, but you can only select files within a single folder.\n"
+            "Tip: When selecting files, click inside the folder area and then hit Ctrl+A (or Cmd+A for Mac) to select all files in that folder."
+        )
 
 
 class ImageUploadForm(Form):
+    """
+    Takes a single image file.
+
+    This is used only for the backend of the image upload form.
+    """
     file = ImageField(
         label='Image file',
         widget=FileInput(),
-        help_text="Accepted file formats: JPG, PNG, GIF, and possibly others",
         error_messages={
             'invalid_image': _(u"The file is either a corrupt image, or in a file format that we don't support."),
         },
     )
-
 
 # Remnants of an attempt at a progress bar...
 
@@ -277,48 +289,52 @@ class ImageUploadOptionsForm(Form):
 
     specify_metadata = ChoiceField(
         label='How to specify metadata',
-        help_text='',  # To be filled in by the form constructor
-        choices=(('filenames', 'From filenames'),),
+        help_text='',  # To be filled in by the form's __init__()
+        choices=(
+            ('filenames', 'From filenames'),
+        ),
         initial='filenames',
-        required=True)
+        required=True
+    )
 
     skip_or_replace_duplicates = ChoiceField(
         label='Skip or replace duplicate images',
-        help_text="An image is considered a duplicate if it has the same " \
-                  "location keys and year as another image in the Source.",
-        choices=(('skip', "Skip (don't re-upload)"), ('replace', "Replace (re-upload)")),
-        required=True)
+        help_text=(
+            "An image is considered a duplicate if it has the same "
+            "location keys and year as another image in the Source."
+        ),
+        choices=(
+            ('skip', "Skip (don't re-upload)"),
+            ('replace', "Replace (re-upload)"),
+        ),
+        initial='skip',
+        required=True
+    )
 
     def __init__(self, *args, **kwargs):
         """
-        Dynamically generate help text.
+        - Dynamically generate metadata field's help_text.
+        - Add extra_help_text to metadata field.
+        - Add additional details to display beside the form.
         """
         source = kwargs.pop('source')
         super(ImageUploadOptionsForm, self).__init__(*args, **kwargs)
 
-        # Dynamically generate help text.
-        # Show the filename format that should be used,
-        # and an example of a filename adhering to that format.
-        filenameFormatArgs = dict(year='YYYY', month='MM', day='DD')
-        filenameExampleArgs = dict(year='2010', month='08', day='23')
+        # Dynamically generate help_text for the metadata field.
+        filename_format_args = dict(year='YYYY', month='MM', day='DD')
+        source_keys = source.get_key_list()
+        filename_format_args['values'] = source_keys
 
-        sourceKeys = source.get_key_list()
-        exampleSuffixes = ['A', ' 7', ' 2-2', 'C', '1'][0 : len(sourceKeys)]
-
-        filenameFormatArgs['values'] = sourceKeys
-        filenameExampleArgs['values'] = [a+b for a,b in zip(sourceKeys, exampleSuffixes)]
-
-        filenameFormatStr = metadata_to_filename(**filenameFormatArgs)
-        filenameExampleStr = metadata_to_filename(**filenameExampleArgs) + ".jpg"
+        filename_format_str = metadata_to_filename(**filename_format_args)
 
         self.fields['specify_metadata'].help_text = \
-            "Required filename format: %s" % filenameFormatStr
+            "Required filename format: {format_str}".format(format_str=filename_format_str)
 
-        # Use JavaScript to show/hide this additional help text
-        self.metadata_extra_help_text = (
-            "\n"
-            "For example, let's say your source has the following location keys: "
-            "Site, Depth, Transect Line and Quadrant. "
+        # Extra help text for the metadata field.
+        # Initially hidden, and the user can click a button or link
+        # to show/hide it.
+        self.fields['specify_metadata'].extra_help_text = (
+            "For example, let's say your source has the following location keys: Site, Depth, Transect Line and Quadrant. "
             "If you want to upload a .jpg image that was taken at "
             "Site: sharkPoint, Depth: 10m, Transect Line: 3, and Quadrant: qu4, "
             "on 14 January 2010, the filename for upload should be:\n\n"
@@ -334,14 +350,13 @@ class ImageUploadOptionsForm(Form):
             "useful for your own reference."
         )
 
-
         self.additional_details = [
-            """Annotation points will be automatically generated for your images.
-            Your Source's point generation settings: %s
-            Your Source's annotation area settings: %s""" % (
-                PointGen.db_to_readable_format(source.default_point_generation_method),
-                AnnotationAreaUtils.db_format_to_display(source.image_annotation_area)
-                )
+            ("Annotation points will be automatically generated for your images.\n"
+            "Your Source's point generation settings: {pointgen}\n"
+            "Your Source's annotation area settings: {annoarea}").format(
+                pointgen=PointGen.db_to_readable_format(source.default_point_generation_method),
+                annoarea=AnnotationAreaUtils.db_format_to_display(source.image_annotation_area),
+            )
         ]
 
 

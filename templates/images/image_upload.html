@@ -38,7 +38,7 @@
 
         <form id="id_upload_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
             <legend class="small">Options</legend>
-            {% include "images/form_image_upload_options.html" with form=options_form dont_mark_required="yes" %}
+            {% include "form_generic.html" with form=options_form dont_mark_required="yes" %}
             {% for detail in options_form.additional_details %}
                 <span class="helptext">{{ detail|linebreaksbr }}</span>
             {% endfor %}

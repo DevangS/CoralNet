@@ -601,6 +601,18 @@ ul.errorlist li {
     width: 500px;
 }
 
+.extra_help_text {
+    /* Extra help text starts out hidden, and can be shown via Javascript
+       when the user clicks a button or link. */
+    display: none;
+}
+
+a.extra_help_text_link {
+    cursor: pointer;
+
+    font-size: 0.9em;
+}
+
 /* For groups of fields */
 fieldset {
     margin: 0 0 20px 0;

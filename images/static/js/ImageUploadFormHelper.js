@@ -18,6 +18,11 @@ var ImageUploadFormHelper = (function() {
     var metadataOptionField = null;
     var $uploadButton = null;
 
+    var $metadataExtraHelpText = null;
+    var $metadataExtraHelpTextLink = null;
+    var $filesExtraHelpText = null;
+    var $filesExtraHelpTextLink = null;
+
     var sourceId = null;
     var hasAnnotations = null;
 
@@ -580,25 +585,34 @@ var ImageUploadFormHelper = (function() {
              updatePreUploadStatus();
              });*/
 
-            // "(More info)" link on the 'specify metadata' field
-            var metadataHelptextJQ = $("#metadata_short_helptext");
-            var metadataExtraHelptextLinkJQ = $("<a>").text("(More info)");
-            metadataHelptextJQ.append(" ");
-            metadataHelptextJQ.append($("<span>").append(metadataExtraHelptextLinkJQ));
+            // Extra help text for specify_metadata field.
+            // Can show by clicking "(More info)" and
+            // hide by clicking "(Less info)".
+            $metadataExtraHelpText = $("#id_specify_metadata_extra_help_text");
+            $metadataExtraHelpTextLink = $("#id_specify_metadata_extra_help_text_link");
 
-            // Extra help text is initially hidden
-            $("#metadata_extra_helptext").hide();
-
-            // (More info) shows the extra help text, (Less info) hides it
-            metadataExtraHelptextLinkJQ.click(function() {
-                var extraHelptextJQ = $("#metadata_extra_helptext");
-
-                if (extraHelptextJQ.is(':hidden')) {
-                    extraHelptextJQ.show();
+            $metadataExtraHelpTextLink.click(function() {
+                if ($metadataExtraHelpText.is(':hidden')) {
+                    $metadataExtraHelpText.show();
                     $(this).text("(Less info)");
                 }
                 else {
-                    extraHelptextJQ.hide();
+                    $metadataExtraHelpText.hide();
+                    $(this).text("(More info)");
+                }
+            });
+
+            // Extra help text for image files field.
+            $filesExtraHelpText = $("#id_files_extra_help_text");
+            $filesExtraHelpTextLink = $("#id_files_extra_help_text_link");
+
+            $filesExtraHelpTextLink.click(function() {
+                if ($filesExtraHelpText.is(':hidden')) {
+                    $filesExtraHelpText.show();
+                    $(this).text("(Less info)");
+                }
+                else {
+                    $filesExtraHelpText.hide();
                     $(this).text("(More info)");
                 }
             });
