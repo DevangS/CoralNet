@@ -350,15 +350,6 @@ class ImageUploadOptionsForm(Form):
             "useful for your own reference."
         )
 
-        self.additional_details = [
-            ("Annotation points will be automatically generated for your images.\n"
-            "Your Source's point generation settings: {pointgen}\n"
-            "Your Source's annotation area settings: {annoarea}").format(
-                pointgen=PointGen.db_to_readable_format(source.default_point_generation_method),
-                annoarea=AnnotationAreaUtils.db_format_to_display(source.image_annotation_area),
-            )
-        ]
-
 
 class ImageDetailForm(ModelForm):
     class Meta:

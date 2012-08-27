@@ -1,3 +1,9 @@
+#annotations_page_section{
+    /* This section starts out hidden; it's shown when the annotations
+       checkbox is ticked. */
+    display: none;
+}
+
 #id_upload_abort_button{
     /* This button starts out hidden; it's shown when the upload begins. */
     display: none;

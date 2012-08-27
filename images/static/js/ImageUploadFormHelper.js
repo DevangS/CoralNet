@@ -16,6 +16,9 @@ var ImageUploadFormHelper = (function() {
     var dupeOptionField = null;
     var metadataOptionFieldId = 'id_specify_metadata';
     var metadataOptionField = null;
+    var annotationsCheckboxFieldId = 'annotations_checkbox';
+    var annotationsCheckboxField = null;
+    var $annotationsCheckboxLabel = null;
     var $uploadStartButton = null;
     var $uploadAbortButton = null;
 
@@ -242,6 +245,17 @@ var ImageUploadFormHelper = (function() {
         }
         else {
             $("#id_skip_or_replace_duplicates_wrapper").hide();
+        }
+
+        if ($(annotationsCheckboxField).prop('checked')) {
+            $('#annotations_page_section').show();
+            $('#auto_generate_points_page_section').hide();
+            $annotationsCheckboxLabel.removeClass('disabled');
+        }
+        else {
+            $('#annotations_page_section').hide();
+            $('#auto_generate_points_page_section').show();
+            $annotationsCheckboxLabel.addClass('disabled');
         }
 
         if (files.length === 0) {
@@ -617,6 +631,9 @@ var ImageUploadFormHelper = (function() {
             filesField = $('#id_files')[0];
             dupeOptionField = $('#' + dupeOptionFieldId)[0];
             metadataOptionField = $('#' + metadataOptionFieldId)[0];
+            annotationsCheckboxField = $('#' + annotationsCheckboxFieldId)[0];
+            $annotationsCheckboxLabel = $('#annotations_checkbox_label');
+
             $uploadStartButton = $('#id_upload_submit');
             $uploadAbortButton = $('#id_upload_abort_button');
 
@@ -668,6 +685,11 @@ var ImageUploadFormHelper = (function() {
                     $filesExtraHelpText.hide();
                     $(this).text("(More info)");
                 }
+            });
+
+            // Annotations section.
+            $(annotationsCheckboxField).change(function() {
+                updateFormFields();
             });
 
             // Attach ajax upload handler

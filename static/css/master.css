@@ -442,6 +442,30 @@ label.grid_checkbox {
     width: 150px;
 }
 
+/* An input element's label that also doubles as a section header.
+   For example, the section may be an optional part of the form, and the
+   input element may be a checkbox toggling that section on and off.
+
+   This is supposed to look like a section header, so it uses basically
+   the same style as .section_header h3 and legend.small. */
+label.section_header {
+    display: inline-block;
+
+    padding: 5px 0 6px 0;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 5px;
+    font-size: 1.2em;
+    color: #ab292a;
+    font-weight: bold;
+    text-transform: none;
+}
+
+/* ...and if the section is toggled off, then
+   we can style this differently. */
+label.section_header.disabled {
+    color: #888888;
+}
+
 
 .field_wrapper {
     display: inline-block;

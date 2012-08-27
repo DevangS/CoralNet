@@ -953,10 +953,20 @@ def image_upload(request, source_id):
     images_form = MultiImageUploadForm()
     options_form = ImageUploadOptionsForm(source=source)
 
+    auto_generate_points_message = (
+        "Annotation points will be automatically generated for your images.\n"
+        "Your Source's point generation settings: {pointgen}\n"
+        "Your Source's annotation area settings: {annoarea}").format(
+            pointgen=PointGen.db_to_readable_format(source.default_point_generation_method),
+            annoarea=AnnotationAreaUtils.db_format_to_display(source.image_annotation_area,
+        ),
+    )
+
     return render_to_response('images/image_upload.html', {
         'source': source,
         'images_form': images_form,
         'options_form': options_form,
+        'auto_generate_points_message': auto_generate_points_message,
         'uploaded_images': uploaded_images,
         },
         context_instance=RequestContext(request)

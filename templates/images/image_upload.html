@@ -39,10 +39,17 @@
         <form id="id_upload_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
             <legend class="small">Options</legend>
             {% include "form_generic.html" with form=options_form dont_mark_required="yes" %}
-            {% for detail in options_form.additional_details %}
-                <span class="helptext">{{ detail|linebreaksbr }}</span>
-            {% endfor %}
         </form>
+
+        <input type="checkbox" id="annotations_checkbox">
+        <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations</label>
+
+        <div class="page_section" id="annotations_page_section">
+            *Section goes here*
+        </div>
+        <div class="page_section" id="auto_generate_points_page_section">
+            <span class="helptext">{{ auto_generate_points_message|linebreaksbr }}</span>
+        </div>
 
         <div class="page_section">
             <h3>Images to upload</h3>
