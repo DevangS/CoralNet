@@ -22,7 +22,7 @@ from annotations.utils import image_annotation_area_is_editable, image_has_any_h
 from decorators import source_permission_required, image_visibility_required, image_permission_required, source_labelset_required, source_visibility_required
 
 from images.models import Source, Image, Metadata, Point, SourceInvite, ImageStatus
-from images.forms import ImageSourceForm, ImageUploadOptionsForm, ImageDetailForm, AnnotationImportForm, ImageUploadForm, LabelImportForm, PointGenForm, SourceInviteForm, AnnotationImportOptionsForm, MultiImageUploadForm
+from images.forms import *
 from images.model_utils import PointGen
 from images.utils import *
 import json

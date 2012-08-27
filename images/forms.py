@@ -1,10 +1,9 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm
-from django.forms.fields import BooleanField, CharField, ChoiceField, FileField, ImageField, IntegerField
+from django.forms.fields import CharField, ChoiceField, FileField, ImageField, IntegerField
 from django.forms.widgets import FileInput, Select, TextInput
 from django.utils.translation import ugettext_lazy as _
-from annotations.model_utils import AnnotationAreaUtils
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
 from images.model_utils import PointGen
@@ -576,22 +575,6 @@ class PointGenForm(Form):
 
         self.cleaned_data = data
         return super(PointGenForm, self).clean()
-
-
-class AnnotationImportForm(Form):
-    annotations_file = FileField(
-        label='Annotation file (.txt)',
-    )
-
-
-class AnnotationImportOptionsForm(Form):
-    """
-    Helper form for the AnnotationImportForm, containing import options.
-    """
-    points_only = BooleanField(
-        label='Points only, no annotations',
-        required=False,
-        initial=False)
 
 
 class LabelImportForm(Form):
