@@ -46,14 +46,7 @@
 
         <div class="page_section" id="annotations_page_section">
             {% include "form_generic.html" with form=annotation_import_form dont_mark_required="yes" %}
-
-            {% for field in annotation_import_options_form %}
-                {% if field.name == "points_only" %}
-                    {% include "form_generic_one_field.html" with field=field dont_mark_required="yes" checkbox="yes" %}
-                {% else %}
-                    {% include "form_generic_one_field.html" with field=field dont_mark_required="yes" %}
-                {% endif %}
-            {% endfor %}
+            {% include "form_generic.html" with form=annotation_import_options_form dont_mark_required="yes" %}
         </div>
 
         <div class="page_section" id="auto_generate_points_page_section">

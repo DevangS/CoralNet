@@ -4,7 +4,7 @@ from itertools import chain
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.forms import Form
-from django.forms.fields import BooleanField, CharField, DecimalField, FileField, IntegerField
+from django.forms.fields import BooleanField, CharField, DecimalField, FileField, IntegerField, ChoiceField
 from django.forms.widgets import TextInput, HiddenInput
 from django.utils import simplejson
 from django.utils.html import conditional_escape
@@ -360,7 +360,7 @@ class AnnotationAreaPixelsForm(Form):
 
 class AnnotationImportForm(Form):
     annotations_file = FileField(
-        label='Annotation file (.txt)',
+        label='Points/Annotations file (.txt)',
     )
 
 
@@ -368,7 +368,11 @@ class AnnotationImportOptionsForm(Form):
     """
     Helper form for the AnnotationImportForm, containing import options.
     """
-    points_only = BooleanField(
-        label='Points only, no annotations',
-        required=False,
-        initial=False)
+    includes_annotations = ChoiceField(
+        label='Data',
+        choices=(
+            ('yes', "Points and annotations"),
+            ('no', "Points only"),
+        ),
+        initial='yes',
+    )
