@@ -14,7 +14,7 @@ from reversion.revisions import revision_context_manager
 
 from userena.models import User
 from accounts.utils import get_imported_user
-from annotations.forms import AnnotationAreaPercentsForm
+from annotations.forms import AnnotationAreaPercentsForm, AnnotationImportForm, AnnotationImportOptionsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
 from lib.exceptions import FileContentError, FilenameError
@@ -952,6 +952,8 @@ def image_upload(request, source_id):
 
     images_form = MultiImageUploadForm()
     options_form = ImageUploadOptionsForm(source=source)
+    annotation_import_form = AnnotationImportForm()
+    annotation_import_options_form = AnnotationImportOptionsForm()
 
     auto_generate_points_message = (
         "Annotation points will be automatically generated for your images.\n"
@@ -966,6 +968,8 @@ def image_upload(request, source_id):
         'source': source,
         'images_form': images_form,
         'options_form': options_form,
+        'annotation_import_form': annotation_import_form,
+        'annotation_import_options_form': annotation_import_options_form,
         'auto_generate_points_message': auto_generate_points_message,
         'uploaded_images': uploaded_images,
         },
