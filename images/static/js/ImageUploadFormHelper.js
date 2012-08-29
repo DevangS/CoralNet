@@ -19,6 +19,9 @@ var ImageUploadFormHelper = (function() {
     var annotationsCheckboxFieldId = 'annotations_checkbox';
     var annotationsCheckboxField = null;
     var $annotationsCheckboxLabel = null;
+    var annotationFileField = null;
+    var annotationDataField = null;
+
     var $uploadStartButton = null;
     var $uploadAbortButton = null;
 
@@ -258,18 +261,24 @@ var ImageUploadFormHelper = (function() {
             $annotationsCheckboxLabel.addClass('disabled');
         }
 
-        if (files.length === 0) {
-            // No files
+        if ($(annotationsCheckboxField).prop('checked')
+           && annotationFileField.files.length === 0) {
+            // No annotation file
             $uploadStartButton.attr('disabled', true);
-            $uploadStartButton.text("No files selected yet");
+            $uploadStartButton.text("No points/annotations file selected yet");
+        }
+        else if (files.length === 0) {
+            // No image files
+            $uploadStartButton.attr('disabled', true);
+            $uploadStartButton.text("No image files selected yet");
         }
         else if (numUploadables === 0) {
-            // No uploadable files
+            // No uploadable image files
             $uploadStartButton.attr('disabled', true);
-            $uploadStartButton.text("Cannot upload any of these files");
+            $uploadStartButton.text("Cannot upload any of these image files");
         }
         else {
-            // Uploadable files present
+            // Uploadable image files present
             $uploadStartButton.attr('disabled', false);
             $uploadStartButton.text("Start upload");
         }
@@ -633,6 +642,8 @@ var ImageUploadFormHelper = (function() {
             metadataOptionField = $('#' + metadataOptionFieldId)[0];
             annotationsCheckboxField = $('#' + annotationsCheckboxFieldId)[0];
             $annotationsCheckboxLabel = $('#annotations_checkbox_label');
+            annotationFileField = $('#id_annotations_file')[0];
+            annotationDataField = $('#id_includes_annotations')[0];
 
             $uploadStartButton = $('#id_upload_submit');
             $uploadAbortButton = $('#id_upload_abort_button');
@@ -689,6 +700,9 @@ var ImageUploadFormHelper = (function() {
 
             // Annotations section.
             $(annotationsCheckboxField).change(function() {
+                updateFormFields();
+            });
+            $(annotationFileField).change(function() {
                 updateFormFields();
             });
 
