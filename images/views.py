@@ -591,7 +591,7 @@ def annotations_file_to_python(annoFile, source):
     #annoFile = open(annoFile, 'r')
 
     # Format args: line number, line contents, error message
-    parseErrorMsgBase = 'On line %d:\n%s\n%s'
+    file_error_format_str = 'On line {line_num}:\n{line}\n{error}'
     
     numOfKeys = source.num_of_keys()
     uniqueLabelCodes = []
@@ -600,20 +600,27 @@ def annotations_file_to_python(annoFile, source):
     # changes, we should only have to change this part.
     wordsFormat = ['value'+str(i) for i in range(1, numOfKeys+1)]
     wordsFormat += ['date', 'row', 'col', 'label']
-    numOfWordsExpected = len(wordsFormat)
+    num_words_expected = len(wordsFormat)
 
     annotationsDict = dict()
 
-    for lineNum, line in enumerate(annoFile, 1):
+    for line_num, line in enumerate(annoFile, 1):
 
-        # Sanitize the line and split it into words/tokens.
-        # Allow for separators of ";" or "; "
-        cleanedLine = line.strip().replace("; ", ';')
-        words = cleanedLine.split(';')
+        # Split the line into words/tokens.
+        unstripped_words = line.strip().split(';')
+        # Strip leading and trailing whitespace from each token.
+        words = [w.strip() for w in unstripped_words]
 
         # Check that all words/tokens are there.
-        if len(words) != numOfWordsExpected:
-            raise FileContentError(parseErrorMsgBase % (lineNum, line, "We expected %d pieces of data, but only found %d." % (numOfWordsExpected, len(words)) ))
+        if len(words) != num_words_expected:
+            raise FileContentError(file_error_format_str.format(
+                line_num=line_num,
+                line=line,
+                error="We expected {num_words_expected} semicolon-separated tokens, but found {num_words_found} instead.".format(
+                    num_words_expected=num_words_expected,
+                    num_words_found=len(words),
+                )
+            ))
 
         # Encode the line data into a dictionary: {'value1':'Shore2', 'row':'575', ...}
         lineData = dict(zip(wordsFormat, words))
@@ -623,18 +630,26 @@ def annotations_file_to_python(annoFile, source):
         # and in the source's labelset.
         # Only check this if the label code hasn't been seen before
         # in the annotations file.
-        labelCode = lineData['label']
-        if labelCode not in uniqueLabelCodes:
+        label_code = lineData['label']
+        if label_code not in uniqueLabelCodes:
 
-            labelObjs = Label.objects.filter(code=labelCode)
+            labelObjs = Label.objects.filter(code=label_code)
             if len(labelObjs) == 0:
-                raise FileContentError(parseErrorMsgBase % (lineNum, line, "This line has label code %s, but our database has no label with this code." % labelCode))
+                raise FileContentError(file_error_format_str.format(
+                    line_num=line_num,
+                    line=line,
+                    error="This line has label code {label_code}, but CoralNet has no label with this code.".format(label_code=label_code),
+                ))
 
             labelObj = labelObjs[0]
             if labelObj not in source.labelset.labels.all():
-                raise FileContentError(parseErrorMsgBase % (lineNum, line, "This line has label code %s, but your labelset has no label with this code." % labelCode))
+                raise FileContentError(file_error_format_str.format(
+                    line_num=line_num,
+                    line=line,
+                    error="This line has label code {label_code}, but your labelset has no label with this code.".format(label_code=label_code),
+                ))
 
-            uniqueLabelCodes.append(labelCode)
+            uniqueLabelCodes.append(label_code)
 
         # Get and check the photo year to make sure it's valid.
         # We'll assume the year is the first 4 characters of the date.
@@ -643,7 +658,11 @@ def annotations_file_to_python(annoFile, source):
             datetime.date(int(year),1,1)
         # Year is non-coercable to int, or year is out of range (e.g. 0 or negative)
         except ValueError:
-            raise FileContentError(parseErrorMsgBase % (lineNum, line, "%s is not a valid year." % year))
+            raise FileContentError(file_error_format_str.format(
+                line_num=line_num,
+                line=line,
+                error="{year} is not a valid year.".format(year=year),
+            ))
 
         # TODO: Check if the row and col in this line are a valid row and col
         # for the image.  Need the image to do that, though...
