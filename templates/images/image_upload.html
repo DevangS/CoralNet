@@ -46,6 +46,9 @@
 
         <div class="page_section" id="annotations_page_section">
             {% include "form_generic.html" with form=annotation_import_form dont_mark_required="yes" %}
+
+            <span id="annotations_file_status"></span>
+
             {% include "form_generic.html" with form=annotation_import_options_form dont_mark_required="yes" %}
         </div>
 
@@ -73,6 +76,7 @@
 
             {# Submit button #}
             <div class="submit_button_wrapper_column_form">
+                <button type="button" class="submit" id="annotation_file_check_button">Check annotation file</button>
                 <button type="button" class="submit" id="id_upload_submit"></button>
                 <button type="button" class="submit" id="id_upload_abort_button" disabled="disabled">Abort upload</button>
             </div>
@@ -105,7 +109,8 @@
             sourceId: {{ source.id }},
             hasAnnotations: false,
             uploadPreviewUrl: "{% url image_upload_preview_ajax source.id %}",
-            uploadStartUrl: "{% url image_upload_ajax source.id %}"
+            uploadStartUrl: "{% url image_upload_ajax source.id %}",
+            annotationFileCheckUrl: "{% url annotation_file_check_ajax source.id %}"
 {#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
         });
 

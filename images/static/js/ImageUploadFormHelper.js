@@ -11,6 +11,9 @@ var ImageUploadFormHelper = (function() {
     var $filesTableAutoScrollCheckbox = null;
     var $filesTableAutoScrollCheckboxContainer = null;
 
+    var annotationFileStatus = null;
+    var $annotationFileStatusDisplay = null;
+
     var filesField = null;
     var dupeOptionFieldId = 'id_skip_or_replace_duplicates';
     var dupeOptionField = null;
@@ -20,8 +23,9 @@ var ImageUploadFormHelper = (function() {
     var annotationsCheckboxField = null;
     var $annotationsCheckboxLabel = null;
     var annotationFileField = null;
-    var annotationDataField = null;
+    var includesAnnotationsField = null;
 
+    var $annotationFileCheckButton = null;
     var $uploadStartButton = null;
     var $uploadAbortButton = null;
 
@@ -34,6 +38,7 @@ var ImageUploadFormHelper = (function() {
     var hasAnnotations = null;
 
     var uploadPreviewUrl = null;
+    var annotationFileCheckUrl = null;
     var uploadStartUrl = null;
     //var uploadProgressUrl = null;
 
@@ -131,7 +136,8 @@ var ImageUploadFormHelper = (function() {
         }
         // Ensure the files are marked as non-uploadable until we check
         // for their uploadability
-        updatePreUploadStatus();
+        updateFilesTable();
+        updateFormFields();
 
         var filenameList = new Array(files.length);
         for (i = 0; i < files.length; i++) {
@@ -164,6 +170,46 @@ var ImageUploadFormHelper = (function() {
             }
             updateFilenameStatuses(statusList);
         }
+    }
+
+    function clearAnnotationFileStatus() {
+        annotationFileStatus = null;
+        $annotationFileStatusDisplay.empty();
+
+        // Make sure the upload start button is updated, because whether we
+        // can start the upload depends on the annotation file status.
+        updateFormFields();
+    }
+
+    function checkAnnotationFile() {
+
+        updateAnnotationFileStatus();
+        updateFormFields();
+
+        // The below code sends an Ajax request for checking
+        // the annotation file.
+//        var filenameList = new Array(files.length);
+//        for (i = 0; i < files.length; i++) {
+//            filenameList[i] = files[i].file.name;
+//        }
+//
+//        // Ask the server (via Ajax) about the annotations file: is each line
+//        // in the correct format?  How many points/annotations are there for
+//        // each image?
+//        $.ajax({
+//            // Data to send in the request
+//            data: {
+//                filenames: filenameList
+//            },
+//
+//            // Callback on successful response
+//            success: ajaxUpdateAnnotationFileStatus,
+//
+//            type: 'POST',
+//
+//            // URL to make request to
+//            url: annotationFileCheckUrl
+//        });
     }
 
     function updateUploadability() {
@@ -243,6 +289,8 @@ var ImageUploadFormHelper = (function() {
     }
 
     function updateFormFields() {
+        // Show or hide the skip-or-replace-dupes option
+        // depending on whether it's relevant or not.
         if ($(metadataOptionField).val() === 'filenames') {
             $("#id_skip_or_replace_duplicates_wrapper").show();
         }
@@ -250,6 +298,8 @@ var ImageUploadFormHelper = (function() {
             $("#id_skip_or_replace_duplicates_wrapper").hide();
         }
 
+        // Show or hide the annotations section depending
+        // on the checkbox's value.
         if ($(annotationsCheckboxField).prop('checked')) {
             $('#annotations_page_section').show();
             $('#auto_generate_points_page_section').hide();
@@ -261,40 +311,68 @@ var ImageUploadFormHelper = (function() {
             $annotationsCheckboxLabel.addClass('disabled');
         }
 
-        if ($(annotationsCheckboxField).prop('checked')
-           && annotationFileField.files.length === 0) {
+        // Update the annotation file check button.
+        if ($(annotationsCheckboxField).prop('checked')) {
+            $annotationFileCheckButton.show();
+        }
+        else {
+            $annotationFileCheckButton.hide();
+        }
+
+        if (annotationFileField.files.length === 0) {
+            $annotationFileCheckButton.prop('disabled', true);
+        }
+        else {
+            $annotationFileCheckButton.prop('disabled', false);
+        }
+
+        // Update the upload start button.
+        if ($(annotationsCheckboxField).prop('checked') && annotationFileField.files.length === 0) {
+            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.text("Points/annotations file not selected yet");
+        }
+        else if ($(annotationsCheckboxField).prop('checked') && annotationFileStatus === null) {
+            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.text("Points/annotations file needs checking");
+        }
+        else if ($(annotationsCheckboxField).prop('checked') && annotationFileStatus === 'error') {
             // No annotation file
-            $uploadStartButton.attr('disabled', true);
-            $uploadStartButton.text("No points/annotations file selected yet");
+            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.text("Points/annotations file has an error");
         }
         else if (files.length === 0) {
             // No image files
+            // TODO: Shouldn't disabling be done with prop()?
             $uploadStartButton.attr('disabled', true);
             $uploadStartButton.text("No image files selected yet");
         }
         else if (numUploadables === 0) {
             // No uploadable image files
+            // TODO: Shouldn't disabling be done with prop()?
             $uploadStartButton.attr('disabled', true);
             $uploadStartButton.text("Cannot upload any of these image files");
         }
         else {
             // Uploadable image files present
+            // TODO: Shouldn't disabling be done with prop()?
             $uploadStartButton.attr('disabled', false);
             $uploadStartButton.text("Start upload");
         }
 
+        // Show or hide the files list auto-scroll option
+        // depending on whether it's relevant or not.
         if ($filesTableContainer[0].scrollHeight > $filesTableContainer[0].clientHeight) {
             // There is overflow in the files table container, such that
             // it has a scrollbar. So the auto-scroll option is relevant.
             $filesTableAutoScrollCheckboxContainer.show();
         }
         else {
-            // The auto-scroll option is not relevant.
+            // No scrollbar. The auto-scroll option is not relevant.
             $filesTableAutoScrollCheckboxContainer.hide();
         }
     }
 
-    function updatePreUploadStatus() {
+    function updateFilesTable() {
         // Are the files uploadable or not?
         updateUploadability();
 
@@ -303,9 +381,6 @@ var ImageUploadFormHelper = (function() {
 
         // Update the summary text above the files table
         updatePreUploadSummary();
-
-        // Update form fields, upload button, etc.
-        updateFormFields();
     }
 
     function updateFilenameStatuses(statusList) {
@@ -341,11 +416,22 @@ var ImageUploadFormHelper = (function() {
             files[i].status = statusStr;
         }
 
-        updatePreUploadStatus();
+        updateFilesTable();
+        updateFormFields();
     }
 
     function ajaxUpdateFilenameStatuses(data) {
         updateFilenameStatuses(data.statusList);
+    }
+
+    function updateAnnotationFileStatus(status, message, contentsForFile) {
+        // TODO: The below is a placeholder. Need to implement it for real.
+        annotationFileStatus = 'ok';
+        $annotationFileStatusDisplay.text("Annotation file status goes here.");
+    }
+
+    function ajaxUpdateAnnotationFileStatus(data) {
+        updateAnnotationFileStatus(data.status, data.message, data.contentsForFile);
     }
 
     function updateMidUploadSummary() {
@@ -399,6 +485,8 @@ var ImageUploadFormHelper = (function() {
     function ajaxUpload() {
 
         $(filesField).prop('disabled', true);
+
+        $annotationFileCheckButton.prop('disabled', true);
 
         $uploadStartButton.prop('disabled', true);
         $uploadStartButton.text("Uploading...");
@@ -620,12 +708,15 @@ var ImageUploadFormHelper = (function() {
             sourceId = params.sourceId;
             hasAnnotations = params.hasAnnotations;
             uploadPreviewUrl = params.uploadPreviewUrl;
+            annotationFileCheckUrl = params.annotationFileCheckUrl;
             uploadStartUrl = params.uploadStartUrl;
             //uploadProgressUrl = params.uploadProgressUrl;
 
             // Upload status summary.
             $preUploadSummary = $('td#pre_upload_summary');
             $midUploadSummary = $('td#mid_upload_summary');
+            // Annotation file status.
+            $annotationFileStatusDisplay = $('#annotations_file_status');
 
             // The upload file table.
             $filesTable = $('table#files_table');
@@ -643,27 +734,32 @@ var ImageUploadFormHelper = (function() {
             annotationsCheckboxField = $('#' + annotationsCheckboxFieldId)[0];
             $annotationsCheckboxLabel = $('#annotations_checkbox_label');
             annotationFileField = $('#id_annotations_file')[0];
-            annotationDataField = $('#id_includes_annotations')[0];
+            includesAnnotationsField = $('#id_includes_annotations')[0];
 
+            $annotationFileCheckButton = $('#annotation_file_check_button');
             $uploadStartButton = $('#id_upload_submit');
             $uploadAbortButton = $('#id_upload_abort_button');
 
-            updatePreUploadStatus();
+            updateFilesTable();
+            updateFormFields();
 
             // Set onchange handlers for form fields.
             $(filesField).change( function(){
                 refreshFiles();
-                updatePreUploadStatus();
+                updateFilesTable();
+                updateFormFields();
             });
 
             $(dupeOptionField).change( function() {
-                updatePreUploadStatus();
+                updateFilesTable();
+                updateFormFields();
             });
 
             // This'll become relevant again when we support other methods of specifying metadata
             /*        $("#id_specify_metadata").change( function(){
              refreshFiles();
-             updatePreUploadStatus();
+             updateFilesTable();
+             updateFormFields();
              });*/
 
             // Extra help text for specify_metadata field.
@@ -702,11 +798,16 @@ var ImageUploadFormHelper = (function() {
             $(annotationsCheckboxField).change(function() {
                 updateFormFields();
             });
+            $(includesAnnotationsField).change(function() {
+                clearAnnotationFileStatus();
+                updateFormFields();
+            });
             $(annotationFileField).change(function() {
+                clearAnnotationFileStatus();
                 updateFormFields();
             });
 
-            // Attach ajax upload handler
+            $annotationFileCheckButton.click(checkAnnotationFile);
             $uploadStartButton.click(ajaxUpload);
             $uploadAbortButton.click(abortAjaxUpload);
         }
