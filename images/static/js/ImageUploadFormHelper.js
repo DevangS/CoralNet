@@ -298,9 +298,11 @@ var ImageUploadFormHelper = (function() {
             $("#id_skip_or_replace_duplicates_wrapper").hide();
         }
 
+        var annotationsChecked = $(annotationsCheckboxField).prop('checked');
+
         // Show or hide the annotations section depending
         // on the checkbox's value.
-        if ($(annotationsCheckboxField).prop('checked')) {
+        if (annotationsChecked) {
             $('#annotations_page_section').show();
             $('#auto_generate_points_page_section').hide();
             $annotationsCheckboxLabel.removeClass('disabled');
@@ -312,7 +314,7 @@ var ImageUploadFormHelper = (function() {
         }
 
         // Update the annotation file check button.
-        if ($(annotationsCheckboxField).prop('checked')) {
+        if (annotationsChecked) {
             $annotationFileCheckButton.show();
         }
         else {
@@ -327,35 +329,32 @@ var ImageUploadFormHelper = (function() {
         }
 
         // Update the upload start button.
-        if ($(annotationsCheckboxField).prop('checked') && annotationFileField.files.length === 0) {
+        if (annotationsChecked && annotationFileField.files.length === 0) {
             $uploadStartButton.prop('disabled', true);
             $uploadStartButton.text("Points/annotations file not selected yet");
         }
-        else if ($(annotationsCheckboxField).prop('checked') && annotationFileStatus === null) {
+        else if (annotationsChecked && annotationFileStatus === null) {
             $uploadStartButton.prop('disabled', true);
             $uploadStartButton.text("Points/annotations file needs checking");
         }
-        else if ($(annotationsCheckboxField).prop('checked') && annotationFileStatus === 'error') {
+        else if (annotationsChecked && annotationFileStatus === 'error') {
             // No annotation file
             $uploadStartButton.prop('disabled', true);
             $uploadStartButton.text("Points/annotations file has an error");
         }
         else if (files.length === 0) {
             // No image files
-            // TODO: Shouldn't disabling be done with prop()?
-            $uploadStartButton.attr('disabled', true);
+            $uploadStartButton.prop('disabled', true);
             $uploadStartButton.text("No image files selected yet");
         }
         else if (numUploadables === 0) {
             // No uploadable image files
-            // TODO: Shouldn't disabling be done with prop()?
-            $uploadStartButton.attr('disabled', true);
+            $uploadStartButton.prop('disabled', true);
             $uploadStartButton.text("Cannot upload any of these image files");
         }
         else {
             // Uploadable image files present
-            // TODO: Shouldn't disabling be done with prop()?
-            $uploadStartButton.attr('disabled', false);
+            $uploadStartButton.prop('disabled', false);
             $uploadStartButton.text("Start upload");
         }
 
