@@ -363,6 +363,15 @@ class AnnotationImportForm(Form):
         label='Points/Annotations file (.txt)',
     )
 
+    def clean_annotations_file(self):
+        anno_file = self.cleaned_data['annotations_file']
+
+        general_content_type = anno_file.content_type.split('/')[0]
+        if general_content_type != 'text':
+            raise ValidationError("This file is not a text file.")
+
+        return self.cleaned_data['annotations_file']
+
 
 class AnnotationImportOptionsForm(Form):
     """

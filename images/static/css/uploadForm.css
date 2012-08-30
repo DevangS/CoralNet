@@ -1,4 +1,4 @@
-#annotations_page_section{
+#annotations_form {
     /* This section starts out hidden; it's shown when the annotations
        checkbox is ticked. */
     display: none;

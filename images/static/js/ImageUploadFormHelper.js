@@ -183,33 +183,25 @@ var ImageUploadFormHelper = (function() {
 
     function checkAnnotationFile() {
 
-        updateAnnotationFileStatus();
-        updateFormFields();
+        clearAnnotationFileStatus();
 
-        // The below code sends an Ajax request for checking
-        // the annotation file.
-//        var filenameList = new Array(files.length);
-//        for (i = 0; i < files.length; i++) {
-//            filenameList[i] = files[i].file.name;
-//        }
-//
-//        // Ask the server (via Ajax) about the annotations file: is each line
-//        // in the correct format?  How many points/annotations are there for
-//        // each image?
-//        $.ajax({
-//            // Data to send in the request
-//            data: {
-//                filenames: filenameList
-//            },
-//
-//            // Callback on successful response
-//            success: ajaxUpdateAnnotationFileStatus,
-//
-//            type: 'POST',
-//
-//            // URL to make request to
-//            url: annotationFileCheckUrl
-//        });
+        // Ask the server (via Ajax) about the annotations file: is each line
+        // in the correct format?  How many points/annotations are there for
+        // each image?
+        var options = {
+            // Expected datatype of response
+            dataType: 'json',
+            // URL to submit to
+            url: annotationFileCheckUrl,
+
+            // Callback
+            success: ajaxUpdateAnnotationFileStatus
+        };
+        $('#annotations_form').ajaxSubmit(options);
+
+        // Make sure the upload start button is updated, because whether we
+        // can start the upload depends on the annotation file status.
+        updateFormFields();
     }
 
     function updateUploadability() {
@@ -303,12 +295,12 @@ var ImageUploadFormHelper = (function() {
         // Show or hide the annotations section depending
         // on the checkbox's value.
         if (annotationsChecked) {
-            $('#annotations_page_section').show();
+            $('#annotations_form').show();
             $('#auto_generate_points_page_section').hide();
             $annotationsCheckboxLabel.removeClass('disabled');
         }
         else {
-            $('#annotations_page_section').hide();
+            $('#annotations_form').hide();
             $('#auto_generate_points_page_section').show();
             $annotationsCheckboxLabel.addClass('disabled');
         }
@@ -424,9 +416,23 @@ var ImageUploadFormHelper = (function() {
     }
 
     function updateAnnotationFileStatus(status, message, contentsForFile) {
-        // TODO: The below is a placeholder. Need to implement it for real.
-        annotationFileStatus = 'ok';
-        $annotationFileStatusDisplay.text("Annotation file status goes here.");
+        annotationFileStatus = status;
+
+        if (status === 'ok') {
+            $annotationFileStatusDisplay.text("Annotation file is OK.");
+        }
+        else if (status === 'error') {
+            var messageLines = message.split('\n');
+            messageLines[0] = "Error: " + messageLines[0];
+
+            for (i = 0; i < messageLines.length; i++) {
+                $annotationFileStatusDisplay.append(messageLines[i]);
+
+                if (i < messageLines.length-1) {
+                    $annotationFileStatusDisplay.append('<br>');
+                }
+            }
+        }
     }
 
     function ajaxUpdateAnnotationFileStatus(data) {

@@ -44,13 +44,13 @@
         <input type="checkbox" id="annotations_checkbox">
         <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations</label>
 
-        <div class="page_section" id="annotations_page_section">
+        <form id="annotations_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
             {% include "form_generic.html" with form=annotation_import_form dont_mark_required="yes" %}
 
             <span id="annotations_file_status"></span>
 
             {% include "form_generic.html" with form=annotation_import_options_form dont_mark_required="yes" %}
-        </div>
+        </form>
 
         <div class="page_section" id="auto_generate_points_page_section">
             <span class="helptext">{{ auto_generate_points_message|linebreaksbr }}</span>

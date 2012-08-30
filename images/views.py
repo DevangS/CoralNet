@@ -1057,6 +1057,88 @@ def image_upload_preview_ajax(request, source_id):
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
+def annotation_file_check_ajax(request, source_id):
+    """
+    Called when a user selects files to upload in the image upload form.
+
+    Looks at the files' filenames and returns a dict containing:
+    errors - List containing any errors. If there are any errors, the user
+      should not be allowed to start the upload.
+    warnings - List containing any warnings (i.e. things that may or may not
+      actually be problems).
+    """
+
+    source = get_object_or_404(Source, id=source_id)
+
+    if request.method == 'POST':
+
+        #uploadable_file_names = request.POST.getlist('uploadable_file_names[]')
+        #skipped_dupe_file_names = request.POST.getlist('skipped_dupe_file_names[]')
+
+        annotation_import_form = AnnotationImportForm(request.POST, request.FILES)
+        annotation_import_options_form = AnnotationImportOptionsForm(request.POST, request.FILES)
+
+        if not annotation_import_form.is_valid():
+            return JsonResponse(dict(
+                status='error',
+                message=annotation_import_form.errors['annotations_file'][0],
+            ))
+
+        if not annotation_import_options_form.is_valid():
+            return JsonResponse(dict(
+                status='error',
+                message="Annotation options form is invalid",
+            ))
+
+        includes_annotations_option = annotation_import_options_form.cleaned_data['includes_annotations']
+        annotations_file = annotation_import_form.cleaned_data['annotations_file']
+
+        try:
+            # TODO: Modify annotations_file_to_python() so that it
+            # doesn't check for label codes if we're uploading
+            # points only.
+            annotation_data = annotations_file_to_python(annotations_file, source)
+        except FileContentError as error:
+            return JsonResponse(dict(
+                status='error',
+                message=error.message,
+            ))
+
+        # TODO: Return information on the metadata sets
+        # in the annotation file and how many points/annotations
+        # each metadata set has.
+        return JsonResponse(dict(
+            status='ok',
+        ))
+
+        # The following is code that could be used to check whether each
+        # selected image file has annotations in the annotation file.
+#        errors = []
+#        max_errors = 5
+#        for filename in uploadable_file_names:
+#            metadata_dict = filename_to_metadata(filename, source)
+#
+#            # Use the location values and the year to build a string
+#            # identifier for the image, such as:
+#            # Shore1;Reef5;...;2008
+#            image_identifier = get_image_identifier(metadata_dict['values'], metadata_dict['year'])
+#
+#            # Use the identifier as the index into the annotation file's data.
+#            if not annotation_data.has_key(image_identifier):
+#                errors.append("The annotation file has no annotations for {filename} ({keys})".format(
+#                    filename=filename,
+#                    keys=image_identifier.replace(';',' '),
+#                ))
+#                if len(errors) >= max_errors:
+#                    break
+#
+#        return JsonResponse(dict(
+#            status='error',
+#            message='\n'.join(errors),
+#        ))
+
+
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload_ajax(request, source_id):
     source = get_object_or_404(Source, id=source_id)
 
