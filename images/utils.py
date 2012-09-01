@@ -165,10 +165,13 @@ def metadata_to_filename(values=None,
     return filename
 
 
+def metadata_dict_to_string_list(metadata_dict):
+    return metadata_dict['values'] + (metadata_dict['year'],)
+
+
 def metadata_dict_to_dupe_comparison_key(metadata_dict):
-    metadata_frozenset = frozenset([(k, v) for k, v in metadata_dict.items()
-                                    if k in ['values', 'year']])
-    return metadata_frozenset
+    # TODO: Be tolerant of semicolons in metadata.
+    return ';'.join(metadata_dict_to_string_list(metadata_dict))
 
 
 def metadata_dupe_comparison_key_to_display(metadata_key):
@@ -176,15 +179,7 @@ def metadata_dupe_comparison_key_to_display(metadata_key):
     metadata_key is a result of metadata_dict_to_dupe_comparison_key().
     This function turns the key into a displayable string.
     """
-    metadata_dict = dict(metadata_key)
-    metadata_strings = []
-
-    metadata_strings.append(metadata_dict['year'])
-
-    for location_value in metadata_dict['values']:
-        metadata_strings.append(location_value)
-
-    return ' '.join(metadata_strings)
+    return metadata_key.replace(';', ' ')
 
 
 def check_image_filename(filename, source):

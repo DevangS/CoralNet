@@ -1023,6 +1023,7 @@ def image_upload_preview_ajax(request, source_id):
 
             result = check_image_filename(filename, source)
             status = result['status']
+            metadata_key = None
 
             if 'metadata_dict' in result:
                 # We successfully extracted metadata from the filename.
@@ -1041,11 +1042,13 @@ def image_upload_preview_ajax(request, source_id):
             elif status == 'ok':
                 statusList.append(dict(
                     status=status,
+                    metadataKey=metadata_key,
                 ))
             elif status == 'dupe':
                 dupe_image = result['dupe']
                 statusList.append(dict(
                     status=status,
+                    metadataKey=metadata_key,
                     url=reverse('image_detail', args=[dupe_image.id]),
                     title=dupe_image.get_image_element_title(),
                 ))
@@ -1123,11 +1126,14 @@ def annotation_file_check_ajax(request, source_id):
                 message=error.message,
             ))
 
-        # TODO: Return information on the metadata sets
-        # in the annotation file and how many points/annotations
-        # each metadata set has.
+        # Return information on how many points/annotations
+        # each metadata set has in the annotation file.
+        annotations_per_image = dict(
+            [(k, str(len(v))) for k, v in annotation_data.iteritems()]
+        )
         return JsonResponse(dict(
             status='ok',
+            annotations_per_image=annotations_per_image,
         ))
 
         # The following is code that could be used to check whether each

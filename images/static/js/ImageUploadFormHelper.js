@@ -13,6 +13,7 @@ var ImageUploadFormHelper = (function() {
 
     var annotationFileStatus = null;
     var $annotationFileStatusDisplay = null;
+    var annotationsPerImage = null;
 
     var filesField = null;
     var dupeOptionFieldId = 'id_skip_or_replace_duplicates';
@@ -112,7 +113,7 @@ var ImageUploadFormHelper = (function() {
             // Create a table row containing file details
             var $filesTableRow = $("<tr>");
 
-            // filename, filesize
+            // Filename, filesize
             $filesTableRow.append($("<td>").text(files[i].file.name));
 
             var $sizeCell = $("<td>");
@@ -120,12 +121,20 @@ var ImageUploadFormHelper = (function() {
             $sizeCell.text(filesizeDisplay(files[i].file.size));
             $filesTableRow.append($sizeCell);
 
-            // filename status, to be filled in with an Ajax response
+            // Filename status, to be filled in with an Ajax response
             var $statusCell = $("<td>");
             $statusCell.addClass('status_cell');
             $filesTableRow.append($statusCell);
             files[i].$statusCell = $statusCell;
 
+            // Point/annotation count, filled in if points/annotations
+            // are being uploaded
+            var $annotationCountCell = $("<td>");
+            $annotationCountCell.addClass('annotation_count_cell');
+            $filesTableRow.append($annotationCountCell);
+            files[i].$annotationCountCell = $annotationCountCell;
+
+            // Add the row to the table
             $filesTable.append($filesTableRow);
             files[i].$tableRow = $filesTableRow;
         }
@@ -175,6 +184,7 @@ var ImageUploadFormHelper = (function() {
     function clearAnnotationFileStatus() {
         annotationFileStatus = null;
         $annotationFileStatusDisplay.empty();
+        annotationsPerImage = null;
 
         // Make sure the upload start button is updated, because whether we
         // can start the upload depends on the annotation file status.
@@ -367,6 +377,9 @@ var ImageUploadFormHelper = (function() {
         // Are the files uploadable or not?
         updateUploadability();
 
+        // Update the point/annotation count for each file
+        updateFilesTableAnnotationCounts();
+
         // Update table row styles according to file status
         updatePreUploadStyle();
 
@@ -405,6 +418,9 @@ var ImageUploadFormHelper = (function() {
             }
 
             files[i].status = statusStr;
+            if (statusList[i].hasOwnProperty('metadataKey')) {
+                files[i].metadataKey = statusList[i].metadataKey;
+            }
         }
 
         updateFilesTable();
@@ -415,11 +431,12 @@ var ImageUploadFormHelper = (function() {
         updateFilenameStatuses(data.statusList);
     }
 
-    function updateAnnotationFileStatus(status, message, contentsForFile) {
+    function updateAnnotationFileStatus(status, message, annotationsPerImageArg) {
         annotationFileStatus = status;
 
         if (status === 'ok') {
             $annotationFileStatusDisplay.text("Annotation file is OK.");
+            annotationsPerImage = annotationsPerImageArg;
         }
         else if (status === 'error') {
             var messageLines = message.split('\n');
@@ -433,10 +450,54 @@ var ImageUploadFormHelper = (function() {
                 }
             }
         }
+        updateFilesTable();
+    }
+
+    function updateFilesTableAnnotationCounts() {
+        for (i = 0; i < files.length; i++) {
+            files[i].$annotationCountCell.empty();
+        }
+
+        // If annotations checkbox option is off, then don't show the column at all.
+        if (!$(annotationsCheckboxField).prop('checked')) {
+            return;
+        }
+
+        // TODO: If annotationFileStatus is 'error', then don't show the column at all.
+
+        // If annotationsPerImage is null for any other reason, then don't show the column at all.
+        // (TODO: shouldn't annotationsPerImage be null whenever the annotation file is errored? That could merge the above two cases.)
+        if (annotationsPerImage === null) {
+            return;
+        }
+
+        // Otherwise, show the column.
+        for (i = 0; i < files.length; i++) {
+            if (!files[i].isUploadable) {
+                continue;
+            }
+
+            var metadataKey = files[i].metadataKey;
+            var countUnits;
+            if (includesAnnotationsField.value = 'yes') {
+                countUnits = ' annotation(s)';
+            }
+            else {
+                countUnits = ' point(s)';
+            }
+
+
+            if (annotationsPerImage.hasOwnProperty(metadataKey)) {
+                files[i].$annotationCountCell.text(annotationsPerImage[metadataKey] + countUnits);
+            }
+            else {
+                files[i].$annotationCountCell.text('0' + countUnits);
+            }
+        }
     }
 
     function ajaxUpdateAnnotationFileStatus(data) {
-        updateAnnotationFileStatus(data.status, data.message, data.contentsForFile);
+        updateAnnotationFileStatus(data.status, data.message, data.annotations_per_image);
     }
 
     function updateMidUploadSummary() {
