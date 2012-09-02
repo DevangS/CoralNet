@@ -61,6 +61,11 @@ TEST_MEDIA_ROOT = abspath(PROJECT_ROOT, '../test_files/media')
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 
+# When uploading images and annotations together, the annotation dict needs
+# to be kept on disk temporarily until all the Ajax upload requests are done.
+# This is the directory where the dict files will be kept.
+SHELVED_ANNOTATIONS_DIR = abspath(PROJECT_ROOT, '../tmp/shelved_annotations')
+
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.

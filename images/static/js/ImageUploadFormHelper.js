@@ -23,6 +23,7 @@ var ImageUploadFormHelper = (function() {
     var annotationFileStatus = null;
     var $annotationFileStatusDisplay = null;
     var annotationsPerImage = null;
+    var annotationDictId = null;
 
     var filesField = null;
     var dupeOptionFieldId = 'id_skip_or_replace_duplicates';
@@ -191,6 +192,7 @@ var ImageUploadFormHelper = (function() {
         $annotationFileStatusDisplay.empty();
 
         annotationsPerImage = null;
+        annotationDictId = null;
         // Update the files table's annotation count column.
         updateFilesTable();
     }
@@ -432,12 +434,13 @@ var ImageUploadFormHelper = (function() {
         updateFilenameStatuses(data.statusList);
     }
 
-    function updateAnnotationFileStatus(status, message, annotationsPerImageArg) {
+    function updateAnnotationFileStatus(status, message, annotationsPerImageArg, annotationDictIdArg) {
         annotationFileStatus = status;
 
         if (status === 'ok') {
             $annotationFileStatusDisplay.text("Annotation file is OK.");
             annotationsPerImage = annotationsPerImageArg;
+            annotationDictId = annotationDictIdArg;
         }
         else if (status === 'error') {
             var messageLines = message.split('\n');
@@ -510,7 +513,7 @@ var ImageUploadFormHelper = (function() {
     }
 
     function ajaxUpdateAnnotationFileStatus(data) {
-        updateAnnotationFileStatus(data.status, data.message, data.annotations_per_image);
+        updateAnnotationFileStatus(data.status, data.message, data.annotations_per_image, data.annotation_dict_id);
     }
 
     function updateMidUploadSummary() {

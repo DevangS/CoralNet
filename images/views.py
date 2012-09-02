@@ -1,5 +1,8 @@
 from collections import defaultdict
 import datetime
+import os
+import shelve
+from django.conf import settings
 
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -27,6 +30,7 @@ from images.model_utils import PointGen
 from images.utils import *
 import json
 from lib.utils import JsonResponse
+from CoralNet.utils import rand_string
 
 def source_list(request):
     """
@@ -602,7 +606,17 @@ def annotations_file_to_python(annoFile, source):
     wordsFormat += ['date', 'row', 'col', 'label']
     num_words_expected = len(wordsFormat)
 
-    annotationsDict = dict()
+    # The annotation dict needs to be kept on disk temporarily until all the
+    # Ajax upload requests are done. Thus, we'll use Python's shelve module
+    # to make a persistent dict.
+    annotation_dict_id = rand_string(10)
+    annotation_dict = shelve.open(os.path.join(
+        settings.SHELVED_ANNOTATIONS_DIR,
+        'source{source_id}_{dict_id}'.format(
+            source_id=source.id,
+            dict_id=annotation_dict_id,
+        ),
+    ))
 
     for line_num, line in enumerate(annoFile, 1):
 
@@ -613,6 +627,8 @@ def annotations_file_to_python(annoFile, source):
 
         # Check that all words/tokens are there.
         if len(words) != num_words_expected:
+            annotation_dict.close()
+            annoFile.close()
             raise FileContentError(file_error_format_str.format(
                 line_num=line_num,
                 line=line,
@@ -635,6 +651,8 @@ def annotations_file_to_python(annoFile, source):
 
             labelObjs = Label.objects.filter(code=label_code)
             if len(labelObjs) == 0:
+                annotation_dict.close()
+                annoFile.close()
                 raise FileContentError(file_error_format_str.format(
                     line_num=line_num,
                     line=line,
@@ -643,6 +661,8 @@ def annotations_file_to_python(annoFile, source):
 
             labelObj = labelObjs[0]
             if labelObj not in source.labelset.labels.all():
+                annotation_dict.close()
+                annoFile.close()
                 raise FileContentError(file_error_format_str.format(
                     line_num=line_num,
                     line=line,
@@ -658,6 +678,8 @@ def annotations_file_to_python(annoFile, source):
             datetime.date(int(year),1,1)
         # Year is non-coercable to int, or year is out of range (e.g. 0 or negative)
         except ValueError:
+            annotation_dict.close()
+            annoFile.close()
             raise FileContentError(file_error_format_str.format(
                 line_num=line_num,
                 line=line,
@@ -676,16 +698,24 @@ def annotations_file_to_python(annoFile, source):
         # Add/update a dictionary entry for the image with this identifier.
         # The dict entry's value is a list of labels.  Each label is a dict:
         # {'row':'484', 'col':'320', 'label':'POR'}
-        if not annotationsDict.has_key(imageIdentifier):
-            annotationsDict[imageIdentifier] = []
-            
-        annotationsDict[imageIdentifier].append(
+        if not annotation_dict.has_key(imageIdentifier):
+            annotation_dict[imageIdentifier] = []
+
+        # Append the annotation as a dict containing row, col, and label.
+        #
+        # Can't append directly to annotation_dict[imageIdentifier], due to
+        # how shelved dicts work. So we use this pattern with a temporary
+        # variable.
+        # See http://docs.python.org/library/shelve.html?highlight=shelve#example
+        tmp_data = annotation_dict[imageIdentifier]
+        tmp_data.append(
             dict(row=lineData['row'], col=lineData['col'], label=lineData['label'])
         )
+        annotation_dict[imageIdentifier] = tmp_data
 
     annoFile.close()
 
-    return annotationsDict
+    return (annotation_dict, annotation_dict_id)
 
 
 def multi_image_upload_process(imageFiles, imageOptionsForm, annotationOptionsForm, source, currentUser, annoFile):
@@ -1119,7 +1149,7 @@ def annotation_file_check_ajax(request, source_id):
             # TODO: Modify annotations_file_to_python() so that it
             # doesn't check for label codes if we're uploading
             # points only.
-            annotation_data = annotations_file_to_python(annotations_file, source)
+            annotation_dict, annotation_dict_id = annotations_file_to_python(annotations_file, source)
         except FileContentError as error:
             return JsonResponse(dict(
                 status='error',
@@ -1129,11 +1159,15 @@ def annotation_file_check_ajax(request, source_id):
         # Return information on how many points/annotations
         # each metadata set has in the annotation file.
         annotations_per_image = dict(
-            [(k, str(len(v))) for k, v in annotation_data.iteritems()]
+            [(k, str(len(v))) for k, v in annotation_dict.iteritems()]
         )
+        # We're done with the shelved dict for now.
+        annotation_dict.close()
+
         return JsonResponse(dict(
             status='ok',
             annotations_per_image=annotations_per_image,
+            annotation_dict_id=annotation_dict_id,
         ))
 
         # The following is code that could be used to check whether each
