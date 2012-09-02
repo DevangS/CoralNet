@@ -1,5 +1,14 @@
-/* The following design pattern is from
- * http://stackoverflow.com/a/1479341/859858 */
+/* The following "singleton" design pattern is from
+ * http://stackoverflow.com/a/1479341/859858
+ *
+ * Main update functions called in event handling code:
+ * updateFormFields
+ * updateFilesTable (calls updateFormFields)
+ * clearAnnotationFileStatus (calls updateFilesTable)
+ *
+ * Typically, any event handling function will only need to call
+ * one of these functions.
+ */
 var ImageUploadFormHelper = (function() {
 
     var i;
@@ -88,7 +97,7 @@ var ImageUploadFormHelper = (function() {
     /*
     Get the file details and display them in a table.
     */
-    function refreshFiles() {
+    function updateFilesAndRequestStatuses() {
         // Clear the table rows
         for (i = 0; i < files.length; i++) {
             files[i].$tableRow.remove();
@@ -143,10 +152,6 @@ var ImageUploadFormHelper = (function() {
         for (i = 0; i < files.length; i++) {
             files[i].status = null;
         }
-        // Ensure the files are marked as non-uploadable until we check
-        // for their uploadability
-        updateFilesTable();
-        updateFormFields();
 
         var filenameList = new Array(files.length);
         for (i = 0; i < files.length; i++) {
@@ -184,16 +189,13 @@ var ImageUploadFormHelper = (function() {
     function clearAnnotationFileStatus() {
         annotationFileStatus = null;
         $annotationFileStatusDisplay.empty();
-        annotationsPerImage = null;
 
-        // Make sure the upload start button is updated, because whether we
-        // can start the upload depends on the annotation file status.
-        updateFormFields();
+        annotationsPerImage = null;
+        // Update the files table's annotation count column.
+        updateFilesTable();
     }
 
     function checkAnnotationFile() {
-
-        clearAnnotationFileStatus();
 
         // Ask the server (via Ajax) about the annotations file: is each line
         // in the correct format?  How many points/annotations are there for
@@ -208,10 +210,6 @@ var ImageUploadFormHelper = (function() {
             success: ajaxUpdateAnnotationFileStatus
         };
         $('#annotations_form').ajaxSubmit(options);
-
-        // Make sure the upload start button is updated, because whether we
-        // can start the upload depends on the annotation file status.
-        updateFormFields();
     }
 
     function updateUploadability() {
@@ -385,6 +383,10 @@ var ImageUploadFormHelper = (function() {
 
         // Update the summary text above the files table
         updatePreUploadSummary();
+
+        // Update the form fields. For example, depending on the file statuses,
+        // the ability to click the start upload button could change.
+        updateFormFields();
     }
 
     function updateFilenameStatuses(statusList) {
@@ -424,7 +426,6 @@ var ImageUploadFormHelper = (function() {
         }
 
         updateFilesTable();
-        updateFormFields();
     }
 
     function ajaxUpdateFilenameStatuses(data) {
@@ -462,11 +463,7 @@ var ImageUploadFormHelper = (function() {
         if (!$(annotationsCheckboxField).prop('checked')) {
             return;
         }
-
-        // TODO: If annotationFileStatus is 'error', then don't show the column at all.
-
         // If annotationsPerImage is null for any other reason, then don't show the column at all.
-        // (TODO: shouldn't annotationsPerImage be null whenever the annotation file is errored? That could merge the above two cases.)
         if (annotationsPerImage === null) {
             return;
         }
@@ -479,7 +476,7 @@ var ImageUploadFormHelper = (function() {
 
             var metadataKey = files[i].metadataKey;
             var countUnits;
-            if (includesAnnotationsField.value = 'yes') {
+            if (includesAnnotationsField.value === 'yes') {
                 countUnits = ' annotation(s)';
             }
             else {
@@ -807,25 +804,21 @@ var ImageUploadFormHelper = (function() {
             $uploadAbortButton = $('#id_upload_abort_button');
 
             updateFilesTable();
-            updateFormFields();
 
             // Set onchange handlers for form fields.
             $(filesField).change( function(){
-                refreshFiles();
+                updateFilesAndRequestStatuses();
                 updateFilesTable();
-                updateFormFields();
             });
 
             $(dupeOptionField).change( function() {
                 updateFilesTable();
-                updateFormFields();
             });
 
             // This'll become relevant again when we support other methods of specifying metadata
             /*        $("#id_specify_metadata").change( function(){
-             refreshFiles();
+             updateFilesAndRequestStatuses();
              updateFilesTable();
-             updateFormFields();
              });*/
 
             // Extra help text for specify_metadata field.
@@ -862,18 +855,19 @@ var ImageUploadFormHelper = (function() {
 
             // Annotations section.
             $(annotationsCheckboxField).change(function() {
-                updateFormFields();
+                updateFilesTable();
             });
             $(includesAnnotationsField).change(function() {
                 clearAnnotationFileStatus();
-                updateFormFields();
             });
             $(annotationFileField).change(function() {
                 clearAnnotationFileStatus();
-                updateFormFields();
             });
 
-            $annotationFileCheckButton.click(checkAnnotationFile);
+            $annotationFileCheckButton.click(function() {
+                clearAnnotationFileStatus();
+                checkAnnotationFile();
+            });
             $uploadStartButton.click(ajaxUpload);
             $uploadAbortButton.click(abortAjaxUpload);
         }
