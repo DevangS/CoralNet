@@ -454,21 +454,36 @@ var ImageUploadFormHelper = (function() {
         updateFilesTable();
     }
 
+    /* Update the files table's annotation count column, which tells how
+     * many points/annotations the annotation file has for each image file. */
     function updateFilesTableAnnotationCounts() {
+
+        // First, clear the annotation count table cells and
+        // hide the annotation count column.
         for (i = 0; i < files.length; i++) {
             files[i].$annotationCountCell.empty();
         }
+        $('#files_table td.annotation_count_cell').hide();
 
-        // If annotations checkbox option is off, then don't show the column at all.
+        // If the annotations checkbox option is off, then we don't care about
+        // annotations, so return.
         if (!$(annotationsCheckboxField).prop('checked')) {
             return;
         }
-        // If annotationsPerImage is null for any other reason, then don't show the column at all.
+        // If annotationsPerImage is null, then we have no annotation count
+        // data, so return.
         if (annotationsPerImage === null) {
             return;
         }
+        // If none of the files are uploadable, then we have no data to add to
+        // the column, so return.
+        if (numUploadables === 0) {
+            return;
+        }
 
-        // Otherwise, show the column.
+        // Otherwise, show the column and fill it in.
+        $('#files_table td.annotation_count_cell').show();
+
         for (i = 0; i < files.length; i++) {
             if (!files[i].isUploadable) {
                 continue;
@@ -483,11 +498,12 @@ var ImageUploadFormHelper = (function() {
                 countUnits = ' point(s)';
             }
 
-
             if (annotationsPerImage.hasOwnProperty(metadataKey)) {
+                // The image has annotations.
                 files[i].$annotationCountCell.text(annotationsPerImage[metadataKey] + countUnits);
             }
             else {
+                // The image doesn't have annotations.
                 files[i].$annotationCountCell.text('0' + countUnits);
             }
         }
