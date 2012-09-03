@@ -1142,7 +1142,7 @@ def annotation_file_check_ajax(request, source_id):
                 message="Annotation options form is invalid",
             ))
 
-        includes_annotations_option = annotation_import_options_form.cleaned_data['includes_annotations']
+        is_uploading_annotations_not_just_points = annotation_import_options_form.cleaned_data['is_uploading_annotations_not_just_points']
         annotations_file = annotation_import_form.cleaned_data['annotations_file']
 
         try:

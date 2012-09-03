@@ -36,12 +36,12 @@
 
     <div class="narrow_column">
 
-        <form id="id_upload_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+        <form id="upload_options_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
             <legend class="small">Options</legend>
             {% include "form_generic.html" with form=options_form dont_mark_required="yes" %}
         </form>
 
-        <input type="checkbox" id="annotations_checkbox">
+        <input type="checkbox" name="is_uploading_points_or_annotations" id="annotations_checkbox">
         <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations</label>
 
         <form id="annotations_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}

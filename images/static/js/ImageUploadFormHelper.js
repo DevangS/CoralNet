@@ -34,7 +34,8 @@ var ImageUploadFormHelper = (function() {
     var annotationsCheckboxField = null;
     var $annotationsCheckboxLabel = null;
     var annotationFileField = null;
-    var includesAnnotationsField = null;
+    var pointsOnlyFieldId = 'id_is_uploading_annotations_not_just_points';
+    var pointsOnlyField = null;
 
     var $annotationFileCheckButton = null;
     var $uploadStartButton = null;
@@ -53,7 +54,7 @@ var ImageUploadFormHelper = (function() {
     var uploadStartUrl = null;
     //var uploadProgressUrl = null;
 
-    var $formClone = null;
+    var $formToSubmit = null;
     var uploadOptions = null;
 
     var files = [];
@@ -483,7 +484,7 @@ var ImageUploadFormHelper = (function() {
 
             var metadataKey = files[i].metadataKey;
             var countUnits;
-            if (includesAnnotationsField.value === 'yes') {
+            if (pointsOnlyField.value === 'yes') {
                 countUnits = ' annotation(s)';
             }
             else {
@@ -522,16 +523,6 @@ var ImageUploadFormHelper = (function() {
 
     function startAjaxImageUpload() {
 
-        $(filesField).prop('disabled', true);
-
-        $annotationFileCheckButton.prop('disabled', true);
-
-        $uploadStartButton.prop('disabled', true);
-        $uploadStartButton.text("Uploading...");
-
-        $uploadAbortButton.prop('disabled', false);
-        $uploadAbortButton.show();
-
         // Define the options for $.ajaxSubmit().
         uploadOptions = {
             // Expected datatype of response
@@ -545,19 +536,48 @@ var ImageUploadFormHelper = (function() {
             success: ajaxUploadHandleResponse
         };
 
-        // Create a clone of the form.
-        $formClone = $('#id_upload_form').clone();
+        // Create a new form out of the various form fields on the page.
+        // This form will be used with ajaxSubmit().
+        //
+        // Side note: even if all the fields were already in a single form,
+        // we'd have to create a new form for ajaxSubmit() anyway.  The
+        // reason is that we want to disable the form fields on the page so
+        // their values can't be changed mid-upload, and disabling form fields
+        // means the fields can't be used with ajaxSubmit().
+        //
+        // Start by cloning the options form.
+        $formToSubmit = $('#upload_options_form').clone();
+
         // clone() doesn't copy values of select inputs for some reason,
         // even when the data parameter to clone() is true. So copy these
         // values manually...
-        $formClone.find('#'+dupeOptionFieldId).val($(dupeOptionField).val());
-        $formClone.find('#'+metadataOptionFieldId).val($(metadataOptionField).val());
+        $formToSubmit.find('#'+dupeOptionFieldId).val($(dupeOptionField).val());
+        $formToSubmit.find('#'+metadataOptionFieldId).val($(metadataOptionField).val());
 
-        // Now that the form's cloned, go ahead and disable the option fields
-        // on the actual form. ($.ajaxSubmit() won't add form fields if
-        // they're disabled.)
+        // Add the (cloned) annotation fields.
+        $formToSubmit.append($(annotationsCheckboxField).clone());
+        $formToSubmit.append($(pointsOnlyField).clone());
+        // And copy the select input's value manually...
+        $formToSubmit.find('#'+pointsOnlyFieldId).val($(pointsOnlyField).val());
+        // Also add a field for the shelved annotation dict's id.
+        $formToSubmit.append($('<input type="text" name="annotation_dict_id">').val(annotationDictId));
+
+        // Disable all form fields and buttons on the page.
+        $(filesField).prop('disabled', true);
         $(dupeOptionField).prop('disabled', true);
         $(metadataOptionField).prop('disabled', true);
+
+        $(annotationsCheckboxField).prop('disabled', true);
+        $(annotationFileField).prop('disabled', true);
+        $(pointsOnlyField).prop('disabled', true);
+
+        $annotationFileCheckButton.prop('disabled', true);
+
+        $uploadStartButton.prop('disabled', true);
+        $uploadStartButton.text("Uploading...");
+
+        $uploadAbortButton.prop('disabled', false);
+        $uploadAbortButton.show();
 
         // Initialize the upload progress stats.
         numUploaded = 0;
@@ -658,7 +678,7 @@ var ImageUploadFormHelper = (function() {
 
             if (files[currentFileIndex].isUploadable) {
                 // An uploadable file was found, so upload it.
-                $formClone.ajaxSubmit(uploadOptions);
+                $formToSubmit.ajaxSubmit(uploadOptions);
 
                 // In the files table, update the status for that file.
                 var $statusCell = files[currentFileIndex].$statusCell;
@@ -804,7 +824,7 @@ var ImageUploadFormHelper = (function() {
             annotationsCheckboxField = $('#' + annotationsCheckboxFieldId)[0];
             $annotationsCheckboxLabel = $('#annotations_checkbox_label');
             annotationFileField = $('#id_annotations_file')[0];
-            includesAnnotationsField = $('#id_includes_annotations')[0];
+            pointsOnlyField = $('#' + pointsOnlyFieldId)[0];
 
             // Button elements.
             $annotationFileCheckButton = $('#annotation_file_check_button');
@@ -865,7 +885,7 @@ var ImageUploadFormHelper = (function() {
             $(annotationsCheckboxField).change(function() {
                 updateFilesTable();
             });
-            $(includesAnnotationsField).change(function() {
+            $(pointsOnlyField).change(function() {
                 clearAnnotationFileStatus();
             });
             $(annotationFileField).change(function() {

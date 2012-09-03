@@ -377,7 +377,7 @@ class AnnotationImportOptionsForm(Form):
     """
     Helper form for the AnnotationImportForm, containing import options.
     """
-    includes_annotations = ChoiceField(
+    is_uploading_annotations_not_just_points = ChoiceField(
         label='Data',
         choices=(
             ('yes', "Points and annotations"),
