@@ -136,7 +136,7 @@ def PreprocessImages(image_id):
     preprocessedImageFile = PREPROCESS_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".mat"
 
     task_helpers.coralnet_preprocessImage(
-        imageFile=ORIGINALIMAGES_DIR + str(image.original_file),
+        imageFile=os.path.join(ORIGINALIMAGES_DIR, str(image.original_file)),
         preprocessedImageFile=preprocessedImageFile,
         preprocessParameterFile=PREPROCESS_PARAM_FILE,
         ssFile = ssFile,
