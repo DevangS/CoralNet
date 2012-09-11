@@ -123,7 +123,7 @@ def PreprocessImages(image_id):
     subSampleRate = thisPixelCmRatio / TARGET_PIXEL_CM_RATIO
 
     #creates ssRate file
-    ssFile = PREPROCESS_DIR + str(image_id) + "_ssRate.txt"
+    ssFile = os.path.join(PREPROCESS_DIR, str(image_id) + "_ssRate.txt")
     file = open(ssFile, 'w')
     file.write(str(subSampleRate) + "\n");
     file.close()
@@ -133,7 +133,7 @@ def PreprocessImages(image_id):
     image.save()
 
     #matlab will output image.id_YearMonthDay.mat file
-    preprocessedImageFile = PREPROCESS_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".mat"
+    preprocessedImageFile = os.path.join(PREPROCESS_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".mat")
 
     task_helpers.coralnet_preprocessImage(
         imageFile=os.path.join(ORIGINALIMAGES_DIR, str(image.original_file)),
@@ -177,10 +177,10 @@ def MakeFeatures(image_id):
     image.status.save()
 
     #builds args for matlab script
-    preprocessedImageFile = PREPROCESS_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".mat"
-    featureFile = FEATURES_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".dat"
+    preprocessedImageFile = os.path.join(PREPROCESS_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".mat")
+    featureFile = os.path.join(FEATURES_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".dat")
     #creates rowColFile
-    rowColFile = FEATURES_DIR + str(image_id) + "_rowCol.txt"
+    rowColFile = os.path.join(FEATURES_DIR, str(image_id) + "_rowCol.txt")
     file = open(rowColFile, 'w')
     points = Point.objects.filter(image=image)
     for point in points:
@@ -188,7 +188,7 @@ def MakeFeatures(image_id):
         file.write(str(point.row) + "," + str(point.column) + "\n")
     file.close()
 
-    ssFile = PREPROCESS_DIR + str(image_id) + "_ssRate.txt"
+    ssFile = os.path.join(PREPROCESS_DIR, str(image_id) + "_ssRate.txt")
     task_helpers.coralnet_makeFeatures(
         preprocessedImageFile=preprocessedImageFile,
         featureFile=featureFile,
@@ -245,9 +245,9 @@ def Classify(image_id):
 
     print 'Start classify image id {id}'.format(id = image_id)
     #builds args for matlab script
-    featureFile = FEATURES_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".dat"
+    featureFile = os.path.join(FEATURES_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".dat")
     #get the source id for this file
-    labelFile = CLASSIFY_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".txt"
+    labelFile = os.path.join(CLASSIFY_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".txt")
 
     task_helpers.coralnet_classify(
         featureFile=featureFile,
@@ -261,7 +261,7 @@ def Classify(image_id):
     user = get_robot_user()
 
     #open the labelFile and rowColFile to process labels
-    rowColFile = FEATURES_DIR + str(image_id) + "_rowCol.txt"
+    rowColFile = os.path.join(FEATURES_DIR, str(image_id) + "_rowCol.txt")
     label_file = open(labelFile, 'r')
     row_file = open(rowColFile, 'r')
 
@@ -313,8 +313,8 @@ def addLabelsToFeatures(image_id):
     image.status.featureFileHasHumanLabels = True
     image.status.save()
 
-    featureFileIn = FEATURES_DIR + str(image_id) + "_" + image.get_process_date_short_str() + ".dat"
-    featureFileOut = FEATURES_DIR + str(image_id) + "_temp_" + image.get_process_date_short_str() + ".dat"	#temp file
+    featureFileIn = os.path.join(FEATURES_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".dat")
+    featureFileOut = os.path.join(FEATURES_DIR, str(image_id) + "_temp_" + image.get_process_date_short_str() + ".dat")	#temp file
     inputFF = open(featureFileIn, 'r')
     outputFF = open(featureFileOut, 'w')
 
@@ -373,9 +373,9 @@ def trainRobot(source_id):
         print 'previous robot version:' + str(previousRobot.version)
 
     # now, loop through the images and create some meta data files that MATLAB needs
-    workingDir = newRobot.path_to_model + '.workdir/'
-    pointInfoPath = workingDir + 'points'
-    fileNamesPath = workingDir + 'fileNames'
+    workingDir = os.path.join(newRobot.path_to_model, '.workdir/')
+    pointInfoPath = os.path.join(workingDir, 'points')
+    fileNamesPath = os.path.join(workingDir, 'fileNames')
     os.mkdir(workingDir)
     fItt = 0 #image iterator
     pointFile = open(pointInfoPath, 'w')
@@ -384,7 +384,7 @@ def trainRobot(source_id):
         if not image.status.featureFileHasHumanLabels:
             continue
         fItt = fItt + 1 #note that we start at 1, MATLAB style
-        featureFile = FEATURES_DIR + str(image.id) + "_" + image.get_process_date_short_str() + ".dat"
+        featureFile = os.path.join(FEATURES_DIR, str(image.id) + "_" + image.get_process_date_short_str() + ".dat")
         fileNameFile.write(featureFile + "\n") # write all file names in a file, so that mablat can find them
         points = Point.objects.filter(image=image)
         pItt = 0
