@@ -71,6 +71,16 @@ def schedulerInfLoop():
             processSourceCompleate(source.id)
         time.sleep(settings.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING) #sleep
 
+def processAllSources():
+	keyfilepath = join_processing_root("images/robot_running_flag")
+	if os.path.exists(keyfilepath):
+		return 1
+	open(keyfilepath, 'w')
+	for source in Source.objects.filter(enable_robot_classifier=True):
+			processSourceCompleate(source.id)
+	os.remove(keyfilepath)
+
+
 @task()
 def processSourceCompleate(source_id):
     source = Source.objects.get(pk = source_id)
