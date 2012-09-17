@@ -141,7 +141,7 @@ def filename_to_metadata(filename, source):
 
     # Make the values into a tuple, so the metadata can potentially be
     # hashed and used in lookups.
-    metadataDict['values'] = tuple(valueList)
+    metadataDict['values'] = valueList
 
     metadataDict['year'] = year
     metadataDict['month'] = month
@@ -166,7 +166,7 @@ def metadata_to_filename(values=None,
 
 
 def metadata_dict_to_string_list(metadata_dict):
-    return metadata_dict['values'] + (metadata_dict['year'],)
+    return metadata_dict['values'] + [metadata_dict['year']]
 
 
 def metadata_dict_to_dupe_comparison_key(metadata_dict):

@@ -889,15 +889,16 @@ def multi_image_upload_process(imageFiles, imageOptionsForm, annotationOptionsFo
 
 
 def image_upload_process(imageFile, imageOptionsForm,
-                         annotationOptionsForm, source,
-                         currentUser, annoFile):
+                         is_uploading_points_or_annotations,
+                         annotation_dict_id,
+                         annotation_options_form,
+                         source, currentUser):
 
     dupeOption = imageOptionsForm.cleaned_data['skip_or_replace_duplicates']
 
     filename = imageFile.name
     is_dupe = False
     metadata_dict = None
-    annotation_data = None
     metadata_obj = Metadata(height_in_cm=source.image_height_in_cm)
 
     if imageOptionsForm.cleaned_data['specify_metadata'] == 'filenames':
@@ -951,13 +952,74 @@ def image_upload_process(imageFile, imageOptionsForm,
         metadata_obj.name = filename
         is_dupe = False
 
-    if annotation_data:
-        # Image + annotation import form
-        # Assumes we got the images' metadata (from filenames or otherwise)
-        # TODO
-        return
+    # Use the location values and the year to build a string identifier for the image, such as:
+    # Shore1;Reef5;...;2008
+    # Convert to a string (instead of a unicode string) for the shelve key lookup.
+    image_identifier = str(get_image_identifier(metadata_dict['values'], metadata_dict['year']))
+
+    image_annotations = None
+    has_points_or_annotations = False
+    if is_uploading_points_or_annotations:
+        annotation_dict = shelve.open(os.path.join(
+            settings.SHELVED_ANNOTATIONS_DIR,
+            'source{source_id}_{dict_id}'.format(
+                source_id=source.id,
+                dict_id=annotation_dict_id,
+            ),
+        ))
+        if annotation_dict.has_key(image_identifier):
+            image_annotations = annotation_dict[image_identifier]
+            has_points_or_annotations = True
+        annotation_dict.close()
+
+    if has_points_or_annotations:
+        # Image upload with points/annotations
+
+        is_uploading_annotations_not_just_points = annotation_options_form.cleaned_data['is_uploading_annotations_not_just_points']
+        imported_user = get_imported_user()
+
+        status = ImageStatus()
+        status.save()
+
+        metadata_obj.annotation_area = AnnotationAreaUtils.IMPORTED_STR
+        metadata_obj.save()
+
+        img = Image(
+            original_file=imageFile,
+            uploaded_by=currentUser,
+            point_generation_method=PointGen.args_to_db_format(
+                point_generation_type=PointGen.Types.IMPORTED,
+                imported_number_of_points=len(image_annotations)
+            ),
+            metadata=metadata_obj,
+            source=source,
+            status=status,
+        )
+        img.save()
+
+        # Iterate over this image's annotations and save them.
+        point_num = 0
+        for anno in image_annotations:
+
+            # Save the Point in the database.
+            point_num += 1
+            point = Point(row=anno['row'], column=anno['col'], point_number=point_num, image=img)
+            point.save()
+
+            if is_uploading_annotations_not_just_points:
+                label = Label.objects.filter(code=anno['label'])[0]
+
+                # Save the Annotation in the database, marking the annotations as imported.
+                annotation = Annotation(user=imported_user,
+                    point=point, image=img, label=label, source=source)
+                annotation.save()
+
+        img.status.hasRandomPoints = True
+        if is_uploading_annotations_not_just_points:
+            img.status.annotatedByHuman = True
+        img.status.save()
     else:
-        # Image upload form, no annotations
+        # Image upload, no points/annotations
         image_status = ImageStatus()
         image_status.save()
 
@@ -1201,22 +1263,35 @@ def annotation_file_check_ajax(request, source_id):
 def image_upload_ajax(request, source_id):
     source = get_object_or_404(Source, id=source_id)
 
-    imageForm = ImageUploadForm(request.POST, request.FILES)
-    optionsForm = ImageUploadOptionsForm(request.POST, source=source)
+    image_form = ImageUploadForm(request.POST, request.FILES)
+    options_form = ImageUploadOptionsForm(request.POST, source=source)
+
+    is_uploading_points_or_annotations = request.POST.get('is_uploading_points_or_annotations', 'off')
+    annotation_dict_id = request.POST.get('annotation_dict_id', None)
+    annotation_options_form = AnnotationImportOptionsForm(request.POST)
 
     # Check for validity of the file (filetype and non-corruptness) and
-    # the options form.
-    if imageForm.is_valid():
-        if optionsForm.is_valid():
-            resultDict = image_upload_process(
-                imageFile=request.FILES['file'],
-                imageOptionsForm=optionsForm,
-                annotationOptionsForm=None,
-                source=source,
-                currentUser=request.user,
-                annoFile=None
-            )
-            return JsonResponse(resultDict)
+    # the options forms.
+    if image_form.is_valid():
+        if options_form.is_valid():
+            if annotation_options_form.is_valid():
+                resultDict = image_upload_process(
+                    imageFile=request.FILES['file'],  # TODO: To be more clear, couldn't this just be image_form.cleaned_data['file']?
+                    imageOptionsForm=options_form,
+                    is_uploading_points_or_annotations=is_uploading_points_or_annotations,
+                    annotation_dict_id=annotation_dict_id,
+                    annotation_options_form=annotation_options_form,
+                    source=source,
+                    currentUser=request.user,
+                )
+                return JsonResponse(resultDict)
+            else:
+                return JsonResponse(dict(
+                    status='error',
+                    message="Annotation options form is invalid",
+                    link=None,
+                    title=None,
+                ))
         else:
             return JsonResponse(dict(
                 status='error',
@@ -1229,7 +1304,7 @@ def image_upload_ajax(request, source_id):
         # file is corrupt, file is empty, etc.
         return JsonResponse(dict(
             status='error',
-            message=imageForm.errors['file'][0],
+            message=image_form.errors['file'][0],
             link=None,
             title=None,
         ))
