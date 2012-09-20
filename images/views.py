@@ -609,7 +609,7 @@ def annotations_file_to_python(annoFile, source):
     # The annotation dict needs to be kept on disk temporarily until all the
     # Ajax upload requests are done. Thus, we'll use Python's shelve module
     # to make a persistent dict.
-    if not os.access(settings.SHELVED_ANNOTATIONS_DIR, os.F_OK&os.R_OK&os.W_OK):
+    if not os.access(settings.SHELVED_ANNOTATIONS_DIR, os.R_OK | os.W_OK):
         raise DirectoryAccessError(
             "The SHELVED_ANNOTATIONS_DIR ({dir}) either does not exist, is not readable, or is not writable. Please rectify this.".format(
                 dir=settings.SHELVED_ANNOTATIONS_DIR,
