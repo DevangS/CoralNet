@@ -42,7 +42,7 @@
         </form>
 
         <input type="checkbox" name="is_uploading_points_or_annotations" id="annotations_checkbox">
-        <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations</label>
+        <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations (optional)</label>
 
         <form id="annotations_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
             {% include "form_generic.html" with form=annotation_import_form dont_mark_required="yes" %}
