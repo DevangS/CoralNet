@@ -41,6 +41,8 @@ var ImageUploadFormHelper = (function() {
     var $uploadStartButton = null;
     var $uploadAbortButton = null;
 
+    var $uploadStartInfo = null;
+
     var $metadataExtraHelpText = null;
     var $metadataExtraHelpTextLink = null;
     var $filesExtraHelpText = null;
@@ -125,31 +127,31 @@ var ImageUploadFormHelper = (function() {
         // Update the upload start button.
         if (annotationsChecked && annotationFileField.files.length === 0) {
             $uploadStartButton.prop('disabled', true);
-            $uploadStartButton.text("Points/annotations file not selected yet");
+            $uploadStartInfo.text("Points/annotations file not selected yet");
         }
         else if (annotationsChecked && annotationFileStatus === null) {
             $uploadStartButton.prop('disabled', true);
-            $uploadStartButton.text("Points/annotations file needs checking");
+            $uploadStartInfo.text("Points/annotations file needs checking");
         }
         else if (annotationsChecked && annotationFileStatus === 'error') {
             // No annotation file
             $uploadStartButton.prop('disabled', true);
-            $uploadStartButton.text("Points/annotations file has an error");
+            $uploadStartInfo.text("Points/annotations file has an error");
         }
         else if (files.length === 0) {
             // No image files
             $uploadStartButton.prop('disabled', true);
-            $uploadStartButton.text("No image files selected yet");
+            $uploadStartInfo.text("No image files selected yet");
         }
         else if (numUploadables === 0) {
             // No uploadable image files
             $uploadStartButton.prop('disabled', true);
-            $uploadStartButton.text("Cannot upload any of these image files");
+            $uploadStartInfo.text("Cannot upload any of these image files");
         }
         else {
             // Uploadable image files present
             $uploadStartButton.prop('disabled', false);
-            $uploadStartButton.text("Start upload");
+            $uploadStartInfo.empty();
         }
 
         // Show or hide the files list auto-scroll option
@@ -839,6 +841,8 @@ var ImageUploadFormHelper = (function() {
             $annotationFileCheckButton = $('#annotation_file_check_button');
             $uploadStartButton = $('#id_upload_submit');
             $uploadAbortButton = $('#id_upload_abort_button');
+
+            $uploadStartInfo = $('#upload_start_info');
 
             updateFilesTable();
 
