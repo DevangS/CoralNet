@@ -20,7 +20,7 @@ from accounts.utils import get_imported_user
 from annotations.forms import AnnotationAreaPercentsForm, AnnotationImportForm, AnnotationImportOptionsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import LabelGroup, Label, Annotation, LabelSet
-from lib.exceptions import FileContentError, FilenameError
+from lib.exceptions import *
 from annotations.utils import image_annotation_area_is_editable, image_has_any_human_annotations
 from decorators import source_permission_required, image_visibility_required, image_permission_required, source_labelset_required, source_visibility_required
 
@@ -609,6 +609,12 @@ def annotations_file_to_python(annoFile, source):
     # The annotation dict needs to be kept on disk temporarily until all the
     # Ajax upload requests are done. Thus, we'll use Python's shelve module
     # to make a persistent dict.
+    if not os.access(settings.SHELVED_ANNOTATIONS_DIR, os.F_OK&os.R_OK&os.W_OK):
+        raise DirectoryAccessError(
+            "The SHELVED_ANNOTATIONS_DIR ({dir}) either does not exist, is not readable, or is not writable. Please rectify this.".format(
+                dir=settings.SHELVED_ANNOTATIONS_DIR,
+            )
+        )
     annotation_dict_id = rand_string(10)
     annotation_dict = shelve.open(os.path.join(
         settings.SHELVED_ANNOTATIONS_DIR,
@@ -1276,7 +1282,7 @@ def image_upload_ajax(request, source_id):
         if options_form.is_valid():
             if annotation_options_form.is_valid():
                 resultDict = image_upload_process(
-                    imageFile=request.FILES['file'],  # TODO: To be more clear, couldn't this just be image_form.cleaned_data['file']?
+                    imageFile=image_form.cleaned_data['file'],
                     imageOptionsForm=options_form,
                     is_uploading_points_or_annotations=is_uploading_points_or_annotations,
                     annotation_dict_id=annotation_dict_id,

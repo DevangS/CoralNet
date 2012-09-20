@@ -32,6 +32,16 @@ class FileContentError(Exception):
     """
     pass
 
+class DirectoryAccessError(Exception):
+    """
+    Raised when a directory is expected to exist, be readable, and/or be
+    writable, and that turns out to not be the case.
+    For example, a directory is specified in a settings file and
+    we now want to create a file in that directory, but that directory
+    doesn't exist.
+    """
+    pass
+
 class TestfileDirectoryError(Exception):
     """
     When there's something wrong with a directory meant to hold
