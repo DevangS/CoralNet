@@ -4,6 +4,16 @@
     display: none;
 }
 
+#annotation_file_status {
+    padding: 2px;
+}
+#annotation_file_status.ok {
+    background-color: #88ff88;
+}
+#annotation_file_status.error {
+    background-color: #ff8888;
+}
+
 #annotation_file_check_button{
     /* This button starts out hidden; it's shown when the user chooses
        to upload points/annotations. */

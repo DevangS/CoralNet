@@ -399,6 +399,7 @@ var ImageUploadFormHelper = (function() {
     function clearAnnotationFileStatus() {
         annotationFileStatus = null;
         $annotationFileStatusDisplay.empty();
+        $annotationFileStatusDisplay.removeClass('ok error');
 
         annotationsPerImage = null;
         annotationDictId = null;
@@ -428,6 +429,9 @@ var ImageUploadFormHelper = (function() {
 
         if (response.status === 'ok') {
             $annotationFileStatusDisplay.text("Annotation file is OK.");
+            $annotationFileStatusDisplay.removeClass('ok error');
+            $annotationFileStatusDisplay.addClass('ok');
+
             annotationsPerImage = response.annotations_per_image;
             annotationDictId = response.annotation_dict_id;
         }
@@ -442,6 +446,9 @@ var ImageUploadFormHelper = (function() {
                     $annotationFileStatusDisplay.append('<br>');
                 }
             }
+
+            $annotationFileStatusDisplay.removeClass('ok error');
+            $annotationFileStatusDisplay.addClass('error');
         }
 
         updateFilesTable();
@@ -805,7 +812,7 @@ var ImageUploadFormHelper = (function() {
             $preUploadSummary = $('td#pre_upload_summary');
             $midUploadSummary = $('td#mid_upload_summary');
             // Annotation file status elements.
-            $annotationFileStatusDisplay = $('#annotations_file_status');
+            $annotationFileStatusDisplay = $('#annotation_file_status');
 
             // The upload file table.
             $filesTable = $('table#files_table');

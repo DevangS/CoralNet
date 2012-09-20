@@ -45,10 +45,31 @@
         <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations (optional)</label>
 
         <form id="annotations_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-            {% include "form_generic.html" with form=annotation_import_form dont_mark_required="yes" %}
 
-            <span id="annotations_file_status"></span>
+            {% comment %}
+            Field for the annotations file. We'll specify elements manually
+            instead of using form_generic.html, so we can put the annotation
+            file status between elements.
+            {% endcomment %}
+            {% with field=annotation_import_form.annotations_file %}
+                {# The field label #}
+                <label for="{{ field.id_for_label }}" class="column_form_text_field">
+                    {{ field.label }}:
+                </label>
 
+                <div class="field_wrapper">
+                    {# The file field element #}
+                    {{ field }}
+
+                    {# Result of an annotation file check #}
+                    <div id="annotation_file_status" class="helptext_small"></div>
+
+                    {# Help text #}
+                    {% include "form_generic_one_field_help_text.html" %}
+                </div>
+            {% endwith %}
+
+            {# Options related to the annotations file. #}
             {% include "form_generic.html" with form=annotation_import_options_form dont_mark_required="yes" %}
         </form>
 
