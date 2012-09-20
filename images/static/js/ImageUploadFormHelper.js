@@ -421,10 +421,12 @@ var ImageUploadFormHelper = (function() {
             success: annotationFileAjaxResponseHandler
         };
         $('#annotations_form').ajaxSubmit(options);
+        $annotationFileStatusDisplay.text("Checking...");
     }
 
     function annotationFileAjaxResponseHandler(response) {
 
+        $annotationFileStatusDisplay.empty();
         annotationFileStatus = response.status;
 
         if (response.status === 'ok') {
