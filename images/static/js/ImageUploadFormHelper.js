@@ -69,6 +69,8 @@ var ImageUploadFormHelper = (function() {
     var numUploadSuccesses = 0;
     var numUploadErrors = 0;
     var uploadedTotalSize = 0;
+    var numImagesWithAnnotations = 0;
+    var numTotalAnnotations = 0;
     var currentFileIndex = null;
     var uploadXhrObj = null;
 
@@ -249,6 +251,12 @@ var ImageUploadFormHelper = (function() {
                 summaryTextLines.push("... {0} file(s) are duplicates that will replace the originals".format(numDupes));
             }
         }
+
+        if (annotations) {
+            summaryTextLines.push("... {0} file(s) have a total of {1} points/annotations specified for them".format(numImagesWithAnnotations, numTotalAnnotations));
+            summaryTextLines.push("... {0} file(s) do not have any points/annotations specified, so we will automatically generate points for them ({1})".format(numUploadables-numImagesWithAnnotations, pointGenMethod));
+        }
+
         if (numPreUploadErrors > 0) {
             summaryTextLines.push("{0} file(s) have filename errors".format(numPreUploadErrors));
         }
@@ -488,6 +496,9 @@ var ImageUploadFormHelper = (function() {
         // Otherwise, show the column and fill it in.
         $('#files_table td.annotation_count_cell').show();
 
+        numImagesWithAnnotations = 0;
+        numTotalAnnotations = 0;
+
         for (i = 0; i < files.length; i++) {
             if (!files[i].isUploadable) {
                 continue;
@@ -505,6 +516,8 @@ var ImageUploadFormHelper = (function() {
             if (annotationsPerImage.hasOwnProperty(metadataKey)) {
                 // The image has annotations.
                 files[i].$annotationCountCell.text(annotationsPerImage[metadataKey] + countUnits);
+                numImagesWithAnnotations++;
+                numTotalAnnotations += annotationsPerImage[metadataKey];
             }
             else {
                 // The image doesn't have annotations.
