@@ -5,7 +5,7 @@ from django.core.mail.message import BadHeaderError
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from lib.forms import ContactForm
-from lib import msg_consts
+from lib import msg_consts, str_consts
 
 @login_required
 def contact(request):
@@ -18,16 +18,11 @@ def contact(request):
 
         if contact_form.is_valid():
             # Set up the subject and message.
-            subject = "Contact Us - {username} - {base_subject}".format(
+            subject = str_consts.CONTACT_EMAIL_SUBJECT_FMTSTR.format(
                 username=request.user.username,
                 base_subject=contact_form.cleaned_data['subject'],
             )
-            message = ("This email was sent using the Contact Us form.\n"
-                       "\n"
-                       "Username: {username}\n"
-                       "User's email: {user_email}\n"
-                       "\n"
-                       "{base_message}").format(
+            message = str_consts.CONTACT_EMAIL_MESSAGE_FMTSTR.format(
                 username=request.user.username,
                 user_email=request.user.email,
                 base_message=contact_form.cleaned_data['message'],
@@ -43,7 +38,7 @@ def contact(request):
                 messages.error(request, "Sorry, the email could not be sent. An invalid header was found.")
 
             # Stay on the same page, but put a message at the top of the page.
-            messages.success(request, "Your email was sent to the admins!")
+            messages.success(request, msg_consts.CONTACT_EMAIL_SENT)
         else:
             messages.error(request, msg_consts.FORM_ERRORS)
 

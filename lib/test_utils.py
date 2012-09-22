@@ -30,6 +30,14 @@ class MyTestSuiteRunner(DjangoTestSuiteRunner):
         # More info: http://docs.celeryproject.org/en/latest/django/unit-testing.html
         settings.CELERY_ALWAYS_EAGER = True
 
+        # To test functionality of sending emails to the admins,
+        # settings.ADMINS must be set. It might not be set for
+        # development machines.
+        settings.ADMINS = (
+            ('Admin One', 'admin1@example.com'),
+            ('Admin Two', 'admin2@example.com'),
+        )
+
 
 class BaseTest(TestCase):
     """
