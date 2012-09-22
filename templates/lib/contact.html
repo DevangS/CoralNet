@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us | CoralNet{% endblock %}
+
+{% block page-specific-includes %}
+    {% include "form_media_versioned.html" with form=contact_form %}
+{% endblock %}
+
+{% block content %}
+    <fieldset>
+        <legend>Contact Us</legend>
+
+        <p>Use this form to send an email to the CoralNet team. You may use
+           this form for requests related to your CoralNet account or sources,
+           such as a request to enable the machine annotator for your
+           source.</p>
+
+        <p>For comments related to the site as a whole, such as feedback, bug
+           reports, and feature suggestions, please use the
+           <a href="{% url feedback_form %}">feedback form</a>
+           instead.</p>
+
+        {% include "form_generic.html" with form=contact_form %}
+    </fieldset>
+
+    <div class="submit_button_wrapper_column_form">
+        <input type="submit" value="Send" />
+    </div>
+{% endblock %}

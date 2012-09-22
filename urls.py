@@ -27,9 +27,13 @@ urlpatterns = patterns('',
     url(r'^$',
         direct_to_template,
         {'template': 'static/index.html'},
-        name='index'),
-    (r'^i18n/', include('django.conf.urls.i18n')),                   
-   
+        name='index',
+    ),
+    url(r'^contact/$', 'lib.views.contact', name='contact'),
+
+    # Internationalization
+    (r'^i18n/', include('django.conf.urls.i18n')),
+
     # Examples:
     # url(r'^$', 'CoralNet.views.home', name='home'),
     # url(r'^CoralNet/', include('CoralNet.foo.urls')),
