@@ -14,8 +14,12 @@ class ImageSourceForm(ModelForm):
 
     class Meta:
         model = Source
-        exclude = ('default_point_generation_method', 'labelset',
-                   'image_annotation_area')
+        exclude = (
+            'default_point_generation_method',    # Handled by a separate form
+            'labelset',    # Handled by the new/edit labelset page
+            'image_annotation_area',    # Handled by a separate form
+            'enable_robot_classifier',    # Changeable only upon request
+        )
         widgets = {
             'key1': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'key2': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),

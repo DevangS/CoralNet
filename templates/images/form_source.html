@@ -9,7 +9,7 @@ This form template is meant to be used with the "include" template tag.
 
 <fieldset>
     <legend class="small">Location Keys</legend>
-    <span class="helptext">This information can be used as search keys when you browse through your Source's images.<br />
+    <span class="helptext">This information can be used as search keys when you browse through your source's images.<br />
                            You can have up to 5 location keys.  Key 1 is most general, Key 5 is most specific.<br />
                            Example: (1) City, (2) Town, (3) Block</span>
     {% include "form_generic.html" with form=sourceForm.fieldsets.keys %}
@@ -33,11 +33,38 @@ This form template is meant to be used with the "include" template tag.
     <legend class="smaller">Point generation method</legend>
     <span class="helptext">{{ pointGenForm.form_help_text|linebreaksbr }}</span>
     {% include "form_generic.html" with form=pointGenForm %}
+
+    <hr class="light"/>
+
+    <legend class="smaller">Machine annotation</legend>
+    {% if source_form_type == "edit" %}
+        <span class="helptext">
+            Status:
+            {% if source.enable_automated_classifier %}
+                Enabled
+            {% else %}
+                Disabled
+            {% endif %}
+        </span>
+    {% endif %}
+    <span class="helptext">
+        {% if source_form_type == "new" %}
+            For now, all sources have machine annotation disabled by
+            default, but you can request to have machine annotation
+            enabled for your source. If you wish to enable it, please
+            <a href="{% url contact %}" target="_blank">contact us</a>.
+        {% else %} {# edit #}
+            For now, enabling or disabling machine annotation for a source
+            can only be done upon request. If you wish to enable or disable
+            machine annotation, please
+            <a href="{% url contact %}" target="_blank">contact us</a>.
+        {% endif %}
+    </span>
 </fieldset>
 
 <fieldset>
     <legend class="small">World Location</legend>
-    <span class="helptext">To get your Source's coordinates, try <a href="http://www.getlatlon.com/" target="_blank">getlatlon.com</a>.<br />
+    <span class="helptext">To get your source's coordinates, try <a href="http://www.getlatlon.com/" target="_blank">getlatlon.com</a>.<br />
                            Later, we'll use this information to integrate with Google Maps.</span>
     {% include "form_generic.html" with form=sourceForm.fieldsets.world_location %}
 </fieldset>

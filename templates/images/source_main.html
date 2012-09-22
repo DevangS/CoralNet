@@ -87,7 +87,7 @@
     <hr />
     <div id="robots">
 		{% if robotStats.hasRobot %}
-        <h3>Robot stats</h3>
+        <h3>Machine annotator stats</h3>
             <table class="detail_table">
                 <tr>
                     <td>Version</td>
@@ -103,9 +103,11 @@
                 </tr>
             </table>
         {% else %}
-            <p>(No robot available yet)</p>
+            <p>(No machine annotator available yet)</p>
         {% endif %}
 	</div>
+    {% else %}
+        <p>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</p>
     {% endif %}
 
     <hr />

@@ -40,10 +40,10 @@ def contact(request):
                     message=message,
                 )
             except BadHeaderError:
-                messages.error(request, 'Sorry, the email could not be sent. An invalid header was found.')
+                messages.error(request, "Sorry, the email could not be sent. An invalid header was found.")
 
             # Stay on the same page, but put a message at the top of the page.
-            messages.success(request, "Your email was sent!")
+            messages.success(request, "Your email was sent to the admins!")
         else:
             messages.error(request, msg_consts.FORM_ERRORS)
 

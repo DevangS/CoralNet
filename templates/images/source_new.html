@@ -15,8 +15,7 @@
        We are still working on making sources more intuitive, flexible, and easier to navigate.
        However, feel free to create a source and try it out. Please send us your feedback to help us improve.</p>
 
-    {# This form submits to the same URL as this page. #}
-    {# The view function redirects to the success page if the form is valid. #}
+    {% with source_form_type="new" %}
 
     <form action="" method="post">{% csrf_token %}
       {% include "images/form_source.html" with sourceForm=sourceForm pointGenForm=pointGenForm annotationAreaForm=annotationAreaForm %}
@@ -25,5 +24,7 @@
         <input type="submit" value="Create Source" />
       </div>
     </form>
+
+    {% endwith %}
 
 {% endblock %}

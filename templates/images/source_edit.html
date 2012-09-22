@@ -10,7 +10,9 @@
 {% block content %}
 
     <legend>Edit Source</legend>
-    
+
+    {% with source_form_type="edit" %}
+
     <form action="" method="post">{% csrf_token %}
       {% include "images/form_source.html" with sourceForm=editSourceForm pointGenForm=pointGenForm annotationAreaForm=annotationAreaForm %}
 
@@ -19,5 +21,7 @@
         <input name="cancel" type="submit" value="Cancel Changes" />
       </div>
     </form>
+
+    {% endwith %}
 
 {% endblock %}
