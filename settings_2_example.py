@@ -67,6 +67,19 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 # Example: "/home/media/media.lawrence.com/static/"
 STATIC_ROOT = ''
 
+# This is our own setting (not a standard Django setting) specifying the
+# verbosity of print messages printed by our unit tests' code. Note that
+# this is different from Django's test runner's verbosity setting, which
+# relates to messages printed by the test runner code.
+#
+# 0 means the unit tests won't print any additional messages.
+#
+# 1 means the unit tests will print additional messages as extra confirmation
+# that things worked.
+#
+# There is no 2 for now, unless we see a need for it later.
+UNIT_TEST_VERBOSITY = 0
+
 # South settings
 #
 # SOUTH_TESTS_MIGRATE:

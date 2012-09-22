@@ -65,8 +65,10 @@ class ContactTest(ClientTest):
                 )
             ),
         )
+        if settings.UNIT_TEST_VERBOSITY >= 1:
+            print "Email subject:\n{subject}".format(subject=contact_email.subject)
 
-        # Check the message.
+        # Check the message/body.
         self.assertEqual(
             contact_email.body,
             str_consts.CONTACT_EMAIL_MESSAGE_FMTSTR.format(
@@ -75,6 +77,8 @@ class ContactTest(ClientTest):
                 base_message=message,
             ),
         )
+        if settings.UNIT_TEST_VERBOSITY >= 1:
+            print "Email message:\n{message}".format(message=contact_email.body)
 
     def test_contact_errors(self):
         self.client.login(username='user2', password='secret')

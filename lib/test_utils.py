@@ -128,6 +128,12 @@ class ClientTest(BaseTest):
                 expected=expected_messages_str,
                 actual=actual_messages_str,
             ))
+        else:
+            # Success. Print the message if UNIT_TEST_VERBOSITY is on.
+            if settings.UNIT_TEST_VERBOSITY >= 1:
+                print u"Messages:"
+                for message in actual_messages:
+                    print u"{m}".format(m=message)
 
     def assertFormErrors(self, response, form_name, expected_errors):
         """

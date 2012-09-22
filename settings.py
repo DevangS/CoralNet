@@ -254,6 +254,12 @@ AUTHENTICATION_BACKENDS = (
 
 TEST_RUNNER = 'lib.test_utils.MyTestSuiteRunner'
 
+# This is our own setting (not a standard Django setting) specifying the
+# verbosity of print messages printed by our unit tests' code. Note that
+# this is different from Django's test runner's verbosity setting, which
+# relates to messages printed by the test runner code.
+UNIT_TEST_VERBOSITY = settings_2.UNIT_TEST_VERBOSITY
+
 #Django-guardian settings
 ANONYMOUS_USER_ID = -1
 

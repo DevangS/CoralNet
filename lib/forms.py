@@ -11,7 +11,7 @@ class ContactForm(forms.Form):
         max_length=55,
     )
     message = forms.CharField(
-        label='Message',
+        label='Message/Body',
         max_length=5000,
         widget=forms.Textarea(
             attrs={'class': 'large'},
