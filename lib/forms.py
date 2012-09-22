@@ -1,18 +1,17 @@
-from django.forms import Form
-from django.forms.fields import CharField
-from django.forms.widgets import Textarea
+from django import forms
 
-class ContactForm(Form):
+class ContactForm(forms.Form):
     """
     Allows a user to send a general email to the site admins.
     """
-
-    subject = CharField(
+    subject = forms.CharField(
         label='Subject',
-        max_length=255,  # TODO: What's a good character limit?
+        max_length=100,  # TODO: What's a good character limit?
     )
-    message = CharField(
+    message = forms.CharField(
         label='Message',
         max_length=5000,  # TODO: What's a good character limit?
-        widget=Textarea(),
+        widget=forms.Textarea(
+            attrs={'class': 'large'},
+        ),
     )

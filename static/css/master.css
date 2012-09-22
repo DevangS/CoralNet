@@ -486,8 +486,14 @@ span.editable:focus {
 
 /* Multiline text field */
 textarea {
-    height: 4em;
+    width: 300px;
+    height: 8em;
+
     margin: 3px 0;    /* top/bottom left/right */
+}
+textarea.large {
+    width: 400px;
+    height: 16em;
 }
 
 input[type=submit], button.submit {

@@ -7,13 +7,17 @@
 {% endblock %}
 
 {% block content %}
+
+<form action="" method="post">
+    {% csrf_token %}
+
     <fieldset>
         <legend>Contact Us</legend>
 
         <p>Use this form to send an email to the CoralNet team. You may use
-           this form for requests related to your CoralNet account or sources,
-           such as a request to enable the machine annotator for your
-           source.</p>
+           this form for questions or requests related to your use of
+           CoralNet, such as a request to enable the machine annotator for
+           your source.</p>
 
         <p>For comments related to the site as a whole, such as feedback, bug
            reports, and feature suggestions, please use the
@@ -26,4 +30,6 @@
     <div class="submit_button_wrapper_column_form">
         <input type="submit" value="Send" />
     </div>
+</form>
+
 {% endblock %}
