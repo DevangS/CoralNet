@@ -1228,7 +1228,7 @@ def annotation_file_check_ajax(request, source_id):
         # Return information on how many points/annotations
         # each metadata set has in the annotation file.
         annotations_per_image = dict(
-            [(k, str(len(v))) for k, v in annotation_dict.iteritems()]
+            [(k, len(v)) for k, v in annotation_dict.iteritems()]
         )
         # We're done with the shelved dict for now.
         annotation_dict.close()

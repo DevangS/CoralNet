@@ -45,6 +45,9 @@ var ImageUploadFormHelper = (function() {
 
     var $metadataExtraHelpText = null;
     var $metadataExtraHelpTextLink = null;
+    var $dupeOptionWrapper = null;
+    var $annotationForm = null;
+    var $pointGenText = null;
     var $filesExtraHelpText = null;
     var $filesExtraHelpTextLink = null;
 
@@ -69,8 +72,11 @@ var ImageUploadFormHelper = (function() {
     var numUploadSuccesses = 0;
     var numUploadErrors = 0;
     var uploadedTotalSize = 0;
+
     var numImagesWithAnnotations = 0;
     var numTotalAnnotations = 0;
+    var annotationCountUnits = null;
+
     var currentFileIndex = null;
     var uploadXhrObj = null;
 
@@ -90,10 +96,10 @@ var ImageUploadFormHelper = (function() {
         // Show or hide the skip-or-replace-dupes option
         // depending on whether it's relevant or not.
         if ($(metadataOptionField).val() === 'filenames') {
-            $("#id_skip_or_replace_duplicates_wrapper").show();
+            $dupeOptionWrapper.show();
         }
         else {
-            $("#id_skip_or_replace_duplicates_wrapper").hide();
+            $dupeOptionWrapper.hide();
         }
 
         var annotationsChecked = $(annotationsCheckboxField).prop('checked');
@@ -101,13 +107,13 @@ var ImageUploadFormHelper = (function() {
         // Show or hide the annotations section depending
         // on the checkbox's value.
         if (annotationsChecked) {
-            $('#annotations_form').show();
-            $('#auto_generate_points_page_section').hide();
+            $annotationForm.show();
+            $pointGenText.hide();
             $annotationsCheckboxLabel.removeClass('disabled');
         }
         else {
-            $('#annotations_form').hide();
-            $('#auto_generate_points_page_section').show();
+            $annotationForm.hide();
+            $pointGenText.show();
             $annotationsCheckboxLabel.addClass('disabled');
         }
 
@@ -241,24 +247,48 @@ var ImageUploadFormHelper = (function() {
         var summaryTextLines = [];
 
         summaryTextLines.push(files.length + " file(s) total");
-        summaryTextLines.push($('<strong>').text("{0} file(s) ({1}) will be uploaded".format(numUploadables, util.filesizeDisplay(uploadableTotalSize))));
-        if (numDupes > 0) {
-            if ($(dupeOptionField).val() === 'skip') {
-                summaryTextLines.push("{0} file(s) are duplicates that will be skipped".format(numDupes));
-            }
-            else {  // 'replace'
-                summaryTextLines.push("... {0} file(s) are new".format(numUploadables-numDupes));
-                summaryTextLines.push("... {0} file(s) are duplicates that will replace the originals".format(numDupes));
-            }
-        }
-
-        if (annotations) {
-            summaryTextLines.push("... {0} file(s) have a total of {1} points/annotations specified for them".format(numImagesWithAnnotations, numTotalAnnotations));
-            summaryTextLines.push("... {0} file(s) do not have any points/annotations specified, so we will automatically generate points for them ({1})".format(numUploadables-numImagesWithAnnotations, pointGenMethod));
-        }
 
         if (numPreUploadErrors > 0) {
-            summaryTextLines.push("{0} file(s) have filename errors".format(numPreUploadErrors));
+            summaryTextLines.push(
+                "{0} file(s) have filename errors".format(numPreUploadErrors)
+            );
+        }
+
+        if (numDupes > 0 && $(dupeOptionField).val() === 'skip') {
+            summaryTextLines.push(
+                "{0} file(s) are duplicate images that will be skipped".format(numDupes)
+            );
+        }
+
+        summaryTextLines.push($('<strong>').text(
+            "{0} file(s) ({1}) are uploadable images".format(
+                numUploadables, util.filesizeDisplay(uploadableTotalSize)
+            )
+        ));
+
+        if (numDupes > 0 && $(dupeOptionField).val() === 'replace') {
+            summaryTextLines.push(
+                "... {0} image(s) are new".format(numUploadables-numDupes)
+            );
+            summaryTextLines.push(
+                "... {0} image(s) are duplicates that will replace the originals".format(numDupes)
+            );
+        }
+
+        if (annotationsPerImage && numUploadables > 0) {
+            summaryTextLines.push(
+                "... {0} image(s) have {2} specified, for a total of {1} {2}".format(
+                    numImagesWithAnnotations, numTotalAnnotations, annotationCountUnits
+                )
+            );
+
+            if (numUploadables !== numImagesWithAnnotations) {
+                summaryTextLines.push(
+                    "... {0} image(s) don't have {1} specified, so we'll auto-generate points for these images".format(
+                        numUploadables-numImagesWithAnnotations, annotationCountUnits
+                    )
+                );
+            }
         }
 
         for (i = 0; i < summaryTextLines.length; i++) {
@@ -499,29 +529,31 @@ var ImageUploadFormHelper = (function() {
         numImagesWithAnnotations = 0;
         numTotalAnnotations = 0;
 
+        if (pointsOnlyField.value === 'yes') {
+            annotationCountUnits = 'annotation(s)';
+        }
+        else {
+            annotationCountUnits = 'point(s)';
+        }
+
         for (i = 0; i < files.length; i++) {
             if (!files[i].isUploadable) {
                 continue;
             }
 
             var metadataKey = files[i].metadataKey;
-            var countUnits;
-            if (pointsOnlyField.value === 'yes') {
-                countUnits = ' annotation(s)';
-            }
-            else {
-                countUnits = ' point(s)';
-            }
 
             if (annotationsPerImage.hasOwnProperty(metadataKey)) {
                 // The image has annotations.
-                files[i].$annotationCountCell.text(annotationsPerImage[metadataKey] + countUnits);
+                files[i].$annotationCountCell.text(
+                    annotationsPerImage[metadataKey] + ' ' + annotationCountUnits
+                );
                 numImagesWithAnnotations++;
                 numTotalAnnotations += annotationsPerImage[metadataKey];
             }
             else {
                 // The image doesn't have annotations.
-                files[i].$annotationCountCell.text('0' + countUnits);
+                files[i].$annotationCountCell.text('0 ' + annotationCountUnits);
             }
         }
     }
@@ -849,6 +881,11 @@ var ImageUploadFormHelper = (function() {
             $annotationsCheckboxLabel = $('#annotations_checkbox_label');
             annotationFileField = $('#id_annotations_file')[0];
             pointsOnlyField = $('#' + pointsOnlyFieldId)[0];
+
+            // Other form field related elements.
+            $dupeOptionWrapper = $("#id_skip_or_replace_duplicates_wrapper");
+            $annotationForm = $('#annotations_form');
+            $pointGenText = $('#auto_generate_points_page_section');
 
             // Button elements.
             $annotationFileCheckButton = $('#annotation_file_check_button');
