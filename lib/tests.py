@@ -1,9 +1,11 @@
 # Tests for non-app-specific pages.
+from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core import mail
+from django.core import mail, validators
 from django.core.urlresolvers import reverse
 from lib import msg_consts, str_consts
+from lib.forms import ContactForm
 from lib.test_utils import ClientTest
 
 
@@ -80,18 +82,70 @@ class ContactTest(ClientTest):
         if settings.UNIT_TEST_VERBOSITY >= 1:
             print "Email message:\n{message}".format(message=contact_email.body)
 
-    def test_contact_errors(self):
+    def test_contact_error_required(self):
+        """
+        'field is required' errors.
+        """
         self.client.login(username='user2', password='secret')
 
-        response = self.client.get(reverse('contact'))
+        # Message is missing.
+        response = self.client.post(reverse('contact'), dict(
+            subject="Subject goes here",
+            message="",
+        ))
         self.assertStatusOK(response)
+        self.assertMessages(response, [msg_consts.FORM_ERRORS])
+        self.assertFormErrors(response, 'contact_form', {
+            'message': [forms.Field.default_error_messages['required']],
+        })
 
-        # TODO: Trigger the 'field is required' errors.
+        # Subject is missing.
+        response = self.client.post(reverse('contact'), dict(
+            subject="",
+            message="Message\ngoes here.",
+        ))
+        self.assertStatusOK(response)
+        self.assertMessages(response, [msg_consts.FORM_ERRORS])
+        self.assertFormErrors(response, 'contact_form', {
+            'subject': [forms.Field.default_error_messages['required']],
+        })
 
-        # TODO: See if you can get character limit errors. They might be
-        # possible with manually crafted POST requests.
+    def test_contact_error_char_limit(self):
+        """
+        'ensure at most x chars' errors.
+        """
+        self.client.login(username='user2', password='secret')
 
-        # TODO: Any way to get a BadHeaderError from the user's subject and
-        # message input? Maybe some special characters in the subject, like
-        # a newline? That could be possible with manually crafted POST
-        # requests.
+        subject_max_length = ContactForm.base_fields['subject'].max_length
+        message_max_length = ContactForm.base_fields['message'].max_length
+
+        # Subject and message are too long.
+        response = self.client.post(reverse('contact'), dict(
+            subject="1"*(subject_max_length+1),
+            message="1"*(message_max_length+1),
+        ))
+        self.assertStatusOK(response)
+        self.assertMessages(response, [msg_consts.FORM_ERRORS])
+        self.assertFormErrors(response, 'contact_form', {
+            'subject': [validators.MaxLengthValidator.message % {
+                'limit_value': subject_max_length,
+                'show_value': subject_max_length+1,
+            }],
+            'message': [validators.MaxLengthValidator.message % {
+                'limit_value': message_max_length,
+                'show_value': message_max_length+1,
+            }],
+        })
+
+    # TODO: How to test for a BadHeaderError?
+    # Putting a newline in the subject isn't getting such an error for me.
+
+#        self.client.login(username='user2', password='secret')
+#
+#        response = self.client.post(reverse('contact'), dict(
+#            subject="Subject goes here\ncc:spamvictim@example.com",
+#            message="Message goes here",
+#        ))
+#
+#        self.assertStatusOK(response)
+#        self.assertMessages(response, [msg_consts.EMAIL_BAD_HEADER])

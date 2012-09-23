@@ -3,6 +3,7 @@
 import os
 import random
 import string
+from django.utils import functional
 from django.utils.http import urlencode
 
 def rand_string(numOfChars):
@@ -46,3 +47,18 @@ def url_with_querystring(path, **kwargs):
     """
     return path + '?' + urlencode(kwargs)
 
+def is_django_str(s):
+    """
+    Checks that the argument is either:
+    (a) an instance of basestring, or
+    (b) a Django lazy-translation string.
+
+    :param s: Object to check the type of.
+    :return: True if s is a Django string, False otherwise.
+    """
+    if isinstance(s, basestring):
+        return True
+    elif isinstance(s, functional.Promise):
+        return True
+    else:
+        return False

@@ -9,6 +9,7 @@ from django.test.client import Client
 from django.test.simple import DjangoTestSuiteRunner
 from userena.managers import UserenaManager
 from CoralNet.exceptions import TestfileDirectoryError
+from CoralNet.utils import *
 from images.models import Source
 
 
@@ -111,6 +112,12 @@ class ClientTest(BaseTest):
         messages = response.context['messages']
         actual_messages = [m.message for m in messages]
 
+        # Make sure expected_messages is a list or tuple, not a string.
+        if is_django_str(expected_messages):
+            self.fail("expected_messages should be a list or tuple, not a string.")
+
+        # Sort actual and expected messages before comparing them, so that
+        # message order does not matter.
         actual_messages.sort()
         expected_messages.sort()
 
@@ -140,8 +147,8 @@ class ClientTest(BaseTest):
         Asserts that a specific form in the response context has a specific
         set of errors.
 
-        Actual and expected messages are sorted before being compared,
-        so message order does not matter.
+        Actual and expected errors are sorted before being compared,
+        so error order does not matter.
 
         response: the response object to check, which must have the form
             named form_name in its context
@@ -156,20 +163,38 @@ class ClientTest(BaseTest):
 
         actual_errors = response.context[form_name].errors
 
+        # Sort actual and expected errors before comparing them, so that
+        # error order does not matter.
         for field_name, field_errors in expected_errors.iteritems():
+            # Make sure expected error entries are lists or tuples, not strings.
+            if is_django_str(expected_errors[field_name]):
+                self.fail("Expected errors for {field_name} should be a list or tuple, not a string.".format(
+                    field_name=field_name,
+                ))
+
+            # Force lazy-translation strings to evaluate.
+            expected_errors[field_name] = [u"{e}".format(e=e) for e in expected_errors[field_name]]
+
             expected_errors[field_name].sort()
+
         for field_name, field_errors in actual_errors.iteritems():
             actual_errors[field_name].sort()
 
+        actual_errors_printable = dict( [(k,list(errors)) for k,errors in actual_errors.items() if len(errors) > 0] )
+
         if not expected_errors == actual_errors:
-            actual_errors_printable = dict( [(k,list(errors)) for k,errors in actual_errors.items() if len(errors) > 0] )
-            self.fail(u"Error mismatch in the form {form_name}.\n" \
-                      u"Expected errors were: {expected}\n" \
-                      u"Actual errors were:   {actual}".format(
+            self.fail("Error mismatch in the form {form_name}.\n" \
+                      "Expected errors were: {expected}\n" \
+                      "Actual errors were:   {actual}".format(
                 form_name=form_name,
                 expected=expected_errors,
                 actual=actual_errors_printable,
             ))
+        else:
+            # Success. Print the errors if UNIT_TEST_VERBOSITY is on.
+            if settings.UNIT_TEST_VERBOSITY >= 1:
+                print "Errors:"
+                print actual_errors_printable
 
     def login_required_page_test(self, protected_url, username, password):
         """
