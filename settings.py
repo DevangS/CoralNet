@@ -192,6 +192,7 @@ TEMPLATE_DIRS = (
 MY_INSTALLED_APPS = (
     'accounts',
     'images',
+    'upload',
     'annotations',
     'visualization',
     'bug_reporting',
