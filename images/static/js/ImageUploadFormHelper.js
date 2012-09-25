@@ -48,6 +48,8 @@ var ImageUploadFormHelper = (function() {
     var $dupeOptionWrapper = null;
     var $annotationForm = null;
     var $pointGenText = null;
+    var $annoFileExtraHelpText = null;
+    var $annoFileExtraHelpTextLink = null;
     var $filesExtraHelpText = null;
     var $filesExtraHelpTextLink = null;
 
@@ -925,6 +927,21 @@ var ImageUploadFormHelper = (function() {
                 }
                 else {
                     $metadataExtraHelpText.hide();
+                    $(this).text("(More info)");
+                }
+            });
+
+            // Extra help text for annotation file field field.
+            $annoFileExtraHelpText = $("#id_annotations_file_extra_help_text");
+            $annoFileExtraHelpTextLink = $("#id_annotations_file_extra_help_text_link");
+
+            $annoFileExtraHelpTextLink.click(function() {
+                if ($annoFileExtraHelpText.is(':hidden')) {
+                    $annoFileExtraHelpText.show();
+                    $(this).text("(Less info)");
+                }
+                else {
+                    $annoFileExtraHelpText.hide();
                     $(this).text("(More info)");
                 }
             });
