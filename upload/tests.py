@@ -88,7 +88,8 @@ class ImageUploadBaseTest(ClientTest):
             self.assertEqual(response_content['status'], 'error')
             self.assertEqual(response_content['message'], expected_error)
 
-            # TODO: Add error output in verbose mode.
+            if settings.UNIT_TEST_VERBOSITY >= 1:
+                print "Error message:\n{error}".format(error=response_content['message'])
 
             # Error, so nothing was uploaded.
             # The number of images in the source should have stayed the same.
@@ -198,18 +199,77 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
     # a nonexistent filename).  However, this will probably have to be done
     # with a Selenium test.
 
-    def test_no_images_specified(self):
-        post_dict = dict(
-            file='',
-            specify_metadata='filenames',
-            skip_or_replace_duplicates='skip',
-            is_uploading_points_or_annotations='off',
-        )
-        response = self.client.post(
-            reverse('image_upload_ajax', kwargs={'source_id': self.source_id}),
-            post_dict,
-        )
+    # TODO: Test sending the POST request with no file specified?
+    # This normally won't happen unless there's a manually crafted POST
+    # request, so this isn't high priority.
 
-        self.assertStatusOK(response)
 
-        # TODO: Check for the appropriate error.
+class ImageUploadKeysTest(ImageUploadBaseTest):
+    """
+    Image upload tests: related to location keys, such as checking for
+    duplicate images, checking for correct specification of keys and date
+    in the filename, and so on.
+    """
+    # Tests with duplicate images.
+
+    def duplicate_test(self, dupe_option):
+        options = dict(skip_or_replace_duplicates=dupe_option)
+
+        self.upload_image_test('001_2012-05-01_color-grid-001.png', **options)
+        self.upload_image_test('002_2012-06-28_color-grid-002.png', **options)
+
+        # Duplicate
+        self.upload_image_test('001_2012-05-01_color-grid-001_jpg-valid.jpg', expecting_dupe=True, **options)
+
+        # Check that we really did/didn't replace the original
+        image_001_name = Image.objects.get(source__pk=self.source_id, metadata__value1='001').metadata.name
+        if dupe_option == 'skip':
+            self.assertEqual(image_001_name, 'color-grid-001.png')
+        else:  # 'replace'
+            self.assertEqual(image_001_name, 'color-grid-001_jpg-valid.jpg')
+
+        # Non-duplicate
+        self.upload_image_test('003_2012-06-28_color-grid-003.png', **options)
+
+        # Multiple duplicates + non-duplicate
+        self.upload_image_test('001_2012-05-01_color-grid-001.png', expecting_dupe=True, **options)
+        self.upload_image_test('002_2012-06-28_color-grid-002.png', expecting_dupe=True, **options)
+        self.upload_image_test('004_2012-06-28_color-grid-004.png', **options)
+
+    def test_duplicates_skip(self):
+        self.duplicate_test('skip')
+
+    def test_duplicates_replace(self):
+        self.duplicate_test('replace')
+
+
+    # Filename format tests (on the server side).
+    #
+    # Actually, filename formats should mainly be tested on the Javascript
+    # side, through Selenium.  It's not a bad idea to test these on the server
+    # side too, though, in case the JS is bypassed by some hacker, or in
+    # case the JS fails for some reason.
+
+    def test_filename_zero_location_keys(self):
+        pass  # TODO
+
+    def test_filename_one_location_key(self):
+        pass  # TODO
+
+    def test_filename_two_location_keys(self):
+        pass  # TODO
+
+    def test_filename_five_location_keys(self):
+        pass  # TODO
+
+    def test_filename_with_original_filename(self):
+        pass  # TODO
+
+    def test_filename_not_enough_location_keys(self):
+        pass  # TODO
+
+    def test_filename_too_many_location_keys(self):
+        pass  # TODO
+
+    def test_filename_incorrect_date_format(self):
+        pass  # TODO (Might want multiple incorrect date tests?)
