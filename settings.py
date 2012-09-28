@@ -217,6 +217,7 @@ INSTALLED_APPS = (
     'dajax',
     'djcelery',
     'GChartWrapper.charts',
+	'djsupervisor',
 )
 # Add MY_INSTALLED_APPS to INSTALLED_APPS, each with a 'CoralNet.' prefix.
 INSTALLED_APPS += tuple(['CoralNet.'+app_name for app_name in MY_INSTALLED_APPS])
