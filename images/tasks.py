@@ -383,8 +383,8 @@ def trainRobot(source_id):
         print 'previous robot version:' + str(previousRobot.version)
 
     # now, loop through the images and create some meta data files that MATLAB needs
-    workingDir = os.path.join(newRobot.path_to_model, '.workdir/')
-    pointInfoPath = os.path.join(workingDir, 'points')
+    workingDir = newRobot.path_to_model + '.workdir/'
+    pointInfoPath = os.path.join(workingDir + 'points')
     fileNamesPath = os.path.join(workingDir, 'fileNames')
     os.mkdir(workingDir)
     fItt = 0 #image iterator
