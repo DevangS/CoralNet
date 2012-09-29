@@ -87,10 +87,18 @@ class LabelSet(models.Model):
         return self.pk == LabelSet.EMPTY_LABELSET_ID
 
     def __unicode__(self):
+
+        if self.isEmptyLabelset():
+            # Empty labelset
+            return "Empty labelset"
+
         try:
             source = Source.objects.get(labelset=self)
+            # Labelset of a source
             return "%s labelset" % source
         except Source.DoesNotExist:
+            # Labelset that's not in any source (perhaps a really old
+            # labelset from early site development)
             return "(Labelset not used in any source) " + self.description
 
     
