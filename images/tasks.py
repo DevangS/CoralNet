@@ -64,6 +64,7 @@ def dummyTaskLong(s):
     time.sleep(s)
 
 @task()
+# this function is depleated. Not in use anymore.
 def schedulerInfLoop():
     time.sleep(10) # sleep 10 secs to allow the scheduler to start
     while True:
@@ -84,6 +85,9 @@ def processAllSources():
 @task()
 def processSourceCompleate(source_id):
     source = Source.objects.get(pk = source_id)
+    
+    if not source.get_all_images():
+        return 1
 
     print "==== Processing source: " + source.name + " ===="
     # == For each image, do all preprocessing ==
