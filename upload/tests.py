@@ -316,14 +316,13 @@ class UploadFilenameCheckTest(ImageUploadBaseTest):
     Checking for correct number of location values, duplicate images,
     correct date format, recognition of the custom name at the end,
     and so on.
-    """
 
-    # Filename format tests (on the server side).
-    #
-    # Actually, filename formats should mainly be tested on the Javascript
-    # side, through Selenium.  It's not a bad idea to test these on the server
-    # side too, though, in case the JS is bypassed by some hacker, or in
-    # case the JS fails for some reason.
+    Note that these are tests on the actual image upload operation.
+    We actually expect the ajax-image-upload-preview to get these checks
+    right in the first place.  What we are testing here is: if the
+    Javascript is somehow faulty and allows the user to bypass the upload
+    preview, could we catch filename errors on the server side as well?
+    """
 
     def test_filename_zero_location_keys(self):
         """
