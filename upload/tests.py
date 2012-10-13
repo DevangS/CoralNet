@@ -169,6 +169,7 @@ class UploadImageFieldsTest(ImageUploadBaseTest):
         # currently logged in user.
         self.assertEqual(img.uploaded_by.id, self.client.session['_auth_user_id'])
 
+        # Status fields.
         self.assertFalse(img.status.preprocessed)
         self.assertTrue(img.status.hasRandomPoints)
         self.assertFalse(img.status.featuresExtracted)
@@ -176,16 +177,16 @@ class UploadImageFieldsTest(ImageUploadBaseTest):
         self.assertFalse(img.status.featureFileHasHumanLabels)
         self.assertFalse(img.status.usedInCurrentModel)
 
+        # cm height.
+        self.assertEqual(img.metadata.height_in_cm, img.source.image_height_in_cm)
+
         # The following is specific to uploading without annotations.
         self.assertFalse(img.status.annotatedByHuman)
         self.assertEqual(img.point_generation_method, img.source.default_point_generation_method)
-
-        # Metadata: check only the cm-height field.
-        self.assertEqual(img.metadata.height_in_cm, img.source.image_height_in_cm)
+        self.assertEqual(img.metadata.annotation_area, img.source.image_annotation_area)
 
         # Other metadata fields aren't covered here because:
         # - name, photo_date, value1/2/3/4/5: covered by filename tests
-        # - annotation_area: checked by other tests
         # - latitude, longitude, depth, camera, photographer, water_quality,
         #   strobes, framing, balance, comments: not specifiable from the
         #   upload page
@@ -613,8 +614,6 @@ class PreviewFilenameTest(ImageUploadBaseTest):
             self.assertEqual(status_list[index]['status'], 'error')
             self.assertEqual(status_list[index]['message'], expected_error)
 
-
-# TODO: Test setting of annotation area.
 
 # TODO: Test point generation.
 
