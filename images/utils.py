@@ -6,7 +6,8 @@ from os.path import splitext
 from accounts.utils import get_robot_user
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Annotation
-from lib.exceptions import FilenameError
+from lib import str_consts
+from lib.exceptions import *
 from images.model_utils import PointGen
 from images.models import Point, Metadata, Image, Value1, Value2, Value3, Value4, Value5
 
@@ -21,7 +22,7 @@ def get_location_value_objs(source, valueList, createNewValues=False):
     If the database doesn't have a Value object of the desired name:
     - If createNewValues is True, then the required Value object is
      created and inserted into the DB.
-    - If createNewValues is False, then this method returns False.
+    - If createNewValues is False, then this method returns None.
     """
     valueNameGen = (v for v in valueList)
     valueDict = dict()
@@ -40,13 +41,16 @@ def get_location_value_objs(source, valueList, createNewValues=False):
             break
         else:
             if createNewValues:
+                # Get the Value object if there is one, or create it otherwise.
                 valueDict[valueIndex], created = valueClass.objects.get_or_create(source=source, name=valueName)
             else:
                 try:
+                    # Get the Value object if there is one.
                     valueDict[valueIndex] = valueClass.objects.get(source=source, name=valueName)
                 except valueClass.DoesNotExist:
-                    # Value object not found
-                    return False
+                    # Value object not found, and can't create it.
+                    # Can't return a valueDict.
+                    raise ValueObjectNotFoundError
 
     # All value objects were found/created
     return valueDict
@@ -55,16 +59,29 @@ def get_location_value_objs(source, valueList, createNewValues=False):
 def find_dupe_image(source, values=None, year=None, **kwargs):
     """
     Sees if the given source already has an image with the given arguments.
+
+    :param source: The source to check.
+    :param values: The image's location values as a list of strings.
+    :param year: The image's photo-date year.
+    :param kwargs: This is just to accept other arguments that might've come
+        with an unpacked metadata dict (the typical input for this function),
+        although we won't be using these other arguments.
+    :returns: If a duplicate image was found, returns that duplicate.  If no
+        duplicate was found, returns None.
     """
 
     # Get Value objects of the value names given in "values".
-    valueObjDict = get_location_value_objs(source, values, createNewValues=False)
-
-    if not valueObjDict:
-        # One or more of the values weren't found; no dupe image in DB.
+    try:
+        valueObjDict = get_location_value_objs(source, values, createNewValues=False)
+    except ValueObjectNotFoundError:
+        # One or more of the values weren't found in the DB.
+        # So this image surely doesn't have a dupe in the DB.
         return None
 
-    # Get all the metadata objects in the DB with these location values and year
+    # Get all the metadata objects in the DB with these location values and year.
+    #
+    # Note: if 0 location keys is possible at all, this will get metadata from
+    # other sources.  We'll filter by source in the next step, though.
     metaMatches = Metadata.objects.filter(photo_date__year=year, **valueObjDict)
 
     # Get the images from our source that have this metadata.
@@ -87,8 +104,6 @@ def filename_to_metadata(filename, source):
 
     metadataDict = dict()
 
-    parseError = FilenameError("Could not extract metadata from filename")
-    dateValueError = FilenameError("Invalid date in filename")
     numOfKeys = source.num_of_keys()
 
     # value1_value2_..._YYYY-MM-DD
@@ -102,7 +117,7 @@ def filename_to_metadata(filename, source):
 
     dataTokens = tokens[:numTokensExpected]
     if len(dataTokens) != numTokensExpected:
-        raise parseError
+        raise FilenameError(str_consts.FILENAME_PARSE_ERROR_STR)
 
     extraTokens = tokens[numTokensExpected:]
     if len(extraTokens) > 0:
@@ -120,13 +135,9 @@ def filename_to_metadata(filename, source):
         year, month, day = dateToken.split("-")
     except ValueError:
         # Too few or too many dash-separated tokens.
-        # Just raise a generic-sounding error, instead of an error
-        # specifically referring to the date format.  This could just
-        # be an underscore counting issue, where the token that ended
-        # up as the date token is something the user didn't even mean
-        # to be a date - in which case 'incorrect date format' would
-        # just confuse the user.
-        raise parseError
+        # Note that this may or may not be something that the user intended
+        # as a date.  An appropriately flexible error message is needed.
+        raise FilenameError(str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token=dateToken))
     # YYYYMMDD parsing:
 #    if len(dateToken) != 8:
 #        raise dateFormatError
@@ -136,8 +147,8 @@ def filename_to_metadata(filename, source):
         datetime.date(int(year), int(month), int(day))
     except ValueError:
         # Either non-integer date params, or date params are
-        # out of valid range (e.g. month 13)
-        raise dateValueError
+        # out of valid range (e.g. month 13).
+        raise FilenameError(str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token=dateToken))
 
     # Make the values into a tuple, so the metadata can potentially be
     # hashed and used in lookups.
@@ -196,6 +207,7 @@ def check_image_filename(filename, source):
         # Filename parse error.
         return dict(
             status='error',
+            metadata_dict=None,
             message=error.message,
         )
 

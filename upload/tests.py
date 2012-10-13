@@ -1,10 +1,12 @@
 import os
+import datetime
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.forms import forms
 from django.utils import simplejson
 from images.forms import ImageUploadForm
 from images.models import Source, Image
+from lib import str_consts
 from lib.test_utils import ClientTest, MediaTestComponent
 
 
@@ -18,10 +20,11 @@ class ImageUploadBaseTest(ClientTest):
     extra_components = [MediaTestComponent]
     fixtures = ['test_users.yaml', 'test_sources_with_different_keys.yaml']
     source_member_roles = [
+        ('0 keys', 'user2', Source.PermTypes.ADMIN.code),
         ('1 key', 'user2', Source.PermTypes.ADMIN.code),
         ('2 keys', 'user2', Source.PermTypes.ADMIN.code),
         ('5 keys', 'user2', Source.PermTypes.ADMIN.code),
-        ]
+    ]
 
     def setUp(self):
         super(ImageUploadBaseTest, self).setUp()
@@ -31,6 +34,9 @@ class ImageUploadBaseTest(ClientTest):
 
         # Default source; individual tests are free to change it
         self.source_id = Source.objects.get(name='1 key').pk
+
+    def get_source_image_count(self):
+        return Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
 
     def upload_image_test(self, filename,
                           expecting_dupe=False,
@@ -51,9 +57,9 @@ class ImageUploadBaseTest(ClientTest):
         :param expected_error: Expected error message, if any.
         :param options: Extra options to include in the Ajax-image-upload
             request.
-        :return: The response from sending the Ajax-image-upload request.
-            This way, the calling function can do something else with the
-            response if it wants to.
+        :return: Tuple of (new image id, response from Ajax-image-upload).
+            This way, the calling function can do some additional checks
+            if it wants to.
         """
         old_source_image_count = Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
 
@@ -83,6 +89,8 @@ class ImageUploadBaseTest(ClientTest):
 
         new_source_image_count = Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
 
+        image_id = None
+
         if expected_error:
 
             self.assertEqual(response_content['status'], 'error')
@@ -97,21 +105,25 @@ class ImageUploadBaseTest(ClientTest):
 
         else:
 
-            self.assertEqual(response_content['status'], 'ok')
-
             if expecting_dupe:
-                # TODO: Make sure the image on the server has a correct upload date?
-                # (i.e. a datetime greater or equal to a time just before the upload.)
-
                 # We just replaced a duplicate image.
+                if post_dict['skip_or_replace_duplicates'] == 'skip':
+                    self.assertEqual(response_content['status'], 'error')
+                else:  # replace
+                    self.assertEqual(response_content['status'], 'ok')
+                    image_id = response_content['image_id']
+
                 # The number of images in the source should have stayed the same.
                 self.assertEqual(new_source_image_count, old_source_image_count)
             else:
                 # We uploaded a new, non-duplicate image.
+                self.assertEqual(response_content['status'], 'ok')
+                image_id = response_content['image_id']
+
                 # The number of images in the source should have gone up by 1.
                 self.assertEqual(new_source_image_count, 1+old_source_image_count)
 
-        return response
+        return image_id, response
 
 
 class ImageUploadGeneralTest(ImageUploadBaseTest):
@@ -207,8 +219,8 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
 class ImageUploadKeysTest(ImageUploadBaseTest):
     """
     Image upload tests: related to location keys, such as checking for
-    duplicate images, checking for correct specification of keys and date
-    in the filename, and so on.
+    duplicate images, checking for correct specification of location
+    values and date in the filename, and so on.
     """
     # Tests with duplicate images.
 
@@ -216,25 +228,30 @@ class ImageUploadKeysTest(ImageUploadBaseTest):
         options = dict(skip_or_replace_duplicates=dupe_option)
 
         self.upload_image_test('001_2012-05-01_color-grid-001.png', **options)
+
+        # Non-duplicate
         self.upload_image_test('002_2012-06-28_color-grid-002.png', **options)
 
         # Duplicate
         self.upload_image_test('001_2012-05-01_color-grid-001_jpg-valid.jpg', expecting_dupe=True, **options)
 
-        # Check that we really did/didn't replace the original
-        image_001_name = Image.objects.get(source__pk=self.source_id, metadata__value1='001').metadata.name
+        image_001 = Image.objects.get(source__pk=self.source_id, metadata__value1='001')
+        image_001_name = image_001.metadata.name
+
         if dupe_option == 'skip':
+            # Check that the image name is from the original,
+            # not the skipped dupe.
             self.assertEqual(image_001_name, 'color-grid-001.png')
         else:  # 'replace'
+            # Check that the image name is from the dupe
+            # we just uploaded.
             self.assertEqual(image_001_name, 'color-grid-001_jpg-valid.jpg')
 
-        # Non-duplicate
-        self.upload_image_test('003_2012-06-28_color-grid-003.png', **options)
-
-        # Multiple duplicates + non-duplicate
-        self.upload_image_test('001_2012-05-01_color-grid-001.png', expecting_dupe=True, **options)
-        self.upload_image_test('002_2012-06-28_color-grid-002.png', expecting_dupe=True, **options)
-        self.upload_image_test('004_2012-06-28_color-grid-004.png', **options)
+        # Tried to check if the upload time was correct based on skip/replace.
+        # However, there's a problem: database datetime objects don't track
+        # time more accurately than seconds, and this upload test tends to
+        # take less than a second (perhaps much less).  So it would only
+        # intermittently be a useful check.
 
     def test_duplicates_skip(self):
         self.duplicate_test('skip')
@@ -251,25 +268,193 @@ class ImageUploadKeysTest(ImageUploadBaseTest):
     # case the JS fails for some reason.
 
     def test_filename_zero_location_keys(self):
-        pass  # TODO
+        """
+        Upload with zero location keys:
+        test upload, location values, photo date, and name.
+        """
+        self.source_id = Source.objects.get(name='0 keys').pk
+
+        # Without custom filename.
+        image_id, response = self.upload_image_test(os.path.join('0keys', '2011-05-28.png'))
+
+        img = Image.objects.get(pk=image_id)
+        self.assertEqual(img.get_location_value_str_list(), [])
+        self.assertEqual(img.metadata.name, '2011-05-28.png')
+        self.assertEqual(img.metadata.photo_date, datetime.date(2011,5,28))
+
+        # With custom filename.
+        image_id, response = self.upload_image_test(os.path.join('0keys', '2012-05-28_grid1.png'))
+
+        img = Image.objects.get(pk=image_id)
+        self.assertEqual(img.get_location_value_str_list(), [])
+        self.assertEqual(img.metadata.name, 'grid1.png')
+        self.assertEqual(img.metadata.photo_date, datetime.date(2012,5,28))
 
     def test_filename_one_location_key(self):
-        pass  # TODO
+        """
+        Upload with zero location keys:
+        test upload, location values, photo date, name, and dupe checking.
+        """
+        self.source_id = Source.objects.get(name='1 key').pk
+
+        image_id, response = self.upload_image_test(os.path.join('1key', '001_2011-05-28.png'))
+
+        img = Image.objects.get(pk=image_id)
+        self.assertEqual(img.get_location_value_str_list(), ['001'])
+        self.assertEqual(img.metadata.name, '001_2011-05-28.png')
+        self.assertEqual(img.metadata.photo_date, datetime.date(2011,5,28))
+
+        image_id, response = self.upload_image_test(os.path.join('1key', '001_2012-05-28_rainbow-grid-one.png'))
+
+        img = Image.objects.get(pk=image_id)
+        self.assertEqual(img.get_location_value_str_list(), ['001'])
+        self.assertEqual(img.metadata.name, 'rainbow-grid-one.png')
+        self.assertEqual(img.metadata.photo_date, datetime.date(2012,5,28))
 
     def test_filename_two_location_keys(self):
-        pass  # TODO
+        self.source_id = Source.objects.get(name='2 keys').pk
+
+        image_id, response = self.upload_image_test(os.path.join('2keys', 'rainbow_002_2011-05-28.png'))
+
+        img = Image.objects.get(pk=image_id)
+        self.assertEqual(img.get_location_value_str_list(), ['rainbow', '002'])
+        self.assertEqual(img.metadata.name, 'rainbow_002_2011-05-28.png')
+        self.assertEqual(img.metadata.photo_date, datetime.date(2011,5,28))
+
+        image_id, response = self.upload_image_test(os.path.join('2keys', 'cool_001_2012-05-28_cool_image_one.png'))
+
+        img = Image.objects.get(pk=image_id)
+        self.assertEqual(img.get_location_value_str_list(), ['cool', '001'])
+        self.assertEqual(img.metadata.name, 'cool_image_one.png')
+        self.assertEqual(img.metadata.photo_date, datetime.date(2012,5,28))
 
     def test_filename_five_location_keys(self):
-        pass  # TODO
+        self.source_id = Source.objects.get(name='5 keys').pk
 
-    def test_filename_with_original_filename(self):
-        pass  # TODO
+        image_id, response = self.upload_image_test(os.path.join('5keys', 'square_img-s_elmt-m_rainbow_002_2012-05-28.png'))
 
-    def test_filename_not_enough_location_keys(self):
-        pass  # TODO
+        img = Image.objects.get(pk=image_id)
+        self.assertEqual(img.get_location_value_str_list(), ['square', 'img-s', 'elmt-m', 'rainbow', '002'])
+        self.assertEqual(img.metadata.name, 'square_img-s_elmt-m_rainbow_002_2012-05-28.png')
+        self.assertEqual(img.metadata.photo_date, datetime.date(2012,5,28))
 
-    def test_filename_too_many_location_keys(self):
-        pass  # TODO
+        image_id, response = self.upload_image_test(os.path.join('5keys', 'rect_img-m_elmt-l_cool_001_2012-05-28__cool_image_one_.png'))
 
-    def test_filename_incorrect_date_format(self):
-        pass  # TODO (Might want multiple incorrect date tests?)
+        img = Image.objects.get(pk=image_id)
+        self.assertEqual(img.get_location_value_str_list(), ['rect', 'img-m', 'elmt-l', 'cool', '001'])
+        self.assertEqual(img.metadata.name, '_cool_image_one_.png')
+        self.assertEqual(img.metadata.photo_date, datetime.date(2012,5,28))
+
+    def test_filename_dupe_detection(self):
+        self.source_id = Source.objects.get(name='0 keys').pk
+
+        self.upload_image_test(os.path.join('0keys', '2012-05-28_grid1.png'))
+        self.upload_image_test(os.path.join('0keys', '2011-05-28.png'))    # Year different
+        self.upload_image_test(os.path.join('0keys', '2012-05-28.png'), expecting_dupe=True)
+
+        self.source_id = Source.objects.get(name='1 key').pk
+
+        self.upload_image_test(os.path.join('1key', '001_2012-05-28_rainbow-grid-one.png'))
+        self.upload_image_test(os.path.join('1key', '002_2012-05-28.png'))    # Number different
+        self.upload_image_test(os.path.join('1key', '001_2011-05-28.png'))    # Year different
+        self.upload_image_test(os.path.join('1key', '002_2011-05-28.png'))    # Both different
+        self.upload_image_test(os.path.join('1key', '001_2012-05-28.png'), expecting_dupe=True)
+
+        self.source_id = Source.objects.get(name='2 keys').pk
+
+        self.upload_image_test(os.path.join('2keys', 'cool_001_2012-05-28_cool_image_one.png'))
+        self.upload_image_test(os.path.join('2keys', 'rainbow_001_2012-05-28.png'))    # Color different
+        self.upload_image_test(os.path.join('2keys', 'cool_002_2012-05-28.png'))    # Number different
+        self.upload_image_test(os.path.join('2keys', 'cool_001_2011-05-28.png'))    # Year different
+        self.upload_image_test(os.path.join('2keys', 'cool_001_2012-05-28.png'), expecting_dupe=True)
+
+        self.source_id = Source.objects.get(name='5 keys').pk
+
+        self.upload_image_test(os.path.join('5keys', 'rect_img-m_elmt-l_cool_001_2012-05-28__cool_image_one_.png'))
+        self.upload_image_test(os.path.join('5keys', 'square_img-m_elmt-l_cool_001_2012-05-28.png'))    # Shape different
+        self.upload_image_test(os.path.join('5keys', 'rect_img-s_elmt-l_cool_001_2012-05-28.png'))    # Image size different
+        self.upload_image_test(os.path.join('5keys', 'rect_img-m_elmt-m_cool_001_2012-05-28.png'))    # Element size different
+        self.upload_image_test(os.path.join('5keys', 'rect_img-m_elmt-l_rainbow_001_2012-05-28.png'))    # Color different
+        self.upload_image_test(os.path.join('5keys', 'rect_img-m_elmt-l_cool_002_2012-05-28.png'))    # Number different
+        self.upload_image_test(os.path.join('5keys', 'rect_img-m_elmt-l_cool_001_2011-05-28.png'))    # Year different
+        self.upload_image_test(os.path.join('5keys', 'rect_img-m_elmt-l_cool_001_2012-05-28.png'), expecting_dupe=True)
+
+
+    def test_filename_not_enough_location_values(self):
+        self.source_id = Source.objects.get(name='2 keys').pk
+
+        self.upload_image_test(
+            os.path.join('1key', '001_2011-05-28.png'),
+            expected_error=str_consts.FILENAME_PARSE_ERROR_STR,
+        )
+
+    def test_filename_too_many_location_values(self):
+        self.source_id = Source.objects.get(name='1 key').pk
+
+        # Upload a 2-location-value filename.
+        # We'll end up attempting to parse the second value
+        # as a date, and that will fail.
+        self.upload_image_test(
+            os.path.join('2keys', 'cool_001_2012-05-28.png'),
+            expected_error=str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='001'),
+        )
+
+    def test_filename_date_formats(self):
+        self.source_id = Source.objects.get(name='1 key').pk
+
+        # Valid dates.
+
+        self.upload_image_test(
+            os.path.join('dates', '002_2012-02-29.png'),
+        )
+        self.upload_image_test(
+            os.path.join('dates', '003_2012-2-29.png'),
+        )
+        self.upload_image_test(
+            os.path.join('dates', '004_2012-2-2.png'),
+        )
+
+        # Incorrect number of hyphens.
+
+        self.upload_image_test(
+            os.path.join('dates', '001_20120229.png'),
+            expected_error=str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='20120229'),
+        )
+        self.upload_image_test(
+            os.path.join('dates', '001_2012-0229.png'),
+            expected_error=str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='2012-0229'),
+        )
+        self.upload_image_test(
+            os.path.join('dates', '001_2012-02-2-9.png'),
+            expected_error=str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='2012-02-2-9'),
+        )
+
+        # Incorrect or missing y/m/d.
+
+        # Missing
+        self.upload_image_test(
+            os.path.join('dates', '001_2012--29.png'),
+            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012--29'),
+        )
+        # Not a number
+        self.upload_image_test(
+            os.path.join('dates', '001_2012-02-ab.png'),
+            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-02-ab'),
+        )
+        # Day out of range (for the month)
+        self.upload_image_test(
+            os.path.join('dates', '001_2012-02-30.png'),
+            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-02-30'),
+        )
+        # Month out of range
+        self.upload_image_test(
+            os.path.join('dates', '001_2012-00-01.png'),
+            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-00-01'),
+        )
+        # Year out of range
+        self.upload_image_test(
+            os.path.join('dates', '001_10000-01-01.png'),
+            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='10000-01-01'),
+        )
+        # Could test more dates, but would kind of boil down to whether the
+        # built-in library datetime is doing its job or not.

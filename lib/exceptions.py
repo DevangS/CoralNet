@@ -53,3 +53,13 @@ class TestfileDirectoryError(Exception):
         deletions.)
     """
     pass
+
+class ValueObjectNotFoundError(Exception):
+    """
+    When a location value object is looked up by name in the database,
+    and a value object can't be found.
+
+    Basically a generic-ized error class for Value1.DoesNotExist,
+    Value2.DoesNotExist, etc.
+    """
+    pass

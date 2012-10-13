@@ -918,7 +918,7 @@ def image_upload_process(imageFile, imageOptionsForm,
             # status checking is doing its job, but just in case...
             return dict(
                 status=filename_status,
-                message=filename_check_result['message'],
+                message=u"{m}".format(m=filename_check_result['message']),
                 link=None,
                 title=None,
             )
@@ -1055,6 +1055,7 @@ def image_upload_process(imageFile, imageOptionsForm,
         message=success_message,
         link=reverse('image_detail', args=[img.id]),
         title=img.get_image_element_title(),
+        image_id=img.id,
     )
 
 
