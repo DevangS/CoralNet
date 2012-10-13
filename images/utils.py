@@ -207,7 +207,6 @@ def check_image_filename(filename, source):
         # Filename parse error.
         return dict(
             status='error',
-            metadata_dict=None,
             message=error.message,
         )
 

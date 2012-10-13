@@ -911,7 +911,6 @@ def image_upload_process(imageFile, imageOptionsForm,
 
         filename_check_result = check_image_filename(filename, source)
         filename_status = filename_check_result['status']
-        metadata_dict = filename_check_result['metadata_dict']
 
         if filename_status == 'error':
             # This case should never happen if the pre-upload
@@ -941,6 +940,8 @@ def image_upload_process(imageFile, imageOptionsForm,
                 dupe_image.delete()
 
         # Set the metadata
+        metadata_dict = filename_check_result['metadata_dict']
+
         value_dict = get_location_value_objs(source, metadata_dict['values'], createNewValues=True)
         photo_date = datetime.date(
             year = int(metadata_dict['year']),
@@ -1101,8 +1102,9 @@ def image_upload_preview_ajax(request, source_id):
     """
     Called when a user selects files to upload in the image upload form.
 
-    Looks at the files' filenames and returns a dict containing:
-    statusList - List containing the status of each file
+    :param filenames: A list of filenames.
+    :returns: A dict containing a 'statusList' specifying the status of
+        each filename, or an 'error' with an error message.
     """
 
     source = get_object_or_404(Source, id=source_id)
@@ -1137,7 +1139,7 @@ def image_upload_preview_ajax(request, source_id):
             if status == 'error':
                 statusList.append(dict(
                     status=status,
-                    message=result['message'],
+                    message=u"{m}".format(m=result['message']),
                 ))
             elif status == 'ok':
                 statusList.append(dict(
@@ -1162,7 +1164,7 @@ def image_upload_preview_ajax(request, source_id):
                 for index in file_index_list:
                     statusList[index] = dict(
                         status='error',
-                        message="Multiple images with same metadata: {metadata}".format(
+                        message=str_consts.UPLOAD_PREVIEW_SAME_METADATA_ERROR_FMTSTR.format(
                             metadata=metadata_dupe_comparison_key_to_display(metadata_key)
                         ),
                     )
@@ -1174,7 +1176,7 @@ def image_upload_preview_ajax(request, source_id):
     else:
 
         return JsonResponse(dict(
-            error="Filenames not found in the request",
+            error="Not a POST request",
         ))
 
 

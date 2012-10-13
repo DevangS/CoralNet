@@ -61,7 +61,7 @@ class ImageUploadBaseTest(ClientTest):
             This way, the calling function can do some additional checks
             if it wants to.
         """
-        old_source_image_count = Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
+        old_source_image_count = self.get_source_image_count()
 
         sample_uploadable_directory = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data')
 
@@ -87,7 +87,7 @@ class ImageUploadBaseTest(ClientTest):
 
         self.assertStatusOK(response)
 
-        new_source_image_count = Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
+        new_source_image_count = self.get_source_image_count()
 
         image_id = None
 
@@ -126,9 +126,9 @@ class ImageUploadBaseTest(ClientTest):
         return image_id, response
 
 
-class ImageUploadGeneralTest(ImageUploadBaseTest):
+class UploadValidImageTest(ImageUploadBaseTest):
     """
-    Image upload tests: general.
+    Valid images.
     """
     def test_valid_png(self):
         """ .png created using the PIL. """
@@ -141,8 +141,47 @@ class ImageUploadGeneralTest(ImageUploadBaseTest):
     # TODO: Test a fairly large upload (at least 50 MB, or whatever
     # the upload limit is when memory is used for temp storage)?
 
+class UploadDupeImageTest(ImageUploadBaseTest):
+    """
+    Duplicate images.
+    """
+    def duplicate_upload_test(self, dupe_option):
+        options = dict(skip_or_replace_duplicates=dupe_option)
 
-class ImageUploadImageErrorTest(ImageUploadBaseTest):
+        self.upload_image_test('001_2012-05-01_color-grid-001.png', **options)
+
+        # Non-duplicate
+        self.upload_image_test('002_2012-06-28_color-grid-002.png', **options)
+
+        # Duplicate
+        self.upload_image_test('001_2012-05-01_color-grid-001_jpg-valid.jpg', expecting_dupe=True, **options)
+
+        image_001 = Image.objects.get(source__pk=self.source_id, metadata__value1='001')
+        image_001_name = image_001.metadata.name
+
+        if dupe_option == 'skip':
+            # Check that the image name is from the original,
+            # not the skipped dupe.
+            self.assertEqual(image_001_name, 'color-grid-001.png')
+        else:  # 'replace'
+            # Check that the image name is from the dupe
+            # we just uploaded.
+            self.assertEqual(image_001_name, 'color-grid-001_jpg-valid.jpg')
+
+            # Tried to check if the upload time was correct based on skip/replace.
+            # However, there's a problem: database datetime objects don't track
+            # time more accurately than seconds, and this upload test tends to
+            # take less than a second (perhaps much less).  So it would only
+            # intermittently be a useful check.
+
+    def test_duplicate_upload_with_skip(self):
+        self.duplicate_upload_test('skip')
+
+    def test_duplicate_upload_with_replace(self):
+        self.duplicate_upload_test('replace')
+
+
+class UploadInvalidImageTest(ImageUploadBaseTest):
     """
     Image upload tests: errors related to the image files, such as errors
     about corrupt images, non-images, etc.
@@ -216,49 +255,13 @@ class ImageUploadImageErrorTest(ImageUploadBaseTest):
     # request, so this isn't high priority.
 
 
-class ImageUploadKeysTest(ImageUploadBaseTest):
+class UploadFilenameCheckTest(ImageUploadBaseTest):
     """
-    Image upload tests: related to location keys, such as checking for
-    duplicate images, checking for correct specification of location
-    values and date in the filename, and so on.
+    Image upload tests: related to filename checking.
+    Checking for correct number of location values, duplicate images,
+    correct date format, recognition of the custom name at the end,
+    and so on.
     """
-    # Tests with duplicate images.
-
-    def duplicate_test(self, dupe_option):
-        options = dict(skip_or_replace_duplicates=dupe_option)
-
-        self.upload_image_test('001_2012-05-01_color-grid-001.png', **options)
-
-        # Non-duplicate
-        self.upload_image_test('002_2012-06-28_color-grid-002.png', **options)
-
-        # Duplicate
-        self.upload_image_test('001_2012-05-01_color-grid-001_jpg-valid.jpg', expecting_dupe=True, **options)
-
-        image_001 = Image.objects.get(source__pk=self.source_id, metadata__value1='001')
-        image_001_name = image_001.metadata.name
-
-        if dupe_option == 'skip':
-            # Check that the image name is from the original,
-            # not the skipped dupe.
-            self.assertEqual(image_001_name, 'color-grid-001.png')
-        else:  # 'replace'
-            # Check that the image name is from the dupe
-            # we just uploaded.
-            self.assertEqual(image_001_name, 'color-grid-001_jpg-valid.jpg')
-
-        # Tried to check if the upload time was correct based on skip/replace.
-        # However, there's a problem: database datetime objects don't track
-        # time more accurately than seconds, and this upload test tends to
-        # take less than a second (perhaps much less).  So it would only
-        # intermittently be a useful check.
-
-    def test_duplicates_skip(self):
-        self.duplicate_test('skip')
-
-    def test_duplicates_replace(self):
-        self.duplicate_test('replace')
-
 
     # Filename format tests (on the server side).
     #
@@ -458,3 +461,94 @@ class ImageUploadKeysTest(ImageUploadBaseTest):
         )
         # Could test more dates, but would kind of boil down to whether the
         # built-in library datetime is doing its job or not.
+
+
+class PreviewFilenameTest(ImageUploadBaseTest):
+
+    def test_preview_status_types(self):
+        """
+        Try one error, one ok, and one dupe, all in the same preview batch.
+        """
+        self.upload_image_test(os.path.join('1key', '001_2011-05-28.png'))
+
+        files = [
+            ('rainbow_001_2011-05-28.png', 'error'),
+            ('002_2011-05-28.png', 'ok'),
+            ('001_2011-06-19.png', 'dupe'),
+        ]
+        filenames = [f[0] for f in files]
+
+        response = self.client.post(
+            reverse('image_upload_preview_ajax', kwargs={'source_id': self.source_id}),
+            {'filenames[]': filenames},
+        )
+        response_content = simplejson.loads(response.content)
+        status_list = response_content['statusList']
+
+        for index, expected_status in enumerate([f[1] for f in files]):
+            self.assertEqual(status_list[index]['status'], expected_status)
+
+    def test_preview_dupe_detection(self):
+        """
+        Dupes and non-dupes should be detected as such.
+
+        Not going to test all the filenames in the upload tests all
+        over again.  Just a sampling, as a sanity check that filename
+        checks behave the same between preview and upload.
+        """
+        self.upload_image_test(os.path.join('1key', '001_2012-05-28_rainbow-grid-one.png'))
+
+        files = [
+            ('002_2012-05-28.png', 'ok'),    # Number different
+            ('001_2011-05-28.png', 'ok'),    # Year different
+            ('002_2011-05-28.png', 'ok'),    # Both different
+            ('001_2012-05-28.png', 'dupe'),
+        ]
+        filenames = [f[0] for f in files]
+
+        response = self.client.post(
+            reverse('image_upload_preview_ajax', kwargs={'source_id': self.source_id}),
+            {'filenames[]': filenames},
+        )
+        response_content = simplejson.loads(response.content)
+        status_list = response_content['statusList']
+
+        for index, expected_status in enumerate([f[1] for f in files]):
+            self.assertEqual(status_list[index]['status'], expected_status)
+
+    def test_preview_error_types(self):
+        """
+        Error messages should be returned as expected.
+
+        Again, not going to test all the same filenames as
+        the upload tests.
+        """
+        files = [
+            ('2011-05-28.png', str_consts.FILENAME_PARSE_ERROR_STR),
+            ('001_20120229.png', str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='20120229')),
+            ('001_2012-02-30.png', str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-02-30')),
+            ('001_2011-01-01.png', str_consts.UPLOAD_PREVIEW_SAME_METADATA_ERROR_FMTSTR.format(metadata='001 2011')),
+            ('001_2011-05-28.png', str_consts.UPLOAD_PREVIEW_SAME_METADATA_ERROR_FMTSTR.format(metadata='001 2011')),
+        ]
+        filenames = [f[0] for f in files]
+
+        response = self.client.post(
+            reverse('image_upload_preview_ajax', kwargs={'source_id': self.source_id}),
+            {'filenames[]': filenames},
+        )
+        response_content = simplejson.loads(response.content)
+        status_list = response_content['statusList']
+
+        for index, expected_error in enumerate([f[1] for f in files]):
+            self.assertEqual(status_list[index]['status'], 'error')
+            self.assertEqual(status_list[index]['message'], expected_error)
+
+
+# TODO: Test the correctness of the metadata keys returned by the Ajax preview.
+
+# TODO: Test setting of image status fields, cm height, annotation area, etc.
+# Basically look through everything in the Image and Metadata models.
+
+# TODO: Test point generation.
+
+# TODO: Annotation upload tests.
