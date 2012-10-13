@@ -141,6 +141,55 @@ class UploadValidImageTest(ImageUploadBaseTest):
     # TODO: Test a fairly large upload (at least 50 MB, or whatever
     # the upload limit is when memory is used for temp storage)?
 
+class UploadImageFieldsTest(ImageUploadBaseTest):
+    """
+    Upload an image and see if all the fields have been set correctly.
+    """
+    def test_basic_image_fields(self):
+        datetime_before_upload = datetime.datetime.now().replace(microsecond=0)
+
+        image_id, response = self.upload_image_test('001_2012-05-01_color-grid-001.png')
+        img = Image.objects.get(pk=image_id)
+
+        # Not sure if we can check the file location in a cross-platform way,
+        # so we'll skip a check of original_file.path for now.
+        if settings.UNIT_TEST_VERBOSITY >= 1:
+            print "Uploaded file's path: {path}".format(path=img.original_file.path)
+
+        self.assertEqual(img.original_height, 400)
+        self.assertEqual(img.original_width, 400)
+
+        # This check is of limited use since database datetimes (in
+        # MySQL 5.1 at least) get truncated to whole seconds. But it still
+        # doesn't hurt to check.
+        self.assertTrue(datetime_before_upload <= img.upload_date)
+        self.assertTrue(img.upload_date <= datetime.datetime.now().replace(microsecond=0))
+
+        # Check that the user who uploaded the image is the
+        # currently logged in user.
+        self.assertEqual(img.uploaded_by.id, self.client.session['_auth_user_id'])
+
+        self.assertFalse(img.status.preprocessed)
+        self.assertTrue(img.status.hasRandomPoints)
+        self.assertFalse(img.status.featuresExtracted)
+        self.assertFalse(img.status.annotatedByRobot)
+        self.assertFalse(img.status.featureFileHasHumanLabels)
+        self.assertFalse(img.status.usedInCurrentModel)
+
+        # The following is specific to uploading without annotations.
+        self.assertFalse(img.status.annotatedByHuman)
+        self.assertEqual(img.point_generation_method, img.source.default_point_generation_method)
+
+        # Metadata: check only the cm-height field.
+        self.assertEqual(img.metadata.height_in_cm, img.source.image_height_in_cm)
+
+        # Other metadata fields aren't covered here because:
+        # - name, photo_date, value1/2/3/4/5: covered by filename tests
+        # - annotation_area: checked by other tests
+        # - latitude, longitude, depth, camera, photographer, water_quality,
+        #   strobes, framing, balance, comments: not specifiable from the
+        #   upload page
+
 class UploadDupeImageTest(ImageUploadBaseTest):
     """
     Duplicate images.
@@ -154,25 +203,30 @@ class UploadDupeImageTest(ImageUploadBaseTest):
         self.upload_image_test('002_2012-06-28_color-grid-002.png', **options)
 
         # Duplicate
+        datetime_before_dupe_upload = datetime.datetime.now().replace(microsecond=0)
         self.upload_image_test('001_2012-05-01_color-grid-001_jpg-valid.jpg', expecting_dupe=True, **options)
 
-        image_001 = Image.objects.get(source__pk=self.source_id, metadata__value1='001')
+        image_001 = Image.objects.get(source__pk=self.source_id, metadata__value1__name='001')
         image_001_name = image_001.metadata.name
 
         if dupe_option == 'skip':
+
             # Check that the image name is from the original,
             # not the skipped dupe.
             self.assertEqual(image_001_name, 'color-grid-001.png')
+            # Sanity check of the datetime of upload.
+            # This check is of limited use since database datetimes (in MySQL 5.1 at least)
+            # get truncated to whole seconds. But it still doesn't hurt to check.
+            self.assertTrue(image_001.upload_date <= datetime_before_dupe_upload)
+
         else:  # 'replace'
+
             # Check that the image name is from the dupe
             # we just uploaded.
             self.assertEqual(image_001_name, 'color-grid-001_jpg-valid.jpg')
+            # Sanity check of the datetime of upload.
+            self.assertTrue(datetime_before_dupe_upload <= image_001.upload_date)
 
-            # Tried to check if the upload time was correct based on skip/replace.
-            # However, there's a problem: database datetime objects don't track
-            # time more accurately than seconds, and this upload test tends to
-            # take less than a second (perhaps much less).  So it would only
-            # intermittently be a useful check.
 
     def test_duplicate_upload_with_skip(self):
         self.duplicate_upload_test('skip')
@@ -560,8 +614,7 @@ class PreviewFilenameTest(ImageUploadBaseTest):
             self.assertEqual(status_list[index]['message'], expected_error)
 
 
-# TODO: Test setting of image status fields, cm height, annotation area, etc.
-# Basically look through everything in the Image and Metadata models.
+# TODO: Test setting of annotation area.
 
 # TODO: Test point generation.
 
