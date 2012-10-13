@@ -468,13 +468,14 @@ class PreviewFilenameTest(ImageUploadBaseTest):
     def test_preview_status_types(self):
         """
         Try one error, one ok, and one dupe, all in the same preview batch.
+        Check that all the expected returned information is present and correct.
         """
-        self.upload_image_test(os.path.join('1key', '001_2011-05-28.png'))
+        image_id, response = self.upload_image_test(os.path.join('1key', '001_2011-05-28.png'))
 
         files = [
-            ('rainbow_001_2011-05-28.png', 'error'),
-            ('002_2011-05-28.png', 'ok'),
-            ('001_2011-06-19.png', 'dupe'),
+            ('rainbow_001_2011-05-28.png', 'error', None),
+            ('002_2011-05-28.png', 'ok', '002;2011'),
+            ('001_2011-06-19.png', 'dupe', '001;2011'),
         ]
         filenames = [f[0] for f in files]
 
@@ -485,8 +486,23 @@ class PreviewFilenameTest(ImageUploadBaseTest):
         response_content = simplejson.loads(response.content)
         status_list = response_content['statusList']
 
-        for index, expected_status in enumerate([f[1] for f in files]):
+        for index, f in enumerate(files):
+            expected_status = f[1]
             self.assertEqual(status_list[index]['status'], expected_status)
+
+            expected_metadata_key = f[2]
+            if expected_metadata_key is not None:
+                self.assertEqual(status_list[index]['metadataKey'], expected_metadata_key)
+
+            # Yeah, this is ugly code...
+            if index == 2:
+                # Dupe; two more values to check.
+                self.assertEqual(status_list[index]['url'], reverse('image_detail', args=[image_id]))
+                self.assertEqual(status_list[index]['title'], Image.objects.get(pk=image_id).get_image_element_title())
+
+                if settings.UNIT_TEST_VERBOSITY >= 1:
+                    print "Dupe image URL: {url}".format(url=status_list[index]['url'])
+                    print "Dupe image title: {title}".format(title=status_list[index]['title'])
 
     def test_preview_dupe_detection(self):
         """
@@ -543,8 +559,6 @@ class PreviewFilenameTest(ImageUploadBaseTest):
             self.assertEqual(status_list[index]['status'], 'error')
             self.assertEqual(status_list[index]['message'], expected_error)
 
-
-# TODO: Test the correctness of the metadata keys returned by the Ajax preview.
 
 # TODO: Test setting of image status fields, cm height, annotation area, etc.
 # Basically look through everything in the Image and Metadata models.
