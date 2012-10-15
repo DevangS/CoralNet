@@ -43,7 +43,8 @@ class ImageUploadBaseTest(ClientTest):
                           expected_error=None,
                           **options):
         """
-        Upload a single image via the Ajax view.
+        Upload a single image via the Ajax view, and perform a few checks
+        to see that the upload worked.
 
         (Multi-image upload only takes place on the client side; it's really
         just a series of single-image uploads on the server side. So unit
@@ -63,33 +64,10 @@ class ImageUploadBaseTest(ClientTest):
         """
         old_source_image_count = self.get_source_image_count()
 
-        sample_uploadable_directory = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data')
-
-        sample_uploadable_path = os.path.join(sample_uploadable_directory, filename)
-        file_to_upload = open(sample_uploadable_path, 'rb')
-
-        post_dict = dict(
-            file=file_to_upload,
-            specify_metadata='filenames',
-            skip_or_replace_duplicates='skip',
-            is_uploading_points_or_annotations='off',
-            is_uploading_annotations_not_just_points='yes',
-            annotation_dict_id='',
-        )
-        post_dict.update(options)
-
-        response = self.client.post(
-            reverse('image_upload_ajax', kwargs={'source_id': self.source_id}),
-            post_dict,
-        )
-        file_to_upload.close()
+        image_id, response = self.upload_image(filename, **options)
         response_content = simplejson.loads(response.content)
 
-        self.assertStatusOK(response)
-
         new_source_image_count = self.get_source_image_count()
-
-        image_id = None
 
         if expected_error:
 
@@ -107,18 +85,16 @@ class ImageUploadBaseTest(ClientTest):
 
             if expecting_dupe:
                 # We just replaced a duplicate image.
-                if post_dict['skip_or_replace_duplicates'] == 'skip':
+                if response.request.post['skip_or_replace_duplicates'] == 'skip':
                     self.assertEqual(response_content['status'], 'error')
                 else:  # replace
                     self.assertEqual(response_content['status'], 'ok')
-                    image_id = response_content['image_id']
 
                 # The number of images in the source should have stayed the same.
                 self.assertEqual(new_source_image_count, old_source_image_count)
             else:
                 # We uploaded a new, non-duplicate image.
                 self.assertEqual(response_content['status'], 'ok')
-                image_id = response_content['image_id']
 
                 # The number of images in the source should have gone up by 1.
                 self.assertEqual(new_source_image_count, 1+old_source_image_count)
@@ -613,7 +589,5 @@ class PreviewFilenameTest(ImageUploadBaseTest):
             self.assertEqual(status_list[index]['status'], 'error')
             self.assertEqual(status_list[index]['message'], expected_error)
 
-
-# TODO: Test point generation.
 
 # TODO: Annotation upload tests.

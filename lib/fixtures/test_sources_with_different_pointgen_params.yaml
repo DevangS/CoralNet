@@ -1,0 +1,31 @@
+- model: images.source
+  pk: null
+  fields:
+    name: Pointgen simple 1
+    visibility: b
+    create_date: "2012-04-25 17:30:32"
+    description: TODO
+    labelset: -1    # Empty labelset
+    key1: Number
+    default_point_generation_method: m_20
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""
+
+- model: images.source
+  pk: null
+  fields:
+    name: Pointgen simple 2
+    visibility: b
+    create_date: "2012-04-25 17:30:32"
+    description: TODO
+    labelset: -1    # Empty labelset
+    key1: Number
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 20;90;40;70
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""

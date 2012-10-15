@@ -460,7 +460,7 @@ def generate_points(img):
     if human_annotations:
         return
 
-    # Find the annotation area.
+    # Find the annotation area, expressed in pixels.
     d = AnnotationAreaUtils.db_format_to_numbers(img.metadata.annotation_area)
     annoarea_type = d.pop('type')
     if annoarea_type == AnnotationAreaUtils.TYPE_PERCENTAGES:

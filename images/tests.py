@@ -251,7 +251,7 @@ class ImageViewTest(ClientTest):
     def view_page_with_image(self, image_file):
         self.client.login(username='user2', password='secret')
 
-        self.image_id = self.upload_image(self.source_id, image_file)
+        self.image_id = self.upload_image(image_file)[0]
 
         response = self.client.get(reverse('image_detail', kwargs={'image_id': self.image_id}))
         self.assertStatusOK(response)
@@ -292,7 +292,7 @@ class ImageProcessingTaskTest(ClientTest):
 
         self.client.login(username='user2', password='secret')
 
-        self.image_id = self.upload_image(self.source_id, '001_2012-05-01_color-grid-001.png')
+        self.image_id = self.upload_image('001_2012-05-01_color-grid-001.png')[0]
 
     def test_preprocess_task(self):
         # The uploaded image should start out not preprocessed.

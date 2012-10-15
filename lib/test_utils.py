@@ -7,6 +7,7 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.test.client import Client
 from django.test.simple import DjangoTestSuiteRunner
+from django.utils import simplejson
 from userena.managers import UserenaManager
 from CoralNet.utils import *
 from images.models import Source
@@ -92,7 +93,22 @@ class ClientTest(BaseTest):
 
     def setUp(self):
         BaseTest.setUp(self)
+
+        # The test client.
         self.client = Client()
+
+        # Whenever a source id needs to be specified for a URL parameter
+        # or something, this will generally be used.
+        # Subclasses can set this to an actual source id.
+        self.source_id = None
+
+        self.default_upload_params = dict(
+            specify_metadata='filenames',
+            skip_or_replace_duplicates='skip',
+            is_uploading_points_or_annotations='off',
+            is_uploading_annotations_not_just_points='yes',
+            annotation_dict_id='',
+        )
 
     def assertStatusOK(self, response):
         self.assertEqual(response.status_code, 200)
@@ -245,27 +261,42 @@ class ClientTest(BaseTest):
             self.assertStatusOK(response)
             self.assertTemplateNotUsed(response, self.PERMISSION_DENIED_TEMPLATE)
 
-    def upload_image(self, source_id, filename):
+    def upload_image(self, filename, **options):
         """
-        Upload a test image.
-        Default options will be used.
+        Upload a single image via the Ajax view.
 
         Requires logging in as a user with upload permissions in
         the source, first.
 
-        Returns the id of the uploaded image.
+        :return: a tuple of (image_id, response):
+        image_id - id of the uploaded image.
+        response - the response object from the upload.
         """
-        sample_uploadable_path = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data', filename)
-        f = open(sample_uploadable_path, 'rb')
-        response = self.client.post(reverse('image_upload', kwargs={'source_id': source_id}), dict(
-            files=f,
-            skip_or_replace_duplicates='skip',
-            specify_metadata='filenames',
-        ))
-        f.close()
+        sample_uploadable_directory = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data')
 
-        image_id = response.context['uploadedImages'][0].pk
-        return image_id
+        sample_uploadable_path = os.path.join(sample_uploadable_directory, filename)
+        file_to_upload = open(sample_uploadable_path, 'rb')
+
+        post_dict = dict(
+            file=file_to_upload,
+            **self.default_upload_params
+        )
+        post_dict.update(options)
+
+        response = self.client.post(
+            reverse('image_upload_ajax', kwargs={'source_id': self.source_id}),
+            post_dict,
+        )
+        file_to_upload.close()
+
+        self.assertStatusOK(response)
+
+        # Get the image_id from response.content;
+        # if not present, set to None.
+        response_content = simplejson.loads(response.content)
+        image_id = response_content.get('image_id', None)
+
+        return image_id, response
 
     @staticmethod
     def print_response_messages(response):
