@@ -626,8 +626,14 @@ def annotations_file_to_python(annoFile, source):
 
     for line_num, line in enumerate(annoFile, 1):
 
+        stripped_line = line.strip()
+
+        # Ignore empty lines.
+        if stripped_line == '':
+            continue
+
         # Split the line into words/tokens.
-        unstripped_words = line.strip().split(';')
+        unstripped_words = stripped_line.split(';')
         # Strip leading and trailing whitespace from each token.
         words = [w.strip() for w in unstripped_words]
 

@@ -1,11 +1,15 @@
+from collections import defaultdict
 import os
 import datetime
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.forms import forms
 from django.utils import simplejson
+from annotations.model_utils import AnnotationAreaUtils
+from annotations.models import Annotation
 from images.forms import ImageUploadForm
-from images.models import Source, Image
+from images.model_utils import PointGen
+from images.models import Source, Image, Point
 from lib import str_consts
 from lib.test_utils import ClientTest, MediaTestComponent
 
@@ -37,6 +41,11 @@ class ImageUploadBaseTest(ClientTest):
 
     def get_source_image_count(self):
         return Image.objects.filter(source=Source.objects.get(pk=self.source_id)).count()
+
+    def get_full_upload_options(self, specified_options):
+        full_options = dict(self.default_upload_params)
+        full_options.update(specified_options)
+        return full_options
 
     def upload_image_test(self, filename,
                           expecting_dupe=False,
@@ -85,7 +94,9 @@ class ImageUploadBaseTest(ClientTest):
 
             if expecting_dupe:
                 # We just replaced a duplicate image.
-                if response.request.post['skip_or_replace_duplicates'] == 'skip':
+                full_options = self.get_full_upload_options(options)
+
+                if full_options['skip_or_replace_duplicates'] == 'skip':
                     self.assertEqual(response_content['status'], 'error')
                 else:  # replace
                     self.assertEqual(response_content['status'], 'ok')
@@ -101,30 +112,23 @@ class ImageUploadBaseTest(ClientTest):
 
         return image_id, response
 
-
-class UploadValidImageTest(ImageUploadBaseTest):
-    """
-    Valid images.
-    """
-    def test_valid_png(self):
-        """ .png created using the PIL. """
-        self.upload_image_test('001_2012-05-01_color-grid-001.png')
-
-    def test_valid_jpg(self):
-        """ .jpg created using the PIL. """
-        self.upload_image_test('001_2012-05-01_color-grid-001_jpg-valid.jpg')
-
-    # TODO: Test a fairly large upload (at least 50 MB, or whatever
-    # the upload limit is when memory is used for temp storage)?
-
-class UploadImageFieldsTest(ImageUploadBaseTest):
-    """
-    Upload an image and see if all the fields have been set correctly.
-    """
-    def test_basic_image_fields(self):
+    def upload_image_test_with_field_checks(self, filename,
+                                            expecting_dupe=False,
+                                            expected_error=None,
+                                            **options):
+        """
+        Like upload_image_test(), but with additional checks that the
+        various image fields are set correctly.
+        """
         datetime_before_upload = datetime.datetime.now().replace(microsecond=0)
 
-        image_id, response = self.upload_image_test('001_2012-05-01_color-grid-001.png')
+        image_id, response = self.upload_image_test(
+            filename,
+            expecting_dupe,
+            expected_error,
+            **options
+        )
+
         img = Image.objects.get(pk=image_id)
 
         # Not sure if we can check the file location in a cross-platform way,
@@ -156,16 +160,71 @@ class UploadImageFieldsTest(ImageUploadBaseTest):
         # cm height.
         self.assertEqual(img.metadata.height_in_cm, img.source.image_height_in_cm)
 
-        # The following is specific to uploading without annotations.
-        self.assertFalse(img.status.annotatedByHuman)
-        self.assertEqual(img.point_generation_method, img.source.default_point_generation_method)
-        self.assertEqual(img.metadata.annotation_area, img.source.image_annotation_area)
+        full_options = self.get_full_upload_options(options)
+
+        if full_options['is_uploading_points_or_annotations'] == 'on':
+
+            # Uploading with points/annotations.
+
+            # Pointgen method and annotation area should both indicate that
+            # points have been imported.
+            # TODO: Also test for the number of points in the pointgen method?
+            self.assertEqual(
+                PointGen.db_to_args_format(img.point_generation_method)['point_generation_type'],
+                PointGen.Types.IMPORTED,
+            )
+            self.assertEqual(
+                img.metadata.annotation_area,
+                AnnotationAreaUtils.IMPORTED_STR,
+            )
+
+            # Depending on whether we're uploading annotations, the
+            # annotatedByHuman status flag may or may not apply.
+            if full_options['is_uploading_annotations_not_just_points'] == 'yes':
+                # Points + annotations upload.
+                self.assertTrue(img.status.annotatedByHuman)
+
+            else:  # 'no'
+                # Points only upload.
+                self.assertFalse(img.status.annotatedByHuman)
+
+        else:  # 'off'
+
+            # Uploading without points/annotations.
+            self.assertFalse(img.status.annotatedByHuman)
+            self.assertEqual(img.point_generation_method, img.source.default_point_generation_method)
+            self.assertEqual(img.metadata.annotation_area, img.source.image_annotation_area)
 
         # Other metadata fields aren't covered here because:
         # - name, photo_date, value1/2/3/4/5: covered by filename tests
         # - latitude, longitude, depth, camera, photographer, water_quality,
         #   strobes, framing, balance, comments: not specifiable from the
         #   upload page
+
+        return image_id, response
+
+
+class UploadValidImageTest(ImageUploadBaseTest):
+    """
+    Valid images.
+    """
+    def test_valid_png(self):
+        """ .png created using the PIL. """
+        self.upload_image_test('001_2012-05-01_color-grid-001.png')
+
+    def test_valid_jpg(self):
+        """ .jpg created using the PIL. """
+        self.upload_image_test('001_2012-05-01_color-grid-001_jpg-valid.jpg')
+
+    # TODO: Test a fairly large upload (at least 50 MB, or whatever
+    # the upload limit is when memory is used for temp storage)?
+
+class UploadImageFieldsTest(ImageUploadBaseTest):
+    """
+    Upload an image and see if all the fields have been set correctly.
+    """
+    def test_basic_image_fields(self):
+        self.upload_image_test_with_field_checks('001_2012-05-01_color-grid-001.png')
 
 class UploadDupeImageTest(ImageUploadBaseTest):
     """
@@ -588,6 +647,136 @@ class PreviewFilenameTest(ImageUploadBaseTest):
         for index, expected_error in enumerate([f[1] for f in files]):
             self.assertEqual(status_list[index]['status'], 'error')
             self.assertEqual(status_list[index]['message'], expected_error)
+
+
+class AnnotationUploadTest(ImageUploadBaseTest):
+
+    fixtures = ['test_users.yaml', 'test_labels.yaml',
+                'test_labelsets.yaml', 'test_sources_with_labelsets.yaml']
+    source_member_roles = [
+        ('Labelset 2keys', 'user2', Source.PermTypes.ADMIN.code),
+    ]
+
+    def setUp(self):
+        ClientTest.setUp(self)
+        self.client.login(username='user2', password='secret')
+        self.source_id = Source.objects.get(name='Labelset 2keys').pk
+
+    def test_annotation_upload(self):
+        annotations_filename = 'colors_2keys_001.txt'
+        image_filenames = [
+            os.path.join('2keys', 'cool_001_2011-05-28.png'),
+            os.path.join('2keys', 'cool_001_2012-05-28.png'),
+            os.path.join('2keys', 'cool_002_2011-05-28.png'),
+            # TODO: Test with a fourth image that doesn't have annotations
+            # in the file.
+            #os.path.join('2keys', 'rainbow_002_2012-05-28.png'),
+        ]
+
+        annotations_file_dir = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'annotations_txt')
+        annotations_filepath = os.path.join(annotations_file_dir, annotations_filename)
+        annotations_file = open(annotations_filepath, 'rb')
+
+        options = dict(
+            annotations_file=annotations_file,
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+
+        response = self.client.post(
+            reverse('annotation_file_check_ajax', kwargs={'source_id': self.source_id}),
+            options,
+        )
+        annotations_file.close()
+
+        self.assertStatusOK(response)
+        response_content = simplejson.loads(response.content)
+
+        self.assertEqual(response_content['status'], 'ok')
+
+        annotations_per_image = response_content['annotations_per_image']
+        expected_annotations_per_image = {
+            'cool;001;2011': 5,
+            'cool;001;2012': 5,
+            'cool;002;2011': 3,
+        }
+
+        # Check annotations_per_image for correctness:
+        # Check keys.
+        self.assertEqual(
+            set(annotations_per_image.keys()),
+            set(expected_annotations_per_image.keys()),
+        )
+        # Check values.
+        self.assertEqual(annotations_per_image, expected_annotations_per_image)
+
+        # Modify options so we can pass it into the image-upload view.
+        options.pop('annotations_file')
+        options['annotation_dict_id'] = response_content['annotation_dict_id']
+
+        expected_annotations = {
+            '2011 cool 001': set([
+                (200, 300, 'Scarlet'),
+                (50, 250, 'Lime'),
+                (10, 10, 'Turq'),
+                (125, 375, 'UMarine'),
+                (200, 200, 'Scarlet'),
+            ]),
+            '2012 cool 001': set([
+                (1, 1, 'Lime'),
+                (400, 400, 'Lime'),
+                (150, 120, 'Turq'),
+                (50, 280, 'Lime'),
+                (200, 200, 'Turq'),
+            ]),
+            '2011 cool 002': set([
+                (300, 200, 'UMarine'),
+                (70, 350, 'UMarine'),
+                (160, 40, 'Turq'),
+            ]),
+        }
+
+        actual_annotations = defaultdict(set)
+
+        for image_filename in image_filenames:
+
+            # Upload the file, and test that the upload succeeds and that
+            # image fields are set correctly.
+            image_id, response = self.upload_image_test_with_field_checks(
+                image_filename,
+                **options
+            )
+
+            img = Image.objects.get(pk=image_id)
+            img_title = img.get_image_element_title()
+
+            # Test that points/annotations were generated correctly.
+            pts = Point.objects.filter(image=img)
+            for pt in pts:
+                # TODO: Check points' annotation statuses?
+                anno = Annotation.objects.get(point=pt)
+                actual_annotations[img_title].add( (pt.row, pt.column, anno.label.code) )
+
+        # All images we specified should have annotations, and there
+        # shouldn't be any annotations for images we didn't specify.
+        self.assertEqual(set(actual_annotations.keys()), set(expected_annotations.keys()))
+
+        # All the annotations we specified should be there.
+        for img_key in expected_annotations:
+            self.assertEqual(actual_annotations[img_key], expected_annotations[img_key])
+
+
+    # TODO: Test uploading points only, both when the annotation file does or
+    # doesn't also specify annotations.
+
+    # TODO: Test uploading an image which has 0 points/annotations specified
+    # in the annotations file.
+
+    # TODO: Test uploading an annotation file that specifies annotations
+    # for images that aren't going to be uploaded.
+
+    # TODO: Test at least one or two error cases for the annotation file check.
+
 
 
 # TODO: Annotation upload tests.

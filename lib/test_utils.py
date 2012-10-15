@@ -268,9 +268,11 @@ class ClientTest(BaseTest):
         Requires logging in as a user with upload permissions in
         the source, first.
 
-        :return: a tuple of (image_id, response):
-        image_id - id of the uploaded image.
-        response - the response object from the upload.
+        :param filename: The image file's filepath as a string, relative to
+            <settings.SAMPLE_UPLOADABLES_ROOT>/data.
+        :return: A tuple of (image_id, response):
+            image_id - id of the uploaded image.
+            response - the response object from the upload.
         """
         sample_uploadable_directory = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'data')
 

@@ -14,12 +14,12 @@ class AnnotationToolTest(ClientTest):
     fixtures = ['test_users.yaml', 'test_labels.yaml',
                 'test_labelsets.yaml', 'test_sources_with_labelsets.yaml']
     source_member_roles = [
-        ('public1', 'user2', Source.PermTypes.ADMIN.code),
+        ('Labelset 1key', 'user2', Source.PermTypes.ADMIN.code),
     ]
 
     def setUp(self):
         super(AnnotationToolTest, self).setUp()
-        self.source_id = Source.objects.get(name='public1').pk
+        self.source_id = Source.objects.get(name='Labelset 1key').pk
 
     def annotation_tool_with_image(self, image_file):
         self.client.login(username='user2', password='secret')
@@ -136,3 +136,4 @@ class PointGenTest(ClientTest):
 
     # TODO: Test stratified random and uniform grid as well, not just simple random.
     # TODO: Test unusual annotation areas: min and max very close or the same, and decimal percentages.
+    # TODO: Check points' annotation statuses?

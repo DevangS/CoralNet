@@ -1,12 +1,29 @@
 - model: images.source
   pk: null
   fields:
-    name: public1
+    name: Labelset 1key
     visibility: b
     create_date: "2012-05-29 21:00:52"
-    description: A public source with a labelset.
+    description: A source with a labelset and 1 location key.
     labelset: 1
     key1: Number
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""
+
+- model: images.source
+  pk: null
+  fields:
+    name: Labelset 2keys
+    visibility: b
+    create_date: "2012-05-29 21:00:52"
+    description: A source with a labelset and 2 location keys.
+    labelset: 1
+    key1: Color Range
+    key2: Number
     default_point_generation_method: m_50
     image_height_in_cm: 50
     image_annotation_area: 0;100;0;100
