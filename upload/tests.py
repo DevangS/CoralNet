@@ -112,6 +112,13 @@ class ImageUploadBaseTest(ClientTest):
 
         return image_id, response
 
+    def check_fields_for_non_annotation_upload(self, img):
+
+        # Uploading without points/annotations.
+        self.assertFalse(img.status.annotatedByHuman)
+        self.assertEqual(img.point_generation_method, img.source.default_point_generation_method)
+        self.assertEqual(img.metadata.annotation_area, img.source.image_annotation_area)
+
     def upload_image_test_with_field_checks(self, filename,
                                             expecting_dupe=False,
                                             expected_error=None,
@@ -190,10 +197,7 @@ class ImageUploadBaseTest(ClientTest):
 
         else:  # 'off'
 
-            # Uploading without points/annotations.
-            self.assertFalse(img.status.annotatedByHuman)
-            self.assertEqual(img.point_generation_method, img.source.default_point_generation_method)
-            self.assertEqual(img.metadata.annotation_area, img.source.image_annotation_area)
+            self.check_fields_for_non_annotation_upload(img)
 
         # Other metadata fields aren't covered here because:
         # - name, photo_date, value1/2/3/4/5: covered by filename tests
@@ -662,26 +666,65 @@ class AnnotationUploadTest(ImageUploadBaseTest):
         self.client.login(username='user2', password='secret')
         self.source_id = Source.objects.get(name='Labelset 2keys').pk
 
-    def test_annotation_upload(self):
-        annotations_filename = 'colors_2keys_001.txt'
-        image_filenames = [
+        # Files to upload.
+        self.image_filenames = [
             os.path.join('2keys', 'cool_001_2011-05-28.png'),
             os.path.join('2keys', 'cool_001_2012-05-28.png'),
             os.path.join('2keys', 'cool_002_2011-05-28.png'),
-            # TODO: Test with a fourth image that doesn't have annotations
-            # in the file.
-            #os.path.join('2keys', 'rainbow_002_2012-05-28.png'),
         ]
+
+        # Number of annotations that should be recognized by the annotation
+        # file check.  Note that the annotation file check does not know
+        # what image files are actually going to be uploaded; so if the
+        # annotation file contains annotations for image A, then it would
+        # report an annotation count for image A even if A isn't uploaded.
+        self.expected_annotations_per_image = {
+            'cool;001;2011': 3,
+            'cool;001;2012': 2,
+            'cool;002;2011': 1,
+            'will_not_be_uploaded;025;2004': 1,
+        }
+
+        # The annotations that should actually be created after the upload
+        # completes.
+        self.expected_annotations = {
+            '2011 cool 001': set([
+                (200, 300, 'Scarlet'),
+                (50, 250, 'Lime'),
+                (10, 10, 'Turq'),
+            ]),
+            '2012 cool 001': set([
+                (1, 1, 'UMarine'),
+                (400, 400, 'Lime'),
+            ]),
+            '2011 cool 002': set([
+                (160, 40, 'Turq'),
+            ]),
+        }
+
+        # Same as expected_annotations, but for the points-only option.
+        self.expected_points = {
+            '2011 cool 001': set([
+                (200, 300),
+                (50, 250),
+                (10, 10),
+            ]),
+            '2012 cool 001': set([
+                (1, 1),
+                (400, 400),
+            ]),
+            '2011 cool 002': set([
+                (160, 40),
+            ]),
+        }
+
+    def check_annotation_file(self, annotations_filename, **options):
 
         annotations_file_dir = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'annotations_txt')
         annotations_filepath = os.path.join(annotations_file_dir, annotations_filename)
         annotations_file = open(annotations_filepath, 'rb')
 
-        options = dict(
-            annotations_file=annotations_file,
-            is_uploading_points_or_annotations='on',
-            is_uploading_annotations_not_just_points='yes',
-        )
+        options.update(annotations_file=annotations_file)
 
         response = self.client.post(
             reverse('annotation_file_check_ajax', kwargs={'source_id': self.source_id}),
@@ -694,12 +737,22 @@ class AnnotationUploadTest(ImageUploadBaseTest):
 
         self.assertEqual(response_content['status'], 'ok')
 
+        return response_content
+
+    def upload_and_check_annotations(self, annotations_filename, image_filenames,
+                                     expected_annotations_per_image,
+                                     expected_annotations, **extra_options):
+
+        options = dict(
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+        options.update(extra_options)
+
+        # Perform the annotation file check.
+        response_content = self.check_annotation_file(annotations_filename, **options)
+
         annotations_per_image = response_content['annotations_per_image']
-        expected_annotations_per_image = {
-            'cool;001;2011': 5,
-            'cool;001;2012': 5,
-            'cool;002;2011': 3,
-        }
 
         # Check annotations_per_image for correctness:
         # Check keys.
@@ -711,30 +764,7 @@ class AnnotationUploadTest(ImageUploadBaseTest):
         self.assertEqual(annotations_per_image, expected_annotations_per_image)
 
         # Modify options so we can pass it into the image-upload view.
-        options.pop('annotations_file')
         options['annotation_dict_id'] = response_content['annotation_dict_id']
-
-        expected_annotations = {
-            '2011 cool 001': set([
-                (200, 300, 'Scarlet'),
-                (50, 250, 'Lime'),
-                (10, 10, 'Turq'),
-                (125, 375, 'UMarine'),
-                (200, 200, 'Scarlet'),
-            ]),
-            '2012 cool 001': set([
-                (1, 1, 'Lime'),
-                (400, 400, 'Lime'),
-                (150, 120, 'Turq'),
-                (50, 280, 'Lime'),
-                (200, 200, 'Turq'),
-            ]),
-            '2011 cool 002': set([
-                (300, 200, 'UMarine'),
-                (70, 350, 'UMarine'),
-                (160, 40, 'Turq'),
-            ]),
-        }
 
         actual_annotations = defaultdict(set)
 
@@ -752,10 +782,16 @@ class AnnotationUploadTest(ImageUploadBaseTest):
 
             # Test that points/annotations were generated correctly.
             pts = Point.objects.filter(image=img)
+
             for pt in pts:
                 # TODO: Check points' annotation statuses?
-                anno = Annotation.objects.get(point=pt)
-                actual_annotations[img_title].add( (pt.row, pt.column, anno.label.code) )
+
+                if options['is_uploading_annotations_not_just_points'] == 'yes':
+                    anno = Annotation.objects.get(point=pt)
+                    actual_annotations[img_title].add( (pt.row, pt.column, anno.label.code) )
+                else:  # 'no'
+                    actual_annotations[img_title].add( (pt.row, pt.column))
+
 
         # All images we specified should have annotations, and there
         # shouldn't be any annotations for images we didn't specify.
@@ -765,18 +801,70 @@ class AnnotationUploadTest(ImageUploadBaseTest):
         for img_key in expected_annotations:
             self.assertEqual(actual_annotations[img_key], expected_annotations[img_key])
 
+    def test_annotation_upload(self):
 
-    # TODO: Test uploading points only, both when the annotation file does or
-    # doesn't also specify annotations.
+        annotations_filename = 'colors_2keys_001.txt'
 
-    # TODO: Test uploading an image which has 0 points/annotations specified
-    # in the annotations file.
+        self.upload_and_check_annotations(
+            annotations_filename, self.image_filenames,
+            self.expected_annotations_per_image,
+            self.expected_annotations,
+        )
 
-    # TODO: Test uploading an annotation file that specifies annotations
-    # for images that aren't going to be uploaded.
+    def test_points_only_with_labels_in_file(self):
+
+        # Test with labels in the file.
+        annotations_filename = 'colors_2keys_001.txt'
+
+        self.upload_and_check_annotations(
+            annotations_filename, self.image_filenames,
+            self.expected_annotations_per_image,
+            self.expected_points,
+            is_uploading_annotations_not_just_points='no',
+        )
+
+    def test_points_only_without_labels_in_file(self):
+
+        # Test without labels in the file.
+        annotations_filename = 'colors_2keys_001_no_labels.txt'
+
+        self.upload_and_check_annotations(
+            annotations_filename, self.image_filenames,
+            self.expected_annotations_per_image,
+            self.expected_points,
+            is_uploading_annotations_not_just_points='no',
+        )
+
+    def test_upload_an_image_with_zero_annotations_specified(self):
+
+        annotations_filename = 'colors_2keys_001.txt'
+        options = dict(
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='no',
+        )
+
+        response_content = self.check_annotation_file(
+            annotations_filename,
+            **options
+        )
+
+        # Run an image upload, avoiding most of the checks
+        # that the other tests run.
+        image_id, response = self.upload_image_test(
+            os.path.join('2keys', 'rainbow_002_2012-05-28.png'),
+            annotation_dict_id=response_content['annotation_dict_id'],
+            **options
+        )
+
+        # Just check that the image fields are what we'd
+        # expect for an image that doesn't have annotations
+        # specified for it.  (i.e., it should have points
+        # automatically generated.)
+        img = Image.objects.get(pk=image_id)
+        self.check_fields_for_non_annotation_upload(img)
+
+
+    # TODO: Test that the image upload errors if the points/annotations
+    # option is on and there is no annotation dict.
 
     # TODO: Test at least one or two error cases for the annotation file check.
-
-
-
-# TODO: Annotation upload tests.

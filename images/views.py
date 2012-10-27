@@ -574,7 +574,7 @@ def get_image_identifier(valueList, year):
     """
     return ';'.join(valueList + [year])
 
-def annotations_file_to_python(annoFile, source):
+def annotations_file_to_python(annoFile, source, expecting_labels):
     """
     Takes: an annotations file
 
@@ -602,9 +602,12 @@ def annotations_file_to_python(annoFile, source):
 
     # The order of the words/tokens is encoded here.  If the order ever
     # changes, we should only have to change this part.
-    wordsFormat = ['value'+str(i) for i in range(1, numOfKeys+1)]
-    wordsFormat += ['date', 'row', 'col', 'label']
-    num_words_expected = len(wordsFormat)
+    words_format_without_label = ['value'+str(i) for i in range(1, numOfKeys+1)]
+    words_format_without_label += ['date', 'row', 'col']
+    words_format_with_label = words_format_without_label + ['label']
+
+    num_words_with_label = len(words_format_with_label)
+    num_words_without_label = len(words_format_without_label)
 
     # The annotation dict needs to be kept on disk temporarily until all the
     # Ajax upload requests are done. Thus, we'll use Python's shelve module
@@ -637,8 +640,19 @@ def annotations_file_to_python(annoFile, source):
         # Strip leading and trailing whitespace from each token.
         words = [w.strip() for w in unstripped_words]
 
-        # Check that all words/tokens are there.
-        if len(words) != num_words_expected:
+        # Check that all expected words/tokens are there.
+        is_valid_format_with_label = (len(words) == num_words_with_label)
+        is_valid_format_without_label = (len(words) == num_words_without_label)
+        words_format_is_valid = (
+            (expecting_labels and is_valid_format_with_label)
+            or (not expecting_labels and (is_valid_format_with_label or is_valid_format_without_label))
+        )
+        if expecting_labels:
+            num_words_expected = num_words_with_label
+        else:
+            num_words_expected = num_words_without_label
+
+        if not words_format_is_valid:
             annotation_dict.close()
             annoFile.close()
             raise FileContentError(file_error_format_str.format(
@@ -651,37 +665,41 @@ def annotations_file_to_python(annoFile, source):
             ))
 
         # Encode the line data into a dictionary: {'value1':'Shore2', 'row':'575', ...}
-        lineData = dict(zip(wordsFormat, words))
+        if is_valid_format_with_label:
+            lineData = dict(zip(words_format_with_label, words))
+        else:  # valid format without label
+            lineData = dict(zip(words_format_without_label, words))
 
-        
-        # Check that the label code corresponds to a label in the database
-        # and in the source's labelset.
-        # Only check this if the label code hasn't been seen before
-        # in the annotations file.
-        label_code = lineData['label']
-        if label_code not in uniqueLabelCodes:
+        if expecting_labels:
+            # Check that the label code corresponds to a label in the database
+            # and in the source's labelset.
+            # Only check this if the label code hasn't been seen before
+            # in the annotations file.
 
-            labelObjs = Label.objects.filter(code=label_code)
-            if len(labelObjs) == 0:
-                annotation_dict.close()
-                annoFile.close()
-                raise FileContentError(file_error_format_str.format(
-                    line_num=line_num,
-                    line=line,
-                    error="This line has label code {label_code}, but CoralNet has no label with this code.".format(label_code=label_code),
-                ))
+            label_code = lineData['label']
+            if label_code not in uniqueLabelCodes:
 
-            labelObj = labelObjs[0]
-            if labelObj not in source.labelset.labels.all():
-                annotation_dict.close()
-                annoFile.close()
-                raise FileContentError(file_error_format_str.format(
-                    line_num=line_num,
-                    line=line,
-                    error="This line has label code {label_code}, but your labelset has no label with this code.".format(label_code=label_code),
-                ))
+                labelObjs = Label.objects.filter(code=label_code)
+                if len(labelObjs) == 0:
+                    annotation_dict.close()
+                    annoFile.close()
+                    raise FileContentError(file_error_format_str.format(
+                        line_num=line_num,
+                        line=line,
+                        error="This line has label code {label_code}, but CoralNet has no label with this code.".format(label_code=label_code),
+                    ))
 
-            uniqueLabelCodes.append(label_code)
+                labelObj = labelObjs[0]
+                if labelObj not in source.labelset.labels.all():
+                    annotation_dict.close()
+                    annoFile.close()
+                    raise FileContentError(file_error_format_str.format(
+                        line_num=line_num,
+                        line=line,
+                        error="This line has label code {label_code}, but your labelset has no label with this code.".format(label_code=label_code),
+                    ))
+
+                uniqueLabelCodes.append(label_code)
 
         # Get and check the photo year to make sure it's valid.
         # We'll assume the year is the first 4 characters of the date.
@@ -713,16 +731,22 @@ def annotations_file_to_python(annoFile, source):
         if not annotation_dict.has_key(imageIdentifier):
             annotation_dict[imageIdentifier] = []
 
-        # Append the annotation as a dict containing row, col, and label.
+        # Append the annotation as a dict containing row, col, and label
+        # (or just row and col, if no labels).
         #
         # Can't append directly to annotation_dict[imageIdentifier], due to
         # how shelved dicts work. So we use this pattern with a temporary
         # variable.
         # See http://docs.python.org/library/shelve.html?highlight=shelve#example
         tmp_data = annotation_dict[imageIdentifier]
-        tmp_data.append(
-            dict(row=lineData['row'], col=lineData['col'], label=lineData['label'])
-        )
+        if expecting_labels:
+            tmp_data.append(
+                dict(row=lineData['row'], col=lineData['col'], label=lineData['label'])
+            )
+        else:
+            tmp_data.append(
+                dict(row=lineData['row'], col=lineData['col'])
+            )
         annotation_dict[imageIdentifier] = tmp_data
 
     annoFile.close()
@@ -1227,7 +1251,10 @@ def annotation_file_check_ajax(request, source_id):
             # TODO: Modify annotations_file_to_python() so that it
             # doesn't check for label codes if we're uploading
             # points only.
-            annotation_dict, annotation_dict_id = annotations_file_to_python(annotations_file, source)
+            annotation_dict, annotation_dict_id = annotations_file_to_python(
+                annotations_file, source,
+                expecting_labels=is_uploading_annotations_not_just_points,
+            )
         except FileContentError as error:
             return JsonResponse(dict(
                 status='error',

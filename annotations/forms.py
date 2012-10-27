@@ -439,3 +439,13 @@ class AnnotationImportOptionsForm(Form):
         ),
         initial='yes',
     )
+
+    def clean_is_uploading_annotations_not_just_points(self):
+        option = self.cleaned_data['is_uploading_annotations_not_just_points']
+
+        if option == 'yes':
+            self.cleaned_data['is_uploading_annotations_not_just_points'] = True
+        elif option == 'no':
+            self.cleaned_data['is_uploading_annotations_not_just_points'] = False
+
+        return self.cleaned_data['is_uploading_annotations_not_just_points']
