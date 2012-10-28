@@ -809,6 +809,7 @@ class AnnotationUploadTest(AnnotationUploadBaseTest):
             annotations_filename, self.image_filenames,
             self.expected_annotations_per_image,
             self.expected_annotations,
+            is_uploading_annotations_not_just_points='yes',
         )
 
     def test_points_only_with_labels_in_file(self):
