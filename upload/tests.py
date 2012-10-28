@@ -663,7 +663,7 @@ class AnnotationUploadBaseTest(ImageUploadBaseTest):
         options.update(annotations_file=annotations_file)
 
         response = self.client.post(
-            reverse('annotation_file_check_ajax', kwargs={'source_id': self.source_id}),
+            reverse('annotation_file_process_ajax', kwargs={'source_id': self.source_id}),
             options,
         )
         annotations_file.close()

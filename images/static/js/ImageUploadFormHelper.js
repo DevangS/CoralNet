@@ -119,7 +119,7 @@ var ImageUploadFormHelper = (function() {
             $annotationsCheckboxLabel.addClass('disabled');
         }
 
-        // Update the annotation file check button.
+        // Update the annotation file process button.
         if (annotationsChecked) {
             $annotationFileProcessButton.show();
         }
@@ -141,7 +141,7 @@ var ImageUploadFormHelper = (function() {
         }
         else if (annotationsChecked && annotationFileStatus === null) {
             $uploadStartButton.prop('disabled', true);
-            $uploadStartInfo.text("Points/annotations file needs checking");
+            $uploadStartInfo.text("Points/annotations file needs processing");
         }
         else if (annotationsChecked && annotationFileStatus === 'error') {
             // No annotation file
@@ -437,7 +437,7 @@ var ImageUploadFormHelper = (function() {
         updateFilesTable();
     }
 
-    /* Clear any previous results of annotation file checks. */
+    /* Clear any previous results of annotation file processing. */
     function clearAnnotationFileStatus() {
         annotationFileStatus = null;
         $annotationFileStatusDisplay.empty();
@@ -895,7 +895,7 @@ var ImageUploadFormHelper = (function() {
             $pointGenText = $('#auto_generate_points_page_section');
 
             // Button elements.
-            $annotationFileProcessButton = $('#annotation_file_check_button');
+            $annotationFileProcessButton = $('#annotation_file_process_button');
             $uploadStartButton = $('#id_upload_submit');
             $uploadAbortButton = $('#id_upload_abort_button');
 
