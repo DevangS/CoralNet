@@ -1248,9 +1248,6 @@ def annotation_file_check_ajax(request, source_id):
         annotations_file = annotation_import_form.cleaned_data['annotations_file']
 
         try:
-            # TODO: Modify annotations_file_to_python() so that it
-            # doesn't check for label codes if we're uploading
-            # points only.
             annotation_dict, annotation_dict_id = annotations_file_to_python(
                 annotations_file, source,
                 expecting_labels=is_uploading_annotations_not_just_points,

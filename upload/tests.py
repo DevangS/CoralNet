@@ -175,7 +175,6 @@ class ImageUploadBaseTest(ClientTest):
 
             # Pointgen method and annotation area should both indicate that
             # points have been imported.
-            # TODO: Also test for the number of points in the pointgen method?
             self.assertEqual(
                 PointGen.db_to_args_format(img.point_generation_method)['point_generation_type'],
                 PointGen.Types.IMPORTED,
@@ -558,7 +557,7 @@ class UploadFilenameCheckTest(ImageUploadBaseTest):
 
 class PreviewFilenameTest(ImageUploadBaseTest):
 
-    def test_preview_status_types(self):
+    def test_status_types(self):
         """
         Try one error, one ok, and one dupe, all in the same preview batch.
         Check that all the expected returned information is present and correct.
@@ -597,7 +596,7 @@ class PreviewFilenameTest(ImageUploadBaseTest):
                     print "Dupe image URL: {url}".format(url=status_list[index]['url'])
                     print "Dupe image title: {title}".format(title=status_list[index]['title'])
 
-    def test_preview_dupe_detection(self):
+    def test_dupe_detection(self):
         """
         Dupes and non-dupes should be detected as such.
 
@@ -625,7 +624,7 @@ class PreviewFilenameTest(ImageUploadBaseTest):
         for index, expected_status in enumerate([f[1] for f in files]):
             self.assertEqual(status_list[index]['status'], expected_status)
 
-    def test_preview_error_types(self):
+    def test_filename_errors(self):
         """
         Error messages should be returned as expected.
 
@@ -721,8 +720,6 @@ class AnnotationUploadBaseTest(ImageUploadBaseTest):
             pts = Point.objects.filter(image=img)
 
             for pt in pts:
-                # TODO: Check points' annotation statuses?
-
                 if options['is_uploading_annotations_not_just_points'] == 'yes':
                     anno = Annotation.objects.get(point=pt)
                     actual_annotations[img_title].add( (pt.row, pt.column, anno.label.code) )

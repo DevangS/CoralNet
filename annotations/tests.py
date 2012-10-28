@@ -136,4 +136,3 @@ class PointGenTest(ClientTest):
 
     # TODO: Test stratified random and uniform grid as well, not just simple random.
     # TODO: Test unusual annotation areas: min and max very close or the same, and decimal percentages.
-    # TODO: Check points' annotation statuses?
