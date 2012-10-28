@@ -246,61 +246,56 @@ var ImageUploadFormHelper = (function() {
             return;
         }
 
-        var summaryTextLines = [];
+        $preUploadSummary.text(files.length + " file(s) total");
 
-        summaryTextLines.push(files.length + " file(s) total");
+        var $summaryList = $('<ul>');
+        $preUploadSummary.append($summaryList);
 
         if (numPreUploadErrors > 0) {
-            summaryTextLines.push(
+            $summaryList.append($('<li>').text(
                 "{0} file(s) have filename errors".format(numPreUploadErrors)
-            );
+            ));
         }
 
         if (numDupes > 0 && $(dupeOptionField).val() === 'skip') {
-            summaryTextLines.push(
+            $summaryList.append($('<li>').text(
                 "{0} file(s) are duplicate images that will be skipped".format(numDupes)
-            );
+            ));
         }
 
-        summaryTextLines.push($('<strong>').text(
+        var $uploadableImagesListItem = $('<li>').append($('<strong>').text(
             "{0} file(s) ({1}) are uploadable images".format(
                 numUploadables, util.filesizeDisplay(uploadableTotalSize)
             )
         ));
+        $summaryList.append($uploadableImagesListItem);
+
+        var $summarySubList = $('<ul>');
+        $uploadableImagesListItem.append($summarySubList);
 
         if (numDupes > 0 && $(dupeOptionField).val() === 'replace') {
-            summaryTextLines.push(
-                "... {0} image(s) are new".format(numUploadables-numDupes)
-            );
-            summaryTextLines.push(
-                "... {0} image(s) are duplicates that will replace the originals".format(numDupes)
-            );
+            $summarySubList.append($('<li>').text(
+                "{0} image(s) are new".format(numUploadables-numDupes)
+            ));
+            $summarySubList.append($('<li>').text(
+                "{0} image(s) are duplicates that will replace the originals".format(numDupes)
+            ));
         }
 
         if (annotationsPerImage && numUploadables > 0) {
-            summaryTextLines.push(
-                "... {0} image(s) have {2} specified, for a total of {1} {2}".format(
+            $summarySubList.append($('<li>').text(
+                "{0} image(s) have {2} specified, for a total of {1} {2}".format(
                     numImagesWithAnnotations, numTotalAnnotations, annotationCountUnits
                 )
-            );
+            ));
 
             if (numUploadables !== numImagesWithAnnotations) {
-                summaryTextLines.push(
-                    "... {0} image(s) don't have {1} specified, so we'll auto-generate points for these images".format(
+                $summarySubList.append($('<li>').text(
+                    "{0} image(s) don't have {1} specified, so we'll auto-generate points for these images".format(
                         numUploadables-numImagesWithAnnotations, annotationCountUnits
                     )
-                );
+                ));
             }
-        }
-
-        for (i = 0; i < summaryTextLines.length; i++) {
-            // If not the first line, append a <br> first.
-            // That way, the lines are separated by linebreaks.
-            if (i > 0) {
-                $preUploadSummary.append('<br>');
-            }
-
-            $preUploadSummary.append(summaryTextLines[i]);
         }
     }
 
@@ -477,7 +472,7 @@ var ImageUploadFormHelper = (function() {
         annotationFileStatus = response.status;
 
         if (response.status === 'ok') {
-            $annotationFileStatusDisplay.text("Annotation file is OK.");
+            $annotationFileStatusDisplay.text("Points/annotations file is OK.");
             $annotationFileStatusDisplay.removeClass('ok error');
             $annotationFileStatusDisplay.addClass('ok');
 
