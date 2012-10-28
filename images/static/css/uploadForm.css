@@ -25,11 +25,9 @@
     display: none;
 }
 
-#upload_summary_table{
+#pre_upload_summary{
+    display: block;
     margin: 10px 0;  /* top/bottom left/right */
-}
-#upload_summary_table td{
-    padding: 0 10px;  /* top/bottom left/right */
 }
 #pre_upload_summary ul{
     list-style: disc;

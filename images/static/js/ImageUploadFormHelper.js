@@ -860,8 +860,8 @@ var ImageUploadFormHelper = (function() {
             //uploadProgressUrl = params.uploadProgressUrl;
 
             // Upload status summary elements.
-            $preUploadSummary = $('td#pre_upload_summary');
-            $midUploadSummary = $('td#mid_upload_summary');
+            $preUploadSummary = $('#pre_upload_summary');
+            $midUploadSummary = $('#mid_upload_summary');
             // Annotation file status elements.
             $annotationFileStatusDisplay = $('#annotation_file_status');
 
