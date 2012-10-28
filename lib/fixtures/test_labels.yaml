@@ -47,3 +47,10 @@
     name: Turquoise
     code: Turq
     group: [Blue]
+
+- model: annotations.label
+  pk: null
+  fields:
+    name: Forest Green
+    code: Forest
+    group: [Green]

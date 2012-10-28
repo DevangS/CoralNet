@@ -653,7 +653,93 @@ class PreviewFilenameTest(ImageUploadBaseTest):
             self.assertEqual(status_list[index]['message'], expected_error)
 
 
-class AnnotationUploadTest(ImageUploadBaseTest):
+class AnnotationUploadBaseTest(ImageUploadBaseTest):
+
+    def check_annotation_file(self, annotations_filename, **options):
+
+        annotations_file_dir = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'annotations_txt')
+        annotations_filepath = os.path.join(annotations_file_dir, annotations_filename)
+        annotations_file = open(annotations_filepath, 'rb')
+
+        options.update(annotations_file=annotations_file)
+
+        response = self.client.post(
+            reverse('annotation_file_check_ajax', kwargs={'source_id': self.source_id}),
+            options,
+        )
+        annotations_file.close()
+
+        self.assertStatusOK(response)
+        response_content = simplejson.loads(response.content)
+
+        return response_content
+
+    def upload_and_check_annotations(self, annotations_filename, image_filenames,
+                                     expected_annotations_per_image,
+                                     expected_annotations, **extra_options):
+
+        options = dict(
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+        options.update(extra_options)
+
+        # Perform the annotation file check.
+        response_content = self.check_annotation_file(annotations_filename, **options)
+
+        self.assertEqual(response_content['status'], 'ok')
+
+        annotations_per_image = response_content['annotations_per_image']
+
+        # Check annotations_per_image for correctness:
+        # Check keys.
+        self.assertEqual(
+            set(annotations_per_image.keys()),
+            set(expected_annotations_per_image.keys()),
+        )
+        # Check values.
+        self.assertEqual(annotations_per_image, expected_annotations_per_image)
+
+        # Modify options so we can pass it into the image-upload view.
+        options['annotation_dict_id'] = response_content['annotation_dict_id']
+
+        actual_annotations = defaultdict(set)
+
+        for image_filename in image_filenames:
+
+            # Upload the file, and test that the upload succeeds and that
+            # image fields are set correctly.
+            image_id, response = self.upload_image_test_with_field_checks(
+                image_filename,
+                **options
+            )
+
+            img = Image.objects.get(pk=image_id)
+            img_title = img.get_image_element_title()
+
+            # Test that points/annotations were generated correctly.
+            pts = Point.objects.filter(image=img)
+
+            for pt in pts:
+                # TODO: Check points' annotation statuses?
+
+                if options['is_uploading_annotations_not_just_points'] == 'yes':
+                    anno = Annotation.objects.get(point=pt)
+                    actual_annotations[img_title].add( (pt.row, pt.column, anno.label.code) )
+                else:  # 'no'
+                    actual_annotations[img_title].add( (pt.row, pt.column))
+
+
+        # All images we specified should have annotations, and there
+        # shouldn't be any annotations for images we didn't specify.
+        self.assertEqual(set(actual_annotations.keys()), set(expected_annotations.keys()))
+
+        # All the annotations we specified should be there.
+        for img_key in expected_annotations:
+            self.assertEqual(actual_annotations[img_key], expected_annotations[img_key])
+
+
+class AnnotationUploadTest(AnnotationUploadBaseTest):
 
     fixtures = ['test_users.yaml', 'test_labels.yaml',
                 'test_labelsets.yaml', 'test_sources_with_labelsets.yaml']
@@ -718,89 +804,6 @@ class AnnotationUploadTest(ImageUploadBaseTest):
             ]),
         }
 
-    def check_annotation_file(self, annotations_filename, **options):
-
-        annotations_file_dir = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'annotations_txt')
-        annotations_filepath = os.path.join(annotations_file_dir, annotations_filename)
-        annotations_file = open(annotations_filepath, 'rb')
-
-        options.update(annotations_file=annotations_file)
-
-        response = self.client.post(
-            reverse('annotation_file_check_ajax', kwargs={'source_id': self.source_id}),
-            options,
-        )
-        annotations_file.close()
-
-        self.assertStatusOK(response)
-        response_content = simplejson.loads(response.content)
-
-        self.assertEqual(response_content['status'], 'ok')
-
-        return response_content
-
-    def upload_and_check_annotations(self, annotations_filename, image_filenames,
-                                     expected_annotations_per_image,
-                                     expected_annotations, **extra_options):
-
-        options = dict(
-            is_uploading_points_or_annotations='on',
-            is_uploading_annotations_not_just_points='yes',
-        )
-        options.update(extra_options)
-
-        # Perform the annotation file check.
-        response_content = self.check_annotation_file(annotations_filename, **options)
-
-        annotations_per_image = response_content['annotations_per_image']
-
-        # Check annotations_per_image for correctness:
-        # Check keys.
-        self.assertEqual(
-            set(annotations_per_image.keys()),
-            set(expected_annotations_per_image.keys()),
-        )
-        # Check values.
-        self.assertEqual(annotations_per_image, expected_annotations_per_image)
-
-        # Modify options so we can pass it into the image-upload view.
-        options['annotation_dict_id'] = response_content['annotation_dict_id']
-
-        actual_annotations = defaultdict(set)
-
-        for image_filename in image_filenames:
-
-            # Upload the file, and test that the upload succeeds and that
-            # image fields are set correctly.
-            image_id, response = self.upload_image_test_with_field_checks(
-                image_filename,
-                **options
-            )
-
-            img = Image.objects.get(pk=image_id)
-            img_title = img.get_image_element_title()
-
-            # Test that points/annotations were generated correctly.
-            pts = Point.objects.filter(image=img)
-
-            for pt in pts:
-                # TODO: Check points' annotation statuses?
-
-                if options['is_uploading_annotations_not_just_points'] == 'yes':
-                    anno = Annotation.objects.get(point=pt)
-                    actual_annotations[img_title].add( (pt.row, pt.column, anno.label.code) )
-                else:  # 'no'
-                    actual_annotations[img_title].add( (pt.row, pt.column))
-
-
-        # All images we specified should have annotations, and there
-        # shouldn't be any annotations for images we didn't specify.
-        self.assertEqual(set(actual_annotations.keys()), set(expected_annotations.keys()))
-
-        # All the annotations we specified should be there.
-        for img_key in expected_annotations:
-            self.assertEqual(actual_annotations[img_key], expected_annotations[img_key])
-
     def test_annotation_upload(self):
 
         annotations_filename = 'colors_2keys_001.txt'
@@ -864,7 +867,160 @@ class AnnotationUploadTest(ImageUploadBaseTest):
         self.check_fields_for_non_annotation_upload(img)
 
 
-    # TODO: Test that the image upload errors if the points/annotations
-    # option is on and there is no annotation dict.
+class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
 
-    # TODO: Test at least one or two error cases for the annotation file check.
+    fixtures = ['test_users.yaml', 'test_labels.yaml',
+                'test_labelsets.yaml', 'test_sources_with_labelsets.yaml']
+    source_member_roles = [
+        ('Labelset 2keys', 'user2', Source.PermTypes.ADMIN.code),
+        ]
+
+    def setUp(self):
+        ClientTest.setUp(self)
+        self.client.login(username='user2', password='secret')
+        self.source_id = Source.objects.get(name='Labelset 2keys').pk
+
+    def test_annotations_on_and_no_annotation_dict(self):
+        options = dict(
+            is_uploading_points_or_annotations='on',
+        )
+
+        image_id, response = self.upload_image(
+            os.path.join('2keys', 'rainbow_002_2012-05-28.png'),
+            **options
+        )
+
+        response_content = simplejson.loads(response.content)
+        self.assertEqual(response_content['status'], 'error')
+        self.assertEqual(response_content['message'], str_consts.UPLOAD_ANNOTATIONS_ON_AND_NO_ANNOTATION_DICT_ERROR_STR)
+
+    def test_token_count_error(self):
+        # Labels expected, too few tokens
+        response_content = self.check_annotation_file(
+            'colors_2keys_001_no_labels.txt',
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+        self.assertEqual(response_content['status'], 'error')
+        self.assertEqual(
+            response_content['message'],
+            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
+                line_num="1",
+                line="cool; 001; 2011; 200; 300",
+                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+                    num_words_expected=6,
+                    num_words_found=5,
+                )
+            )
+        )
+
+        # Labels expected, too many tokens
+        response_content = self.check_annotation_file(
+            'colors_2keys_error_too_many_tokens.txt',
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+        self.assertEqual(response_content['status'], 'error')
+        self.assertEqual(
+            response_content['message'],
+            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
+                line_num="1",
+                line="cool; 001; 2011; 200; 300; Scarlet; UMarine",
+                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+                    num_words_expected=6,
+                    num_words_found=7,
+                )
+            )
+        )
+
+        # Labels not expected, too few tokens
+        response_content = self.check_annotation_file(
+            'colors_2keys_error_too_few_tokens.txt',
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='no',
+        )
+        self.assertEqual(response_content['status'], 'error')
+        self.assertEqual(
+            response_content['message'],
+            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
+                line_num="1",
+                line="cool; 001; 2011; 200",
+                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+                    num_words_expected=5,
+                    num_words_found=4,
+                )
+            )
+        )
+
+        # Labels not expected, too few tokens
+        response_content = self.check_annotation_file(
+            'colors_2keys_error_too_many_tokens.txt',
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='no',
+        )
+        self.assertEqual(response_content['status'], 'error')
+        self.assertEqual(
+            response_content['message'],
+            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
+                line_num="1",
+                line="cool; 001; 2011; 200; 300; Scarlet; UMarine",
+                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+                    num_words_expected=5,
+                    num_words_found=7,
+                )
+            )
+        )
+
+    def test_label_not_in_database(self):
+        response_content = self.check_annotation_file(
+            'colors_2keys_error_label_not_in_database.txt',
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+        self.assertEqual(response_content['status'], 'error')
+        self.assertEqual(
+            response_content['message'],
+            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
+                line_num="1",
+                line="cool; 001; 2011; 200; 300; Yellow",
+                error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR.format(
+                    label_code='Yellow',
+                )
+            )
+        )
+
+    def test_label_not_in_labelset(self):
+        response_content = self.check_annotation_file(
+            'colors_2keys_error_label_not_in_labelset.txt',
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+        self.assertEqual(response_content['status'], 'error')
+        self.assertEqual(
+            response_content['message'],
+            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
+                line_num="1",
+                line="cool; 001; 2011; 200; 300; Forest",
+                error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR.format(
+                    label_code='Forest',
+                )
+            )
+        )
+
+    def test_invalid_year(self):
+        response_content = self.check_annotation_file(
+            'colors_2keys_error_invalid_year.txt',
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+        self.assertEqual(response_content['status'], 'error')
+        self.assertEqual(
+            response_content['message'],
+            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
+                line_num="1",
+                line="cool; 001; 04-26-2011; 200; 300; Scarlet",
+                error=str_consts.ANNOTATION_CHECK_YEAR_ERROR_FMTSTR.format(
+                    year='04-2',
+                )
+            )
+        )

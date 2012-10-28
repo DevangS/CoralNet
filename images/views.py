@@ -595,7 +595,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
     #annoFile = open(annoFile, 'r')
 
     # Format args: line number, line contents, error message
-    file_error_format_str = 'On line {line_num}:\n{line}\n{error}'
+    file_error_format_str = str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR
     
     numOfKeys = source.num_of_keys()
     uniqueLabelCodes = []
@@ -613,10 +613,10 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
     # Ajax upload requests are done. Thus, we'll use Python's shelve module
     # to make a persistent dict.
     if not os.access(settings.SHELVED_ANNOTATIONS_DIR, os.R_OK | os.W_OK):
+        # Don't catch this error and display it to the user.
+        # Just let it become a server error to be e-mailed to the admins.
         raise DirectoryAccessError(
-            "The SHELVED_ANNOTATIONS_DIR ({dir}) either does not exist, is not readable, or is not writable. Please rectify this.".format(
-                dir=settings.SHELVED_ANNOTATIONS_DIR,
-            )
+            "The SHELVED_ANNOTATIONS_DIR either does not exist, is not readable, or is not writable. Please rectify this."
         )
     annotation_dict_id = rand_string(10)
     annotation_dict = shelve.open(os.path.join(
@@ -657,8 +657,8 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
             annoFile.close()
             raise FileContentError(file_error_format_str.format(
                 line_num=line_num,
-                line=line,
-                error="We expected {num_words_expected} semicolon-separated tokens, but found {num_words_found} instead.".format(
+                line=stripped_line,
+                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
                     num_words_expected=num_words_expected,
                     num_words_found=len(words),
                 )
@@ -685,8 +685,8 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
                     annoFile.close()
                     raise FileContentError(file_error_format_str.format(
                         line_num=line_num,
-                        line=line,
-                        error="This line has label code {label_code}, but CoralNet has no label with this code.".format(label_code=label_code),
+                        line=stripped_line,
+                        error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR.format(label_code=label_code),
                     ))
 
                 labelObj = labelObjs[0]
@@ -695,8 +695,8 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
                     annoFile.close()
                     raise FileContentError(file_error_format_str.format(
                         line_num=line_num,
-                        line=line,
-                        error="This line has label code {label_code}, but your labelset has no label with this code.".format(label_code=label_code),
+                        line=stripped_line,
+                        error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR.format(label_code=label_code),
                     ))
 
                 uniqueLabelCodes.append(label_code)
@@ -712,8 +712,8 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
             annoFile.close()
             raise FileContentError(file_error_format_str.format(
                 line_num=line_num,
-                line=line,
-                error="{year} is not a valid year.".format(year=year),
+                line=stripped_line,
+                error=str_consts.ANNOTATION_CHECK_YEAR_ERROR_FMTSTR.format(year=year),
             ))
 
         # TODO: Check if the row and col in this line are a valid row and col
@@ -1306,12 +1306,24 @@ def annotation_file_check_ajax(request, source_id):
 def image_upload_ajax(request, source_id):
     source = get_object_or_404(Source, id=source_id)
 
+    # Retrieve image related fields
     image_form = ImageUploadForm(request.POST, request.FILES)
     options_form = ImageUploadOptionsForm(request.POST, source=source)
 
+    # Retrieve annotation related fields
     is_uploading_points_or_annotations = request.POST.get('is_uploading_points_or_annotations', 'off')
     annotation_dict_id = request.POST.get('annotation_dict_id', None)
     annotation_options_form = AnnotationImportOptionsForm(request.POST)
+
+    # Corner case: somehow, we're uploading with points+annotations and no
+    # checked annotation file.
+    if is_uploading_points_or_annotations == 'on' and annotation_dict_id is None:
+        return JsonResponse(dict(
+            status='error',
+            message=u"{m}".format(m=str_consts.UPLOAD_ANNOTATIONS_ON_AND_NO_ANNOTATION_DICT_ERROR_STR),
+            link=None,
+            title=None,
+        ))
 
     # Check for validity of the file (filetype and non-corruptness) and
     # the options forms.

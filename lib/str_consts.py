@@ -15,3 +15,11 @@ FILENAME_DATE_VALUE_ERROR_FMTSTR = _(u"Could not recognize {date_token} as a val
 FILENAME_PARSE_ERROR_STR = _(u"Could not extract metadata from filename")
 
 UPLOAD_PREVIEW_SAME_METADATA_ERROR_FMTSTR = _(u"Multiple images with same metadata: {metadata}")
+
+ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR = _(u"On line {line_num}:\n{line}\n{error}")
+ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR = _(u"We expected {num_words_expected} semicolon-separated tokens, but found {num_words_found} instead.")
+ANNOTATION_CHECK_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR = _(u"This line has label code {label_code}, but CoralNet has no label with this code.")
+ANNOTATION_CHECK_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR = _(u"This line has label code {label_code}, but your labelset has no label with this code.")
+ANNOTATION_CHECK_YEAR_ERROR_FMTSTR = _(u"{year} is not a valid year.")
+
+UPLOAD_ANNOTATIONS_ON_AND_NO_ANNOTATION_DICT_ERROR_STR = _(u"Could not find annotation data")

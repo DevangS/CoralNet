@@ -107,7 +107,6 @@ class ClientTest(BaseTest):
             skip_or_replace_duplicates='skip',
             is_uploading_points_or_annotations='off',
             is_uploading_annotations_not_just_points='yes',
-            annotation_dict_id='',
         )
 
     def assertStatusOK(self, response):
