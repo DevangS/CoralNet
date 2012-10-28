@@ -440,6 +440,22 @@ class AnnotationImportOptionsForm(Form):
         initial='yes',
     )
 
+    def __init__(self, *args, **kwargs):
+        """
+        Add extra_help_text to the file field.
+        """
+        source = kwargs.pop('source')
+        super(AnnotationImportOptionsForm, self).__init__(*args, **kwargs)
+
+        if source.labelset.isEmptyLabelset():
+            self.fields['is_uploading_annotations_not_just_points'].choices = (
+                ('no', "Points only"),
+            )
+            self.fields['is_uploading_annotations_not_just_points'].initial = 'no'
+            self.fields['is_uploading_annotations_not_just_points'].help_text = (
+                "This source doesn't have a labelset yet, so you can't upload annotations."
+            )
+
     def clean_is_uploading_annotations_not_just_points(self):
         option = self.cleaned_data['is_uploading_annotations_not_just_points']
 

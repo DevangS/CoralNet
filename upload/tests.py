@@ -870,7 +870,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
                 'test_labelsets.yaml', 'test_sources_with_labelsets.yaml']
     source_member_roles = [
         ('Labelset 2keys', 'user2', Source.PermTypes.ADMIN.code),
-        ]
+    ]
 
     def setUp(self):
         ClientTest.setUp(self)
@@ -878,6 +878,10 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.source_id = Source.objects.get(name='Labelset 2keys').pk
 
     def test_annotations_on_and_no_annotation_dict(self):
+        """
+        Corner case that the client side code should prevent,
+        but it's worth a test anyway.
+        """
         options = dict(
             is_uploading_points_or_annotations='on',
         )

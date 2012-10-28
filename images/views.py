@@ -1102,7 +1102,7 @@ def image_upload(request, source_id):
     images_form = MultiImageUploadForm()
     options_form = ImageUploadOptionsForm(source=source)
     annotation_import_form = AnnotationImportForm()
-    annotation_import_options_form = AnnotationImportOptionsForm()
+    annotation_import_options_form = AnnotationImportOptionsForm(source=source)
 
     auto_generate_points_message = (
         "You haven't specified any points or annotations, so we will\n"
@@ -1230,7 +1230,7 @@ def annotation_file_check_ajax(request, source_id):
         #skipped_dupe_file_names = request.POST.getlist('skipped_dupe_file_names[]')
 
         annotation_import_form = AnnotationImportForm(request.POST, request.FILES)
-        annotation_import_options_form = AnnotationImportOptionsForm(request.POST, request.FILES)
+        annotation_import_options_form = AnnotationImportOptionsForm(request.POST, request.FILES, source=source)
 
         if not annotation_import_form.is_valid():
             return JsonResponse(dict(
@@ -1310,7 +1310,7 @@ def image_upload_ajax(request, source_id):
     # Retrieve annotation related fields
     is_uploading_points_or_annotations = request.POST.get('is_uploading_points_or_annotations', 'off')
     annotation_dict_id = request.POST.get('annotation_dict_id', None)
-    annotation_options_form = AnnotationImportOptionsForm(request.POST)
+    annotation_options_form = AnnotationImportOptionsForm(request.POST, source=source)
 
     # Corner case: somehow, we're uploading with points+annotations and no
     # checked annotation file.
