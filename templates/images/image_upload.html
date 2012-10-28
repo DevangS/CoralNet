@@ -61,7 +61,7 @@
                     {# The file field element #}
                     {{ field }}
 
-                    <button type="button" class="submit" id="annotation_file_check_button">Check annotation file</button>
+                    <button type="button" class="submit" id="annotation_file_check_button">Re-process annotation file</button>
 
                     {# Result of an annotation file check #}
                     <div id="annotation_file_status" class="helptext_small"></div>
@@ -133,7 +133,7 @@
             hasAnnotations: false,
             uploadPreviewUrl: "{% url image_upload_preview_ajax source.id %}",
             uploadStartUrl: "{% url image_upload_ajax source.id %}",
-            annotationFileCheckUrl: "{% url annotation_file_check_ajax source.id %}"
+            annotationFileProcessUrl: "{% url annotation_file_process_ajax source.id %}"
 {#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
         });
 

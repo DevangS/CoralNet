@@ -37,7 +37,7 @@ var ImageUploadFormHelper = (function() {
     var pointsOnlyFieldId = 'id_is_uploading_annotations_not_just_points';
     var pointsOnlyField = null;
 
-    var $annotationFileCheckButton = null;
+    var $annotationFileProcessButton = null;
     var $uploadStartButton = null;
     var $uploadAbortButton = null;
 
@@ -57,7 +57,7 @@ var ImageUploadFormHelper = (function() {
     var hasAnnotations = null;
 
     var uploadPreviewUrl = null;
-    var annotationFileCheckUrl = null;
+    var annotationFileProcessUrl = null;
     var uploadStartUrl = null;
     //var uploadProgressUrl = null;
 
@@ -121,17 +121,17 @@ var ImageUploadFormHelper = (function() {
 
         // Update the annotation file check button.
         if (annotationsChecked) {
-            $annotationFileCheckButton.show();
+            $annotationFileProcessButton.show();
         }
         else {
-            $annotationFileCheckButton.hide();
+            $annotationFileProcessButton.hide();
         }
 
         if (annotationFileField.files.length === 0) {
-            $annotationFileCheckButton.prop('disabled', true);
+            $annotationFileProcessButton.prop('disabled', true);
         }
         else {
-            $annotationFileCheckButton.prop('disabled', false);
+            $annotationFileProcessButton.prop('disabled', false);
         }
 
         // Update the upload start button.
@@ -451,19 +451,24 @@ var ImageUploadFormHelper = (function() {
 
     /* Send the annotation file to the server via Ajax, to extract
      * the point/annotation data from the file. */
-    function checkAnnotationFile() {
+    function processAnnotationFile() {
+
+        if (annotationFileField.files.length === 0) {
+            // No annotation file; return.
+            return;
+        }
 
         var options = {
             // Expected datatype of response
             dataType: 'json',
             // URL to submit to
-            url: annotationFileCheckUrl,
+            url: annotationFileProcessUrl,
 
             // Callback
             success: annotationFileAjaxResponseHandler
         };
         $('#annotations_form').ajaxSubmit(options);
-        $annotationFileStatusDisplay.text("Checking...");
+        $annotationFileStatusDisplay.text("Processing...");
     }
 
     function annotationFileAjaxResponseHandler(response) {
@@ -629,7 +634,7 @@ var ImageUploadFormHelper = (function() {
         $(annotationFileField).prop('disabled', true);
         $(pointsOnlyField).prop('disabled', true);
 
-        $annotationFileCheckButton.prop('disabled', true);
+        $annotationFileProcessButton.prop('disabled', true);
 
         $uploadStartButton.prop('disabled', true);
         $uploadStartButton.text("Uploading...");
@@ -855,7 +860,7 @@ var ImageUploadFormHelper = (function() {
             sourceId = params.sourceId;
             hasAnnotations = params.hasAnnotations;
             uploadPreviewUrl = params.uploadPreviewUrl;
-            annotationFileCheckUrl = params.annotationFileCheckUrl;
+            annotationFileProcessUrl = params.annotationFileProcessUrl;
             uploadStartUrl = params.uploadStartUrl;
             //uploadProgressUrl = params.uploadProgressUrl;
 
@@ -890,7 +895,7 @@ var ImageUploadFormHelper = (function() {
             $pointGenText = $('#auto_generate_points_page_section');
 
             // Button elements.
-            $annotationFileCheckButton = $('#annotation_file_check_button');
+            $annotationFileProcessButton = $('#annotation_file_check_button');
             $uploadStartButton = $('#id_upload_submit');
             $uploadAbortButton = $('#id_upload_abort_button');
 
@@ -967,15 +972,17 @@ var ImageUploadFormHelper = (function() {
             });
             $(pointsOnlyField).change(function() {
                 clearAnnotationFileStatus();
+                processAnnotationFile();
             });
             $(annotationFileField).change(function() {
                 clearAnnotationFileStatus();
+                processAnnotationFile();
             });
 
             // Button event handlers.
-            $annotationFileCheckButton.click(function() {
+            $annotationFileProcessButton.click(function() {
                 clearAnnotationFileStatus();
-                checkAnnotationFile();
+                processAnnotationFile();
             });
             $uploadStartButton.click(startAjaxImageUpload);
             $uploadAbortButton.click(abortAjaxUpload);

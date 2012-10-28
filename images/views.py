@@ -1211,7 +1211,7 @@ def image_upload_preview_ajax(request, source_id):
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
-def annotation_file_check_ajax(request, source_id):
+def annotation_file_process_ajax(request, source_id):
     """
     Called when a user selects files to upload in the image upload form.
 
