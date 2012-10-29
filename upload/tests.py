@@ -1,6 +1,7 @@
 from collections import defaultdict
 import os
 import datetime
+import tempfile
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.forms import forms
@@ -654,11 +655,25 @@ class PreviewFilenameTest(ImageUploadBaseTest):
 
 class AnnotationUploadBaseTest(ImageUploadBaseTest):
 
-    def check_annotation_file(self, annotations_filename, **options):
+    def process_annotation_text(self, annotations_text, **options):
+
+        tmp_file = tempfile.NamedTemporaryFile(mode='w+t', suffix='.txt', delete=False)
+        tmp_file.write(annotations_text)
+        name = tmp_file.name
+        tmp_file.close()
+        tmp_file = open(name, 'rb')
+
+        return self.process_open_annotation_file(tmp_file, **options)
+
+    def process_annotation_file(self, annotations_filename, **options):
 
         annotations_file_dir = os.path.join(settings.SAMPLE_UPLOADABLES_ROOT, 'annotations_txt')
         annotations_filepath = os.path.join(annotations_file_dir, annotations_filename)
         annotations_file = open(annotations_filepath, 'rb')
+
+        return self.process_open_annotation_file(annotations_file, **options)
+
+    def process_open_annotation_file(self, annotations_file, **options):
 
         options.update(annotations_file=annotations_file)
 
@@ -684,7 +699,7 @@ class AnnotationUploadBaseTest(ImageUploadBaseTest):
         options.update(extra_options)
 
         # Perform the annotation file check.
-        response_content = self.check_annotation_file(annotations_filename, **options)
+        response_content = self.process_annotation_file(annotations_filename, **options)
 
         self.assertEqual(response_content['status'], 'ok')
 
@@ -844,7 +859,7 @@ class AnnotationUploadTest(AnnotationUploadBaseTest):
             is_uploading_annotations_not_just_points='no',
         )
 
-        response_content = self.check_annotation_file(
+        response_content = self.process_annotation_file(
             annotations_filename,
             **options
         )
@@ -878,6 +893,19 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.client.login(username='user2', password='secret')
         self.source_id = Source.objects.get(name='Labelset 2keys').pk
 
+    def assert_annotation_file_error(self, response_content, line_num, line, error):
+        self.assertEqual(response_content['status'], 'error')
+        self.assertEqual(
+            response_content['message'],
+            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
+                line_num=line_num,
+                line=line,
+                error=error,
+            )
+        )
+        if settings.UNIT_TEST_VERBOSITY >= 1:
+            print "Annotation file error:\n{m}".format(m=response_content['message'])
+
     def test_annotations_on_and_no_annotation_dict(self):
         """
         Corner case that the client side code should prevent,
@@ -898,131 +926,196 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
 
     def test_token_count_error(self):
         # Labels expected, too few tokens
-        response_content = self.check_annotation_file(
+        response_content = self.process_annotation_file(
             'colors_2keys_001_no_labels.txt',
             is_uploading_points_or_annotations='on',
             is_uploading_annotations_not_just_points='yes',
         )
-        self.assertEqual(response_content['status'], 'error')
-        self.assertEqual(
-            response_content['message'],
-            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
-                line_num="1",
-                line="cool; 001; 2011; 200; 300",
-                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
-                    num_words_expected=6,
-                    num_words_found=5,
-                )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line="cool; 001; 2011; 200; 300",
+            error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+                num_words_expected=6,
+                num_words_found=5,
             )
         )
 
         # Labels expected, too many tokens
-        response_content = self.check_annotation_file(
+        response_content = self.process_annotation_file(
             'colors_2keys_error_too_many_tokens.txt',
             is_uploading_points_or_annotations='on',
             is_uploading_annotations_not_just_points='yes',
         )
-        self.assertEqual(response_content['status'], 'error')
-        self.assertEqual(
-            response_content['message'],
-            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
-                line_num="1",
-                line="cool; 001; 2011; 200; 300; Scarlet; UMarine",
-                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
-                    num_words_expected=6,
-                    num_words_found=7,
-                )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line="cool; 001; 2011; 200; 300; Scarlet; UMarine",
+            error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+                num_words_expected=6,
+                num_words_found=7,
             )
         )
 
         # Labels not expected, too few tokens
-        response_content = self.check_annotation_file(
+        response_content = self.process_annotation_file(
             'colors_2keys_error_too_few_tokens.txt',
             is_uploading_points_or_annotations='on',
             is_uploading_annotations_not_just_points='no',
         )
-        self.assertEqual(response_content['status'], 'error')
-        self.assertEqual(
-            response_content['message'],
-            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
-                line_num="1",
-                line="cool; 001; 2011; 200",
-                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
-                    num_words_expected=5,
-                    num_words_found=4,
-                )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1",  line="cool; 001; 2011; 200",
+            error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+                num_words_expected=5,
+                num_words_found=4,
             )
         )
 
         # Labels not expected, too few tokens
-        response_content = self.check_annotation_file(
+        response_content = self.process_annotation_file(
             'colors_2keys_error_too_many_tokens.txt',
             is_uploading_points_or_annotations='on',
             is_uploading_annotations_not_just_points='no',
         )
-        self.assertEqual(response_content['status'], 'error')
-        self.assertEqual(
-            response_content['message'],
-            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
-                line_num="1",
-                line="cool; 001; 2011; 200; 300; Scarlet; UMarine",
-                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
-                    num_words_expected=5,
-                    num_words_found=7,
-                )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line="cool; 001; 2011; 200; 300; Scarlet; UMarine",
+            error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+                num_words_expected=5,
+                num_words_found=7,
+            )
+        )
+
+    def test_row_col_not_a_number(self):
+        line_A = "cool; 001; 2011; 123abc; 300; Scarlet"
+        line_B = "cool; 001; 2011; 200; def; Scarlet"
+
+        options = dict(
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+
+        response_content = self.process_annotation_text(
+            line_A, **options
+        )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line=line_A,
+            error=str_consts.ANNOTATION_CHECK_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+                row='123abc',
+            )
+        )
+
+        response_content = self.process_annotation_text(
+            line_B, **options
+        )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line=line_B,
+            error=str_consts.ANNOTATION_CHECK_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+                column='def',
+            )
+        )
+
+    def test_row_col_not_an_integer(self):
+        line_A = "cool; 001; 2011; 123.0; 300; Scarlet"
+        line_B = "cool; 001; 2011; 200; 0.78; Scarlet"
+
+        options = dict(
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+
+        response_content = self.process_annotation_text(
+            line_A, **options
+        )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line=line_A,
+            error=str_consts.ANNOTATION_CHECK_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+                row='123.0',
+            )
+        )
+
+        response_content = self.process_annotation_text(
+            line_B, **options
+        )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line=line_B,
+            error=str_consts.ANNOTATION_CHECK_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+                column='0.78',
+            )
+        )
+
+    def test_row_col_not_a_positive_integer(self):
+        line_A = "cool; 001; 2011; 0; 300; Scarlet"
+        line_B = "cool; 001; 2011; 200; -10; Scarlet"
+
+        options = dict(
+            is_uploading_points_or_annotations='on',
+            is_uploading_annotations_not_just_points='yes',
+        )
+
+        response_content = self.process_annotation_text(
+            line_A, **options
+        )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line=line_A,
+            error=str_consts.ANNOTATION_CHECK_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+                row='0',
+            )
+        )
+
+        response_content = self.process_annotation_text(
+            line_B, **options
+        )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line=line_B,
+            error=str_consts.ANNOTATION_CHECK_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+                column='-10',
             )
         )
 
     def test_label_not_in_database(self):
-        response_content = self.check_annotation_file(
+        response_content = self.process_annotation_file(
             'colors_2keys_error_label_not_in_database.txt',
             is_uploading_points_or_annotations='on',
             is_uploading_annotations_not_just_points='yes',
         )
-        self.assertEqual(response_content['status'], 'error')
-        self.assertEqual(
-            response_content['message'],
-            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
-                line_num="1",
-                line="cool; 001; 2011; 200; 300; Yellow",
-                error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR.format(
-                    label_code='Yellow',
-                )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line="cool; 001; 2011; 200; 300; Yellow",
+            error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR.format(
+                label_code='Yellow',
             )
         )
 
     def test_label_not_in_labelset(self):
-        response_content = self.check_annotation_file(
+        response_content = self.process_annotation_file(
             'colors_2keys_error_label_not_in_labelset.txt',
             is_uploading_points_or_annotations='on',
             is_uploading_annotations_not_just_points='yes',
         )
-        self.assertEqual(response_content['status'], 'error')
-        self.assertEqual(
-            response_content['message'],
-            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
-                line_num="1",
-                line="cool; 001; 2011; 200; 300; Forest",
-                error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR.format(
-                    label_code='Forest',
-                )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line="cool; 001; 2011; 200; 300; Forest",
+            error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR.format(
+                label_code='Forest',
             )
         )
 
     def test_invalid_year(self):
-        response_content = self.check_annotation_file(
+        response_content = self.process_annotation_file(
             'colors_2keys_error_invalid_year.txt',
             is_uploading_points_or_annotations='on',
             is_uploading_annotations_not_just_points='yes',
         )
-        self.assertEqual(response_content['status'], 'error')
-        self.assertEqual(
-            response_content['message'],
-            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
-                line_num="1",
-                line="cool; 001; 04-26-2011; 200; 300; Scarlet",
-                error=str_consts.ANNOTATION_CHECK_YEAR_ERROR_FMTSTR.format(
-                    year='04-2',
-                )
+        self.assert_annotation_file_error(
+            response_content,
+            line_num="1", line="cool; 001; 04-26-2011; 200; 300; Scarlet",
+            error=str_consts.ANNOTATION_CHECK_YEAR_ERROR_FMTSTR.format(
+                year='04-2',
             )
         )

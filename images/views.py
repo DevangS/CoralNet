@@ -670,6 +670,32 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
         else:  # valid format without label
             lineData = dict(zip(words_format_without_label, words))
 
+        try:
+            row = int(lineData['row'])
+            if row <= 0:
+                raise ValueError
+        except ValueError:
+            annotation_dict.close()
+            annoFile.close()
+            raise FileContentError(file_error_format_str.format(
+                line_num=line_num,
+                line=stripped_line,
+                error=str_consts.ANNOTATION_CHECK_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(row=lineData['row']),
+            ))
+
+        try:
+            col = int(lineData['col'])
+            if col <= 0:
+                raise ValueError
+        except ValueError:
+            annotation_dict.close()
+            annoFile.close()
+            raise FileContentError(file_error_format_str.format(
+                line_num=line_num,
+                line=stripped_line,
+                error=str_consts.ANNOTATION_CHECK_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(column=lineData['col']),
+            ))
+
         if expecting_labels:
             # Check that the label code corresponds to a label in the database
             # and in the source's labelset.
@@ -741,11 +767,11 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
         tmp_data = annotation_dict[imageIdentifier]
         if expecting_labels:
             tmp_data.append(
-                dict(row=lineData['row'], col=lineData['col'], label=lineData['label'])
+                dict(row=row, col=col, label=lineData['label'])
             )
         else:
             tmp_data.append(
-                dict(row=lineData['row'], col=lineData['col'])
+                dict(row=row, col=col)
             )
         annotation_dict[imageIdentifier] = tmp_data
 

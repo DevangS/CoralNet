@@ -18,6 +18,8 @@ UPLOAD_PREVIEW_SAME_METADATA_ERROR_FMTSTR = _(u"Multiple images with same metada
 
 ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR = _(u"On line {line_num}:\n{line}\n{error}")
 ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR = _(u"We expected {num_words_expected} semicolon-separated tokens, but found {num_words_found} instead.")
+ANNOTATION_CHECK_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR = _(u"{row} is not a valid row (not a positive integer number).")
+ANNOTATION_CHECK_COL_NOT_POSITIVE_INT_ERROR_FMTSTR = _(u"{column} is not a valid column (not a positive integer number).")
 ANNOTATION_CHECK_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR = _(u"This line has label code {label_code}, but CoralNet has no label with this code.")
 ANNOTATION_CHECK_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR = _(u"This line has label code {label_code}, but your labelset has no label with this code.")
 ANNOTATION_CHECK_YEAR_ERROR_FMTSTR = _(u"{year} is not a valid year.")
