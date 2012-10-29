@@ -15,7 +15,8 @@ from upload.utils import annotations_file_to_python, image_upload_process, metad
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload(request, source_id):
     """
-    View for uploading images to a source.
+    This view serves the image upload page.  It doesn't actually do any
+    upload processing, though; that's left to the Ajax views.
     """
 
     source = get_object_or_404(Source, id=source_id)
@@ -135,13 +136,10 @@ def image_upload_preview_ajax(request, source_id):
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def annotation_file_process_ajax(request, source_id):
     """
-    Called when a user selects files to upload in the image upload form.
-
-    Looks at the files' filenames and returns a dict containing:
-    errors - List containing any errors. If there are any errors, the user
-      should not be allowed to start the upload.
-    warnings - List containing any warnings (i.e. things that may or may not
-      actually be problems).
+    Takes an annotation .txt file and processes it.  Saves the processing
+    results to a "shelved" dictionary file on disk, ready to be used in
+    subsequent image-upload operations.  Returns status info in a JSON
+    response.
     """
 
     source = get_object_or_404(Source, id=source_id)
@@ -224,6 +222,12 @@ def annotation_file_process_ajax(request, source_id):
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload_ajax(request, source_id):
+    """
+    After the "Start upload" button is clicked, this view is entered once
+    for each image file.  This view saves the image and its
+    points/annotations to the database.
+    """
+
     source = get_object_or_404(Source, id=source_id)
 
     # Retrieve image related fields
