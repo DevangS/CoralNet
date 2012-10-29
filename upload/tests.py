@@ -8,11 +8,11 @@ from django.forms import forms
 from django.utils import simplejson
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Annotation
-from images.forms import ImageUploadForm
 from images.model_utils import PointGen
 from images.models import Source, Image, Point
 from lib import str_consts
 from lib.test_utils import ClientTest, MediaTestComponent
+from upload.forms import ImageUploadForm
 
 
 class ImageUploadBaseTest(ClientTest):
