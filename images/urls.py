@@ -15,7 +15,6 @@ urlpatterns = patterns('',
     url(r'^image/(?P<image_id>\d+)/view/$', 'images.views.image_detail', name="image_detail"),
     url(r'^image/(?P<image_id>\d+)/edit/$', 'images.views.image_detail_edit', name="image_detail_edit"),
     url(r'^source/(?P<source_id>\d+)/label_import/$', 'images.views.import_labels', name="label_import"),
-    url(r'^source/(?P<source_id>\d+)/annotation_import/$', 'images.views.annotation_import', name="annotation_import"),
 
     # Consider moving this into accounts, or messages, or something like that
     url(r'^invites_manage/$', 'images.views.invites_manage', name="invites_manage"),
