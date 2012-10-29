@@ -924,7 +924,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assertEqual(response_content['status'], 'error')
         self.assertEqual(
             response_content['message'],
-            str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR.format(
+            str_consts.ANNOTATION_FILE_FULL_ERROR_MESSAGE_FMTSTR.format(
                 line_num=line_num,
                 line=line,
                 error=error,
@@ -962,7 +962,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line,
-            error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_TOKEN_COUNT_ERROR_FMTSTR.format(
                 num_words_expected=6,
                 num_words_found=5,
             )
@@ -978,7 +978,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line,
-            error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_TOKEN_COUNT_ERROR_FMTSTR.format(
                 num_words_expected=6,
                 num_words_found=7,
             )
@@ -994,7 +994,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1",  line=line,
-            error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_TOKEN_COUNT_ERROR_FMTSTR.format(
                 num_words_expected=5,
                 num_words_found=4,
             )
@@ -1010,7 +1010,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line,
-            error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_TOKEN_COUNT_ERROR_FMTSTR.format(
                 num_words_expected=5,
                 num_words_found=7,
             )
@@ -1031,7 +1031,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line_A,
-            error=str_consts.ANNOTATION_CHECK_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
                 row='123abc',
             )
         )
@@ -1042,7 +1042,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line_B,
-            error=str_consts.ANNOTATION_CHECK_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
                 column='def',
             )
         )
@@ -1062,7 +1062,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line_A,
-            error=str_consts.ANNOTATION_CHECK_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
                 row='123.0',
             )
         )
@@ -1073,7 +1073,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line_B,
-            error=str_consts.ANNOTATION_CHECK_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
                 column='0.78',
             )
         )
@@ -1093,7 +1093,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line_A,
-            error=str_consts.ANNOTATION_CHECK_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
                 row='0',
             )
         )
@@ -1104,7 +1104,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line_B,
-            error=str_consts.ANNOTATION_CHECK_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(
                 column='-10',
             )
         )
@@ -1119,7 +1119,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line,
-            error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR.format(
                 label_code='Yellow',
             )
         )
@@ -1134,7 +1134,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line,
-            error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR.format(
                 label_code='Forest',
             )
         )
@@ -1149,7 +1149,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assert_annotation_file_error(
             response_content,
             line_num="1", line=line,
-            error=str_consts.ANNOTATION_CHECK_YEAR_ERROR_FMTSTR.format(
+            error=str_consts.ANNOTATION_FILE_YEAR_ERROR_FMTSTR.format(
                 year='04-2',
             )
         )

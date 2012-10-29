@@ -595,7 +595,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
     #annoFile = open(annoFile, 'r')
 
     # Format args: line number, line contents, error message
-    file_error_format_str = str_consts.ANNOTATION_CHECK_FULL_ERROR_MESSAGE_FMTSTR
+    file_error_format_str = str_consts.ANNOTATION_FILE_FULL_ERROR_MESSAGE_FMTSTR
     
     numOfKeys = source.num_of_keys()
     uniqueLabelCodes = []
@@ -658,7 +658,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
             raise FileContentError(file_error_format_str.format(
                 line_num=line_num,
                 line=stripped_line,
-                error=str_consts.ANNOTATION_CHECK_TOKEN_COUNT_ERROR_FMTSTR.format(
+                error=str_consts.ANNOTATION_FILE_TOKEN_COUNT_ERROR_FMTSTR.format(
                     num_words_expected=num_words_expected,
                     num_words_found=len(words),
                 )
@@ -680,7 +680,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
             raise FileContentError(file_error_format_str.format(
                 line_num=line_num,
                 line=stripped_line,
-                error=str_consts.ANNOTATION_CHECK_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(row=lineData['row']),
+                error=str_consts.ANNOTATION_FILE_ROW_NOT_POSITIVE_INT_ERROR_FMTSTR.format(row=lineData['row']),
             ))
 
         try:
@@ -693,7 +693,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
             raise FileContentError(file_error_format_str.format(
                 line_num=line_num,
                 line=stripped_line,
-                error=str_consts.ANNOTATION_CHECK_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(column=lineData['col']),
+                error=str_consts.ANNOTATION_FILE_COL_NOT_POSITIVE_INT_ERROR_FMTSTR.format(column=lineData['col']),
             ))
 
         if expecting_labels:
@@ -712,7 +712,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
                     raise FileContentError(file_error_format_str.format(
                         line_num=line_num,
                         line=stripped_line,
-                        error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR.format(label_code=label_code),
+                        error=str_consts.ANNOTATION_FILE_LABEL_NOT_IN_DATABASE_ERROR_FMTSTR.format(label_code=label_code),
                     ))
 
                 labelObj = labelObjs[0]
@@ -722,7 +722,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
                     raise FileContentError(file_error_format_str.format(
                         line_num=line_num,
                         line=stripped_line,
-                        error=str_consts.ANNOTATION_CHECK_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR.format(label_code=label_code),
+                        error=str_consts.ANNOTATION_FILE_LABEL_NOT_IN_LABELSET_ERROR_FMTSTR.format(label_code=label_code),
                     ))
 
                 uniqueLabelCodes.append(label_code)
@@ -739,7 +739,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
             raise FileContentError(file_error_format_str.format(
                 line_num=line_num,
                 line=stripped_line,
-                error=str_consts.ANNOTATION_CHECK_YEAR_ERROR_FMTSTR.format(year=year),
+                error=str_consts.ANNOTATION_FILE_YEAR_ERROR_FMTSTR.format(year=year),
             ))
 
         # TODO: Check if the row and col in this line are a valid row and col
