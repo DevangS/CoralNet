@@ -53,9 +53,6 @@ var ImageUploadFormHelper = (function() {
     var $filesExtraHelpText = null;
     var $filesExtraHelpTextLink = null;
 
-    var sourceId = null;
-    var hasAnnotations = null;
-
     var uploadPreviewUrl = null;
     var annotationFileProcessUrl = null;
     var uploadStartUrl = null;
@@ -852,8 +849,6 @@ var ImageUploadFormHelper = (function() {
         initForm: function(params){
 
             // Get the parameters.
-            sourceId = params.sourceId;
-            hasAnnotations = params.hasAnnotations;
             uploadPreviewUrl = params.uploadPreviewUrl;
             annotationFileProcessUrl = params.annotationFileProcessUrl;
             uploadStartUrl = params.uploadStartUrl;

@@ -125,8 +125,6 @@
     <script type="text/javascript">
 
         ImageUploadFormHelper.initForm({
-            sourceId: {{ source.id }},
-            hasAnnotations: false,
             uploadPreviewUrl: "{% url image_upload_preview_ajax source.id %}",
             uploadStartUrl: "{% url image_upload_ajax source.id %}",
             annotationFileProcessUrl: "{% url annotation_file_process_ajax source.id %}"
