@@ -498,10 +498,10 @@ def export_annotations(request, source_id):
     else:
         all_annotations = Annotation.objects.filter(source=source).exclude(user=get_robot_user())
 
-    #Add table headings: locKey1 locKey2 locKey3 locKey4 photo_date anno_date row col label
+    #Add table headings: locKey1 locKey2 locKey3 locKey4 photo_date anno_date row col label shortcode fun_group annotator
     header = []
     header.extend(source.get_key_list())
-    header.extend(['photo_date','anno_date', 'row', 'col', 'label'])
+    header.extend(['photo_date','anno_date','annotator', 'row', 'col', 'label','shortcode', 'func_group'])
     writer.writerow(header)
 
     #Adds the relevant annotation data in a row
@@ -520,17 +520,23 @@ def export_annotations(request, source_id):
         for annotation in annotations:
             label_name = str(annotation.label.name)
             annotation_date = str(annotation.annotation_date)
+            annotator = str(annotation.user)
             point_row = str(annotation.point.row)
             point_col = str(annotation.point.column)
+            short_code = str(annotation.label.code)
+            func_group = str(annotation.label.group)
+
 
             row = []
             row.extend(locKeys)
             row.append(photo_date)
             row.append(annotation_date)
+            row.append(annotator)
             row.append(point_row)
             row.append(point_col)
             row.append(label_name)
-            
+            row.append(short_code)
+            row.append(func_group)
             writer.writerow(row)
 
     return response
