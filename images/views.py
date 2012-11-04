@@ -243,7 +243,7 @@ def source_edit(request, source_id):
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
-def source_invite(request, source_id):
+def source_admin(request, source_id):
     """
     Invite a user to this Source.
     """
