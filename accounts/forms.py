@@ -17,14 +17,14 @@ class UserAddForm(SignupForm):
 
     def save(self):
         # Randomly generate a password.
-        username, email, password = (self.cleaned_data['username'],
+        usernamee, email, password = (self.cleaned_data['usernamee'],
                                      self.cleaned_data['email'],
                                      rand_string(10))
 
-        new_user = UserenaSignup.objects.create_inactive_user(username, email, password, send_email=False)
+        new_user = UserenaSignup.objects.create_inactive_user(usernamee, email, password, send_email=False)
 
         # Send the activation email. Include the generated password.
-        userena_signup_obj = UserenaSignup.objects.get(user__username=username)
+        userena_signup_obj = UserenaSignup.objects.get(user__username=usernamee)
         send_activation_email_with_password(userena_signup_obj, password)
 
         return new_user
