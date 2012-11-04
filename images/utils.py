@@ -2,10 +2,10 @@
 
 import datetime
 import math, random
-from os.path import splitext
 from accounts.utils import get_robot_user
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Annotation
+from lib.exceptions import *
 from images.model_utils import PointGen
 from images.models import Point, Metadata, Image, Value1, Value2, Value3, Value4, Value5
 
@@ -20,7 +20,7 @@ def get_location_value_objs(source, valueList, createNewValues=False):
     If the database doesn't have a Value object of the desired name:
     - If createNewValues is True, then the required Value object is
      created and inserted into the DB.
-    - If createNewValues is False, then this method returns False.
+    - If createNewValues is False, then this method returns None.
     """
     valueNameGen = (v for v in valueList)
     valueDict = dict()
@@ -39,122 +39,19 @@ def get_location_value_objs(source, valueList, createNewValues=False):
             break
         else:
             if createNewValues:
+                # Get the Value object if there is one, or create it otherwise.
                 valueDict[valueIndex], created = valueClass.objects.get_or_create(source=source, name=valueName)
             else:
                 try:
+                    # Get the Value object if there is one.
                     valueDict[valueIndex] = valueClass.objects.get(source=source, name=valueName)
                 except valueClass.DoesNotExist:
-                    # Value object not found
-                    return False
+                    # Value object not found, and can't create it.
+                    # Can't return a valueDict.
+                    raise ValueObjectNotFoundError
 
     # All value objects were found/created
     return valueDict
-
-
-def find_dupe_image(source, values=None, year=None, **kwargs):
-    """
-    Sees if the given source already has an image with the given arguments.
-    """
-
-    # Get Value objects of the value names given in "values".
-    valueObjDict = get_location_value_objs(source, values, createNewValues=False)
-
-    if not valueObjDict:
-        # One or more of the values weren't found; no dupe image in DB.
-        return False
-
-    # Get all the metadata objects in the DB with these location values and year
-    metaMatches = Metadata.objects.filter(photo_date__year=year, **valueObjDict)
-
-    # Get the images from our source that have this metadata.
-    imageMatches = Image.objects.filter(source=source, metadata__in=metaMatches)
-
-    if len(imageMatches) > 1:
-        raise ValueError("Something's not right - this set of metadata has multiple image matches.")
-    elif len(imageMatches) == 1:
-        return imageMatches[0]
-    else:
-        return False
-
-
-def filename_to_metadata(filename, source):
-    """
-    Takes an image filename without the extension.
-
-    Returns a dict of the location values, and the photo year, month, and day.
-    {'values': ['Shore3', 'Reef 5', 'Loc10'],
-     'year': 2007, 'month': 8, 'day': 15}
-    """
-
-    metadataDict = dict()
-
-    parseError = ValueError('Could not properly extract metadata from the filename "%s".' % filename)
-    dateError = ValueError('Invalid date format or values.')
-    numOfKeys = source.num_of_keys()
-
-    # value1_value2_..._YYYY-MM-DD
-    tokensFormat = ['value'+str(i) for i in range(1, numOfKeys+1)]
-    tokensFormat += ['date']
-    numTokensExpected = len(tokensFormat)
-
-    # Make a list of the metadata 'tokens' from the filename
-    filenameWithoutExt, extension = splitext(filename)
-    tokens = filenameWithoutExt.split('_')
-
-    dataTokens = tokens[:numTokensExpected]
-    if len(dataTokens) != numTokensExpected:
-        raise parseError
-
-    extraTokens = tokens[numTokensExpected:]
-    if len(extraTokens) > 0:
-        name = '_'.join(extraTokens) + extension
-    else:
-        name = filename
-
-    # Encode the filename data into a dictionary: {'value1':'Shore2', 'date':'2008-12-18', ...}
-    filenameData = dict(zip(tokensFormat, dataTokens))
-
-    valueList = [filenameData['value'+str(i)] for i in range(1, numOfKeys+1)]
-    dateToken = filenameData['date']
-
-    try:
-        year, month, day = dateToken.split("-")
-    except ValueError:
-        raise dateError
-    # YYYYMMDD parsing:
-#    if len(dateToken) != 8:
-#        raise dateError
-#    year, month, day = dateToken[:4], dateToken[4:6], dateToken[6:8]
-
-    try:
-        datetime.date(int(year), int(month), int(day))
-    except ValueError:
-        # Either non-integer date params, or date params are
-        # out of valid range (e.g. month 13)
-        raise dateError
-
-    metadataDict['values'] = valueList
-
-    metadataDict['year'] = year
-    metadataDict['month'] = month
-    metadataDict['day'] = day
-
-    metadataDict['name'] = name
-
-    return metadataDict
-
-
-def metadata_to_filename(values=None,
-                         year=None, month=None, day=None):
-    """
-    Takes metadata arguments and returns a filename (without the extension)
-    which would generate these arguments.
-    """
-
-    dateStr = '-'.join([year, month, day])
-    filename = '_'.join(values + [dateStr])
-
-    return filename
 
 
 def get_first_image(source, conditions=None):
@@ -393,7 +290,7 @@ def generate_points(img):
     if human_annotations:
         return
 
-    # Find the annotation area.
+    # Find the annotation area, expressed in pixels.
     d = AnnotationAreaUtils.db_format_to_numbers(img.metadata.annotation_area)
     annoarea_type = d.pop('type')
     if annoarea_type == AnnotationAreaUtils.TYPE_PERCENTAGES:
@@ -427,28 +324,3 @@ def generate_points(img):
     status = img.status
     status.hasRandomPoints = True
     status.save()
-
-
-def image_upload_success_message(num_images_uploaded,
-                                 num_dupes, dupe_option,
-                                 num_annotations):
-    """
-    Construct the message for a successful image upload operation.
-    """
-    uploaded_msg = "{num} images uploaded.".format(num=num_images_uploaded)
-
-    if num_dupes > 0:
-        if dupe_option == 'replace':
-            duplicate_msg = "{num} duplicate images replaced.".format(num=num_dupes)
-        else:
-            duplicate_msg = "{num} duplicate images skipped.".format(num=num_dupes)
-    else:
-        duplicate_msg = None
-
-    if num_annotations > 0:
-        annotation_msg = "{num} annotations imported.".format(num=num_annotations)
-    else:
-        annotation_msg = None
-
-    return ' '.join([msg for msg in [uploaded_msg, duplicate_msg, annotation_msg]
-                     if msg is not None])

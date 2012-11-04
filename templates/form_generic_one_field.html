@@ -15,34 +15,38 @@ it to be False, and pass in anything that'll evaluate to True
 
     <div class="checkbox_field_wrapper">
 
+        {# The checkbox element #}
         {{ field }}
-    
+
+        {# The label for this field #}
         <label for="{{ field.id_for_label }}" class="no-style">
-          {{ field.label }}
+            {{ field.label }}
         </label>
 
-        {% if field.help_text and not dont_show_help_text %}
-          <div class="helptext_small">{{ field.help_text|linebreaksbr }}</div>
-        {% endif %}
+        {# Field help text #}
+        {% include "form_generic_one_field_help_text.html" %}
 
     </div>
 
 
   {% else %}
 
+    {# The label for this field #}
     <label for="{{ field.id_for_label }}" class="column_form_text_field">
         {% if field.field.required and not dont_mark_required %} <span style="color:red;"> * </span> {% endif %}
         {{ field.label }}:
     </label>
 
     <div class="field_wrapper">
+        {# The input element (dropdown, text field, etc.) #}
         {{ field }}
 
-        <div class="errorlist_wrapper">{{ field.errors|safe }}</div>  {# Allow HTML; some error messages may have links, etc. #}
+        {# Field errors #}
+        {# Allow HTML by using |safe. Some error messages may have links, etc. #}
+        <div class="errorlist_wrapper">{{ field.errors|safe }}</div>
 
-        {% if field.help_text and not dont_show_help_text %}
-          <div class="helptext_small">{{ field.help_text|linebreaksbr }}</div>
-        {% endif %}
+        {# Field help text #}
+        {% include "form_generic_one_field_help_text.html" %}
     </div>
 
   {% endif %}

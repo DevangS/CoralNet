@@ -3,8 +3,8 @@ from exceptions import ValueError
 from itertools import chain
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
-from django.forms import Form, DecimalField, TextInput, IntegerField
-from django.forms.fields import CharField, BooleanField
+from django.forms import Form
+from django.forms.fields import BooleanField, CharField, DecimalField, IntegerField
 from django.forms.widgets import TextInput, HiddenInput
 from django.utils import simplejson
 from django.utils.html import conditional_escape

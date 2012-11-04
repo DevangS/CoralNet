@@ -1,0 +1,105 @@
+#annotations_form {
+    /* This section starts out hidden; it's shown when the annotations
+       checkbox is ticked. */
+    display: none;
+}
+
+#annotation_file_status {
+    padding: 2px;
+}
+#annotation_file_status.ok {
+    background-color: #88ff88;
+}
+#annotation_file_status.error {
+    background-color: #ff8888;
+}
+
+#annotation_file_process_button {
+    /* This button starts out hidden; it's shown when the user chooses
+       to upload points/annotations. */
+    display: none;
+}
+
+#id_upload_abort_button{
+    /* This button starts out hidden; it's shown when the upload begins. */
+    display: none;
+}
+
+#pre_upload_summary{
+    display: block;
+    margin: 10px 0;  /* top/bottom left/right */
+}
+#pre_upload_summary ul{
+    list-style: disc;
+    margin-left: 20px;
+}
+#pre_upload_summary li{
+    padding: 3px 0;
+}
+
+#files_table_container{
+    margin: 10px 0;  /* top/bottom left/right */
+
+    /* scrollbars will appear only if the files table
+       exceeds the container's max height. */
+    overflow: auto;
+    max-height: 20em;
+}
+
+#files_table_auto_scroll_checkbox_container{
+    /* The checkbox starts out hidden, and may be shown later
+       once some files are selected. */
+    display: none;
+}
+
+#files_table{
+    border: 2px solid #999;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+#files_table th, #files_table td{
+    border: 2px solid #999;
+    padding: 2px 10px;  /* top/bottom left/right */
+}
+#files_table td{
+    font-size: 0.9em;
+}
+#files_table td.size_cell{
+    /* In general, don't let the size spill into 2 lines; that looks bad.
+
+       Assuming 0.9em font size, 60px should always fit '16.25 MB' in the
+       cell.  The only situation that would spill it to 2 lines is when it's
+       '162.50 MB' or longer, and the other table columns are wide enough to
+       make the table expand to its full width, thus clamping the size column
+       to the min-width. */
+    min-width: 60px;
+}
+
+#files_table tr.dupe_skip{
+    background-color: #cccccc;
+}
+#files_table tr.dupe_skip td.status_cell a,
+#files_table tr.preupload_dupe_replace td.status_cell a{
+    color: green;
+}
+#files_table tr.preupload_error{
+    background-color: #cccccc;
+}
+#files_table tr.uploading{
+    background-color: #ffff88;
+}
+#files_table tr.upload_error{
+    background-color: #ff8888;
+}
+#files_table tr.uploaded{
+    background-color: #88ff88;
+}
+
+/* TODO: Merge this rule into master.css at some point. */
+form, div.page_section {
+    margin: 20px 0 30px;  /* top left/right bottom */
+    padding: 0;
+
+    width: auto;
+}

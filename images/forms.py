@@ -1,14 +1,11 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm
-from django.forms.fields import BooleanField, CharField, ChoiceField, FileField, ImageField, IntegerField
-from django.forms.widgets import FileInput, Select, TextInput
-from django.utils.translation import ugettext_lazy as _
-from annotations.model_utils import AnnotationAreaUtils
+from django.forms.fields import CharField, ChoiceField, FileField, IntegerField
+from django.forms.widgets import  Select, TextInput
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
 from images.model_utils import PointGen
-from images.utils import metadata_to_filename
 
 class ImageSourceForm(ModelForm):
 
@@ -166,164 +163,6 @@ class SourceInviteForm(Form):
             self._errors['recipient'] = self.error_class([msg])
 
         return super(SourceInviteForm, self).clean()
-
-
-class MultipleFileInput(FileInput):
-    """
-    Modifies the built-in FileInput widget by allowing validation of multi-file input.
-    (When FileInput takes multiple files, it only validates the last one.)
-    """
-    def __init__(self, attrs=None):
-        # Include the attr multiple = 'multiple' by default.
-        # (For reference, TextArea.__init__ adds default attrs in the same way.)
-        default_attrs = {'multiple': 'multiple'}
-        if attrs is not None:
-            default_attrs.update(attrs)
-        super(MultipleFileInput, self).__init__(attrs=default_attrs)
-
-    def value_from_datadict(self, data, files, name):
-        """
-        FileInput's method only uses get() here, which means only 1 file is gotten.
-        We need getlist to get all the files.
-        """
-        if not files:
-            # files is the empty dict {} instead of a MultiValueDict.
-            # That will happen if the files parameter passed into the
-            # form is an empty MultiValueDict, because Field.__init__()
-            # has the code 'self.files = files or {}'.
-            return []
-        else:
-            # In any other case, we'll have a MultiValueDict, which has
-            # the method getlist() to get the values as a list.
-            return files.getlist(name)
-
-class MultipleImageField(ImageField):
-    """
-    Modifies the built-in ImageField by allowing validation of multi-file input.
-    (When ImageField takes multiple files, it only validates the last one.)
-
-    Must be used with the MultipleFileInput widget.
-    """
-    default_error_messages = {
-        'error_on': _(u"Error on file {0}: "),  # To be used as an error prefix
-        'invalid_image': _(u"The file either is not in a supported image format, or is a corrupted image."),
-    }
-
-    def to_python(self, data):
-        """
-        Checks that each file of the file-upload field data contains a valid
-        image (GIF, JPG, PNG, possibly others -- whatever the Python Imaging
-        Library supports).
-        """
-        data_out = []
-
-        for list_item in data:
-            try:
-                f = super(MultipleImageField, self).to_python(list_item)
-            except ValidationError, err:
-                raise ValidationError(
-                    u"{0}{1}".format(
-                        self.error_messages['error_on'].format(list_item),
-                        err.messages[0],
-                    )
-                )
-            data_out.append(f)
-
-        return data_out
-
-class ImageUploadForm(Form):
-    error_messages = {
-        'duplicate_image': _(u"This has the same location keys and year as another image in this upload."),
-    }
-
-    files = MultipleImageField(
-        label='Image files',
-        widget=MultipleFileInput(),
-        help_text="Accepted file formats: JPG, PNG, GIF, and possibly others"
-    )
-
-    class Media:
-        css = {
-            'all': ("css/uploadForm.css",)
-        }
-        js = ("js/ImageUploadFormHelper.js",)
-
-
-class ImageUploadOptionsForm(Form):
-    """
-    Helper form for the ImageUploadForm.
-    Has options such as choosing to skip or replace duplicate images.
-    """
-
-    specify_metadata = ChoiceField(
-        label='How to specify metadata',
-        help_text='',  # To be filled in by the form constructor
-        choices=(('filenames', 'From filenames'),),
-        initial='filenames',
-        required=True)
-
-    skip_or_replace_duplicates = ChoiceField(
-        label='Skip or replace duplicate images',
-        help_text="If your image has the same location keys and year as an " \
-                  "image that's already in your Source, that image is " \
-                  "considered a duplicate.",
-        choices=(('skip', "Skip (don't re-upload)"), ('replace', "Replace (re-upload)")),
-        required=True)
-
-    def __init__(self, *args, **kwargs):
-        """
-        Dynamically generate help text.
-        """
-        source = kwargs.pop('source')
-        super(ImageUploadOptionsForm, self).__init__(*args, **kwargs)
-
-        # Dynamically generate help text.
-        # Show the filename format that should be used,
-        # and an example of a filename adhering to that format.
-        filenameFormatArgs = dict(year='YYYY', month='MM', day='DD')
-        filenameExampleArgs = dict(year='2010', month='08', day='23')
-
-        sourceKeys = source.get_key_list()
-        exampleSuffixes = ['A', ' 7', ' 2-2', 'C', '1'][0 : len(sourceKeys)]
-
-        filenameFormatArgs['values'] = sourceKeys
-        filenameExampleArgs['values'] = [a+b for a,b in zip(sourceKeys, exampleSuffixes)]
-
-        filenameFormatStr = metadata_to_filename(**filenameFormatArgs)
-        filenameExampleStr = metadata_to_filename(**filenameExampleArgs) + ".jpg"
-
-        self.fields['specify_metadata'].help_text = \
-            "Required filename format: %s" % filenameFormatStr
-
-        # Use JavaScript to show/hide this additional help text
-        self.metadata_extra_help_text = (
-            "\n"
-            "For example, let's say your source has the following location keys: "
-            "Site, Depth, Transect Line and Quadrant. "
-            "If you want to upload a .jpg image that was taken at "
-            "Site: sharkPoint, Depth: 10m, Transect Line: 3, and Quadrant: qu4, "
-            "on 14 January 2010, the filename for upload should be:\n\n"
-
-            "sharkPoint_10m_3_qu4_2010-01-14.jpg\n\n"
-
-            "Alternatively, if you also want to store the original filename - say it's "
-            "IMG_0032.jpg - you can use:\n\n"
-
-            "sharkPoint_10m_3_qu4_2010-01-14_IMG_0032.jpg\n\n"
-
-            "The original file name is not used by CoralNet, but could be "
-            "useful for your own reference."
-        )
-
-
-        self.additional_details = [
-            """Annotation points will be automatically generated for your images.
-            Your Source's point generation settings: %s
-            Your Source's annotation area settings: %s""" % (
-                PointGen.db_to_readable_format(source.default_point_generation_method),
-                AnnotationAreaUtils.db_format_to_display(source.image_annotation_area)
-                )
-        ]
 
 
 class ImageDetailForm(ModelForm):
@@ -551,22 +390,6 @@ class PointGenForm(Form):
 
         self.cleaned_data = data
         return super(PointGenForm, self).clean()
-
-
-class AnnotationImportForm(Form):
-    annotations_file = FileField(
-        label='Annotation file (.txt)',
-    )
-
-
-class AnnotationImportOptionsForm(Form):
-    """
-    Helper form for the AnnotationImportForm, containing import options.
-    """
-    points_only = BooleanField(
-        label='Points only, no annotations',
-        required=False,
-        initial=False)
 
 
 class LabelImportForm(Form):

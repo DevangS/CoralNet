@@ -14,6 +14,8 @@ urlpatterns = patterns('',
     (r'^visualization/', include('visualization.urls')),
     (r'^annotations/', include('annotations.urls')),
     (r'^requests/', include('requests.urls')),
+    (r'^upload/', include('upload.urls')),
+
     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
     (r'^admin/', include(admin.site.urls)),
 

@@ -91,6 +91,11 @@ ORIGINAL_IMAGE_DIR = 'data/original/'
 LABEL_THUMBNAIL_DIR = 'label_thumbnails/'
 FILE_UPLOAD_MAX_MEMORY_SIZE = settings_2.FILE_UPLOAD_MAX_MEMORY_SIZE
 
+# When uploading images and annotations together, the annotation dict needs
+# to be kept on disk temporarily until all the Ajax upload requests are done.
+# This is the directory where the dict files will be kept.
+SHELVED_ANNOTATIONS_DIR = settings_2.SHELVED_ANNOTATIONS_DIR
+
 DOCUMENT_ROOT = abspath(PROJECT_ROOT, 'docs')
 
 # Absolute path to the directory static files should be collected to.
@@ -187,6 +192,7 @@ TEMPLATE_DIRS = (
 MY_INSTALLED_APPS = (
     'accounts',
     'images',
+    'upload',
     'annotations',
     'visualization',
     'bug_reporting',

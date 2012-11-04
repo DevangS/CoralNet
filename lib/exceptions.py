@@ -13,6 +13,14 @@ exception, for more self-documenting code.  (It's advised to not go
 overboard and create tons of exception types, though.)
 """
 
+class FilenameError(Exception):
+    """
+    When a filename isn't of the expected format; for example, perhaps 2
+    or more underscore-separated tokens are expected, and there are no
+    underscores in the filename.
+    """
+    pass
+
 class FileContentError(Exception):
     """
     When file contents are not as expected; for example, a line in a text
@@ -21,6 +29,16 @@ class FileContentError(Exception):
 
     Contrast this with IOError, which is for problems with finding a file,
     not being able to read its contents, etc.
+    """
+    pass
+
+class DirectoryAccessError(Exception):
+    """
+    Raised when a directory is expected to exist, be readable, and/or be
+    writable, and that turns out to not be the case.
+    For example, a directory is specified in a settings file and
+    we now want to create a file in that directory, but that directory
+    doesn't exist.
     """
     pass
 
@@ -33,5 +51,15 @@ class TestfileDirectoryError(Exception):
         before the test began. (Given (1), this is a serious corner
         case, but still, we do not want to take chances with file
         deletions.)
+    """
+    pass
+
+class ValueObjectNotFoundError(Exception):
+    """
+    When a location value object is looked up by name in the database,
+    and a value object can't be found.
+
+    Basically a generic-ized error class for Value1.DoesNotExist,
+    Value2.DoesNotExist, etc.
     """
     pass

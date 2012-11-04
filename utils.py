@@ -27,7 +27,9 @@ def generate_random_filename(directory, originalFilename, numOfChars):
     ImageField, ThumbnailerImageField, etc.  An upload_to argument is
     automatically prepended with MEDIA_ROOT to get the upload filepath.
     """
-    #TODO: Use the directory argument to check for filename collisions with existing files
+    # TODO: Use the directory argument to check for filename collisions with existing files.
+    # To unit test this, use a Mocker or similar on the filename randomizer
+    # to make filename collisions far more likely.
 
     extension = os.path.splitext(originalFilename)[1]
     filenameBase = rand_string(numOfChars)

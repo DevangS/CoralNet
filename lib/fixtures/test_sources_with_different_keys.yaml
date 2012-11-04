@@ -1,10 +1,29 @@
+# Note: The following sources' keys deal with the contents of the image
+# rather than where the image came from.  This is generally NOT a good
+# example of how to pick your location keys.
+
+- model: images.source
+  pk: null
+  fields:
+    name: 0 keys
+    visibility: b
+    create_date: "2012-04-25 17:30:32"
+    description: A source with 0 location keys.
+    labelset: -1    # Empty labelset
+    default_point_generation_method: m_50
+    image_height_in_cm: 50
+    image_annotation_area: 0;100;0;100
+    enable_robot_classifier: false
+    longitude: ""
+    latitude: ""
+
 - model: images.source
   pk: null
   fields:
     name: 1 key
     visibility: b
     create_date: "2012-04-25 17:30:32"
-    description: A source with 2 location keys.
+    description: A source with 1 location key.
     labelset: -1    # Empty labelset
     key1: Number
     default_point_generation_method: m_50
@@ -22,7 +41,7 @@
     create_date: "2012-04-25 17:30:32"
     description: A source with 2 location keys.
     labelset: -1    # Empty labelset
-    key1: Form
+    key1: Color Range
     key2: Number
     default_point_generation_method: m_50
     image_height_in_cm: 50
@@ -39,7 +58,7 @@
     create_date: "2012-04-25 17:30:32"
     description: A source with 5 location keys.
     labelset: -1    # Empty labelset
-    key1: Form
+    key1: Shape
     key2: Image Size
     key3: Element Size
     key4: Color Range

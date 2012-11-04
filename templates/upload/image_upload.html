@@ -1,0 +1,136 @@
+{% extends "images/base_source.html" %}
+{% load thumbnail %}
+
+{% block title %}Upload Images | CoralNet{% endblock %}
+
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" %}
+{#    {% include "javascript-includes.html" with jquery_form="yes" jquery_progressbar="yes" %}#}
+{% endblock %}
+
+{% block page-specific-includes %}
+    {% include "static-local-include.html" with type="css" path="css/uploadForm.css" %}
+    {% include "static-local-include.html" with type="js" path="js/ImageUploadFormHelper.js" %}
+{% endblock %}
+
+{% block content %}
+
+    {% if uploaded_images %}
+    <div>
+      <h2>Just uploaded (up to 5 shown):</h2>
+      {% for image in uploaded_images %}
+        <span class="thumb_small_wrapper">
+        <a href="{% url image_detail image.id %}" target="_blank">
+          <img class="thumb_small"
+               src="{% thumbnail image.original_file 100x100 %}"
+               title="{{ image.get_image_element_title }}"/>
+        </a>
+        </span>
+      {% endfor %}
+    </div>
+
+    <hr />
+    {% endif %}
+
+    <legend>Upload Images</legend>
+
+    <div class="narrow_column">
+
+        <form id="upload_options_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+            <legend class="small">Options</legend>
+            {% include "form_generic.html" with form=options_form dont_mark_required="yes" %}
+        </form>
+
+        <input type="checkbox" name="is_uploading_points_or_annotations" id="annotations_checkbox">
+        <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations (optional)</label>
+
+        <form id="annotations_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+
+            {% comment %}
+            Field for the annotations file. We'll specify elements manually
+            instead of using form_generic.html, so we can put the annotation
+            file status between elements.
+            {% endcomment %}
+            {% with field=annotation_import_form.annotations_file %}
+                {# The field label #}
+                <label for="{{ field.id_for_label }}" class="column_form_text_field">
+                    {{ field.label }}:
+                </label>
+
+                <div class="field_wrapper">
+                    {# The file field element #}
+                    {{ field }}
+
+                    <button type="button" class="submit" id="annotation_file_process_button">Re-process file</button>
+
+                    {# Result of annotation file processing #}
+                    <div id="annotation_file_status" class="helptext_small"></div>
+
+                    {# Help text #}
+                    {% include "form_generic_one_field_help_text.html" %}
+                </div>
+            {% endwith %}
+
+            {# Options related to the annotations file. #}
+            {% include "form_generic.html" with form=annotation_import_options_form dont_mark_required="yes" %}
+        </form>
+
+        <div class="page_section" id="auto_generate_points_page_section">
+            <span class="helptext">{{ auto_generate_points_message|linebreaksbr }}</span>
+        </div>
+
+        <div class="page_section">
+            <h3>Images to upload</h3>
+
+            {% comment %}
+            The images_form's multi-file field is not part of the actual form element.
+            We will be submitting files one by one via Ajax manually, and the
+            images_form's file field will only be used to let the user pick files
+            to upload.
+            {% endcomment %}
+            {% include "form_generic.html" with form=images_form dont_mark_required="yes" %}
+
+            {# Remnants of an attempt at a progress bar... #}
+            {% comment %}
+            <div id="progress_bar_area">
+                <span id="progress_bar"></span>
+            </div>
+            {% endcomment %}
+
+            {# Submit button #}
+            <div class="submit_button_wrapper_column_form">
+                <button type="button" class="submit" id="id_upload_submit">Start upload</button>
+                <button type="button" class="submit" id="id_upload_abort_button" disabled="disabled">Abort upload</button>
+                <span id="upload_start_info"></span>
+            </div>
+
+            <span id="pre_upload_summary"></span>
+
+            <div id="files_table_auto_scroll_checkbox_container">
+                <input type="checkbox" id="files_table_auto_scroll_checkbox" checked="checked">
+                <label for="files_table_auto_scroll_checkbox">Auto-scroll to the currently uploading file</label>
+            </div>
+
+            {# Table showing the files selected for upload. #}
+            <div id="files_table_container">
+                <table id="files_table"></table>
+            </div>
+
+            <span id="mid_upload_summary"></span>
+        </div>
+
+    </div>
+
+    <!-- Script in the body will run on page load. -->
+    <script type="text/javascript">
+
+        ImageUploadFormHelper.initForm({
+            uploadPreviewUrl: "{% url image_upload_preview_ajax source.id %}",
+            uploadStartUrl: "{% url image_upload_ajax source.id %}",
+            annotationFileProcessUrl: "{% url annotation_file_process_ajax source.id %}"
+{#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
+        });
+
+    </script>
+
+{% endblock %}

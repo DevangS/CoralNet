@@ -26,14 +26,7 @@
         <li><a href="{% url visualize_source source.id %}"><span>{% trans 'Browse' %}</span></a></li>
         <li><a href="{% url statistics source.id %}"><span>{% trans 'Statistics' %}</span></a></li>
         <li><a href="{% url export_menu source.id %}"><span>{% trans 'Export' %}</span></a></li>
-
-
-
         <li><a href="{% url labelset_main source.id %}"><span>{% trans 'LabelSet' %}</span></a></li>
-      
-        {% if "source_admin" in source_perms %}
-          <li><a href="{% url annotation_import source.id %}"><span>{% trans 'Import Annotations' %}</span></a></li>
-        {% endif %}
       </ul>
     </div>
 {% endblock %}

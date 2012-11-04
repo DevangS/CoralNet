@@ -51,6 +51,22 @@ to any value (except the empty string) to not include it.
     </script>
 {% endif %}
 
+{# jQuery.form, for handling Ajax forms #}
+{# https://github.com/malsup/form/ #}
+{# Must be included after: jQuery #}
+{% if jquery_form %}
+    {% include "static-local-include.html" with type="js" path="js/jquery.form.js" %}
+{% endif %}
+
+{% comment %}
+{# jQuery.progressbar, for progress bars used in file uploads, etc. #}
+{# http://t.wits.sg/jquery-progress-bar/ #}
+{# Must be included after: jQuery #}
+{% if jquery_progressbar %}
+    {% include "static-local-include.html" with type="js" path="js/jquery-progressbar/jquery.progressbar.js" %}
+{% endif %}
+{% endcomment %}
+
 {# jQuery.hotkeys, for pages with keyboard controls #}
 {# https://github.com/jeresig/jquery.hotkeys #}
 {# Must be included after: jQuery #}

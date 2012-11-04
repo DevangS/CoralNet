@@ -170,6 +170,11 @@ ul.nav li.button_prominent a:active span {
 }
 
 
+div.narrow_column {
+    width: 800px;
+    margin: 0 auto;  /* top/bottom left/right */
+}
+
 
 #xtra-info{
     text-align: center;
@@ -296,6 +301,22 @@ h3{
     margin: 0 0 5px;
 }
 
+/* This is intended as an alternative to legend.small, particularly when
+   a certain element isn't allowed to hold a legend inside it. */
+.page_section h3{
+    /* This keeps the bottom border's width confined to the text's width
+       (which block doesn't do), and allows margins and padding to actually
+       take effect (which inline doesn't do). */
+    display: inline-block;
+
+    padding: 5px 0 6px 0;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 5px;
+    font-size: 1.2em;
+    color: #ab292a;
+    font-weight: bold;
+    text-transform: none;
+}
 
 h4{
     font-size: 1.2em;
@@ -383,7 +404,7 @@ hr.light {
 /*	Forms
 ................................... */
 
-form {
+form, div.page_section {
     margin: 15px auto 20px;
     padding: 12px 0;
     width: 800px;
@@ -419,6 +440,30 @@ label.column_form_text_field {
 label.grid_checkbox {
     display: inline-block;
     width: 150px;
+}
+
+/* An input element's label that also doubles as a section header.
+   For example, the section may be an optional part of the form, and the
+   input element may be a checkbox toggling that section on and off.
+
+   This is supposed to look like a section header, so it uses basically
+   the same style as .section_header h3 and legend.small. */
+label.section_header {
+    display: inline-block;
+
+    padding: 5px 0 6px 0;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 5px;
+    font-size: 1.2em;
+    color: #ab292a;
+    font-weight: bold;
+    text-transform: none;
+}
+
+/* ...and if the section is toggled off, then
+   we can style this differently. */
+label.section_header.disabled {
+    color: #888888;
 }
 
 
@@ -580,14 +625,27 @@ ul.errorlist li {
     width: 500px;
 }
 
+.extra_help_text {
+    /* Extra help text starts out hidden, and can be shown via Javascript
+       when the user clicks a button or link. */
+    display: none;
+}
+
+a.extra_help_text_link {
+    cursor: pointer;
+
+    font-size: 0.9em;
+}
+
 /* For groups of fields */
 fieldset {
     margin: 0 0 20px 0;
     border-bottom: 1px solid #ddd;
 }
 /* A special header, conventionally for fieldsets */
+/* Note: legends are only supposed to be in fieldsets, according to W3C.
+   In contrast, h1, h2, etc. can go anywhere. */
 legend {
-    width: auto;
     padding: 5px 0 6px 0;
     border-bottom: 1px solid #ddd;
     margin-bottom: 5px;

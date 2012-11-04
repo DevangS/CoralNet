@@ -80,19 +80,22 @@ class AnnotationAreaUtils():
     def percentages_to_pixels(min_x, max_x, min_y, max_y, width, height):
         d = dict()
 
-        # The percentages are Decimals.
-        # Decimal / int = Decimal, and Decimal * int = Decimal
+        # The min/max x/y percentage arguments are Decimals.
+
+        # Convert to Decimal pixel values ranging from 0 to the width/height.
+        # (Decimal / int) * int -> Decimal * int -> Decimal.
         d['min_x'] = (min_x / 100) * width
         d['max_x'] = (max_x / 100) * width
         d['min_y'] = (min_y / 100) * height
         d['max_y'] = (max_y / 100) * height
 
         for key in d.keys():
-            # Convert to integer pixel values.
-            # Round up (could just as well round down, need to pick one or the other).
+            # Convert the Decimal pixel values to integers.
+            # Round up. This means that for a 500-pixel-wide image, the
+            # possible x values are 1 to 500 (not 0 to 499).
             d[key] = int(math.ceil(d[key]))
 
-            # Corner case
+            # Corner case when the x/y value is exactly 0.
             if d[key] == 0:
                 d[key] = 1
 
