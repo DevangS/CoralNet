@@ -77,6 +77,7 @@
                 {% endif %}
               {% endwith %}
               {% if user.is_superuser %}
+	        <li><a href="{% url emailall %}"><span>{% trans 'Email All' %}</span></a></li>
                 <li><a href="{% url userena_signup %}"><span>{% trans 'Add User' %}</span></a></li>
               {% endif %}
               <li><a href="{% url userena_profile_detail user.username %}"><span>{% trans 'Account' %} ({{ user.username }})</span></a></li>

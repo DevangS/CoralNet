@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Email Users" %}{% endblock %}
+
+{% block content %}
+
+<form action="" method="post">
+    {% csrf_token %}
+
+    <fieldset>
+        <legend>Email Users</legend>
+
+        <p>Use this form to send mass emails to all users </p>
+        {% if status%}
+	<p> {{status}}</p>
+	{% endif %}
+
+	Subject: <input type = "text" size="43" name="subject"><br>
+	<br>Body: <br>
+	 
+        <textarea style="width: 500px; height: 300px;" name="message"></textarea>
+
+
+    </fieldset>
+
+    <div class="submit_button_wrapper_column_form">
+        <input type="submit" value="{% trans "Send Emails"%}" />
+    </div>
+</form>
+
+{% endblock %}

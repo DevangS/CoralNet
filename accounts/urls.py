@@ -15,7 +15,9 @@ urlpatterns = patterns('',
         name='signin'),
     url(r'^signup/$', accounts_views.user_add,
         name='signup'),
-
+    
+    url(r'^emailall/$', accounts_views.email_all,
+        name='emailall'),
     # Include userena urls after our urls, so ours take precedence
     (r'', include('userena.urls')),
 )
