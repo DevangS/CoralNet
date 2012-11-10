@@ -29,8 +29,7 @@ ADMINS = settings_2.ADMINS
 MANAGERS = settings_2.MANAGERS
 
 DATABASES = settings_2.DATABASES
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 9925
+
 # Default configurations to use when sending email
 DEFAULT_FROM_EMAIL = settings_2.DEFAULT_FROM_EMAIL
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
