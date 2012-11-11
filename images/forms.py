@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm
+from django.forms import fields
 from django.forms.fields import CharField, ChoiceField, FileField, IntegerField
 from django.forms.widgets import  Select, TextInput
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
@@ -8,6 +9,15 @@ from CoralNet.forms import FormHelper
 from images.model_utils import PointGen
 
 class ImageSourceForm(ModelForm):
+
+    # Redefine key1 so we can add our own error message.
+    key1 = fields.CharField(
+        label='Key 1', max_length=50,
+        error_messages=dict(required="You need at least one location key."),
+        # And now we need to put the widget up here with the
+        # field definition, instead of in Meta with the other widgets.
+        widget=TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
+    )
 
     class Meta:
         model = Source
@@ -18,7 +28,6 @@ class ImageSourceForm(ModelForm):
             'enable_robot_classifier',    # Changeable only upon request
         )
         widgets = {
-            'key1': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'key2': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'key3': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'key4': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
@@ -83,7 +92,7 @@ class ImageSourceForm(ModelForm):
         data = FormHelper.stripSpacesFromFields(
             self.cleaned_data, self.fields)
 
-        if data['key1'] == u'':
+        if 'key1' not in data or data['key1'] == u'':
             data['key2'] = u''
         if data['key2'] == u'':
             data['key3'] = u''
