@@ -3,7 +3,7 @@
 {% block title %}Edit Source ({{ source.name }}) | CoralNet{% endblock %}
 
 {% block page-specific-includes %}
-  {{ pointGenForm.media }}
+    {% include "form_media_versioned.html" with form=pointGenForm %}
 {% endblock %}
 
 {% block content %}

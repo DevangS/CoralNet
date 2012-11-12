@@ -3,8 +3,8 @@
 {% block title %}New Source | CoralNet{% endblock %}
 
 {% block page-specific-includes %}
-  {{ location_key_form.media }}
-  {{ pointGenForm.media }}
+    {% include "form_media_versioned.html" with form=location_key_form %}
+    {% include "form_media_versioned.html" with form=pointGenForm %}
 {% endblock %}
 
 {% block content %}
