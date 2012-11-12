@@ -3,8 +3,7 @@
 {% block title %}Edit Source ({{ source.name }}) | CoralNet{% endblock %}
 
 {% block page-specific-includes %}
-  {{ editSourceForm.media }}
-  {{ pointGenForm.media }}
+    {% include "form_media_versioned.html" with form=pointGenForm %}
 {% endblock %}
 
 {% block content %}
@@ -14,7 +13,7 @@
     {% with source_form_type="edit" %}
 
     <form action="" method="post">{% csrf_token %}
-      {% include "images/form_source.html" with sourceForm=editSourceForm pointGenForm=pointGenForm annotationAreaForm=annotationAreaForm %}
+      {% include "images/form_source.html" with sourceForm=editSourceForm location_key_form=location_key_edit_form pointGenForm=pointGenForm annotationAreaForm=annotationAreaForm %}
 
       <div class="submit_button_wrapper_column_form">
         <input type="submit" value="Save Changes" />

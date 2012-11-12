@@ -10,6 +10,12 @@ CONTACT_EMAIL_MESSAGE_FMTSTR = _(u"This email was sent using the Contact Us form
                                  u"\n"
                                  u"{base_message}")
 
+# Source related
+
+SOURCE_ONE_KEY_REQUIRED_ERROR_STR = _(u"You need at least one location key.")
+
+# Upload related
+
 FILENAME_DATE_PARSE_ERROR_FMTSTR = _(u"Tried to parse {date_token} as a date, but failed")
 FILENAME_DATE_VALUE_ERROR_FMTSTR = _(u"Could not recognize {date_token} as a valid year-month-day combination")
 FILENAME_PARSE_ERROR_STR = _(u"Could not extract metadata from filename")

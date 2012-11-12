@@ -65,6 +65,7 @@ def source_about(request):
         context_instance=RequestContext(request)
     )
 
+
 @login_required
 def source_new(request):
     """
@@ -75,26 +76,38 @@ def source_new(request):
     # page, or we just submitted the form.  If POST, we submitted; if
     # GET, we just got here.
     if request.method == 'POST':
-        # A form bound to the POST data
+        # Bind the forms to the submitted POST data.
         sourceForm = ImageSourceForm(request.POST)
+        location_key_form = LocationKeyForm(request.POST)
         pointGenForm = PointGenForm(request.POST)
         annotationAreaForm = AnnotationAreaPercentsForm(request.POST)
 
-        # is_valid() calls our ModelForm's clean() and checks validity
+        # <form>.is_valid() calls <form>.clean() and checks field validity.
+        # Make sure is_valid() is called for all forms, so all forms are checked and
+        # all relevant error messages appear.
         source_form_is_valid = sourceForm.is_valid()
+        location_key_form_is_valid = location_key_form.is_valid()
         point_gen_form_is_valid = pointGenForm.is_valid()
         annotation_area_form_is_valid = annotationAreaForm.is_valid()
 
-        if source_form_is_valid and point_gen_form_is_valid and annotation_area_form_is_valid:
-            # After calling a ModelForm's is_valid(), an instance is created.
-            # We can get this instance and add a bit more to it before saving to the DB.
+        if source_form_is_valid and location_key_form_is_valid \
+           and point_gen_form_is_valid and annotation_area_form_is_valid:
+
+            # Since sourceForm is a ModelForm, after calling sourceForm's
+            # is_valid(), a Source instance is created.  We retrieve this
+            # instance and add the other values to it before saving to the DB.
             newSource = sourceForm.instance
+
+            for key_field in ['key1', 'key2', 'key3', 'key4', 'key5']:
+                if key_field in location_key_form.cleaned_data:
+                    setattr(newSource, key_field, location_key_form.cleaned_data[key_field])
+
             newSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
             newSource.image_annotation_area = AnnotationAreaUtils.percentages_to_db_format(**annotationAreaForm.cleaned_data)
             newSource.labelset = LabelSet.getEmptyLabelset()
             newSource.save()
 
-            # Make the user a source admin
+            # Make the current user an admin of the new source
             newSource.assign_role(request.user, Source.PermTypes.ADMIN.code)
 
             # Add a success message
@@ -106,20 +119,22 @@ def source_new(request):
             # Show the form again, with error message
             messages.error(request, 'Please correct the errors below.')
     else:
-        # An unbound form (empty form)
+        # Unbound (empty) forms
         sourceForm = ImageSourceForm()
+        location_key_form = LocationKeyForm()
         pointGenForm = PointGenForm()
         annotationAreaForm = AnnotationAreaPercentsForm()
 
-    # RequestContext needed for CSRF verification of POST form,
+    # RequestContext is needed for CSRF verification of the POST form,
     # and to correctly get the path of the CSS file being used.
     return render_to_response('images/source_new.html', {
         'sourceForm': sourceForm,
+        'location_key_form': location_key_form,
         'pointGenForm': pointGenForm,
         'annotationAreaForm': annotationAreaForm,
         },
         context_instance=RequestContext(request)
-        )
+    )
 
 
 @source_visibility_required('source_id')
@@ -202,38 +217,52 @@ def source_edit(request, source_id):
 
         # Submit
         sourceForm = ImageSourceForm(request.POST, instance=source)
+        location_key_edit_form = LocationKeyEditForm(request.POST, source_id=source_id)
         pointGenForm = PointGenForm(request.POST)
         annotationAreaForm = AnnotationAreaPercentsForm(request.POST)
 
         # Make sure is_valid() is called for all forms, so all forms are checked and
         # all relevant error messages appear.
         source_form_is_valid = sourceForm.is_valid()
+        location_key_edit_form_is_valid = location_key_edit_form.is_valid()
         point_gen_form_is_valid = pointGenForm.is_valid()
         annotation_area_form_is_valid = annotationAreaForm.is_valid()
 
-        if source_form_is_valid and point_gen_form_is_valid and annotation_area_form_is_valid:
+        if source_form_is_valid and location_key_edit_form_is_valid \
+           and point_gen_form_is_valid and annotation_area_form_is_valid:
+
             editedSource = sourceForm.instance
+
+            for key_field in ['key1', 'key2', 'key3', 'key4', 'key5']:
+                if key_field in location_key_edit_form.cleaned_data:
+                    setattr(editedSource, key_field, location_key_edit_form.cleaned_data[key_field])
+
             editedSource.default_point_generation_method = PointGen.args_to_db_format(**pointGenForm.cleaned_data)
             editedSource.image_annotation_area = AnnotationAreaUtils.percentages_to_db_format(**annotationAreaForm.cleaned_data)
             editedSource.save()
+
             messages.success(request, 'Source successfully edited.')
             return HttpResponseRedirect(reverse('source_main', args=[source_id]))
+
         else:
+
             messages.error(request, 'Please correct the errors below.')
     else:
         # Just reached this form page
         sourceForm = ImageSourceForm(instance=source)
+        location_key_edit_form = LocationKeyEditForm(source_id=source_id)
         pointGenForm = PointGenForm(source=source)
         annotationAreaForm = AnnotationAreaPercentsForm(source=source)
 
     return render_to_response('images/source_edit.html', {
         'source': source,
         'editSourceForm': sourceForm,
+        'location_key_edit_form': location_key_edit_form,
         'pointGenForm': pointGenForm,
         'annotationAreaForm': annotationAreaForm,
         },
         context_instance=RequestContext(request)
-        )
+    )
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)

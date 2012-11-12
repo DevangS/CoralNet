@@ -52,7 +52,7 @@ class Source(models.Model):
     # Each of these fields is allowed to be blank (an empty string).
     # We're assuming that we'll only have key 2 if we have
     # key 1, we'll only have key 3 if we have key 2, etc.
-    key1 = models.CharField('Key 1', max_length=50, blank=True)
+    key1 = models.CharField('Key 1', max_length=50)
     key2 = models.CharField('Key 2', max_length=50, blank=True)
     key3 = models.CharField('Key 3', max_length=50, blank=True)
     key4 = models.CharField('Key 4', max_length=50, blank=True)

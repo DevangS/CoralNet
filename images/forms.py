@@ -1,38 +1,30 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Form, ModelForm
+from django.forms import fields
 from django.forms.fields import CharField, ChoiceField, FileField, IntegerField
 from django.forms.widgets import  Select, TextInput
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
 from images.model_utils import PointGen
+from lib import str_consts
 
 class ImageSourceForm(ModelForm):
 
     class Meta:
         model = Source
         exclude = (
+            'key1', 'key2', 'key3', 'key4', 'key5',    # Handled by a separate form
             'default_point_generation_method',    # Handled by a separate form
             'labelset',    # Handled by the new/edit labelset page
             'image_annotation_area',    # Handled by a separate form
             'enable_robot_classifier',    # Changeable only upon request
         )
         widgets = {
-            'key1': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
-            'key2': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
-            'key3': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
-            'key4': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
-            'key5': TextInput(attrs={'onkeyup': 'ImageSourceFormHelper.changeKeyFields()'}),
             'image_height_in_cm': TextInput(attrs={'size': 3}),
             'longitude': TextInput(attrs={'size': 10}),
             'latitude': TextInput(attrs={'size': 10}),
         }
-
-    class Media:
-        js = (
-            # From images static directory
-            "js/ImageSourceFormHelper.js",
-        )
 
     #error_css_class = ...
     #required_css_class = ...
@@ -43,7 +35,6 @@ class ImageSourceForm(ModelForm):
 
         # For use in templates.  Can iterate over fieldsets instead of the entire form.
         self.fieldsets = {'general_info': [self[name] for name in ['name', 'visibility', 'description']],
-                          'keys': [self[name] for name in ['key1', 'key2', 'key3', 'key4', 'key5']],
                           'image_height_in_cm': [self[name] for name in ['image_height_in_cm']],
                           'world_location': [self[name] for name in ['latitude', 'longitude']]}
 
@@ -74,6 +65,53 @@ class ImageSourceForm(ModelForm):
     def clean(self):
         """
         1. Strip spaces from character fields.
+        2. Call the parent's clean() to run the default behavior.
+        3. Default return behavior of clean() is to return self.cleaned_data.
+        """
+        data = FormHelper.stripSpacesFromFields(
+            self.cleaned_data, self.fields)
+
+        self.cleaned_data = data
+
+        return super(ImageSourceForm, self).clean()
+
+
+class LocationKeyForm(Form):
+    """
+    Location key form for the New Source page.
+    """
+
+    class Media:
+        js = (
+            "js/LocationKeyFormHelper.js",
+        )
+
+    def __init__(self, *args, **kwargs):
+
+        super(LocationKeyForm, self).__init__(*args, **kwargs)
+
+        key_field_list = ['key1', 'key2', 'key3', 'key4', 'key5']
+        field_labels = dict(
+            key1="Key 1",
+            key2="Key 2",
+            key3="Key 3",
+            key4="Key 4",
+            key5="Key 5",
+        )
+
+        # Create fields: key1, key2, key3, key4, and key5.
+        for key_field in key_field_list:
+
+            self.fields[key_field] = fields.CharField(
+                label=field_labels[key_field],
+                max_length=Source._meta.get_field(key_field).max_length,
+                required=not Source._meta.get_field(key_field).blank,
+                error_messages=dict(required=str_consts.SOURCE_ONE_KEY_REQUIRED_ERROR_STR),
+            )
+
+    def clean(self):
+        """
+        1. Strip spaces from character fields.
         2. Location key processing: keep key n only if 1 through n-1
         are also specified.
         3. Call the parent's clean() to run the default behavior.
@@ -83,7 +121,7 @@ class ImageSourceForm(ModelForm):
         data = FormHelper.stripSpacesFromFields(
             self.cleaned_data, self.fields)
 
-        if data['key1'] == u'':
+        if 'key1' not in data or data['key1'] == u'':
             data['key2'] = u''
         if data['key2'] == u'':
             data['key3'] = u''
@@ -94,7 +132,50 @@ class ImageSourceForm(ModelForm):
 
         self.cleaned_data = data
 
-        return super(ImageSourceForm, self).clean()
+        return super(LocationKeyForm, self).clean()
+
+
+class LocationKeyEditForm(Form):
+    """
+    Location key form for the Edit Source page.
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        source_id = kwargs.pop('source_id')
+        super(LocationKeyEditForm, self).__init__(*args, **kwargs)
+
+        source = Source.objects.get(pk=source_id)
+
+        num_of_keys = len(source.get_key_list())
+        key_field_list = ['key1', 'key2', 'key3', 'key4', 'key5'][:num_of_keys]
+        field_labels = dict(
+            key1="Key 1",
+            key2="Key 2",
+            key3="Key 3",
+            key4="Key 4",
+            key5="Key 5",
+        )
+
+        for key_field in key_field_list:
+
+            self.fields[key_field] = fields.CharField(
+                label=field_labels[key_field],
+                max_length=Source._meta.get_field(key_field).max_length,
+                required=True,
+                initial=getattr(source, key_field)
+            )
+
+    def clean(self):
+        """
+        Strip spaces from the fields.
+        """
+        data = FormHelper.stripSpacesFromFields(
+            self.cleaned_data, self.fields)
+
+        self.cleaned_data = data
+
+        return super(LocationKeyEditForm, self).clean()
 
 class SourceChangePermissionForm(Form):
 

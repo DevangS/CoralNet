@@ -625,6 +625,12 @@ ul.errorlist li {
     width: 500px;
 }
 
+.helptext_long {
+    display: block;
+    line-height: 120%;
+    width: 800px;
+}
+
 .extra_help_text {
     /* Extra help text starts out hidden, and can be shown via Javascript
        when the user clicks a button or link. */

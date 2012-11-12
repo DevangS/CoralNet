@@ -4,7 +4,9 @@ from django.template.context import RequestContext
 from guardian.decorators import permission_required_or_403
 from userena.decorators import secure_required
 from accounts.forms import UserAddForm
-
+from django.contrib.auth.models import User
+from django.core.mail import send_mass_mail
+from settings import SERVER_EMAIL
 @secure_required
 @permission_required_or_403('auth.add_user')
 def user_add(request):
@@ -21,7 +23,7 @@ def user_add(request):
     someone else's account.)
     """
     form = UserAddForm()
-
+    
     if request.method == 'POST':
         form = UserAddForm(request.POST, request.FILES)
         if form.is_valid():
@@ -38,3 +40,31 @@ def user_add(request):
         },
         context_instance=RequestContext(request)
     )
+
+#sends mass emails to all users in a single email
+def email_all(request):
+
+    status = None
+    if request.method == 'POST':
+        subject = request.REQUEST.get('subject').encode("ascii")
+        message = request.REQUEST.get('message').encode("ascii")
+        if not subject or not message:
+            return render_to_response('accounts/email_all_form.html', 
+            context_instance=RequestContext(request)
+            )
+
+        
+        all_users = User.objects.all()
+        email_list = []
+        for u in all_users:
+            if u.email:
+                email_list.append(u.email.encode("ascii") )
+
+        data_tuple = (subject, message, SERVER_EMAIL, email_list )
+        send_mass_mail( (data_tuple,), fail_silently=True)
+        status = "Successfully Sent Emails"
+
+    return render_to_response('accounts/email_all_form.html',
+         {'status':status},
+         context_instance=RequestContext(request)
+     )

@@ -1,9 +1,14 @@
+import datetime
+from django import forms
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from guardian.shortcuts import get_objects_for_user
+from annotations.model_utils import AnnotationAreaUtils
+from annotations.models import LabelSet
 from images.model_utils import PointGen
 from images.models import Source, Image
 from images.tasks import PreprocessImages, MakeFeatures, Classify, addLabelsToFeatures, trainRobot
+from lib import str_consts
 from lib.test_utils import ClientTest, MediaTestComponent, ProcessingTestComponent
 
 
@@ -140,28 +145,17 @@ class SourceNewTest(ClientTest):
     """
     fixtures = ['test_users.yaml']
 
-    def test_source_new_permissions(self):
-        """
-        Test that certain users are able to access the
-        page, and that certain other users are denied.
-        """
-        self.login_required_page_test(
-            protected_url=reverse('source_new'),
-            username='user2',
-            password='secret',
-        )
+    def setUp(self):
+        super(SourceNewTest, self).setUp()
 
-    def test_source_new_success(self):
-        """
-        Successful creation of a new source.
-        """
+        # Default user; individual tests are free to change it
         self.client.login(username='user2', password='secret')
-        response = self.client.get(reverse('source_new'))
-        self.assertStatusOK(response)
 
-        response = self.client.post(reverse('source_new'), dict(
+        # Default source arguments; individual tests are free to change it
+        self.source_args = dict(
             name='Test Source',
             visibility=Source.VisibilityTypes.PRIVATE,
+            key1='Number',
             point_generation_type=PointGen.Types.SIMPLE,
             simple_number_of_points=200,
             image_height_in_cm=50,
@@ -169,13 +163,127 @@ class SourceNewTest(ClientTest):
             max_x=100,
             min_y=0,
             max_y=100,
-        ))
-        # TODO: Check that the source_main context reflects the source info.
+        )
+
+    def test_get_success(self):
+        """
+        Test that a logged in user is able to access the page.
+        """
+        # Start logged out, then log in when prompted.
+        self.login_required_page_test(
+            protected_url=reverse('source_new'),
+            username='user2',
+            password='secret',
+        )
+
+        # Access while logged in.
+        response = self.client.get(reverse('source_new'))
+        self.assertStatusOK(response)
+
+    def test_post_success(self):
+        """
+        Successful creation of a new source.
+        """
+        datetime_before_creation = datetime.datetime.now().replace(microsecond=0)
+
+        response = self.client.post(reverse('source_new'), self.source_args)
+
+        source_id = Source.objects.latest('create_date').pk
         self.assertRedirects(response, reverse('source_main',
             kwargs={
-                'source_id': Source.objects.latest('create_date').pk
+                'source_id': source_id,
             }
         ))
+
+        new_source = Source.objects.get(pk=source_id)
+
+        self.assertEqual(new_source.name, self.source_args['name'])
+        self.assertEqual(new_source.visibility, self.source_args['visibility'])
+        self.assertEqual(new_source.labelset, LabelSet.getEmptyLabelset())
+        self.assertEqual(new_source.key1, self.source_args['key1'])
+        self.assertEqual(new_source.key2, '')
+        self.assertEqual(new_source.key3, '')
+        self.assertEqual(new_source.key4, '')
+        self.assertEqual(new_source.key5, '')
+        self.assertEqual(new_source.default_point_generation_method, PointGen.args_to_db_format(
+            point_generation_type=self.source_args['point_generation_type'],
+            simple_number_of_points=self.source_args['simple_number_of_points'],
+        ))
+        self.assertEqual(new_source.image_height_in_cm, self.source_args['image_height_in_cm'])
+        self.assertEqual(new_source.image_annotation_area, AnnotationAreaUtils.percentages_to_db_format(
+            min_x=self.source_args['min_x'], max_x=self.source_args['max_x'],
+            min_y=self.source_args['min_y'], max_y=self.source_args['max_y'],
+        ))
+        self.assertEqual(new_source.enable_robot_classifier, False)
+
+        # This check is of limited use since database datetimes (in
+        # MySQL 5.1 at least) get truncated to whole seconds. But it still
+        # doesn't hurt to check.
+        self.assertTrue(datetime_before_creation <= new_source.create_date)
+        self.assertTrue(new_source.create_date <= datetime.datetime.now().replace(microsecond=0))
+
+    def test_optional_fields(self):
+        """
+        Successful creation with optional fields filled in.
+        """
+
+        self.source_args.update(
+            description="Here is\na description.",
+            key2="Island",
+            key3="Habitat",
+            key4="Section",
+            key5="ID",
+            longitude='45.1982',
+            latitude='-17.0776',
+        )
+
+        response = self.client.post(reverse('source_new'), self.source_args)
+
+        source_id = Source.objects.latest('create_date').pk
+        new_source = Source.objects.get(pk=source_id)
+
+        self.assertEqual(new_source.description, self.source_args['description'])
+        self.assertEqual(new_source.key2, self.source_args['key2'])
+        self.assertEqual(new_source.key3, self.source_args['key3'])
+        self.assertEqual(new_source.key4, self.source_args['key4'])
+        self.assertEqual(new_source.key5, self.source_args['key5'])
+        self.assertEqual(new_source.longitude, self.source_args['longitude'])
+        self.assertEqual(new_source.latitude, self.source_args['latitude'])
+
+    def test_zero_keys(self):
+        """
+        This should get an error because key 1 is required.
+        """
+        self.source_args.update(
+            key1="",
+        )
+
+        response = self.client.post(reverse('source_new'), self.source_args)
+
+        self.assertStatusOK(response)
+        self.assertFormErrors(response, 'location_key_form', dict(
+            key1=[str_consts.SOURCE_ONE_KEY_REQUIRED_ERROR_STR],
+        ))
+
+    def test_gap_in_key_fields(self):
+        """
+        Filling in keys 1, 2, and 4 should make 4 get ignored, because
+        key 3 must be filled in to consider 4.
+        """
+        self.source_args.update(
+            key1="Site",
+            key2="Island",
+            key4="Section",
+        )
+
+        response = self.client.post(reverse('source_new'), self.source_args)
+
+        source_id = Source.objects.latest('create_date').pk
+        new_source = Source.objects.get(pk=source_id)
+
+        self.assertEqual(new_source.key1, self.source_args['key1'])
+        self.assertEqual(new_source.key2, self.source_args['key2'])
+        self.assertEqual(new_source.key4, "")
 
     # TODO: Test other successful and unsuccessful inputs for the
     # new source form.
@@ -185,19 +293,39 @@ class SourceEditTest(ClientTest):
     """
     Test the Edit Source page.
     """
-    fixtures = ['test_users.yaml', 'test_sources.yaml']
+    fixtures = ['test_users.yaml', 'test_sources.yaml',
+                'test_sources_with_different_keys.yaml']
     source_member_roles = [
         ('public1', 'user2', Source.PermTypes.ADMIN.code),
         ('public1', 'user4', Source.PermTypes.EDIT.code),
         ('private1', 'user3', Source.PermTypes.ADMIN.code),
         ('private1', 'user4', Source.PermTypes.VIEW.code),
+        ('2 keys', 'user2', Source.PermTypes.ADMIN.code),
+        ('5 keys', 'user2', Source.PermTypes.ADMIN.code),
     ]
 
     def setUp(self):
         super(SourceEditTest, self).setUp()
-        self.source_id = Source.objects.get(name='public1').pk
 
-    def test_source_edit_permissions(self):
+        # Default user
+        self.client.login(username='user2', password='secret')
+        # Default source
+        self.source_id = Source.objects.get(name='public1').pk
+        # Default source edit arguments
+        self.source_args = dict(
+            name='Test Source',
+            visibility=Source.VisibilityTypes.PRIVATE,
+            key1='Letter',
+            point_generation_type=PointGen.Types.SIMPLE,
+            simple_number_of_points=16,
+            image_height_in_cm=125,
+            min_x=10,
+            max_x=90,
+            min_y=10,
+            max_y=90,
+        )
+
+    def test_get_permissions(self):
         """
         Test that certain users are able to access the
         page, and that certain other users are denied.
@@ -208,25 +336,95 @@ class SourceEditTest(ClientTest):
             accepted_users=[dict(username='user2', password='secret')],
         )
 
-    def test_source_edit_success(self):
+    def test_post_success(self):
         """
         Successful edit of an existing source.
         """
-        self.client.login(username='user2', password='secret')
-        response = self.client.post(reverse('source_edit', kwargs={'source_id': self.source_id}), dict(
-            name='Test Source',
-            visibility=Source.VisibilityTypes.PRIVATE,
-            point_generation_type=PointGen.Types.SIMPLE,
-            simple_number_of_points=200,
-            image_height_in_cm=50,
-            min_x=0,
-            max_x=100,
-            min_y=0,
-            max_y=100,
-        ))
-        # TODO: Check that the source_main context reflects the source edits.
+        original_source = Source.objects.get(pk=self.source_id)
+        original_create_date = original_source.create_date
+        original_enable_robot = original_source.enable_robot_classifier
+
+        response = self.client.post(reverse('source_edit', kwargs={'source_id': self.source_id}),
+            self.source_args,
+        )
+
         self.assertRedirects(response, reverse('source_main',
             kwargs={'source_id': self.source_id}
+        ))
+
+        edited_source = Source.objects.get(pk=self.source_id)
+
+        self.assertEqual(edited_source.name, self.source_args['name'])
+        self.assertEqual(edited_source.visibility, self.source_args['visibility'])
+        self.assertEqual(edited_source.create_date, original_create_date)
+        self.assertEqual(edited_source.labelset, LabelSet.getEmptyLabelset())
+        self.assertEqual(edited_source.key1, self.source_args['key1'])
+        self.assertEqual(edited_source.key2, '')
+        self.assertEqual(edited_source.key3, '')
+        self.assertEqual(edited_source.key4, '')
+        self.assertEqual(edited_source.key5, '')
+        self.assertEqual(edited_source.default_point_generation_method, PointGen.args_to_db_format(
+            point_generation_type=self.source_args['point_generation_type'],
+            simple_number_of_points=self.source_args['simple_number_of_points'],
+        ))
+        self.assertEqual(edited_source.image_height_in_cm, self.source_args['image_height_in_cm'])
+        self.assertEqual(edited_source.image_annotation_area, AnnotationAreaUtils.percentages_to_db_format(
+            min_x=self.source_args['min_x'], max_x=self.source_args['max_x'],
+            min_y=self.source_args['min_y'], max_y=self.source_args['max_y'],
+        ))
+        self.assertEqual(edited_source.enable_robot_classifier, original_enable_robot)
+
+    def test_optional_fields(self):
+        """
+        Successful edit with optional fields filled in.
+        """
+        self.source_id = Source.objects.get(name='5 keys').pk
+
+        self.source_args.update(
+            description="Here is\na description.",
+            key1="Site",
+            key2="Island",
+            key3="Habitat",
+            key4="Section",
+            key5="ID",
+            longitude='45.1982',
+            latitude='-17.0776',
+        )
+
+        response = self.client.post(reverse('source_edit', kwargs={'source_id': self.source_id}),
+            self.source_args,
+        )
+
+        edited_source = Source.objects.get(pk=self.source_id)
+
+        self.assertEqual(edited_source.description, self.source_args['description'])
+        self.assertEqual(edited_source.key1, self.source_args['key1'])
+        self.assertEqual(edited_source.key2, self.source_args['key2'])
+        self.assertEqual(edited_source.key3, self.source_args['key3'])
+        self.assertEqual(edited_source.key4, self.source_args['key4'])
+        self.assertEqual(edited_source.key5, self.source_args['key5'])
+        self.assertEqual(edited_source.longitude, self.source_args['longitude'])
+        self.assertEqual(edited_source.latitude, self.source_args['latitude'])
+
+    def test_missing_keys(self):
+        """
+        Should result in an error, because changing the number
+        of keys isn't allowed.  All key fields are considered
+        required here.
+        """
+        self.source_id = Source.objects.get(name='2 keys').pk
+        self.source_args.update(
+            key1="Site",
+            key2="",
+        )
+
+        response = self.client.post(reverse('source_edit', kwargs={'source_id': self.source_id}),
+            self.source_args,
+        )
+
+        self.assertStatusOK(response)
+        self.assertFormErrors(response, 'location_key_edit_form', dict(
+            key2=[forms.Field.default_error_messages['required']],
         ))
 
     # TODO: Test other successful and unsuccessful inputs for the

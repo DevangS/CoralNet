@@ -17,11 +17,16 @@ def request_invite(request):
             email = form.cleaned_data.pop('email')
             username = form.cleaned_data.pop('username')
             reason = form.cleaned_data.pop('reason')
+            affiliation = form.cleaned_data.pop('affiliation')
+            project_description = form.cleaned_data.pop('project_description')
+            how_did_you_hear_about_us = form.cleaned_data.pop('how_did_you_hear_about_us')
 
             message = 'Email: ' + email + '\n' + \
                       'Username: ' + username + '\n' + \
-                      'Reason: ' + reason + '\n'
-
+                      'Reason: ' + reason + '\n' + \
+                      'affiliation: ' + affiliation + '\n' + \
+                      'project_description: ' + project_description +'\n'+\
+                      'how_did_you_hear_about_us: ' + how_did_you_hear_about_us + '\n'
             try:
                mail_admins('User Account Requested', message )
             except BadHeaderError:
