@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from guardian.shortcuts import get_objects_for_user
+from annotations.model_utils import AnnotationAreaUtils
+from annotations.models import LabelSet
 from images.model_utils import PointGen
 from images.models import Source, Image
 from images.tasks import PreprocessImages, MakeFeatures, Classify, addLabelsToFeatures, trainRobot
@@ -159,9 +161,10 @@ class SourceNewTest(ClientTest):
         response = self.client.get(reverse('source_new'))
         self.assertStatusOK(response)
 
-        response = self.client.post(reverse('source_new'), dict(
+        source_args = dict(
             name='Test Source',
             visibility=Source.VisibilityTypes.PRIVATE,
+            key1='Number',
             point_generation_type=PointGen.Types.SIMPLE,
             simple_number_of_points=200,
             image_height_in_cm=50,
@@ -169,13 +172,37 @@ class SourceNewTest(ClientTest):
             max_x=100,
             min_y=0,
             max_y=100,
-        ))
-        # TODO: Check that the source_main context reflects the source info.
+        )
+
+        response = self.client.post(reverse('source_new'), source_args)
+
+        source_id = Source.objects.latest('create_date').pk
         self.assertRedirects(response, reverse('source_main',
             kwargs={
-                'source_id': Source.objects.latest('create_date').pk
+                'source_id': source_id,
             }
         ))
+
+        new_source = Source.objects.get(pk=source_id)
+
+        self.assertEqual(new_source.name, source_args['name'])
+        self.assertEqual(new_source.visibility, source_args['visibility'])
+        # TODO: confirm create_date?
+        self.assertEqual(new_source.labelset, LabelSet.getEmptyLabelset())
+        self.assertEqual(new_source.key1, source_args['key1'])
+        self.assertEqual(new_source.key2, '')
+        self.assertEqual(new_source.key3, '')
+        self.assertEqual(new_source.key4, '')
+        self.assertEqual(new_source.key5, '')
+        self.assertEqual(new_source.default_point_generation_method, PointGen.args_to_db_format(
+            point_generation_type=source_args['point_generation_type'],
+            simple_number_of_points=source_args['simple_number_of_points'],
+        ))
+        self.assertEqual(new_source.image_height_in_cm, source_args['image_height_in_cm'])
+        self.assertEqual(new_source.image_annotation_area, AnnotationAreaUtils.percentages_to_db_format(
+            min_x=0, max_x=100, min_y=0, max_y=100,
+        ))
+        self.assertEqual(new_source.enable_robot_classifier, False)
 
     # TODO: Test other successful and unsuccessful inputs for the
     # new source form.
@@ -216,6 +243,7 @@ class SourceEditTest(ClientTest):
         response = self.client.post(reverse('source_edit', kwargs={'source_id': self.source_id}), dict(
             name='Test Source',
             visibility=Source.VisibilityTypes.PRIVATE,
+            key1='Number',
             point_generation_type=PointGen.Types.SIMPLE,
             simple_number_of_points=200,
             image_height_in_cm=50,
