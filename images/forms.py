@@ -7,6 +7,7 @@ from django.forms.widgets import  Select, TextInput
 from images.models import Source, Image, Metadata, Value1, Value2, Value3, Value4, Value5, SourceInvite
 from CoralNet.forms import FormHelper
 from images.model_utils import PointGen
+from lib import str_consts
 
 class ImageSourceForm(ModelForm):
 
@@ -105,7 +106,7 @@ class LocationKeyForm(Form):
                 label=field_labels[key_field],
                 max_length=Source._meta.get_field(key_field).max_length,
                 required=not Source._meta.get_field(key_field).blank,
-                error_messages=dict(required="You need at least one location key."),
+                error_messages=dict(required=str_consts.SOURCE_ONE_KEY_REQUIRED_ERROR_STR),
                 widget=TextInput(attrs={'onkeyup': 'LocationKeyFormHelper.changeKeyFields()'}),
             )
 
