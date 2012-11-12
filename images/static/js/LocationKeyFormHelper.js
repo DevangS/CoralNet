@@ -1,10 +1,10 @@
-var ImageSourceFormHelper = {
-    
+var LocationKeyFormHelper = {
+
     /*
-    Enable/disable the location key fields.
-    Key field n is enabled only if key fields up to n-1 are filled in.
-    Otherwise, field n is disabled (grayed out and non-interactive).
-    */
+     Enable/disable the location key fields.
+     Key field n is enabled only if key fields up to n-1 are filled in.
+     Otherwise, field n is disabled (grayed out and non-interactive).
+     */
     changeKeyFields: function() {
         var key1_elmt = document.getElementById("id_key1");
         var key2_elmt = document.getElementById("id_key2");
@@ -20,4 +20,4 @@ var ImageSourceFormHelper = {
     }
 };
 
-util.addLoadEvent(ImageSourceFormHelper.changeKeyFields);
+util.addLoadEvent(LocationKeyFormHelper.changeKeyFields);
