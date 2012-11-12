@@ -107,7 +107,6 @@ class LocationKeyForm(Form):
                 max_length=Source._meta.get_field(key_field).max_length,
                 required=not Source._meta.get_field(key_field).blank,
                 error_messages=dict(required=str_consts.SOURCE_ONE_KEY_REQUIRED_ERROR_STR),
-                widget=TextInput(attrs={'onkeyup': 'LocationKeyFormHelper.changeKeyFields()'}),
             )
 
     def clean(self):
