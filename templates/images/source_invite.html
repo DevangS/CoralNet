@@ -14,8 +14,26 @@
       {% include "form_generic.html" with form=inviteForm %}
 
       <div class="submit_button_wrapper_column_form">
-        <input type="submit" value="Send Invite" />
+        <input name="sendInvite" type="submit" value="Send Invite" />
       </div>
+    </form>
+
+    <legend style="display:inline;">Edit Permissions</legend>
+
+    <form action="" method="post">{% csrf_token %}
+        {% include "form_generic.html" with form=changePermissionForm %}
+        <div class="submit_button_wrapper_column_form">
+            <input name="changePermission" type="submit" value="Apply Change" />
+        </div>
+    </form>
+
+    <legend style="display:inline;">Remove User</legend>
+
+    <form action="" method="post">{% csrf_token %}
+        {% include "form_generic.html" with form=removeUserForm %}
+        <div class="submit_button_wrapper_column_form">
+            <input name="removeUser" type="submit" value="Remove" />
+        </div>
     </form>
 
 {% endblock %}

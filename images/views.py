@@ -239,7 +239,7 @@ def source_edit(request, source_id):
 @source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def source_admin(request, source_id):
     """
-    Invite a user to this Source.
+    Either invites a user to the source or changes their permission in the source.
     """
 
     source = get_object_or_404(Source, id=source_id)
@@ -247,8 +247,13 @@ def source_admin(request, source_id):
     if request.method == 'POST':
 
         inviteForm = SourceInviteForm(request.POST, source_id=source_id)
+        changePermissionForm = SourceChangePermissionForm(request.POST, source_id=source_id, user=request.user)
+        removeUserForm = SourceRemoveUserForm(request.POST, source_id=source_id, user=request.user)
+        sendInvite = request.POST.get('sendInvite', None)
+        changePermission = request.POST.get('changePermission', None)
+        removeUser = request.POST.get('removeUser', None)
 
-        if inviteForm.is_valid():
+        if inviteForm.is_valid() and sendInvite:
 
             invite = SourceInvite(
                 sender=request.user,
@@ -260,15 +265,33 @@ def source_admin(request, source_id):
 
             messages.success(request, 'Your invite has been sent!')
             return HttpResponseRedirect(reverse('source_main', args=[source_id]))
+        elif changePermissionForm.is_valid() and changePermission:
+
+            source.reassign_role(
+                user=User.objects.get(id=changePermissionForm.cleaned_data['user']),
+                role=changePermissionForm.cleaned_data['perm_change']
+            )
+
+            messages.success(request, 'Permission for user has changed.')
+            return HttpResponseRedirect(reverse('source_main', args=[source_id]))
+        elif removeUserForm.is_valid() and removeUser:
+            source.remove_role(User.objects.get(id=removeUserForm.cleaned_data['user']))
+
+            messages.success(request, 'User has been removed from the source.')
+            return HttpResponseRedirect(reverse('source_main', args=[source_id]))
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
         # Just reached this form page
         inviteForm = SourceInviteForm(source_id=source_id)
+        changePermissionForm = SourceChangePermissionForm(source_id=source_id, user=request.user)
+        removeUserForm = SourceRemoveUserForm(source_id=source_id, user=request.user)
 
     return render_to_response('images/source_invite.html', {
         'source': source,
         'inviteForm': inviteForm,
+        'changePermissionForm': changePermissionForm,
+        'removeUserForm': removeUserForm
         },
         context_instance=RequestContext(request)
         )

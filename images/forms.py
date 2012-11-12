@@ -96,6 +96,64 @@ class ImageSourceForm(ModelForm):
 
         return super(ImageSourceForm, self).clean()
 
+class SourceChangePermissionForm(Form):
+
+    perm_change = ChoiceField(label='Permission Level', choices=Source._meta.permissions)
+
+    def __init__(self, *args, **kwargs):
+        self.source_id = kwargs.pop('source_id')
+        user = kwargs.pop('user')
+        super(SourceChangePermissionForm, self).__init__(*args, **kwargs)
+        source = Source.objects.get(pk=self.source_id)
+        members = source.get_members_ordered_by_role()
+        memberList = [(member.id,member.username) for member in members]
+
+        # This removes the current user from users that can have their permission changed
+        memberList.remove((user.id,user.username))
+        self.fields['user'] = ChoiceField(label='User', choices=[member for member in memberList])
+
+    def clean(self):
+        """
+        Ensures that the user currently has permissions in the source
+        This shouldn't be a problem, but doesn't hurt to check
+        """
+        if self.cleaned_data['user']:
+            msg = u"There are no other users that have access to this source."
+            self._errors['user'] = self.error_class([msg])
+            return super(SourceChangePermissionForm, self).clean()
+
+        user = User.objects.get(id=self.cleaned_data['user'])
+        source = Source.objects.get(pk=self.source_id)
+        if not source.has_member(user):
+            msg = u"%s is not in this Source." % user.username
+            self._errors['user'] = self.error_class([msg])
+        return super(SourceChangePermissionForm, self).clean()
+
+class SourceRemoveUserForm(Form):
+
+    def __init__(self, *args, **kwargs):
+        self.source_id = kwargs.pop('source_id')
+        self.user = kwargs.pop('user')
+        super(SourceRemoveUserForm, self).__init__(*args, **kwargs)
+        source = Source.objects.get(pk=self.source_id)
+        members = source.get_members_ordered_by_role()
+        memberList = [(member.id,member.username) for member in members]
+
+        # This removes the current user from users that can have their permission changed
+        memberList.remove((self.user.id,self.user.username))
+        self.fields['user'] = ChoiceField(label='User', choices=[member for member in memberList])
+
+    def clean(self):
+        """
+        Ensures that the user currently has permissions in the source
+        This shouldn't be a problem, but doesn't hurt to check
+        """
+        user = User.objects.get(id=self.cleaned_data['user'])
+        source = Source.objects.get(pk=self.source_id)
+        if not source.has_member(user):
+            msg = u"%s is not in this Source." % user.username
+            self._errors['user'] = self.error_class([msg])
+        return super(SourceRemoveUserForm, self).clean()
 
 class SourceInviteForm(Form):
     # This is not a ModelForm, because a ModelForm would by default

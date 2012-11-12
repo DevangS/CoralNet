@@ -5,7 +5,7 @@ from django.db import models
 
 from django.contrib.auth.models import User
 from easy_thumbnails.fields import ThumbnailerImageField
-from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign
+from guardian.shortcuts import get_objects_for_user, get_users_with_perms, get_perms, assign, remove_perm
 from annotations.model_utils import AnnotationAreaUtils
 from images.model_utils import PointGen
 from CoralNet.utils import generate_random_filename
@@ -219,6 +219,23 @@ class Source(models.Model):
             assign(Source.PermTypes.VIEW.code, user, self)
         else:
             raise ValueError("Invalid Source role: %s" % role)
+
+    def reassign_role(self, user, role):
+        """
+        Shortcut method that works similarly to assign_role, but removes
+        the permissions of the user before reassigning their role. User
+        this if the user already has access to a particular source.
+        """
+        self.remove_role(user)
+        self.assign_role(user, role)
+
+    def remove_role(self, user):
+        """
+        Shortcut method that removes the user from the source.
+        """
+        remove_perm(Source.PermTypes.ADMIN.code, user, self)
+        remove_perm(Source.PermTypes.EDIT.code, user, self)
+        remove_perm(Source.PermTypes.VIEW.code, user, self)
 
 
     def visible_to_user(self, user):
