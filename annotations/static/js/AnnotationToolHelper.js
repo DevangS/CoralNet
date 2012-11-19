@@ -1,11 +1,7 @@
 var AnnotationToolHelper = (function() {
 
     // Compatibility
-    // If the appVersion contains the substring "Mac", then it's probably a mac...
-    // TODO: Rename to isMac or something.
-    var mac = util.osIsMac();
-
-    // TODO: Change the naming convention of jQuery variables from -JQ to $-
+    var isMac = util.osIsMac();
 
     // HTML elements
     var annotationArea = null;
@@ -13,7 +9,7 @@ var AnnotationToolHelper = (function() {
     var annotationFieldRows = [];
     var annotationFields = [];
     var annotationRobotFields = [];
-    var annotationFieldsJQ = null;
+    var $annotationFields = null;
     var imageArea = undefined;
     var pointsCanvas = null;
     var listenerElmt = null;
@@ -420,7 +416,7 @@ var AnnotationToolHelper = (function() {
 
     function unselectAll() {
         var selectedPointList = [];
-        getSelectedFieldsJQ().each( function() {
+        get$selectedFields().each( function() {
             var pointNum = getPointNumOfAnnoField(this);
             selectedPointList.push(pointNum);
         });
@@ -429,10 +425,10 @@ var AnnotationToolHelper = (function() {
 
     // Label button is clicked
     function labelSelected(labelButtonCode) {
-        var selectedFieldsJQ = getSelectedFieldsJQ();
+        var $selectedFields = get$selectedFields();
 
         // Iterate over selected points' fields.
-        selectedFieldsJQ.each( function() {
+        $selectedFields.each( function() {
             // Set the point's label.
             this.value = labelButtonCode;
 
@@ -441,9 +437,9 @@ var AnnotationToolHelper = (function() {
         });
 
         // If just 1 field is selected, focus the next field automatically
-        if (selectedFieldsJQ.length === 1) {
+        if ($selectedFields.length === 1) {
             // Call focusNextField() such that the selected field becomes the object 'this'
-            focusNextField.call(selectedFieldsJQ[0]);
+            focusNextField.call($selectedFields[0]);
         }
     }
 
@@ -747,7 +743,7 @@ var AnnotationToolHelper = (function() {
         }
 
         // Draw all points.
-        annotationFieldsJQ.each( function() {
+        $annotationFields.each( function() {
             var pointNum = getPointNumOfAnnoField(this);
             updatePointGraphic(pointNum);
         });
@@ -809,7 +805,7 @@ var AnnotationToolHelper = (function() {
         return parseInt(annoField.name.substring(6));
     }
 
-    function getSelectedFieldsJQ() {
+    function get$selectedFields() {
         return $(annotationList).find('tr.selected').find('input');
     }
 
@@ -1132,15 +1128,15 @@ var AnnotationToolHelper = (function() {
             numOfPoints = imagePoints.length;
             getCanvasPoints();
 
-            annotationFieldsJQ = $(annotationList).find('input');
-            var annotationFieldRowsJQ = $(annotationList).find('tr');
+            $annotationFields = $(annotationList).find('input');
+            var $annotationFieldRows = $(annotationList).find('tr');
 
             // Create arrays that map point numbers to HTML elements.
             // For example, for point 1:
             // annotationFields = form field with point 1's label code
             // annotationFieldRows = table row containing form field 1
             // annotationRobotFields = hidden form element of value true/false saying whether point 1 is robot annotated
-            annotationFieldRowsJQ.each( function() {
+            $annotationFieldRows.each( function() {
                 var field = $(this).find('input')[0];
                 var pointNum = getPointNumOfAnnoField(field);
                 var robotField = $('#id_robot_' + pointNum)[0];
@@ -1156,7 +1152,7 @@ var AnnotationToolHelper = (function() {
                 pointContentStates[n] = {'label': undefined, 'robot': undefined};
                 pointGraphicStates[n] = STATE_NOTSHOWN;
             }
-            annotationFieldsJQ.each( function() {
+            $annotationFields.each( function() {
                 onPointUpdate(this, 'initialize');
             });
 
@@ -1190,12 +1186,12 @@ var AnnotationToolHelper = (function() {
 
                 // Get the click type (in Windows terms)...
 
-                if ((!mac && e.ctrlKey && mouseButton === "LEFT")
-                    || mac && e.metaKey && mouseButton === "LEFT")
+                if ((!isMac && e.ctrlKey && mouseButton === "LEFT")
+                    || isMac && e.metaKey && mouseButton === "LEFT")
                 // Ctrl-click non-Mac OR Cmd-click Mac
                     clickType = "ctrlClick";
                 else if (mouseButton === "RIGHT"
-                    || (mac && e.ctrlKey && mouseButton === "LEFT"))
+                    || (isMac && e.ctrlKey && mouseButton === "LEFT"))
                 // Right-click OR Ctrl-click Mac
                     clickType = "rightClick";
                 else if (mouseButton === "LEFT")
@@ -1260,7 +1256,7 @@ var AnnotationToolHelper = (function() {
             });
 
             // Label field gains focus
-            annotationFieldsJQ.focus(function() {
+            $annotationFields.focus(function() {
                 var pointNum = getPointNumOfAnnoField(this);
                 unselectAll();
                 select(pointNum);
@@ -1283,7 +1279,7 @@ var AnnotationToolHelper = (function() {
 
             // Label field is typed into and changed, and then unfocused.
             // (This does NOT run when a label button changes the label field.)
-            annotationFieldsJQ.change(function() {
+            $annotationFields.change(function() {
                 onLabelFieldTyping(this);
             });
 
@@ -1388,9 +1384,9 @@ var AnnotationToolHelper = (function() {
 
                 // Bind the event listeners to the documents, the annotation fields, or both.
                 if (scope === 'all')
-                    elementsToBind = [$(document), annotationFieldsJQ];
+                    elementsToBind = [$(document), $annotationFields];
                 else if (scope === 'field')
-                    elementsToBind = [annotationFieldsJQ];
+                    elementsToBind = [$annotationFields];
 
                 // Add the event listener.
                 for (j = 0; j < elementsToBind.length; j++) {
@@ -1399,7 +1395,7 @@ var AnnotationToolHelper = (function() {
             }
 
             // Show/hide certain key instructions depending on whether Mac is the OS.
-            if (mac) {
+            if (isMac) {
                 $('span.key_mac').show();
                 $('span.key_non_mac').hide();
             }
