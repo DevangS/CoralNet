@@ -50,7 +50,7 @@ def get_form_media(parser, token):
 # mark_safe() is used to prevent escaping of quote characters
 # in the JSON (so they stay as quotes, and don't become &quot;).
 #
-# Usage: <script> ATH.init({{ labels|jsonify }}); </script>
+# Usage: <script> AnnotationToolHelper.init({{ labels|jsonify }}); </script>
 #
 # Basic idea from:
 # http://djangosnippets.org/snippets/201/

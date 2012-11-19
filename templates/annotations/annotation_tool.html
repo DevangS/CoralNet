@@ -191,10 +191,15 @@
     ATS.init();
     // Initialize the Annotation Tool Image helper object.
     ATI.init({{ source_images|jsonify }});
-    // Initialize the Annotation Tool Helper (ATH) object.
-    ATH.init({{ image.original_height }}, {{ image.original_width }},
-             {{ IMAGE_AREA_WIDTH }}, {{ IMAGE_AREA_HEIGHT }},
-             {{ annotationsJSON|safe }}, {{ labels|jsonify }});
+    // Initialize the Annotation Tool Helper object.
+    AnnotationToolHelper.init({
+        fullHeight: {{ image.original_height }},
+        fullWidth: {{ image.original_width }},
+        IMAGE_AREA_WIDTH: {{ IMAGE_AREA_WIDTH }},
+        IMAGE_AREA_HEIGHT: {{ IMAGE_AREA_HEIGHT }},
+        imagePoints: {{ annotationsJSON|safe }},
+        labels: {{ labels|jsonify }}
+    });
 </script>
 
 {% endblock %}

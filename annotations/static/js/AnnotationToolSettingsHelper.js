@@ -67,7 +67,7 @@ var ATS = {
             ATS.$fields[fieldName].change( function() {
                 ATS.enableSaveButton();
                 ATS.updateSettingsObj();
-                ATH.redrawAllPoints();
+                AnnotationToolHelper.redrawAllPoints();
             });
         }
 
