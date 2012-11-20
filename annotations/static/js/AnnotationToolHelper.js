@@ -28,7 +28,7 @@ var AnnotationToolHelper = (function() {
 
     // Border where the canvas is drawn, but the image is not.
     // This is used to fully show the points that are located near the edge of the image.
-    var CANVAS_GUTTER = 25;
+    var canvasGutter = null;
     var CANVAS_GUTTER_COLOR = "#BBBBBB";
 
     // Related to possible states of each annotation point
@@ -53,11 +53,11 @@ var AnnotationToolHelper = (function() {
     var IMAGE_FULL_WIDTH = null;
     var IMAGE_FULL_HEIGHT = null;
     // The area that the image is permitted to fill
-    var IMAGE_AREA_WIDTH = null;
-    var IMAGE_AREA_HEIGHT = null;
+    var imageAreaWidth = null;
+    var imageAreaHeight = null;
     // The canvas area, where drawing is allowed
-    var ANNOTATION_AREA_WIDTH = null;
-    var ANNOTATION_AREA_HEIGHT = null;
+    var annotationAreaWidth = null;
+    var annotationAreaHeight = null;
     // Label button grid
     var BUTTON_GRID_MAX_X = null;
     var BUTTON_GRID_MAX_Y = null;
@@ -101,32 +101,32 @@ var AnnotationToolHelper = (function() {
         // Positive offsets means there's extra space around the image
         // (should prevent this unless the image display is smaller than the image area).
 
-        if (imageDisplayWidth <= IMAGE_AREA_WIDTH)
-            imageLeftOffset = (IMAGE_AREA_WIDTH - imageDisplayWidth) / 2;
+        if (imageDisplayWidth <= imageAreaWidth)
+            imageLeftOffset = (imageAreaWidth - imageDisplayWidth) / 2;
         else {
             var centerOfZoomInDisplayX = centerOfZoomX * zoomFactor;
-            var leftEdgeInDisplayX = centerOfZoomInDisplayX - (IMAGE_AREA_WIDTH / 2);
-            var rightEdgeInDisplayX = centerOfZoomInDisplayX + (IMAGE_AREA_WIDTH / 2);
+            var leftEdgeInDisplayX = centerOfZoomInDisplayX - (imageAreaWidth / 2);
+            var rightEdgeInDisplayX = centerOfZoomInDisplayX + (imageAreaWidth / 2);
             
             if (leftEdgeInDisplayX < 0)
                 imageLeftOffset = 0;
             else if (rightEdgeInDisplayX > imageDisplayWidth)
-                imageLeftOffset = -(imageDisplayWidth - IMAGE_AREA_WIDTH);
+                imageLeftOffset = -(imageDisplayWidth - imageAreaWidth);
             else
                 imageLeftOffset = -leftEdgeInDisplayX;
         }
 
-        if (imageDisplayHeight <= IMAGE_AREA_HEIGHT)
-            imageTopOffset = (IMAGE_AREA_HEIGHT - imageDisplayHeight) / 2;
+        if (imageDisplayHeight <= imageAreaHeight)
+            imageTopOffset = (imageAreaHeight - imageDisplayHeight) / 2;
         else {
             var centerOfZoomInDisplayY = centerOfZoomY * zoomFactor;
-            var topEdgeInDisplayY = centerOfZoomInDisplayY - (IMAGE_AREA_HEIGHT / 2);
-            var bottomEdgeInDisplayY = centerOfZoomInDisplayY + (IMAGE_AREA_HEIGHT / 2);
+            var topEdgeInDisplayY = centerOfZoomInDisplayY - (imageAreaHeight / 2);
+            var bottomEdgeInDisplayY = centerOfZoomInDisplayY + (imageAreaHeight / 2);
 
             if (topEdgeInDisplayY < 0)
                 imageTopOffset = 0;
             else if (bottomEdgeInDisplayY > imageDisplayHeight)
-                imageTopOffset = -(imageDisplayHeight - IMAGE_AREA_HEIGHT);
+                imageTopOffset = -(imageDisplayHeight - imageAreaHeight);
             else
                 imageTopOffset = -topEdgeInDisplayY;
         }
@@ -172,7 +172,7 @@ var AnnotationToolHelper = (function() {
 
         // Translate the canvas context to compensate for the gutter.
         // This'll allow us to pretend that canvas coordinates = image area coordinates.
-        context.translate(CANVAS_GUTTER, CANVAS_GUTTER);
+        context.translate(canvasGutter, canvasGutter);
     }
     
     /* Look at a label field, and based on the label, mark the point
@@ -726,9 +726,9 @@ var AnnotationToolHelper = (function() {
      */
     function pointIsOffscreen(pointNum) {
         return (canvasPoints[pointNum].row < 0
-                || canvasPoints[pointNum].row > IMAGE_AREA_HEIGHT
+                || canvasPoints[pointNum].row > imageAreaHeight
                 || canvasPoints[pointNum].col < 0
-                || canvasPoints[pointNum].col > IMAGE_AREA_WIDTH
+                || canvasPoints[pointNum].col > imageAreaWidth
                 )
     }
 
@@ -914,6 +914,64 @@ var AnnotationToolHelper = (function() {
     }
 
 
+    function resizeElements() {
+        var windowHeight = $(window).height();
+
+        annotationAreaWidth = $(annotationArea).width();
+        annotationAreaHeight = windowHeight;
+        $(annotationArea).height(annotationAreaHeight);
+
+        canvasGutter = Math.min(
+            Math.round(annotationAreaWidth / 30),
+            Math.round(annotationAreaHeight / 30)
+        );
+
+        imageAreaWidth = annotationAreaWidth - (canvasGutter*2);
+        imageAreaHeight = annotationAreaHeight - (canvasGutter*2);
+
+        $(imageArea).width(imageAreaWidth);
+        $(imageArea).height(imageAreaHeight);
+        $(imageArea).css({
+            "left": canvasGutter + "px",
+            "top": canvasGutter + "px"
+        });
+
+        pointsCanvas.width = annotationAreaWidth;
+        pointsCanvas.height = annotationAreaHeight;
+
+        var annotationListMaxHeight =
+            annotationAreaHeight - parseFloat($("#toolButtonArea").outerHeight(true));
+
+        $(annotationList).css({
+            "max-height": annotationListMaxHeight + "px"
+        });
+
+        // Set the height for the element containing the two main columns.
+        // This ensures that the info below the annotation tool doesn't overlap with
+        // the annotation tool.  Overlap is possible because the main column floats,
+        // so the main column doesn't contribute to its container element's height.
+        //
+        // The container element's height will be set to the max of the
+        // columns' DOM (computed) heights.
+        $('#columnContainer').height(
+            Math.max(
+                parseFloat($('#mainColumn').height()),
+                parseFloat($('#rightSidebar').height())
+            ).toString() + "px"
+        );
+
+        // TODO: Note how the columnContainer is the outermost element
+        // and its dimensions are set last.  Can we make the rset of
+        // this function go from innermost to outermost to make it easier
+        // to follow?  Or is this in general not possible?
+
+        // TODO: imageCanvas and listenerElmt styling goes here.  Or maybe
+        // they go in setupImageArea()?
+        //$(ATI.imageCanvas)
+        //$(listenerElmt)
+    }
+
+
     /* Public methods.
      * These are the only methods that need to be referred to as
      * AnnotationToolHelper.methodname. */
@@ -931,13 +989,10 @@ var AnnotationToolHelper = (function() {
 
             IMAGE_FULL_WIDTH = params.fullWidth;
             IMAGE_FULL_HEIGHT = params.fullHeight;
-            IMAGE_AREA_WIDTH = params.IMAGE_AREA_WIDTH;
-            IMAGE_AREA_HEIGHT = params.IMAGE_AREA_HEIGHT;
 
-            ANNOTATION_AREA_WIDTH = IMAGE_AREA_WIDTH + (CANVAS_GUTTER * 2);
-            ANNOTATION_AREA_HEIGHT = IMAGE_AREA_HEIGHT + (CANVAS_GUTTER * 2);
-
-            var horizontalSpacePerButton = ANNOTATION_AREA_WIDTH / BUTTONS_PER_ROW;
+//            var horizontalSpacePerButton = ANNOTATION_AREA_WIDTH / BUTTONS_PER_ROW;
+            // TODO: Compute this properly.
+            var horizontalSpacePerButton = 40;
 
             // LABEL_BUTTON_WIDTH will represent a value that can be passed into jQuery's
             // width() and css('width'), and these jQuery functions deal with
@@ -998,43 +1053,11 @@ var AnnotationToolHelper = (function() {
 
             imageArea = $("#imageArea")[0];
 
-            $('#mainColumn').css({
-                "width": ANNOTATION_AREA_WIDTH + "px"
-            });
-
-            var annotationListMaxHeight =
-                ANNOTATION_AREA_HEIGHT - parseFloat($("#toolButtonArea").outerHeight(true));
-
-            $(annotationList).css({
-                "max-height": annotationListMaxHeight + "px"
-            });
-
             $(annotationArea).css({
-                "width": ANNOTATION_AREA_WIDTH + "px",
-                "height": ANNOTATION_AREA_HEIGHT + "px",
                 "background-color": CANVAS_GUTTER_COLOR
             });
 
-            $(imageArea).css({
-                "width": IMAGE_AREA_WIDTH + "px",
-                "height": IMAGE_AREA_HEIGHT + "px",
-                "left": CANVAS_GUTTER + "px",
-                "top": CANVAS_GUTTER + "px"
-            });
-
-            // Set the height for the element containing the two main columns.
-            // This ensures that the info below the annotation tool doesn't overlap with
-            // the annotation tool.  Overlap is possible because the main column floats,
-            // so the main column doesn't contribute to its container element's height.
-            //
-            // The container element's height will be set to the max of the
-            // columns' DOM (computed) heights.
-            $('#columnContainer').css({
-                "height": Math.max(
-                    parseFloat($('#mainColumn').height()),
-                    parseFloat($('#rightSidebar').height())
-                ).toString() + "px"
-            });
+            resizeElements();
 
             /* Initialization - Labels and label buttons */
 
@@ -1080,8 +1103,8 @@ var AnnotationToolHelper = (function() {
              * Also set the allowable zoom factors.
              */
 
-            var widthScaleRatio = IMAGE_FULL_WIDTH / IMAGE_AREA_WIDTH;
-            var heightScaleRatio = IMAGE_FULL_HEIGHT / IMAGE_AREA_HEIGHT;
+            var widthScaleRatio = IMAGE_FULL_WIDTH / imageAreaWidth;
+            var heightScaleRatio = IMAGE_FULL_HEIGHT / imageAreaHeight;
             var scaleDownFactor = Math.max(widthScaleRatio, heightScaleRatio);
 
             // If the scaleDownFactor is < 1, then it's scaled up (meaning the image is really small).
@@ -1101,8 +1124,11 @@ var AnnotationToolHelper = (function() {
 
             // Set the canvas's width and height properties so the canvas contents don't stretch.
             // Note that this is different from CSS width and height properties.
-            pointsCanvas.width = ANNOTATION_AREA_WIDTH;
-            pointsCanvas.height = ANNOTATION_AREA_HEIGHT;
+            //
+            // TODO: This probably needs to be re-computed when the window
+            // is resized.
+//            pointsCanvas.width = annotationAreaWidth;
+//            pointsCanvas.height = annotationAreaHeight;
             $(pointsCanvas).css({
                 "left": 0,
                 "top": 0,

@@ -1,6 +1,26 @@
 /* CSS for the annotation tool. */
 
 
+#container {
+    /* Fixed width shouldn't apply to this page. */
+    width: inherit;
+}
+
+#columnContainer {
+    /* height is set dynamically. */
+}
+
+#mainColumn {
+    float: left;
+    width: 80%;
+}
+
+#rightSidebar {
+    float: left;
+    width: 20%;
+}
+
+
 /* For the image and canvas, use position:absolute
  * and make their positions the same (default of 0,0).  This'll make
  * them overlap.  Use z-index to determine which "layers" are on
@@ -75,20 +95,6 @@
 #labelButtons button.group6{ background-color: #ffff88; }
 #labelButtons button.group7{ background-color: #888888; }
 #labelButtons button.group8{ background-color: #4499dd; }
-
-#mainColumn {
-    float: left;
-
-    /* width is set dynamically. */
-}
-
-#rightSidebar {
-    /* width is set dynamically. */
-}
-
-#columnContainer {
-    /* height is set dynamically. */
-}
 
 #toolButtonArea {
     margin-bottom: 5px;
