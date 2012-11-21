@@ -915,6 +915,10 @@ var AnnotationToolHelper = (function() {
 
 
     function resizeElements() {
+
+        // TODO: Compute the entire annotation tool height from the window
+        // height; not just the annotation area height.
+
         var windowHeight = $(window).height();
 
         annotationAreaWidth = $(annotationArea).width();
@@ -969,6 +973,8 @@ var AnnotationToolHelper = (function() {
         // they go in setupImageArea()?
         //$(ATI.imageCanvas)
         //$(listenerElmt)
+
+        // TODO: Call ATI.redrawImage()?
     }
 
 
@@ -1058,6 +1064,11 @@ var AnnotationToolHelper = (function() {
             });
 
             resizeElements();
+
+            // Recompute element sizes when the browser window is resized.
+            $(window).resize(function() {
+                resizeElements();
+            });
 
             /* Initialization - Labels and label buttons */
 
