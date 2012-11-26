@@ -19,7 +19,7 @@ from images.models import Source, Image, SourceInvite
 from images.forms import *
 from images.model_utils import PointGen
 from images.utils import *
-import json
+import json , math
 
 def source_list(request):
     """
@@ -180,10 +180,31 @@ def source_main(request, source_id):
         jsonstring = f.read()
         f.close()
         meta=json.loads(jsonstring)
+
+        #getting raw confusion matrix from json file
+        cmx = meta['hp']['gridStats'][-1]['cmOpt']
+        matrixSize = math.sqrt ( len(cmx) ) + 1
+        sizeOfNewMatrix = (int( len(cmx) + matrixSize) )
+        newcm = [None] * (sizeOfNewMatrix -1)
+        labelMap = meta['labelMap']
+        i = j = 0
+
+        #creating a new cm matrix that contains the label set as the first column
+        for items in cmx:
+            if ( i % (matrixSize ) ) == 0:
+                newcm[i] = labelMap[j]
+                j+=1
+                i+=1
+            newcm[i] = items
+            i+=1
+
         robotStats = dict(
             version=latestRobot.version,
             trainTime=round(meta['totalRuntime']),
             precision = 100 * (1 - meta['hp']['estPrecision']),
+            cm = newcm,
+            labelMap = labelMap,
+            matrixSize = matrixSize,
             hasRobot=True,
         )
     

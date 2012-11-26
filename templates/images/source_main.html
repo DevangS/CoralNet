@@ -101,7 +101,31 @@
                     <td>Traintime (s)</td>
                     <td>{{ robotStats.trainTime }}</td>
                 </tr>
-            </table>
+            </table></br>
+	    <p> Confusion Matrix </p>
+	    <table class="detail_table">
+		<tr>
+		    <td> cm </td>
+	            {% for labels in robotStats.labelMap %}
+                    	<td>{{ labels}}</td>
+		    {% endfor %}
+                </tr>
+		{% for value in robotStats.cm %}
+		    {% if forloop.counter0|divisibleby:robotStats.matrixSize %}
+	              <tr>	
+                          <td> {{value}} </td>
+		     {%else %}
+		    	  <td> {{value}} </td>
+		     {% endif %}
+
+		     {% if forloop.counter|divisibleby:robotStats.matrixSize %}
+		       </tr>
+		     {% endif %}
+
+		{% endfor %}
+              </table></br>
+	      <p>The first row and column indicate the label ID</p>
+
         {% else %}
             <p>(No machine annotator available yet)</p>
         {% endif %}
