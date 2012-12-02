@@ -213,11 +213,7 @@ var AnnotationToolHelper = (function() {
             // No error
 
             if (robotField.value === 'true') {
-                if (robotStatusAction === 'initialize') {
-                    // Initializing the page, need to add robot styles as appropriate.
-                    $(row).addClass('robot');
-                }
-                else if (robotStatusAction === 'unrobotOnlyIfChanged') {
+                if (robotStatusAction === 'unrobotOnlyIfChanged') {
                     // We're told to only unrobot the annotation if the label changed.
                     if (labelChanged)
                         unrobot(pointNum);
@@ -245,7 +241,7 @@ var AnnotationToolHelper = (function() {
         }
 
         var robotStatusChanged = (oldState['robot'] !== robotField.value);
-        var contentChanged = ((labelChanged || robotStatusChanged) && (robotStatusAction !== 'initialize'));
+        var contentChanged = (labelChanged || robotStatusChanged);
 
         // Done assessing change of state, so set the new state.
         pointContentStates[pointNum] = {'label': labelCode, 'robot': robotField.value};
@@ -919,6 +915,11 @@ var AnnotationToolHelper = (function() {
         // TODO: Compute the entire annotation tool height from the window
         // height; not just the annotation area height.
 
+        // TODO: Note how the columnContainer is the outermost element
+        // and its dimensions are set last.  Can we make the rest of
+        // this function go from innermost to outermost to make it easier
+        // to follow?  Or is this in general not possible?
+
         var windowHeight = $(window).height();
 
         annotationAreaWidth = $(annotationArea).width();
@@ -940,6 +941,8 @@ var AnnotationToolHelper = (function() {
             "top": canvasGutter + "px"
         });
 
+        // Set the canvas's width and height properties so the canvas contents don't stretch.
+        // Note that this is different from CSS width and height properties.
         pointsCanvas.width = annotationAreaWidth;
         pointsCanvas.height = annotationAreaHeight;
 
@@ -964,17 +967,32 @@ var AnnotationToolHelper = (function() {
             ).toString() + "px"
         );
 
-        // TODO: Note how the columnContainer is the outermost element
-        // and its dimensions are set last.  Can we make the rset of
-        // this function go from innermost to outermost to make it easier
-        // to follow?  Or is this in general not possible?
+        // Set initial image scaling so the whole image is shown.
+        // Also set the allowable zoom factors.
 
-        // TODO: imageCanvas and listenerElmt styling goes here.  Or maybe
-        // they go in setupImageArea()?
-        //$(ATI.imageCanvas)
-        //$(listenerElmt)
+        var widthScaleRatio = IMAGE_FULL_WIDTH / imageAreaWidth;
+        var heightScaleRatio = IMAGE_FULL_HEIGHT / imageAreaHeight;
+        var scaleDownFactor = Math.max(widthScaleRatio, heightScaleRatio);
 
-        // TODO: Call ATI.redrawImage()?
+        // If the scaleDownFactor is < 1, then it's scaled up (meaning the image is really small).
+        zoomFactor = 1.0 / scaleDownFactor;
+
+        // Allowable zoom factors/levels:
+        // Start with the most zoomed out level, 0.  Level 1 is ZOOM_INCREMENT * level 0.
+        // Level 2 is ZOOM_INCREMENT * level 1, etc.  Goes up to level HIGHEST_ZOOM_LEVEL.
+        zoomLevel = 0;
+        for (i = 0; i <= HIGHEST_ZOOM_LEVEL; i++) {
+            ZOOM_FACTORS[i] = zoomFactor * Math.pow(ZOOM_INCREMENT, i);
+        }
+
+        // Based on the zoom level, set up the image area.
+        // (No need to define centerOfZoom since we're not zooming in to start with.)
+        setupImageArea();
+
+        // Whenever the image area's set up, the points need to be
+        // recomputed and redrawn.
+        getCanvasPoints();
+        redrawAllPoints();
     }
 
 
@@ -1063,13 +1081,6 @@ var AnnotationToolHelper = (function() {
                 "background-color": CANVAS_GUTTER_COLOR
             });
 
-            resizeElements();
-
-            // Recompute element sizes when the browser window is resized.
-            $(window).resize(function() {
-                resizeElements();
-            });
-
             /* Initialization - Labels and label buttons */
 
             var groupsWithStyles = [];
@@ -1109,37 +1120,6 @@ var AnnotationToolHelper = (function() {
                 labelCodesToNames[label.code] = label.name;
             }
 
-            /*
-             * Set initial image scaling so the whole image is shown.
-             * Also set the allowable zoom factors.
-             */
-
-            var widthScaleRatio = IMAGE_FULL_WIDTH / imageAreaWidth;
-            var heightScaleRatio = IMAGE_FULL_HEIGHT / imageAreaHeight;
-            var scaleDownFactor = Math.max(widthScaleRatio, heightScaleRatio);
-
-            // If the scaleDownFactor is < 1, then it's scaled up (meaning the image is really small).
-            zoomFactor = 1.0 / scaleDownFactor;
-
-            // Allowable zoom factors/levels:
-            // Start with the most zoomed out level, 0.  Level 1 is ZOOM_INCREMENT * level 0.
-            // Level 2 is ZOOM_INCREMENT * level 1, etc.  Goes up to level HIGHEST_ZOOM_LEVEL.
-            zoomLevel = 0;
-            for (i = 0; i <= HIGHEST_ZOOM_LEVEL; i++) {
-                ZOOM_FACTORS[i] = zoomFactor * Math.pow(ZOOM_INCREMENT, i);
-            }
-
-            // Based on the zoom level, set up the image area.
-            // (No need to define centerOfZoom since we're not zooming in to start with.)
-            setupImageArea();
-
-            // Set the canvas's width and height properties so the canvas contents don't stretch.
-            // Note that this is different from CSS width and height properties.
-            //
-            // TODO: This probably needs to be re-computed when the window
-            // is resized.
-//            pointsCanvas.width = annotationAreaWidth;
-//            pointsCanvas.height = annotationAreaHeight;
             $(pointsCanvas).css({
                 "left": 0,
                 "top": 0,
@@ -1181,6 +1161,10 @@ var AnnotationToolHelper = (function() {
                 annotationFields[pointNum] = field;
                 annotationFieldRows[pointNum] = this;
                 annotationRobotFields[pointNum] = robotField;
+
+                if (robotField.value === 'true') {
+                    $(this).addClass('robot');
+                }
             });
 
             // Set point annotation statuses,
@@ -1189,8 +1173,18 @@ var AnnotationToolHelper = (function() {
                 pointContentStates[n] = {'label': undefined, 'robot': undefined};
                 pointGraphicStates[n] = STATE_NOTSHOWN;
             }
-            $annotationFields.each( function() {
-                onPointUpdate(this, 'initialize');
+            // TODO: Confirm whether this is no longer necessary, due to
+            // us now initializing robot class rows in an earlier for loop.
+//            $annotationFields.each( function() {
+//                onPointUpdate(this, 'initialize');
+//            });
+
+            // Compute sizing of everything.
+            resizeElements();
+
+            // Recompute element sizes when the browser window is resized.
+            $(window).resize(function() {
+                resizeElements();
             });
 
             // Set the initial point view mode.  This'll trigger a redraw of the points, but that's okay;
