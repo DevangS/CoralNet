@@ -18,6 +18,8 @@
     {% include "form_media_versioned.html" with form=image_options_form %}
 {% endblock %}
 
+{% block nav %}{% endblock %}
+
 {% block content %}
 
 <button id="id_button_show_instructions">Help/Controls</button>
@@ -57,32 +59,25 @@
 </div>
 
 <div id="columnContainer">
-    <div id="mainColumn">
-      <div id="annotationArea">
 
-        <!-- HTML5 canvas element for drawing points -->
+    <div id="mainColumn" style="width: 80%; height: 100%;">
+      {# annotationArea's percentage height only works when mainColumn has a specified height. #}
+      <div id="annotationArea" style="height: 70%;">
         <canvas id="pointsCanvas"></canvas>
-
         <div id="imageArea">
-
-          <!-- The image that's being annotated -->
           <canvas id="imageCanvas"></canvas>
-
-          <!-- Dummy element for listening to mouseclicks, etc. -->
           <div id="listenerElmt"></div>
-
         </div>
-          
       </div>
 
-      <div id="labelButtons">
+      <div id="labelButtons" style="height: 30%;">
         {% for label in labels %}
             <button>{{ label.code }}</button>
         {% endfor %}
       </div>
     </div>
 
-    <div id="rightSidebar">
+    <div id="rightSidebar" style="width: 20%;">
 
      <div id="toolButtonArea">
          <input class="zoomButton" type="image"
@@ -195,11 +190,12 @@
     AnnotationToolHelper.init({
         fullHeight: {{ image.original_height }},
         fullWidth: {{ image.original_width }},
-        IMAGE_AREA_WIDTH: {{ IMAGE_AREA_WIDTH }},
-        IMAGE_AREA_HEIGHT: {{ IMAGE_AREA_HEIGHT }},
         imagePoints: {{ annotationsJSON|safe }},
-        labels: {{ labels|jsonify }}
+        labels: {{ labels|jsonify }},
+        layout: {{ layout|jsonify }}
     });
 </script>
 
 {% endblock %}
+
+{% block footer %}{% endblock %}

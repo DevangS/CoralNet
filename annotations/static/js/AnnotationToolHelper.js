@@ -922,9 +922,12 @@ var AnnotationToolHelper = (function() {
 
         var windowHeight = $(window).height();
 
+        $('#columnContainer').height(windowHeight);
+
         annotationAreaWidth = $(annotationArea).width();
-        annotationAreaHeight = windowHeight;
-        $(annotationArea).height(annotationAreaHeight);
+        //annotationAreaHeight = windowHeight;
+        //$(annotationArea).height(annotationAreaHeight);
+        annotationAreaHeight = $(annotationArea).height();
 
         canvasGutter = Math.min(
             Math.round(annotationAreaWidth / 30),
@@ -960,12 +963,12 @@ var AnnotationToolHelper = (function() {
         //
         // The container element's height will be set to the max of the
         // columns' DOM (computed) heights.
-        $('#columnContainer').height(
-            Math.max(
-                parseFloat($('#mainColumn').height()),
-                parseFloat($('#rightSidebar').height())
-            ).toString() + "px"
-        );
+//        $('#columnContainer').height(
+//            Math.max(
+//                parseFloat($('#mainColumn').height()),
+//                parseFloat($('#rightSidebar').height())
+//            ).toString() + "px"
+//        );
 
         // Set initial image scaling so the whole image is shown.
         // Also set the allowable zoom factors.
@@ -1002,8 +1005,7 @@ var AnnotationToolHelper = (function() {
     return {
 
         /* Params:
-         * fullHeight, fullWidth, IMAGE_AREA_WIDTH, IMAGE_AREA_HEIGHT,
-         * imagePoints, labels */
+         * fullHeight, fullWidth, imagePoints, labels, layout */
         init: function(params) {
             var i, j, n;    // Loop variables...
 
@@ -1178,6 +1180,8 @@ var AnnotationToolHelper = (function() {
 //            $annotationFields.each( function() {
 //                onPointUpdate(this, 'initialize');
 //            });
+
+            Layouts.createLayout(params.layout);
 
             // Compute sizing of everything.
             resizeElements();

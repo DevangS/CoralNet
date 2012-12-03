@@ -101,6 +101,7 @@
       </div><!-- /content-container-->
 
       <div id="footer">
+        {% block footer %}
         <div class="nav_container" id="nav_footer_container">
           <ul class="nav nav_left" id="nav_footer">
             {% if user.is_authenticated %}
@@ -109,6 +110,8 @@
             {% endif %}
           </ul>
         </div>
+        {% endblock %}{# /footer #}
+
         {% block footer_extra %}{% endblock %}
       </div><!-- /footer -->
     

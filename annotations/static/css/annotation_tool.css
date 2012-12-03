@@ -1,9 +1,16 @@
 /* CSS for the annotation tool. */
 
 
+#footer {
+    display: none;
+}
+
 #container {
     /* Fixed width shouldn't apply to this page. */
     width: inherit;
+
+    margin: 0;
+    padding: 0;
 }
 
 #columnContainer {
@@ -12,12 +19,10 @@
 
 #mainColumn {
     float: left;
-    width: 80%;
 }
 
 #rightSidebar {
     float: left;
-    width: 20%;
 }
 
 

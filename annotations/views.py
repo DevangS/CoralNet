@@ -1,3 +1,4 @@
+import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
@@ -7,6 +8,7 @@ from django.template.context import RequestContext
 from django.utils import simplejson
 from easy_thumbnails.files import get_thumbnailer
 from reversion.models import Version, Revision
+import yaml
 from accounts.utils import get_robot_user
 from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm, AnnotationToolSettingsForm, AnnotationImageOptionsForm
 from annotations.model_utils import AnnotationAreaUtils
@@ -457,6 +459,9 @@ def annotation_tool(request, image_id):
     settings_obj, created = AnnotationToolSettings.objects.get_or_create(user=request.user)
     settings_form = AnnotationToolSettingsForm(instance=settings_obj)
 
+    layout_yaml_file = file('annotations/layouts/annotation_tool_01.yaml', 'r')
+    layout = yaml.load(layout_yaml_file)
+
     # Image tools form (brightness, contrast, etc.)
     image_options_form = AnnotationImageOptionsForm()
 
@@ -501,6 +506,7 @@ def annotation_tool(request, image_id):
         'source_images': source_images,
         'num_of_points': len(annotations),
         'num_of_annotations': len(annotationValues),
+        'layout': layout,
         },
         context_instance=RequestContext(request)
     )
