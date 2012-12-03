@@ -13,26 +13,18 @@
 
     {% get_obj_perms user for source as "source_perms" %}
 
-    <h1>{{ source.name }}</h1>
-
-    <hr />
-
     <div id="images">
-        <h3>Latest images</h3>
         {% if latest_images %}
             {% for image in latest_images %}
-                <span class="thumb_small_wrapper">
+                <span class="thumb_large_wrapper">
                 <a href="{% url image_detail image.id %}">
                     <img class="thumb_small"
-                         src="{% thumbnail image.original_file 100x100 %}"
+                         src="{% thumbnail image.original_file 300x300 %}"
                          title="{{ image.get_image_element_title }}"/>
                 </a>
                 </span>
             {% endfor %}
 
-            <br/>
-            <a href="{% url visualize_source source.id %}">Browse Images</a>
-            <br/><br/>
 
             <p>Total images: {{ image_stats.total }}</p>
 
