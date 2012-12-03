@@ -1,0 +1,26 @@
+#y-85%:
+- y-100%:
+
+  - x-70%:
+
+    - [y-70%, annotationArea]
+    - [y-30%, labelButtons]
+
+  - x-30%:
+
+#    y-65%:
+    - y-100%:
+
+      - [x-20%, toolButtonArea]
+      - x-80%:
+
+        - [y-85%, annotationForm]
+        - [y-15%, progressIndicator]
+
+#    y-20%: zoom
+#    y-15%: image-tools
+
+#y-15%:
+#
+#  x-55%: info-buttons
+#  x-45%: nav-buttons

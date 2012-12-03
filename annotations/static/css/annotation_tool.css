@@ -13,10 +13,6 @@
     padding: 0;
 }
 
-#columnContainer {
-    /* height is set dynamically. */
-}
-
 #mainColumn {
     float: left;
 }

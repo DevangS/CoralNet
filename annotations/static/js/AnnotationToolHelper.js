@@ -49,6 +49,8 @@ var AnnotationToolHelper = (function() {
     var POINTMODE_SELECTED = 1;
     var POINTMODE_NONE = 2;
 
+    // The layout-defining object
+    var annotationToolLayout = null;
     // The original image's dimensions
     var IMAGE_FULL_WIDTH = null;
     var IMAGE_FULL_HEIGHT = null;
@@ -912,17 +914,23 @@ var AnnotationToolHelper = (function() {
 
     function resizeElements() {
 
-        // TODO: Compute the entire annotation tool height from the window
-        // height; not just the annotation area height.
-
-        // TODO: Note how the columnContainer is the outermost element
-        // and its dimensions are set last.  Can we make the rest of
-        // this function go from innermost to outermost to make it easier
-        // to follow?  Or is this in general not possible?
-
+        var windowWidth = $(window).width();
         var windowHeight = $(window).height();
 
-        $('#columnContainer').height(windowHeight);
+        var $annotationTool = $('#annotation-tool');
+
+        // Fit the annotation tool to the window size - or, if the
+        // window size is too small, to the designated minimum
+        // dimensions.
+        var minWidth = 600;
+        var minHeight = 450;
+        $annotationTool.width(Math.max(windowWidth, minWidth));
+        $annotationTool.height(Math.max(windowHeight, minHeight));
+
+        // TODO: createLayout() really doesn't work well when the
+        // layout keeps getting re-computed; the old DOM tree is not
+        // replaced.
+        Layouts.createLayout(annotationToolLayout, $annotationTool[0]);
 
         annotationAreaWidth = $(annotationArea).width();
         //annotationAreaHeight = windowHeight;
@@ -949,26 +957,13 @@ var AnnotationToolHelper = (function() {
         pointsCanvas.width = annotationAreaWidth;
         pointsCanvas.height = annotationAreaHeight;
 
-        var annotationListMaxHeight =
-            annotationAreaHeight - parseFloat($("#toolButtonArea").outerHeight(true));
+//        var annotationListMaxHeight =
+//            annotationAreaHeight - parseFloat($("#toolButtonArea").outerHeight(true));
+//
+//        $(annotationList).css({
+//            "max-height": annotationListMaxHeight + "px"
+//        });
 
-        $(annotationList).css({
-            "max-height": annotationListMaxHeight + "px"
-        });
-
-        // Set the height for the element containing the two main columns.
-        // This ensures that the info below the annotation tool doesn't overlap with
-        // the annotation tool.  Overlap is possible because the main column floats,
-        // so the main column doesn't contribute to its container element's height.
-        //
-        // The container element's height will be set to the max of the
-        // columns' DOM (computed) heights.
-//        $('#columnContainer').height(
-//            Math.max(
-//                parseFloat($('#mainColumn').height()),
-//                parseFloat($('#rightSidebar').height())
-//            ).toString() + "px"
-//        );
 
         // Set initial image scaling so the whole image is shown.
         // Also set the allowable zoom factors.
@@ -1181,7 +1176,7 @@ var AnnotationToolHelper = (function() {
 //                onPointUpdate(this, 'initialize');
 //            });
 
-            Layouts.createLayout(params.layout);
+            annotationToolLayout = params.layout;
 
             // Compute sizing of everything.
             resizeElements();

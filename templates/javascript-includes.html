@@ -93,3 +93,9 @@ to any value (except the empty string) to not include it.
 {% if util_forms %}
     {% include "static-local-include.html" with type="js" path="js/util-forms.js" %}
 {% endif %}
+
+{# vbox/hbox style layouts. #}
+{# Must be included after: util.js #}
+{% if layouts %}
+    {% include "static-local-include.html" with type="js" path="js/layouts.js" %}
+{% endif %}

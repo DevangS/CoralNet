@@ -7,7 +7,7 @@
 {% block title %}Annotation Tool | CoralNet{% endblock %}
 
 {% block js-includes %}
-    {% include "javascript-includes.html" with dajaxice="yes" jquery_ui="yes" jquery_hotkeys="yes" pixastic="yes" util_forms="yes" %}
+    {% include "javascript-includes.html" with dajaxice="yes" jquery_ui="yes" jquery_hotkeys="yes" pixastic="yes" util_forms="yes" layouts="yes" %}
 {% endblock %}
 
 {% block page-specific-includes %}
@@ -22,7 +22,8 @@
 
 {% block content %}
 
-<button id="id_button_show_instructions">Help/Controls</button>
+
+<button id="id_button_show_instructions" style="display:none">Help/Controls</button>
 
 <div id="id_instructions_wrapper" style="display:none">
     <button id="id_button_hide_instructions">Hide Help</button>
@@ -34,7 +35,7 @@
     <hr/>
 </div>
 
-<button id="id_button_show_settings">Settings</button>
+<button id="id_button_show_settings" style="display:none">Settings</button>
 
 <div id="id_settings_wrapper" style="display:none">
     <button id="id_button_hide_settings">Hide Settings</button>
@@ -46,7 +47,7 @@
     <hr/>
 </div>
 
-<button id="id_button_show_image_tools">Image Tools</button>
+<button id="id_button_show_image_tools" style="display:none">Image Tools</button>
 
 <div id="id_image_tools_wrapper" style="display:none">
     <button id="id_button_hide_image_tools">Hide Image Tools</button>
@@ -58,11 +59,11 @@
     <hr/>
 </div>
 
-<div id="columnContainer">
+<div id="annotation-tool"></div>
 
-    <div id="mainColumn" style="width: 80%; height: 100%;">
+    <div id="mainColumn">
       {# annotationArea's percentage height only works when mainColumn has a specified height. #}
-      <div id="annotationArea" style="height: 70%;">
+      <div id="annotationArea">
         <canvas id="pointsCanvas"></canvas>
         <div id="imageArea">
           <canvas id="imageCanvas"></canvas>
@@ -70,14 +71,14 @@
         </div>
       </div>
 
-      <div id="labelButtons" style="height: 30%;">
+      <div id="labelButtons">
         {% for label in labels %}
             <button>{{ label.code }}</button>
         {% endfor %}
       </div>
     </div>
 
-    <div id="rightSidebar" style="width: 20%;">
+    <div id="rightSidebar">
 
      <div id="toolButtonArea">
          <input class="zoomButton" type="image"
@@ -130,17 +131,23 @@
 
       </div>
 
+     </form>
+
+     <div id="progressIndicator">
+
       {# type="button" ensures that the button doesn't do a non-Ajax form submit #}
       <button id="saveButton" type="button">Save progress</button>
 
       <div id="allDone"></div>
 
-     </form>
+     </div>
 
     </div>
 
-</div>
+{#</div>#}
 
+{# TODO: Put the below in an image-info area. #}
+{% comment %}
 <br/>
 
 <hr/>
@@ -178,7 +185,7 @@
     <li>Annotation points: {{ image.point_gen_method_display }}</li>
     <li>Annotation area: {{ image.annotation_area_display|default:"(Not specified)" }}</li>
 </ul>
-    
+{% endcomment %}
 
 <!-- Script in the body will run on page load. -->
 <script type="text/javascript">
