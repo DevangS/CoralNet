@@ -234,20 +234,8 @@ def image_upload_ajax(request, source_id):
     image_form = ImageUploadForm(request.POST, request.FILES)
     options_form = ImageUploadOptionsForm(request.POST, source=source)
 
-    # Retrieve annotation related fields
-    is_uploading_points_or_annotations = request.POST.get('is_uploading_points_or_annotations', 'off')
     annotation_dict_id = request.POST.get('annotation_dict_id', None)
     annotation_options_form = AnnotationImportOptionsForm(request.POST, source=source)
-
-    # Corner case: somehow, we're uploading with points+annotations and no
-    # checked annotation file.
-    if is_uploading_points_or_annotations == 'on' and annotation_dict_id is None:
-        return JsonResponse(dict(
-            status='error',
-            message=u"{m}".format(m=str_consts.UPLOAD_ANNOTATIONS_ON_AND_NO_ANNOTATION_DICT_ERROR_STR),
-            link=None,
-            title=None,
-        ))
 
     # Check for validity of the file (filetype and non-corruptness) and
     # the options forms.
@@ -257,7 +245,6 @@ def image_upload_ajax(request, source_id):
                 resultDict = image_upload_process(
                     imageFile=image_form.cleaned_data['file'],
                     imageOptionsForm=options_form,
-                    is_uploading_points_or_annotations=is_uploading_points_or_annotations,
                     annotation_dict_id=annotation_dict_id,
                     annotation_options_form=annotation_options_form,
                     source=source,
@@ -267,7 +254,7 @@ def image_upload_ajax(request, source_id):
             else:
                 return JsonResponse(dict(
                     status='error',
-                    message="Annotation options form is invalid",
+                    message="Annotation options were invalid",
                     link=None,
                     title=None,
                 ))
