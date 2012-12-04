@@ -4,6 +4,7 @@ var AnnotationToolHelper = (function() {
     var isMac = util.osIsMac();
 
     // HTML elements
+    var annotationToolElement = null;
     var annotationArea = null;
     var annotationList = null;
     var annotationFieldRows = [];
@@ -49,8 +50,9 @@ var AnnotationToolHelper = (function() {
     var POINTMODE_SELECTED = 1;
     var POINTMODE_NONE = 2;
 
-    // The layout-defining object
+    // The annotation tool layout and size parameters
     var annotationToolLayout = null;
+    var annotationToolSizeDict = null;
     // The original image's dimensions
     var IMAGE_FULL_WIDTH = null;
     var IMAGE_FULL_HEIGHT = null;
@@ -917,7 +919,7 @@ var AnnotationToolHelper = (function() {
         var windowWidth = $(window).width();
         var windowHeight = $(window).height();
 
-        var $annotationTool = $('#annotation-tool');
+        var $annotationTool = $(annotationToolElement);
 
         // Fit the annotation tool to the window size - or, if the
         // window size is too small, to the designated minimum
@@ -927,10 +929,11 @@ var AnnotationToolHelper = (function() {
         $annotationTool.width(Math.max(windowWidth, minWidth));
         $annotationTool.height(Math.max(windowHeight, minHeight));
 
-        // TODO: createLayout() really doesn't work well when the
-        // layout keeps getting re-computed; the old DOM tree is not
-        // replaced.
-        Layouts.createLayout(annotationToolLayout, $annotationTool[0]);
+        // Figure out the sizing of everything according to the annotation
+        // tool size and the layout specification.
+        Layouts.resizeLayout(annotationToolSizeDict, annotationToolElement);
+
+        // Compute the sizing of the elements within the annotation area.
 
         annotationAreaWidth = $(annotationArea).width();
         //annotationAreaHeight = windowHeight;
@@ -1176,18 +1179,27 @@ var AnnotationToolHelper = (function() {
 //                onPointUpdate(this, 'initialize');
 //            });
 
+            annotationToolElement = $('#annotation-tool')[0];
             annotationToolLayout = params.layout;
+            annotationToolSizeDict = Layouts.createLayout(annotationToolLayout, annotationToolElement);
 
             // Compute sizing of everything.
             resizeElements();
 
             // Recompute element sizes when the browser window is resized.
+            // TODO: Test to see if this is overwhelming when resizing the
+            // window on a netbook.  If so, is there any way to make it
+            // more performant, such as re-computing the layout only when
+            // the user stops dragging the browser resize handle?  (Of
+            // course, don't forget other methods of changing the window
+            // size, like maximize/unmaximize and inspect element...)
             $(window).resize(function() {
                 resizeElements();
             });
 
-            // Set the initial point view mode.  This'll trigger a redraw of the points, but that's okay;
-            // initialization slowness is a relatively minor worry.
+            // Set the initial point view mode.  This'll trigger a redraw of
+            // the points, but that's okay; initialization slowness is a
+            // relatively minor worry.
             changePointMode(POINTMODE_ALL);
 
             // Initialize save button
