@@ -13,7 +13,8 @@
 
     {% get_obj_perms user for source as "source_perms" %}
 
-    <div id="images">
+    <div id="images" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html"
+         xmlns="http://www.w3.org/1999/html">
         {% if latest_images %}
             {% for image in latest_images %}
                 <span class="thumb_large_wrapper">
@@ -24,54 +25,80 @@
                 </a>
                 </span>
             {% endfor %}
+        {% endif %}
 
+        {% if source.description %}
+            <div class="detail_box">
+                {{ source.description|linebreaks }}
+            </div>
+        {% endif %}
 
-            <p>Total images: {{ image_stats.total }}</p>
-
-            <table class="detail_table">
-            {% if source.enable_robot_classifier %}
-                <tr>
-                    <td>Not annotated</td>
-                    <td>{{ image_stats.need_comp_anno }}</td>
-                </tr>
-                <tr>
-                    <td>Computer annotated, needs human annotation</td>
-                    <td>
-                        {% if image_stats.need_human_anno_first %}
-                            <a href="{% url annotation_tool image_stats.need_human_anno_first.id %}"
-                               title="{{ image_stats.need_human_anno_first.get_image_element_title }}">
-                                {{ image_stats.need_human_anno }}</a>
-                        {% else %}
-                            {{ image_stats.need_human_anno }}
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <td>Completed (human annotated)</td>
-                    <td>{{ image_stats.anno_completed }}</td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td>Needs annotation</td>
-                    <td>
-                        {% if image_stats.need_anno_first %}
-                            <a href="{% url annotation_tool image_stats.need_anno_first.id %}"
-                               title="{{ image_stats.need_anno_first.get_image_element_title }}">
-                                {{ image_stats.need_anno }}</a>
-                        {% else %}
-                            {{ image_stats.need_anno }}
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <td>Completed</td>
-                    <td>{{ image_stats.anno_completed }}</td>
-                </tr>
+        <div style="float:left">
+            {% if members %}
+                <div class="detail_box">
+                    <h3>Members</h3>
+                    <table class="detail_box_table">
+                        {% for member in members %}
+                            <tr>
+                                <td><a href="{% url userena_profile_detail member.username %}">{{ member.username }}</a></td>
+                                <td><b>{{ member.role }}</b></td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
             {% endif %}
-            </table>
 
-        {% else %}
-            <p>(No images yet)</p>
+             <div class="detail_box">
+                 <h3>Source Details</h3>
+                 <table class="detail_box_table">
+                     <tr>
+                        <td>Visibility:</td>
+                        <td><b>{{ source.get_visibility_display }}</b></td>
+                     </tr>
+                     {% if source.latitude %}
+                        <tr>
+                            <td>Latitude:</td>
+                            <td><b>{{ source.latitude|default:"(Not specified)" }}</b></td>
+                        </tr>
+                     {% endif %}
+                     {% if source.longitude %}
+                        <tr>
+                            <td>Longitude:</td>
+                            <td><b>{{ source.longitude|default:"(Not specified)" }}</b></td>
+                        </tr>
+                     {% endif %}
+                 </table>
+            </div>
+        </div>
+
+        {% if latest_images %}
+            <div style="padding:10px;float:right">
+                {% if source.enable_robot_classifier %}
+                    <h2>Not annotated: <a>{{ image_stats.need_comp_anno }}</a></h2>
+                    <h2>Needs review:
+                    {% if image_stats.need_human_anno_first %}
+                        <a href="{% url annotation_tool image_stats.need_human_anno_first.id %}"
+                           title="{{ image_stats.need_human_anno_first.get_image_element_title }}">
+                            {{ image_stats.need_human_anno }}</a>
+                    {% else %}
+                        {{ image_stats.need_human_anno }}
+                    {% endif %}
+                    </h2>
+                    <h2>Completed: <a>{{ image_stats.anno_completed }}</a></h2>
+                {% else %}
+                    <h2>Not annotated:
+                    {% if image_stats.need_anno_first %}
+                        <a href="{% url annotation_tool image_stats.need_anno_first.id %}"
+                           title="{{ image_stats.need_anno_first.get_image_element_title }}">
+                            {{ image_stats.need_anno }}</a>
+                    {% else %}
+                        {{ image_stats.need_anno }}
+                    {% endif %}
+                    </h2>
+                    <h2>Completed: <a>{{ image_stats.anno_completed }}</a></h2>
+                {% endif %}
+                <h2>Total images: <a>{{ image_stats.total }}</a></h2>
+            </div>
         {% endif %}
     </div>
 
@@ -102,72 +129,11 @@
         <p>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</p>
     {% endif %}
 
-    <hr />
-    <div id="annotations">
-        <h3>Annotations</h3>
-
-        {% if source.labelset.isEmptyLabelset %}
-            {% if "source_admin" in source_perms %}
-            <p><a href="{% url labelset_new source.id %}">Create a labelset</a> to get started with annotations</p>
-            {% else %}
-            <p>The Source admin hasn't created a labelset yet.</p>
-            {% endif %}
-        {% else %}
-        <p>Labelset: <a href="{% url labelset_main source.id %}">View labelset</a></p>
-        {% endif %}
-    </div>
-
-    {% if members %}
-    <hr />
-    <div id="members">
-        <h3>Members</h3>
-
-        <div>
-        <table class="detail_table">
-            <tr>
-                <th>Member</th>
-                <th>Role</th>
-            </tr>
-            {% for member in members %}
-            <tr>
-                <td><a href="{% url userena_profile_detail member.username %}">{{ member.username }}</a></td>
-                <td>{{ member.role }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-        </div>
-
-        <br />
-        <div>
-        {% if "source_admin" in source_perms %}
-          {% for invite in source.sourceinvite_set.all %}
-            <p>({{ invite.recipient.username }} has been invited with {{ invite.source_perm_verbose }} permissions)</p>
-          {% endfor %}
-          <p><a href="{% url source_admin source.id %}">+ Invite a new member</a></p>
-        {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    <hr />
-
     <div class="details">
 
-        <h3>Source Details</h3>
-
         <ul>
-          <li>Visibility: {{ source.get_visibility_display }}</li>
           <li>Date Created: {{ source.create_date }}</li>
 
-          {% if source.description %}
-            <li>Description:
-              <span style="display:block; margin-left:30px;">
-                {{ source.description|linebreaks }}
-              </span>
-            </li>
-          {% else %}
-            <li>Description: (None)</li>
-          {% endif %}
         </ul>
 
         <ul>
@@ -186,11 +152,6 @@
           {% endif %}
 
           <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
-        </ul>
-
-        <ul>
-          <li>Longitude: {{ source.longitude|default:"(Not specified)" }}</li>
-          <li>Latitude: {{ source.latitude|default:"(Not specified)" }}</li>
         </ul>
 
         {% if "source_admin" in source_perms %}

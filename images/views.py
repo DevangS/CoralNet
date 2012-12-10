@@ -151,7 +151,7 @@ def source_main(request, source_id):
                    for member in members]
 
     all_images = source.get_all_images()
-    latest_images = all_images.order_by('-upload_date')[:5]
+    latest_images = all_images.order_by('-upload_date')[:3]
 
     image_stats = dict(
         total = all_images.count(),
