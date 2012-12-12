@@ -31,6 +31,11 @@ urlpatterns = patterns('',
         {'template': 'static/index.html'},
         name='index',
     ),
+    url(r'^about/$',
+        direct_to_template,
+        {'template': 'static/about.html'},
+        name='about',
+    ),
     url(r'^contact/$', 'lib.views.contact', name='contact'),
 
     # Internationalization
