@@ -229,12 +229,12 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
 
 
 def image_upload_process(imageFile, imageOptionsForm,
-                         is_uploading_points_or_annotations,
                          annotation_dict_id,
                          annotation_options_form,
                          source, currentUser):
 
     dupeOption = imageOptionsForm.cleaned_data['skip_or_replace_duplicates']
+    is_uploading_points_or_annotations = annotation_options_form.cleaned_data['is_uploading_points_or_annotations']
 
     filename = imageFile.name
     is_dupe = False
@@ -300,14 +300,40 @@ def image_upload_process(imageFile, imageOptionsForm,
 
     image_annotations = None
     has_points_or_annotations = False
+
     if is_uploading_points_or_annotations:
-        annotation_dict = shelve.open(os.path.join(
+
+        # Corner case: somehow, we're uploading with points+annotations and without
+        # a checked annotation file specified.  This probably indicates a bug.
+        if not annotation_dict_id:
+            return dict(
+                status='error',
+                message=u"{m}".format(m=str_consts.UPLOAD_ANNOTATIONS_ON_AND_NO_ANNOTATION_DICT_ERROR_STR),
+                link=None,
+                title=None,
+            )
+
+        annotation_dict_filename = os.path.join(
             settings.SHELVED_ANNOTATIONS_DIR,
             'source{source_id}_{dict_id}'.format(
                 source_id=source.id,
                 dict_id=annotation_dict_id,
             ),
-        ))
+        )
+
+        # Corner case: the specified shelved annotation file doesn't exist.
+        # Perhaps the file was created a while ago and has been pruned since,
+        # or perhaps there is a bug.
+        if not os.path.isfile(annotation_dict_filename):
+            return dict(
+                status='error',
+                message="Annotations could not be found - if you provided the .txt file a while ago, maybe it just timed out. Please retry the upload.",
+                link=None,
+                title=None,
+            )
+
+        annotation_dict = shelve.open(annotation_dict_filename)
+
         if annotation_dict.has_key(image_identifier):
             image_annotations = annotation_dict[image_identifier]
             has_points_or_annotations = True

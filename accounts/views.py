@@ -5,7 +5,7 @@ from guardian.decorators import permission_required_or_403
 from userena.decorators import secure_required
 from accounts.forms import UserAddForm
 from django.contrib.auth.models import User
-from django.core.mail import send_mass_mail
+from django.core.mail import send_mass_mail, EmailMessage
 from settings import SERVER_EMAIL
 @secure_required
 @permission_required_or_403('auth.add_user')
@@ -59,9 +59,10 @@ def email_all(request):
         for u in all_users:
             if u.email:
                 email_list.append(u.email.encode("ascii") )
-
-        data_tuple = (subject, message, SERVER_EMAIL, email_list )
-        send_mass_mail( (data_tuple,), fail_silently=True)
+        email = EmailMessage(subject, message,SERVER_EMAIL,
+        [], bcc=email_list )
+  
+        email.send(fail_silently=True)
         status = "Successfully Sent Emails"
 
     return render_to_response('accounts/email_all_form.html',

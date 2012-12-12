@@ -72,7 +72,7 @@
             {% endwith %}
 
             {# Options related to the annotations file. #}
-            {% include "form_generic.html" with form=annotation_import_options_form dont_mark_required="yes" %}
+            {% include "form_generic_one_field.html" with field=annotation_import_options_form.is_uploading_annotations_not_just_points dont_mark_required="yes" %}
         </form>
 
         <div class="page_section" id="auto_generate_points_page_section">

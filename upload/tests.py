@@ -170,7 +170,7 @@ class ImageUploadBaseTest(ClientTest):
 
         full_options = self.get_full_upload_options(options)
 
-        if full_options['is_uploading_points_or_annotations'] == 'on':
+        if full_options['is_uploading_points_or_annotations'] == True:
 
             # Uploading with points/annotations.
 
@@ -195,7 +195,7 @@ class ImageUploadBaseTest(ClientTest):
                 # Points only upload.
                 self.assertFalse(img.status.annotatedByHuman)
 
-        else:  # 'off'
+        else:  # False
 
             self.check_fields_for_non_annotation_upload(img)
 
@@ -656,7 +656,7 @@ class PreviewFilenameTest(ImageUploadBaseTest):
 class AnnotationUploadBaseTest(ImageUploadBaseTest):
 
     default_options = dict(
-        is_uploading_points_or_annotations='on',
+        is_uploading_points_or_annotations=True,
         is_uploading_annotations_not_just_points='yes',
     )
 
@@ -882,7 +882,7 @@ class AnnotationUploadTest(AnnotationUploadBaseTest):
 
         annotation_text = self.annotation_file_contents_with_labels
         options = dict(
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='no',
         )
 
@@ -933,13 +933,16 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         if settings.UNIT_TEST_VERBOSITY >= 1:
             print "Annotation file error:\n{m}".format(m=response_content['message'])
 
-    def test_annotations_on_and_no_annotation_dict(self):
+    def test_annotations_on_and_no_annotation_dict_id(self):
         """
-        Corner case that the client side code should prevent,
+        Annotation upload is on, but no annotation dict identifier was
+        passed into the upload function.
+
+        A corner case that the client side code should prevent,
         but it's worth a test anyway.
         """
         options = dict(
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
         )
 
         image_id, response = self.upload_image(
@@ -951,12 +954,23 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         self.assertEqual(response_content['status'], 'error')
         self.assertEqual(response_content['message'], str_consts.UPLOAD_ANNOTATIONS_ON_AND_NO_ANNOTATION_DICT_ERROR_STR)
 
+    def test_shelved_annotation_file_is_missing(self):
+        """
+        Annotation upload is on, and an annotation dict identifier was
+        passed in, but no shelved annotation file with that identifier
+        exists.
+
+        A corner case that the client side code should prevent,
+        but it's worth a test anyway.
+        """
+        pass #TODO
+
     def test_token_count_error(self):
         # Labels expected, too few tokens
         line = "cool; 001; 2011; 200; 300"
         response_content = self.process_annotation_text(
             line,
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='yes',
         )
         self.assert_annotation_file_error(
@@ -972,7 +986,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         line = "cool; 001; 2011; 200; 300; Scarlet; UMarine"
         response_content = self.process_annotation_text(
             line,
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='yes',
         )
         self.assert_annotation_file_error(
@@ -988,7 +1002,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         line = "cool; 001; 2011; 200"
         response_content = self.process_annotation_text(
             line,
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='no',
         )
         self.assert_annotation_file_error(
@@ -1004,7 +1018,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         line = "cool; 001; 2011; 200; 300; Scarlet; UMarine"
         response_content = self.process_annotation_text(
             line,
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='no',
         )
         self.assert_annotation_file_error(
@@ -1021,7 +1035,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         line_B = "cool; 001; 2011; 200; def; Scarlet"
 
         options = dict(
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='yes',
         )
 
@@ -1052,7 +1066,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         line_B = "cool; 001; 2011; 200; 0.78; Scarlet"
 
         options = dict(
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='yes',
         )
 
@@ -1083,7 +1097,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         line_B = "cool; 001; 2011; 200; -10; Scarlet"
 
         options = dict(
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='yes',
         )
 
@@ -1113,7 +1127,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         line = "cool; 001; 2011; 200; 300; Yellow"
         response_content = self.process_annotation_text(
             line,
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='yes',
         )
         self.assert_annotation_file_error(
@@ -1128,7 +1142,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         line = "cool; 001; 2011; 200; 300; Forest"
         response_content = self.process_annotation_text(
             line,
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='yes',
         )
         self.assert_annotation_file_error(
@@ -1143,7 +1157,7 @@ class AnnotationUploadErrorTest(AnnotationUploadBaseTest):
         line = "cool; 001; 04-26-2011; 200; 300; Scarlet"
         response_content = self.process_annotation_text(
             line,
-            is_uploading_points_or_annotations='on',
+            is_uploading_points_or_annotations=True,
             is_uploading_annotations_not_just_points='yes',
         )
         self.assert_annotation_file_error(

@@ -1,3 +1,4 @@
+from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import FileInput, ImageField, Form, ChoiceField, FileField
 from django.utils.translation import ugettext_lazy as _
@@ -262,6 +263,10 @@ class AnnotationImportOptionsForm(Form):
     """
     Helper form for the AnnotationImportForm, containing import options.
     """
+    is_uploading_points_or_annotations = forms.fields.BooleanField(
+        required=False,
+    )
+
     is_uploading_annotations_not_just_points = ChoiceField(
         label='Data',
         choices=(
@@ -288,11 +293,14 @@ class AnnotationImportOptionsForm(Form):
             )
 
     def clean_is_uploading_annotations_not_just_points(self):
-        option = self.cleaned_data['is_uploading_annotations_not_just_points']
+        field_name = 'is_uploading_annotations_not_just_points'
+        option = self.cleaned_data[field_name]
 
         if option == 'yes':
-            self.cleaned_data['is_uploading_annotations_not_just_points'] = True
+            self.cleaned_data[field_name] = True
         elif option == 'no':
-            self.cleaned_data['is_uploading_annotations_not_just_points'] = False
+            self.cleaned_data[field_name] = False
+        else:
+            raise ValidationError("Unknown value for {field_name}".format(field_name=field_name))
 
-        return self.cleaned_data['is_uploading_annotations_not_just_points']
+        return self.cleaned_data[field_name]
