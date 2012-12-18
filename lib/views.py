@@ -7,7 +7,6 @@ from django.template import RequestContext
 from lib.forms import ContactForm
 from lib import msg_consts, str_consts
 
-@login_required
 def contact(request):
     """
     Page with a contact form, which allows the user to send a general
