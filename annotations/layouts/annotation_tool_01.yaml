@@ -4,7 +4,7 @@
   - x-70%:
 
     - y-70%: annotationArea
-    - y-30%: labelButtons
+    - y-30%: label-button-area
 
   - x-30%:
 

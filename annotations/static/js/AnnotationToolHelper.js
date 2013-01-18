@@ -16,6 +16,10 @@ var AnnotationToolHelper = (function() {
     var listenerElmt = null;
     var saveButton = null;
 
+    var labelButtonArea = null;
+    var labelButtonTable = null;
+    var $labelButtons = null;
+
     // Annotation related
     var labelCodes = [];
     var labelCodesToNames = {};
@@ -936,8 +940,6 @@ var AnnotationToolHelper = (function() {
         // Compute the sizing of the elements within the annotation area.
 
         annotationAreaWidth = $(annotationArea).width();
-        //annotationAreaHeight = windowHeight;
-        //$(annotationArea).height(annotationAreaHeight);
         annotationAreaHeight = $(annotationArea).height();
 
         canvasGutter = Math.min(
@@ -986,6 +988,9 @@ var AnnotationToolHelper = (function() {
             ZOOM_FACTORS[i] = zoomFactor * Math.pow(ZOOM_INCREMENT, i);
         }
 
+        // Reshape the label button grid.
+        reshapeLabelButtonGrid();
+
         // Based on the zoom level, set up the image area.
         // (No need to define centerOfZoom since we're not zooming in to start with.)
         setupImageArea();
@@ -994,6 +999,202 @@ var AnnotationToolHelper = (function() {
         // recomputed and redrawn.
         getCanvasPoints();
         redrawAllPoints();
+    }
+
+    function createLabelButtons(labels) {
+
+        var groupsWithStyles = [];
+        var groupStyles = {};
+        var nextStyleNumber = 1;
+
+        for (i = 0; i < labels.length; i++) {
+            var label = labels[i];
+
+            // If this label's functional group doesn't have a style yet,
+            // then assign this group a style.
+            if (groupsWithStyles.indexOf(label.group) === -1) {
+                groupStyles[label.group] = 'group'+nextStyleNumber;
+                groupsWithStyles.push(label.group);
+                nextStyleNumber++;
+            }
+
+            // Get the label's button and apply the label's functional group style to it.
+            // TODO: Create td's, not buttons.
+            var $labelButton = $(labelButtonArea).("button:exactlycontains('{0}')".format(label.code));
+            $labelButton.addClass(groupStyles[label.group]);
+
+            // Assign a grid position to the label button.
+            // For example, i=0 gets position [0,0], i=13 gets [1,3]
+            $labelButton.attr('gridy', Math.floor(i / BUTTONS_PER_ROW));
+            $labelButton.attr('gridx', i % BUTTONS_PER_ROW);
+
+            // When you mouseover the button, show the label name in a tooltip.
+            $labelButton.attr('title', label.name);
+
+            // Add to an array of available label codes, which will
+            // be used for input checking purposes (in label fields).
+            labelCodes.push(label.code);
+
+            // Add to a mapping of label codes to names, which will
+            // be used to show a label name when you mouse over a
+            // label field with a valid code.
+            labelCodesToNames[label.code] = label.name;
+        }
+    }
+
+    function reshapeLabelButtonGrid() {
+
+        var i,j;
+
+        // Label button area dimensions.
+        var buttonAreaWidth = $(labelButtonArea).width();
+        var buttonAreaHeight = $(labelButtonArea).height();
+        var buttonAreaWHRatio = buttonAreaWidth / buttonAreaHeight;
+        // Number of label buttons.
+        var numButtons = $labelButtons.length;
+
+        // Button dimension constants.
+        // TODO: Reconsider having minimum pixel width/height...
+        // what makes sense as a min/max can vary greatly depending
+        // on the screen's dots per inch (dpi).  Same goes for the
+        // minimum annotation area width/height, though.
+        var minButtonWidth = 40;
+        var minButtonHeight = 10;
+        var maxButtonWidth = 200;
+        var maxButtonHeight = 50;
+        var buttonPreferredWHRatio = 4;
+
+        // Compute how many rows and cols of buttons we should have.
+        var optimalRowsToColsRatio = buttonPreferredWHRatio / buttonAreaWHRatio;
+        var maxRowsWithoutOverflow = Math.floor(buttonAreaHeight / minButtonHeight);
+        var maxCols = Math.floor(buttonAreaWidth / minButtonWidth);
+        var minRows = Math.ceil(buttonAreaHeight / maxButtonHeight);
+        var minCols = Math.ceil(buttonAreaWidth / maxButtonWidth);
+        var numRows, numCols;
+
+        if (numButtons > maxRowsWithoutOverflow * maxCols) {
+            // We're going to have to overflow the label button area.
+            // Overflow in rows, but not in columns.  So we'll have a vertical
+            // scrollbar, but not a horizontal one.  (Reason: scrolling
+            // horizontally is more annoying than scrolling vertically.)
+            numCols = maxCols;
+            numRows = Math.ceil(numButtons / numCols);
+        }
+        else {
+            // Start from the minimum number of rows and columns.
+            numRows = minRows;
+            numCols = minCols;
+            
+            while (numRows*numCols < numButtons) {
+                // Add rows and columns one by one, keeping as close to the
+                // optimal row/col ratio as possible.
+                var ratioIfRowAdded = (numRows+1) / numCols;
+                var ratioIfColAdded = numRows / (numCols+1);
+
+                // Find the row/col ratio that's "closer" to the optimal ratio:
+                // the ratio resulting from adding a row, or the ratio
+                // resulting from adding a column.
+                // (Taking the absolute value of the difference may not be the
+                // best way of calculating distance between ratios, but it's
+                // simple and good enough.)
+                if (Math.abs(ratioIfRowAdded - optimalRowsToColsRatio) < Math.abs(ratioIfColAdded - optimalRowsToColsRatio)) {
+                    // The ratio from adding a row is closer, so add a row.
+                    numRows++;
+                }
+                else {
+                    // The ratio from adding a col is closer, so add a col.
+                    numCols++;
+                }
+            }
+            while (numRows*numCols >= numButtons) {
+                // Decrement the larger of numRows or numCols until
+                // we get a grid that's just large enough for our number
+                // of buttons.
+                // But be careful not to undershoot and leave too few
+                // rows and cols to contain all the buttons.
+                if (numRows < numCols) {
+                    if (numRows*(numCols-1) < numButtons) {
+                        break;
+                    }
+                    numCols--;
+                }
+                else {
+                    if ((numRows-1)*numCols < numButtons) {
+                        break;
+                    }
+                    numRows--;
+                }
+            }
+        }
+
+        // We now know how many rows and cols of buttons we're going to use.
+
+        var $newTable = $('<table>');
+
+        for (i = 0; i < numRows; i++) {
+            var $newRow = $('<tr>');
+
+            for (j = 0; j < numCols; j++) {
+                $newRow.add($('<td>'));
+            }
+
+            $newTable.add($newRow);
+        }
+
+        var $newTableRows = $newTable.find('tr');
+        
+        // TODO: Get the below code up to speed with the newness.
+
+//        // LABEL_BUTTON_WIDTH will represent a value that can be passed into jQuery's
+//        // width() and css('width'), and these jQuery functions deal with
+//        // inner width + padding + border only.
+//        // So don't count the button's margins... and subtract another pixel or two
+//        // to be safe, so that slightly imprecise rendering won't cause an overflow.
+//        // (Chrome seems a bit more prone to this kind of imprecise rendering, compared
+//        // to Firefox...)
+//        LABEL_BUTTON_WIDTH = horizontalSpacePerButton - (
+//            parseFloat($(labelButtonTable).('button').css('margin-left'))
+//                + parseFloat($(labelButtonTable).('button').css('margin-right'))
+//                + 2
+//            );
+//
+        for (i = 0; i < labelCodes.length; i++) {
+            var $labelButton = $(labelButtonTable).("button:exactlycontains('{0}')".format(labelCodes[i]));
+            $newTableRows[TODO]
+//
+//            /* Set the button's width.  But first, check to see if the
+//             button text is going to overflow; if so, then shrink the text
+//             until it doesn't overflow.
+//
+//             ... never mind that text shrinking thing for now.  Setting the
+//             height of the button afterward is just not reliable at all, and
+//             can destroy the layout of buttons below.
+//             TODO: Need a robust way to support text shrinking in label buttons.
+//             */
+//
+//            //            var numOfSizeDecreases = 0;
+//            //            var initialButtonHeight = $labelButton.outerHeight();
+//            //            while (parseFloat($labelButton.outerWidth()) > LABEL_BUTTON_WIDTH) {
+//            //                // Scale the font to 90% size of what it was before.
+//            //                $labelButton.changeFontSize(0.9);
+//            //
+//            //                numOfSizeDecreases++;
+//            //                // Don't shrink the text so much that it'll become totally unreadable.
+//            //                // Just accept the text overflow if we've already shrunk the text a lot.
+//            //                if (numOfSizeDecreases > 8)
+//            //                    break;
+//            //            }
+//            //            // Need to reset the button's height to what it was before,
+//            //            // if we shrunk the button's text.
+//            //            if (numOfSizeDecreases > 0)
+//            //                $labelButton.css('height', initialButtonHeight);
+//
+//            // Now set the button's width.
+//            $labelButton.css('width', LABEL_BUTTON_WIDTH.toString() + "px");
+        }
+
+        BUTTON_GRID_MAX_Y = numRows - 1;
+        BUTTON_GRID_MAX_X = numCols - 1;
     }
 
 
@@ -1014,66 +1215,13 @@ var AnnotationToolHelper = (function() {
             IMAGE_FULL_WIDTH = params.fullWidth;
             IMAGE_FULL_HEIGHT = params.fullHeight;
 
-//            var horizontalSpacePerButton = ANNOTATION_AREA_WIDTH / BUTTONS_PER_ROW;
-            // TODO: Compute this properly.
-            var horizontalSpacePerButton = 40;
-
-            // LABEL_BUTTON_WIDTH will represent a value that can be passed into jQuery's
-            // width() and css('width'), and these jQuery functions deal with
-            // inner width + padding + border only.
-            // So don't count the button's margins... and subtract another pixel or two
-            // to be safe, so that slightly imprecise rendering won't cause an overflow.
-            // (Chrome seems a bit more prone to this kind of imprecise rendering, compared
-            // to Firefox...)
-            LABEL_BUTTON_WIDTH = horizontalSpacePerButton - (
-                parseFloat($('#labelButtons button').css('margin-left'))
-                    + parseFloat($('#labelButtons button').css('margin-right'))
-                    + 2
-                );
-
-            var $labelButton;
-            for (i = 0; i < params.labels.length; i++) {
-                $labelButton = $("#labelButtons button:exactlycontains('{0}')".format(params.labels[i].code));
-
-                /* Set the button's width.  But first, check to see if the
-                 button text is going to overflow; if so, then shrink the text
-                 until it doesn't overflow.
-
-                 ... never mind that text shrinking thing for now.  Setting the
-                 height of the button afterward is just not reliable at all, and
-                 can destroy the layout of buttons below.
-                 TODO: Need a robust way to support text shrinking in label buttons.
-                 */
-
-    //            var numOfSizeDecreases = 0;
-    //            var initialButtonHeight = $labelButton.outerHeight();
-    //            while (parseFloat($labelButton.outerWidth()) > LABEL_BUTTON_WIDTH) {
-    //                // Scale the font to 90% size of what it was before.
-    //                $labelButton.changeFontSize(0.9);
-    //
-    //                numOfSizeDecreases++;
-    //                // Don't shrink the text so much that it'll become totally unreadable.
-    //                // Just accept the text overflow if we've already shrunk the text a lot.
-    //                if (numOfSizeDecreases > 8)
-    //                    break;
-    //            }
-    //            // Need to reset the button's height to what it was before,
-    //            // if we shrunk the button's text.
-    //            if (numOfSizeDecreases > 0)
-    //                $labelButton.css('height', initialButtonHeight);
-
-                // Now set the button's width.
-                $labelButton.css('width', LABEL_BUTTON_WIDTH.toString() + "px");
-            }
-
-            BUTTON_GRID_MAX_Y = Math.floor(params.labels.length / BUTTONS_PER_ROW);
-            BUTTON_GRID_MAX_X = BUTTONS_PER_ROW - 1;
-
             annotationArea = $("#annotationArea")[0];
             annotationList = $("#annotationList")[0];
             pointsCanvas = $("#pointsCanvas")[0];
             listenerElmt = $("#listenerElmt")[0];
             saveButton = $("#saveButton")[0];
+            labelButtonArea = $("#label-button-area")[0];
+            labelButtonTable = $("#label-button-table")[0];
 
             imageArea = $("#imageArea")[0];
 
@@ -1083,42 +1231,7 @@ var AnnotationToolHelper = (function() {
 
             /* Initialization - Labels and label buttons */
 
-            var groupsWithStyles = [];
-            var groupStyles = {};
-            var nextStyleNumber = 1;
-
-            for (i = 0; i < params.labels.length; i++) {
-                var label = params.labels[i];
-
-                // If this label's functional group doesn't have a style yet,
-                // then assign this group a style.
-                if (groupsWithStyles.indexOf(label.group) === -1) {
-                    groupStyles[label.group] = 'group'+nextStyleNumber;
-                    groupsWithStyles.push(label.group);
-                    nextStyleNumber++;
-                }
-
-                // Get the label's button and apply the label's functional group style to it.
-                $labelButton = $("#labelButtons button:exactlycontains('{0}')".format(label.code));
-                $labelButton.addClass(groupStyles[label.group]);
-
-                // Assign a grid position to the label button.
-                // For example, i=0 gets position [0,0], i=13 gets [1,3]
-                $labelButton.attr('gridy', Math.floor(i / BUTTONS_PER_ROW));
-                $labelButton.attr('gridx', i % BUTTONS_PER_ROW);
-
-                // When you mouseover the button, show the label name in a tooltip.
-                $labelButton.attr('title', label.name);
-
-                // Add to an array of available label codes, which will
-                // be used for input checking purposes (in label fields).
-                labelCodes.push(label.code);
-
-                // Add to a mapping of label codes to names, which will
-                // be used to show a label name when you mouse over a
-                // label field with a valid code.
-                labelCodesToNames[label.code] = label.name;
-            }
+            createLabelButtons(params.labels);
 
             $(pointsCanvas).css({
                 "left": 0,
