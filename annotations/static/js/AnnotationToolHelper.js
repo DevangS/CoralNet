@@ -16,9 +16,10 @@ var AnnotationToolHelper = (function() {
     var listenerElmt = null;
     var saveButton = null;
 
-    var labelButtonArea = null;
-    var labelButtonTable = null;
-    var $labelButtons = null;
+    var $labelButtonArea = null;
+    var $labelButtonTable = null;
+    var labelButtonTableId = 'label-button-table';
+    var $labelButtons = [];
 
     // Annotation related
     var labelCodes = [];
@@ -69,7 +70,7 @@ var AnnotationToolHelper = (function() {
     // Label button grid
     var BUTTON_GRID_MAX_X = null;
     var BUTTON_GRID_MAX_Y = null;
-    var BUTTONS_PER_ROW = 10;
+    var BUTTONS_PER_ROW = null;
     var LABEL_BUTTON_WIDTH = null;
 
     // Display parameters of the image.
@@ -920,6 +921,8 @@ var AnnotationToolHelper = (function() {
 
     function resizeElements() {
 
+        var i;
+
         var windowWidth = $(window).width();
         var windowHeight = $(window).height();
 
@@ -1003,6 +1006,8 @@ var AnnotationToolHelper = (function() {
 
     function createLabelButtons(labels) {
 
+        var i;
+
         var groupsWithStyles = [];
         var groupStyles = {};
         var nextStyleNumber = 1;
@@ -1018,15 +1023,13 @@ var AnnotationToolHelper = (function() {
                 nextStyleNumber++;
             }
 
-            // Get the label's button and apply the label's functional group style to it.
-            // TODO: Create td's, not buttons.
-            var $labelButton = $(labelButtonArea).("button:exactlycontains('{0}')".format(label.code));
-            $labelButton.addClass(groupStyles[label.group]);
+            // Create a button for the label.
+            var $labelButton = $('<button>');
+            $labelButton.text(label.code);
+            $labelButtons.push($labelButton);
 
-            // Assign a grid position to the label button.
-            // For example, i=0 gets position [0,0], i=13 gets [1,3]
-            $labelButton.attr('gridy', Math.floor(i / BUTTONS_PER_ROW));
-            $labelButton.attr('gridx', i % BUTTONS_PER_ROW);
+            // Apply the label's functional group style.
+            $labelButton.addClass(groupStyles[label.group]);
 
             // When you mouseover the button, show the label name in a tooltip.
             $labelButton.attr('title', label.name);
@@ -1047,8 +1050,8 @@ var AnnotationToolHelper = (function() {
         var i,j;
 
         // Label button area dimensions.
-        var buttonAreaWidth = $(labelButtonArea).width();
-        var buttonAreaHeight = $(labelButtonArea).height();
+        var buttonAreaWidth = $labelButtonArea.width();
+        var buttonAreaHeight = $labelButtonArea.height();
         var buttonAreaWHRatio = buttonAreaWidth / buttonAreaHeight;
         // Number of label buttons.
         var numButtons = $labelButtons.length;
@@ -1129,22 +1132,92 @@ var AnnotationToolHelper = (function() {
 
         // We now know how many rows and cols of buttons we're going to use.
 
+        BUTTON_GRID_MAX_Y = numRows - 1;
+        BUTTON_GRID_MAX_X = numCols - 1;
+        BUTTONS_PER_ROW = numRows;
+
+        // Construct the new label button table.
+
         var $newTable = $('<table>');
+        var $newTableCells = [];
 
         for (i = 0; i < numRows; i++) {
             var $newRow = $('<tr>');
+            var $newRowCells = [];
 
             for (j = 0; j < numCols; j++) {
-                $newRow.add($('<td>'));
+                var $newCell = $('<td>');
+
+                $newRow.append($newCell);
+                $newRowCells.push($newCell);
             }
 
-            $newTable.add($newRow);
+            $newTable.append($newRow);
+            $newTableCells.push($newRowCells);
         }
 
-        var $newTableRows = $newTable.find('tr');
-        
-        // TODO: Get the below code up to speed with the newness.
 
+        // Move the label buttons from the old table to the new table.
+
+        var row, col;
+
+        for (row = 0; row < numRows; row++) {
+
+            for (col = 0; col < numCols; col++) {
+
+                var labelIndex = row*numCols + col;
+
+                if (labelIndex >= $labelButtons.length) {
+                    // We're in the last row and in the columns beyond where
+                    // our last label button should be.
+
+                    // TODO: See if putting a space in the cell is necessary
+                    // for display reasons?
+                    //$newTableCells[row][col].text(' ');
+                }
+                else {
+                    // We're in a cell that should contain a label button.
+
+                    var $labelButton = $labelButtons[labelIndex];
+
+                    // Detach the label button from the old table and add it to
+                    // the current table cell of this new table.
+                    $newTableCells[row][col].append($labelButton);
+
+                    // Save the grid position info as attributes on the button.
+                    // This position will be used to accommodate arrow-key
+                    // navigation of the label button grid.
+                    $labelButton.attr('gridy', col);
+                    $labelButton.attr('gridx', row);
+                }
+            }
+        }
+
+        // Replace the old label button table with the new one.
+        $labelButtonTable.replaceWith($newTable);
+        $labelButtonTable = $newTable;
+        $labelButtonTable.attr('id', labelButtonTableId);
+
+
+//      This code may be obsolete.
+//
+//        for (i = 0; i < labelCodes.length; i++) {
+//
+//            var $labelButton = $labelButtonTable.("button:exactlycontains('{0}')".format(labelCodes[i]));
+//            var rowIndex = Math.floor(i / numCols);
+//            var colIndex = i % numRows;
+//
+//            // Assign a grid position to the label button.
+//            // For example, i=0 gets position [0,0], i=13 gets [1,3]
+//            $labelButton.attr('gridy', Math.floor(i / numCols));
+//            $labelButton.attr('gridx', i % numCols);
+//
+//            $newTableRows[rowIndex]
+//        }
+
+
+//      This code may not be needed anymore, not sure though.
+//
 //        // LABEL_BUTTON_WIDTH will represent a value that can be passed into jQuery's
 //        // width() and css('width'), and these jQuery functions deal with
 //        // inner width + padding + border only.
@@ -1153,14 +1226,12 @@ var AnnotationToolHelper = (function() {
 //        // (Chrome seems a bit more prone to this kind of imprecise rendering, compared
 //        // to Firefox...)
 //        LABEL_BUTTON_WIDTH = horizontalSpacePerButton - (
-//            parseFloat($(labelButtonTable).('button').css('margin-left'))
-//                + parseFloat($(labelButtonTable).('button').css('margin-right'))
+//            parseFloat($labelButtonTable.('button').css('margin-left'))
+//                + parseFloat($labelButtonTable.('button').css('margin-right'))
 //                + 2
 //            );
-//
-        for (i = 0; i < labelCodes.length; i++) {
-            var $labelButton = $(labelButtonTable).("button:exactlycontains('{0}')".format(labelCodes[i]));
-            $newTableRows[TODO]
+
+
 //
 //            /* Set the button's width.  But first, check to see if the
 //             button text is going to overflow; if so, then shrink the text
@@ -1191,10 +1262,6 @@ var AnnotationToolHelper = (function() {
 //
 //            // Now set the button's width.
 //            $labelButton.css('width', LABEL_BUTTON_WIDTH.toString() + "px");
-        }
-
-        BUTTON_GRID_MAX_Y = numRows - 1;
-        BUTTON_GRID_MAX_X = numCols - 1;
     }
 
 
@@ -1220,8 +1287,8 @@ var AnnotationToolHelper = (function() {
             pointsCanvas = $("#pointsCanvas")[0];
             listenerElmt = $("#listenerElmt")[0];
             saveButton = $("#saveButton")[0];
-            labelButtonArea = $("#label-button-area")[0];
-            labelButtonTable = $("#label-button-table")[0];
+            $labelButtonArea = $("#label-button-area");
+            $labelButtonTable = $("#"+labelButtonTableId);
 
             imageArea = $("#imageArea")[0];
 

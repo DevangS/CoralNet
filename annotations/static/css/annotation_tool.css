@@ -56,12 +56,7 @@
     user-select: none;
 }
 
-#labelButtons button {
-    /* Don't let HTML whitespace create extra horizontal space between button elements.
-    That will keep the horizontal space under our control (only left/right margins will
-    define the horizontal space). */
-    float: left;
-
+#label-button-table tr td button {
     /* Width will be set dynamically; that way we can check for
     text overflow, and make the text smaller if there is overflow. */
 
@@ -73,29 +68,29 @@
     /* Make left/right padding small to reduce chances of having to shrink the text.
     At the same time, though, make the padding large enough to reduce chances of
     having the text overflow at certain browser zoom levels. */
-    padding-left: 1px;
-    padding-right: 1px;
+    /*padding-left: 1px;*/
+    /*padding-right: 1px;*/
 
     /* Space the buttons out a little bit. */
-    margin: 2px;
+    /*margin: 2px;*/
 
     cursor: pointer;
 }
-#labelButtons button.current {
+#label-button-table tr td button.current {
     border-color: #000000;
 }
 
 /* TODO: Probably want to consider assigning a certain color for each functional group
  * and using that color site-wide.  For example, always green for hard coral.
  * (Maybe make the colors customizable too?) */
-#labelButtons button.group1{ background-color: #8888ff; }
-#labelButtons button.group2{ background-color: #ff8888; }
-#labelButtons button.group3{ background-color: #88ff88; }
-#labelButtons button.group4{ background-color: #88ffff; }
-#labelButtons button.group5{ background-color: #ff88ff; }
-#labelButtons button.group6{ background-color: #ffff88; }
-#labelButtons button.group7{ background-color: #888888; }
-#labelButtons button.group8{ background-color: #4499dd; }
+#label-button-table tr td button.group1{ background-color: #8888ff; }
+#label-button-table tr td button.group2{ background-color: #ff8888; }
+#label-button-table tr td button.group3{ background-color: #88ff88; }
+#label-button-table tr td button.group4{ background-color: #88ffff; }
+#label-button-table tr td button.group5{ background-color: #ff88ff; }
+#label-button-table tr td button.group6{ background-color: #ffff88; }
+#label-button-table tr td button.group7{ background-color: #888888; }
+#label-button-table tr td button.group8{ background-color: #4499dd; }
 
 #toolButtonArea {
     margin-bottom: 5px;
