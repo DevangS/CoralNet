@@ -61,88 +61,83 @@
 
 <div id="annotation-tool"></div>
 
-    <div id="mainColumn">
-      {# annotationArea's percentage height only works when mainColumn has a specified height. #}
-      <div id="annotationArea">
-        <canvas id="pointsCanvas"></canvas>
-        <div id="imageArea">
-          <canvas id="imageCanvas"></canvas>
-          <div id="listenerElmt"></div>
-        </div>
-      </div>
+{# The following elements will be dynamically put in the annotation-tool div. #}
 
-      <div id="label-button-area">
-        <table id="label-button-table"></table>
-      </div>
+{# annotationArea's percentage height only works when mainColumn has a specified height. #}
+<div id="annotationArea">
+    <canvas id="pointsCanvas"></canvas>
+    <div id="imageArea">
+      <canvas id="imageCanvas"></canvas>
+      <div id="listenerElmt"></div>
     </div>
+</div>
 
-    <div id="rightSidebar">
+<div id="label-button-area">
+    <table id="label-button-table"></table>
+</div>
 
-     <div id="toolButtonArea">
-         <input class="zoomButton" type="image"
-                id="zoomInButton" src="/static/img/Icon_zoom-in.png" title="Zoom in"/>
-         <input class="zoomButton" type="image"
-                id="zoomOutButton" src="/static/img/Icon_zoom-out.png" title="Zoom out"/>
-         <input class="zoomButton" type="image"
-                id="zoomFitButton" src="/static/img/Icon_zoom-fit.png" title="Zoom all the way out"/>
-         <br/>
-         
-         <input class="pointModeButton" type="image"
-                id="pointModeButtonAll" src="/static/img/Icon_point-mode-all.png" title="Show all points"/>
-         <input class="pointModeButton" type="image"
-                id="pointModeButtonSelected" src="/static/img/Icon_point-mode-selected.png" title="Show selected points only"/>
-         <input class="pointModeButton" type="image"
-                id="pointModeButtonNone" src="/static/img/Icon_point-mode-none.png" title="Hide all points"/>
-         <br/>
+<div id="toolButtonArea">
+    <input class="zoomButton" type="image"
+           id="zoomInButton" src="/static/img/Icon_zoom-in.png" title="Zoom in"/>
+    <input class="zoomButton" type="image"
+           id="zoomOutButton" src="/static/img/Icon_zoom-out.png" title="Zoom out"/>
+    <input class="zoomButton" type="image"
+           id="zoomFitButton" src="/static/img/Icon_zoom-fit.png" title="Zoom all the way out"/>
+    <br/>
 
-         <input class="quickSelectButton" type="image"
-                id="quickSelectButtonNone" src="/static/img/Icon_select-none.png" title="Un-select all points"/>
-         <input class="quickSelectButton" type="image"
-                id="quickSelectButtonUnannotated" src="/static/img/Icon_select-unannotated.png" title="Select all unannotated points"/>
-         <input class="quickSelectButton" type="image"
-                id="quickSelectButtonInvert" src="/static/img/Icon_select-inversion.png" title="Invert current selections"/>
-     </div>
+    <input class="pointModeButton" type="image"
+           id="pointModeButtonAll" src="/static/img/Icon_point-mode-all.png" title="Show all points"/>
+    <input class="pointModeButton" type="image"
+           id="pointModeButtonSelected" src="/static/img/Icon_point-mode-selected.png" title="Show selected points only"/>
+    <input class="pointModeButton" type="image"
+           id="pointModeButtonNone" src="/static/img/Icon_point-mode-none.png" title="Hide all points"/>
+    <br/>
 
-     <form id="annotationForm"
-          action="" method="post">{% csrf_token %}
+    <input class="quickSelectButton" type="image"
+           id="quickSelectButtonNone" src="/static/img/Icon_select-none.png" title="Un-select all points"/>
+    <input class="quickSelectButton" type="image"
+           id="quickSelectButtonUnannotated" src="/static/img/Icon_select-unannotated.png" title="Select all unannotated points"/>
+    <input class="quickSelectButton" type="image"
+           id="quickSelectButtonInvert" src="/static/img/Icon_select-inversion.png" title="Invert current selections"/>
+</div>
 
-      {% for field in form.hidden_fields %}
-          {{ field }}
-      {% endfor %}
+<form id="annotationForm"
+      action="" method="post">{% csrf_token %}
 
-      <div id="annotationList">
+  {% for field in form.hidden_fields %}
+      {{ field }}
+  {% endfor %}
 
-        <table>
+  <div id="annotationList">
 
-        {% for field in form.visible_fields %}
-          <tr>
-            <td class="annotationFormLabelCell">
-                <span class="annotationFormLabel">{{ field.label }}</span>
-            </td>
-            <td>
-                {{ field }}
-            </td>
-          </tr>
-        {% endfor %}
-        
-        </table>
+    <table>
 
-      </div>
+    {% for field in form.visible_fields %}
+      <tr>
+        <td class="annotationFormLabelCell">
+            <span class="annotationFormLabel">{{ field.label }}</span>
+        </td>
+        <td>
+            {{ field }}
+        </td>
+      </tr>
+    {% endfor %}
 
-     </form>
+    </table>
 
-     <div id="progressIndicator">
+  </div>
 
-      {# type="button" ensures that the button doesn't do a non-Ajax form submit #}
-      <button id="saveButton" type="button">Save progress</button>
+</form>
 
-      <div id="allDone"></div>
+<div id="progressIndicator">
 
-     </div>
+  {# type="button" ensures that the button doesn't do a non-Ajax form submit #}
+  <button id="saveButton" type="button">Save progress</button>
 
-    </div>
+  <div id="allDone"></div>
 
-{#</div>#}
+</div>
+
 
 {# TODO: Put the below in an image-info area. #}
 {% comment %}
