@@ -1142,22 +1142,12 @@ var AnnotationToolHelper = (function() {
 
         var $newTable = $('<table>');
         var $newRows = [];
-        //var $newTableCells = [];
 
         for (i = 0; i < numRows; i++) {
             var $newRow = $('<tr>');
-            //var $newRowCells = [];
-
-            for (j = 0; j < numCols; j++) {
-                //var $newCell = $('<td>');
-
-                //$newRow.append($newCell);
-                //$newRowCells.push($newCell);
-            }
 
             $newTable.append($newRow);
             $newRows.push($newRow);
-            //$newTableCells.push($newRowCells);
         }
 
 
@@ -1173,11 +1163,8 @@ var AnnotationToolHelper = (function() {
 
                 if (labelIndex >= $labelButtons.length) {
                     // We're in the last row and in the columns beyond where
-                    // our last label button should be.
-
-                    // TODO: See if putting a space in the cell is necessary
-                    // for display reasons?
-                    //$newTableCells[row][col].text(' ');
+                    // our last label button should be.  Nothing to do here
+                    // (for now).
                 }
                 else {
                     // We're in a cell that should contain a label button.
@@ -1201,23 +1188,6 @@ var AnnotationToolHelper = (function() {
         $labelButtonTable.replaceWith($newTable);
         $labelButtonTable = $newTable;
         $labelButtonTable.attr('id', labelButtonTableId);
-
-
-//      This code may be obsolete.
-//
-//        for (i = 0; i < labelCodes.length; i++) {
-//
-//            var $labelButton = $labelButtonTable.("button:exactlycontains('{0}')".format(labelCodes[i]));
-//            var rowIndex = Math.floor(i / numCols);
-//            var colIndex = i % numRows;
-//
-//            // Assign a grid position to the label button.
-//            // For example, i=0 gets position [0,0], i=13 gets [1,3]
-//            $labelButton.attr('gridy', Math.floor(i / numCols));
-//            $labelButton.attr('gridx', i % numCols);
-//
-//            $newTableRows[rowIndex]
-//        }
 
 
 //      This code may not be needed anymore, not sure though.

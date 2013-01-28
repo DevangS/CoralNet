@@ -13,6 +13,11 @@
     padding: 0;
 }
 
+#content-container {
+    margin: 0;
+    padding: 0;
+}
+
 #mainColumn {
     float: left;
 }
@@ -59,27 +64,24 @@
 #label-button-table {
     /* This table should have the same dimensions as its enclosing area. */
     width: inherit;
+
+    /* Each cell should have its own top, bottom, left, and right borders.
+    This way, we can change the border of the cell to create an outline
+    around the cell. */
+    border-collapse: separate;
 }
 
 #label-button-table tr td {
-    /* Width will be set dynamically; that way we can check for
-    text overflow, and make the text smaller if there is overflow. */
 
     /* Set a transparent border that is the same size as the "current button"
     border.  That way, the border size doesn't change (and thus elements
     don't shift) when the button becomes the "current" button. */
     border: 3px solid transparent;
 
-    /* Make left/right padding small to reduce chances of having to shrink the text.
-    At the same time, though, make the padding large enough to reduce chances of
-    having the text overflow at certain browser zoom levels. */
-    /*padding-left: 1px;*/
-    /*padding-right: 1px;*/
-
-    /* Space the buttons out a little bit. */
-    /*margin: 2px;*/
-
     cursor: pointer;
+
+    /* The label code text should be center-aligned on the button. */
+    text-align: center;
 }
 #label-button-table tr td.current {
     border-color: #000000;
