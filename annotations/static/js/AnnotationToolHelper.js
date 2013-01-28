@@ -1136,7 +1136,7 @@ var AnnotationToolHelper = (function() {
 
         BUTTON_GRID_MAX_Y = numRows - 1;
         BUTTON_GRID_MAX_X = numCols - 1;
-        BUTTONS_PER_ROW = numRows;
+        BUTTONS_PER_ROW = numCols;
 
         // Construct the new label button table.
 
