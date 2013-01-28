@@ -24,7 +24,7 @@ var AnnotationToolHelper = (function() {
     // Annotation related
     var labelCodes = [];
     var labelCodesToNames = {};
-    var currentLabelButton = null;
+    var $currentLabelButton = null;
 
     // Canvas related
     var context = null;
@@ -450,17 +450,19 @@ var AnnotationToolHelper = (function() {
 
     /* Event listener callback: 'this' is an annotation field */
     function labelWithCurrentLabel() {
-        if (currentLabelButton !== null) {
-            this.value = $(currentLabelButton).text();
+        if ($currentLabelButton !== null) {
+            this.value = $currentLabelButton.text();
             onPointUpdate(this, 'unrobotOnlyIfChanged');
         }
     }
 
     function setCurrentLabelButton(button) {
-        $('#labelButtons button').removeClass('current');
-        $(button).addClass('current');
+        if ($currentLabelButton !== null) {
+            $currentLabelButton.removeClass('current');
+        }
 
-        currentLabelButton = button;
+        $(button).addClass('current');
+        $currentLabelButton = $(button);
     }
 
     /* Event listener callback: 'this' is an annotation field */
@@ -468,7 +470,7 @@ var AnnotationToolHelper = (function() {
         // If this field already has a valid label code, then the
         // current label button becomes the button with that label code.
         if (labelCodes.indexOf(this.value) !== -1) {
-            setCurrentLabelButton($("#labelButtons button:exactlycontains('" + this.value + "')"));
+            setCurrentLabelButton($("#label-button-table tr td:exactlycontains('" + this.value + "')"));
         }
         // Otherwise, label the field with the current label.
         else
@@ -482,12 +484,12 @@ var AnnotationToolHelper = (function() {
 
     /* Event listener callback: 'this' is an annotation field */
     function moveCurrentLabel(dx, dy) {
-        if (currentLabelButton === null)
+        if ($currentLabelButton === null)
             return;
 
         // Start with current label button
-        var gridX = parseInt($(currentLabelButton).attr('gridx'));
-        var gridY = parseInt($(currentLabelButton).attr('gridy'));
+        var gridX = parseInt($currentLabelButton.attr('gridx'));
+        var gridY = parseInt($currentLabelButton.attr('gridy'));
 
         // Move one step, check if valid grid position; repeat as needed
         do {
@@ -508,7 +510,7 @@ var AnnotationToolHelper = (function() {
         } while (!buttonIndexValid(gridX, gridY));
 
         // Current label button is now the button with the x and y we calculated.
-        setCurrentLabelButton($("#labelButtons button[gridx='" + gridX + "'][gridy='" + gridY + "']")[0]);
+        setCurrentLabelButton($("#label-button-table tr td[gridx='" + gridX + "'][gridy='" + gridY + "']")[0]);
 
         // And make sure the current annotation field's
         // label gets changed to the current button's label.
@@ -1024,7 +1026,7 @@ var AnnotationToolHelper = (function() {
             }
 
             // Create a button for the label.
-            var $labelButton = $('<button>');
+            var $labelButton = $('<td>');
             $labelButton.text(label.code);
             $labelButtons.push($labelButton);
 
@@ -1139,21 +1141,23 @@ var AnnotationToolHelper = (function() {
         // Construct the new label button table.
 
         var $newTable = $('<table>');
-        var $newTableCells = [];
+        var $newRows = [];
+        //var $newTableCells = [];
 
         for (i = 0; i < numRows; i++) {
             var $newRow = $('<tr>');
-            var $newRowCells = [];
+            //var $newRowCells = [];
 
             for (j = 0; j < numCols; j++) {
-                var $newCell = $('<td>');
+                //var $newCell = $('<td>');
 
-                $newRow.append($newCell);
-                $newRowCells.push($newCell);
+                //$newRow.append($newCell);
+                //$newRowCells.push($newCell);
             }
 
             $newTable.append($newRow);
-            $newTableCells.push($newRowCells);
+            $newRows.push($newRow);
+            //$newTableCells.push($newRowCells);
         }
 
 
@@ -1182,13 +1186,13 @@ var AnnotationToolHelper = (function() {
 
                     // Detach the label button from the old table and add it to
                     // the current table cell of this new table.
-                    $newTableCells[row][col].append($labelButton);
+                    $newRows[row].append($labelButton);
 
                     // Save the grid position info as attributes on the button.
                     // This position will be used to accommodate arrow-key
                     // navigation of the label button grid.
-                    $labelButton.attr('gridy', col);
-                    $labelButton.attr('gridx', row);
+                    $labelButton.attr('gridy', row);
+                    $labelButton.attr('gridx', col);
                 }
             }
         }
@@ -1232,36 +1236,36 @@ var AnnotationToolHelper = (function() {
 //            );
 
 
-//
-//            /* Set the button's width.  But first, check to see if the
-//             button text is going to overflow; if so, then shrink the text
-//             until it doesn't overflow.
-//
-//             ... never mind that text shrinking thing for now.  Setting the
-//             height of the button afterward is just not reliable at all, and
-//             can destroy the layout of buttons below.
-//             TODO: Need a robust way to support text shrinking in label buttons.
-//             */
-//
-//            //            var numOfSizeDecreases = 0;
-//            //            var initialButtonHeight = $labelButton.outerHeight();
-//            //            while (parseFloat($labelButton.outerWidth()) > LABEL_BUTTON_WIDTH) {
-//            //                // Scale the font to 90% size of what it was before.
-//            //                $labelButton.changeFontSize(0.9);
-//            //
-//            //                numOfSizeDecreases++;
-//            //                // Don't shrink the text so much that it'll become totally unreadable.
-//            //                // Just accept the text overflow if we've already shrunk the text a lot.
-//            //                if (numOfSizeDecreases > 8)
-//            //                    break;
-//            //            }
-//            //            // Need to reset the button's height to what it was before,
-//            //            // if we shrunk the button's text.
-//            //            if (numOfSizeDecreases > 0)
-//            //                $labelButton.css('height', initialButtonHeight);
-//
-//            // Now set the button's width.
-//            $labelButton.css('width', LABEL_BUTTON_WIDTH.toString() + "px");
+
+            /* Set the button's width.  But first, check to see if the
+             button text is going to overflow; if so, then shrink the text
+             until it doesn't overflow.
+
+             ... never mind that text shrinking thing for now.  Setting the
+             height of the button afterward is just not reliable at all, and
+             can destroy the layout of buttons below.
+             TODO: Need a robust way to support text shrinking in label buttons.
+             */
+
+            //            var numOfSizeDecreases = 0;
+            //            var initialButtonHeight = $labelButton.outerHeight();
+            //            while (parseFloat($labelButton.outerWidth()) > LABEL_BUTTON_WIDTH) {
+            //                // Scale the font to 90% size of what it was before.
+            //                $labelButton.changeFontSize(0.9);
+            //
+            //                numOfSizeDecreases++;
+            //                // Don't shrink the text so much that it'll become totally unreadable.
+            //                // Just accept the text overflow if we've already shrunk the text a lot.
+            //                if (numOfSizeDecreases > 8)
+            //                    break;
+            //            }
+            //            // Need to reset the button's height to what it was before,
+            //            // if we shrunk the button's text.
+            //            if (numOfSizeDecreases > 0)
+            //                $labelButton.css('height', initialButtonHeight);
+
+            // Now set the button's width.
+            //$('#label-button-table tr td').css('width', LABEL_BUTTON_WIDTH.toString() + "px");
     }
 
 
@@ -1468,7 +1472,9 @@ var AnnotationToolHelper = (function() {
             });
 
             // A label button is clicked
-            $('#labelButtons').find('button').each( function() {
+            // TODO: Make $labelButtons a jQuery object so we don't have to
+            // re-jQueryisze it with $($labelButtons) ?
+            $($labelButtons).each( function() {
                 $(this).click( function() {
                     // Label the selected points with this button's label code
                     labelSelected($(this).text());

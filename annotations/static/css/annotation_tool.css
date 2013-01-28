@@ -56,7 +56,12 @@
     user-select: none;
 }
 
-#label-button-table tr td button {
+#label-button-table {
+    /* This table should have the same dimensions as its enclosing area. */
+    width: inherit;
+}
+
+#label-button-table tr td {
     /* Width will be set dynamically; that way we can check for
     text overflow, and make the text smaller if there is overflow. */
 
@@ -76,21 +81,21 @@
 
     cursor: pointer;
 }
-#label-button-table tr td button.current {
+#label-button-table tr td.current {
     border-color: #000000;
 }
 
 /* TODO: Probably want to consider assigning a certain color for each functional group
  * and using that color site-wide.  For example, always green for hard coral.
  * (Maybe make the colors customizable too?) */
-#label-button-table tr td button.group1{ background-color: #8888ff; }
-#label-button-table tr td button.group2{ background-color: #ff8888; }
-#label-button-table tr td button.group3{ background-color: #88ff88; }
-#label-button-table tr td button.group4{ background-color: #88ffff; }
-#label-button-table tr td button.group5{ background-color: #ff88ff; }
-#label-button-table tr td button.group6{ background-color: #ffff88; }
-#label-button-table tr td button.group7{ background-color: #888888; }
-#label-button-table tr td button.group8{ background-color: #4499dd; }
+#label-button-table tr td.group1{ background-color: #8888ff; }
+#label-button-table tr td.group2{ background-color: #ff8888; }
+#label-button-table tr td.group3{ background-color: #88ff88; }
+#label-button-table tr td.group4{ background-color: #88ffff; }
+#label-button-table tr td.group5{ background-color: #ff88ff; }
+#label-button-table tr td.group6{ background-color: #ffff88; }
+#label-button-table tr td.group7{ background-color: #888888; }
+#label-button-table tr td.group8{ background-color: #4499dd; }
 
 #toolButtonArea {
     margin-bottom: 5px;
