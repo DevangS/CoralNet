@@ -62,8 +62,9 @@
 }
 
 #label-button-table {
-    /* This table should have the same dimensions as its enclosing area. */
+    /* Make the table expand to the size of its enclosing area. */
     width: inherit;
+    height: inherit;
 
     /* Each cell should have its own top, bottom, left, and right borders.
     This way, we can change the border of the cell to create an outline
@@ -80,8 +81,10 @@
 
     cursor: pointer;
 
-    /* The label code text should be center-aligned on the button. */
+    /* The label code text should be center-aligned on the button,
+    both horizontally and vertically. */
     text-align: center;
+    vertical-align: middle;
 }
 #label-button-table tr td.current {
     border-color: #000000;
@@ -180,6 +183,84 @@ td.annotationFormLabelCell {
 
     padding: 5px;
 }
+
+
+/* Info and nav buttons */
+
+#info-buttons table, #nav-buttons table {
+    /* Make the tables expand to the size of its enclosing area. */
+    width: inherit;
+    height: inherit;
+}
+
+#info-buttons table tr td, #nav-buttons table tr td {
+    /* Have borders around the button so the text isn't right up against
+    the button's edge.*/
+    border: 3px solid transparent;
+
+    /* The button text should be center-aligned on the button,
+    both horizontally and vertically. */
+    text-align: center;
+    vertical-align: middle;
+}
+
+#info-buttons table tr td button, #nav-buttons table tr td a {
+    /* Get rid of the default link color */
+    color: inherit;
+    /* Get rid of the default link underline */
+    text-decoration: none;
+
+    /* 3D button look */
+    border-style: outset;
+    border-width: 2px;
+    border-color: #eeeeee;
+
+    /* TODO: Might want to set this dynamically according to the button size. */
+    border-radius: 10px;
+
+    /* TODO: Placeholder styling to make the buttons a little bigger for now.
+    Might want to set this dynamically according to the space we have for the
+    buttons. */
+    padding: 5px;
+
+    /* Makes the button the right width and height, but then the text isn't
+    vertically aligned correctly... */
+    /*display: block;*/
+    /*height: 100%;*/
+}
+#info-buttons table tr td button:active, #nav-buttons table tr td a:active {
+    /* 3D button look: button is pressed in when clicked. */
+    border-style: inset;
+}
+
+#info-buttons table tr td button, #nav-buttons table tr td a span {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+#info-buttons table tr td.image-info button {
+    background-color: #88ffff;
+}
+#info-buttons table tr td.history button {
+    background-color: #00CC00;
+}
+#info-buttons table tr td.settings button {
+    background-color: #e8b8e8;
+}
+#info-buttons table tr td.help button {
+    background-color: #f0e0b0;
+}
+
+#nav-buttons table tr td.prev a {
+    background-color: #00CC00;
+}
+#nav-buttons table tr td.next a {
+    background-color: #e8b8e8;
+}
+#nav-buttons table tr td.exit a {
+    background-color: #f0e0b0;
+}
+
 
 /* Instructions */
 

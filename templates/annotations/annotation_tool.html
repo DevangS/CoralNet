@@ -138,6 +138,61 @@
 
 </div>
 
+<div id="info-buttons">
+    <table>
+        <tr>
+            <td class="image-info">
+                <button>Image Info</button>
+            </td>
+            <td class="history">
+                <button>History</button>
+            </td>
+        </tr>
+        <tr>
+            <td class="settings">
+                <button>Settings</button>
+            </td>
+            <td class="help">
+                <button>Help &amp; Controls</button>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div id="nav-buttons">
+    <table>
+        <tr>
+            {# TODO: Handle the cases where there is no prev or no next image. #}
+
+            {# TODO: Make the link fill up the whole table cell. #}
+            {# (And later, consider making the link a rounded-corner button.) #}
+
+            <td class="prev">
+                <a href="{% url annotation_tool prev_image.id %}"
+                   title="{{ prev_image.get_image_element_title }}">
+{#                    <button>Previous Image</button>#}
+                    <span>Previous Image</span>
+                </a>
+            </td>
+            <td class="next">
+                <a href="{% url annotation_tool next_image.id %}"
+                   title="{{ next_image.get_image_element_title }}">
+{#                    <button>Next Image</button>#}
+                    <span>Next Image</span>
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td class="exit" colspan="2">
+                <a href="{% url image_detail image.id %}">
+{#                    <button>Exit Annotation Tool</button>#}
+                    <span>Exit Annotation Tool</span>
+                </a>
+            </td>
+        </tr>
+    </table>
+</div>
+
 
 {# TODO: Put the below in an image-info area. #}
 {% comment %}
