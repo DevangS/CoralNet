@@ -93,14 +93,22 @@
 /* TODO: Probably want to consider assigning a certain color for each functional group
  * and using that color site-wide.  For example, always green for hard coral.
  * (Maybe make the colors customizable too?) */
-#label-button-table tr td.group1{ background-color: #8888ff; }
-#label-button-table tr td.group2{ background-color: #ff8888; }
-#label-button-table tr td.group3{ background-color: #88ff88; }
-#label-button-table tr td.group4{ background-color: #88ffff; }
-#label-button-table tr td.group5{ background-color: #ff88ff; }
-#label-button-table tr td.group6{ background-color: #ffff88; }
+#label-button-table tr td.group1{ background-color: #8888ee; }
+#label-button-table tr td.group1:hover{ background-color: #9999ff; }
+#label-button-table tr td.group2{ background-color: #ee8888; }
+#label-button-table tr td.group2:hover{ background-color: #ff9999; }
+#label-button-table tr td.group3{ background-color: #88ee88; }
+#label-button-table tr td.group3:hover{ background-color: #99ff99; }
+#label-button-table tr td.group4{ background-color: #88eeee; }
+#label-button-table tr td.group4:hover{ background-color: #99ffff; }
+#label-button-table tr td.group5{ background-color: #ee88ee; }
+#label-button-table tr td.group5:hover{ background-color: #ff99ff; }
+#label-button-table tr td.group6{ background-color: #eeee88; }
+#label-button-table tr td.group6:hover{ background-color: #ffff99; }
 #label-button-table tr td.group7{ background-color: #888888; }
+#label-button-table tr td.group7:hover{ background-color: #999999; }
 #label-button-table tr td.group8{ background-color: #4499dd; }
+#label-button-table tr td.group8:hover{ background-color: #55aaee; }
 
 #toolButtonArea {
     margin-bottom: 5px;
@@ -215,9 +223,6 @@ td.annotationFormLabelCell {
     border-width: 2px;
     border-color: #eeeeee;
 
-    /* TODO: Might want to set this dynamically according to the button size. */
-    border-radius: 10px;
-
     /* TODO: Placeholder styling to make the buttons a little bigger for now.
     Might want to set this dynamically according to the space we have for the
     buttons. */
@@ -234,31 +239,29 @@ td.annotationFormLabelCell {
 }
 
 #info-buttons table tr td button, #nav-buttons table tr td a span {
+    /* Button text. */
     font-weight: bold;
     font-size: 0.9em;
 }
 
-#info-buttons table tr td.image-info button {
-    background-color: #88ffff;
+#info-buttons table tr td button {
+    background-color: #b8e8e8;
 }
-#info-buttons table tr td.history button {
-    background-color: #00CC00;
-}
-#info-buttons table tr td.settings button {
-    background-color: #e8b8e8;
-}
-#info-buttons table tr td.help button {
-    background-color: #f0e0b0;
+#info-buttons table tr td button:hover {
+    background-color: #c8f8f8;
 }
 
-#nav-buttons table tr td.prev a {
-    background-color: #00CC00;
+#nav-buttons table tr td a {
+    background-color: #b8e8b8;
+
+    /* Make the link buttons rounded to (a) distinguish them from the other
+    buttons, and (b) make them consistent with other navigation buttons
+    elsewhere on the site. */
+    /* TODO: Might want to set this dynamically according to the button size. */
+    border-radius: 10px;
 }
-#nav-buttons table tr td.next a {
-    background-color: #e8b8e8;
-}
-#nav-buttons table tr td.exit a {
-    background-color: #f0e0b0;
+#nav-buttons table tr td a:hover {
+    background-color: #c8f8c8;
 }
 
 
