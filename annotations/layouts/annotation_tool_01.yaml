@@ -23,4 +23,7 @@
 - y-15%:
 
   - x-55%: info-buttons
-  - x-45%: nav-buttons
+#  - x-45%: nav-buttons
+  - x-leftover: nav-buttons
+#  - x-400px: info-buttons
+#  - x-300px: nav-buttons
