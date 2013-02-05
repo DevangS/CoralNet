@@ -264,24 +264,28 @@ td.annotationFormLabelCell {
     background-color: #c8f8c8;
 }
 
+#dialog-items {
+    display: none;
+}
 
-/* Instructions */
 
-#id_instructions_wrapper div.help_section {
+/* Help and controls */
+
+div.help_section {
     margin-bottom: 10px;
 }
 
-#id_instructions_wrapper div.help_section ul {
+div.help_section ul {
     list-style: disc none inside;
 }
-#id_instructions_wrapper div.help_section li {
+div.help_section li {
     line-height: 1.2em;
 }
-#id_instructions_wrapper div.help_section ul li ul {
+div.help_section ul li ul {
     padding-left: 20px;
 }
 
-#id_instructions_wrapper div.help_section span.help_header {
+div.help_section span.help_header {
     font-weight: bold;
     line-height: 2.0em;
 }

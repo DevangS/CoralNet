@@ -91,6 +91,14 @@ var AnnotationToolHelper = (function() {
     var imageLeftOffset = null;
     var imageTopOffset = null;
 
+    // Size of modal windows (sub-windows that show up on top of the tool).
+    var MODAL_WINDOW_MIN_WIDTH = 500;
+    var MODAL_WINDOW_MIN_HEIGHT = 300;
+    var MODAL_WINDOW_PCT_WIDTH = 50;
+    var MODAL_WINDOW_PCT_HEIGHT = 50;
+    var modalWindowWidth = null;
+    var modalWindowHeight = null;
+
 
     /*
      * Based on the current zoom level and focus of the zoom, position and
@@ -993,6 +1001,16 @@ var AnnotationToolHelper = (function() {
             ZOOM_FACTORS[i] = zoomFactor * Math.pow(ZOOM_INCREMENT, i);
         }
 
+        // Set the modal window size.
+        modalWindowWidth = Math.max(
+            MODAL_WINDOW_MIN_WIDTH,
+            windowWidth*MODAL_WINDOW_PCT_WIDTH/100
+        );
+        modalWindowHeight = Math.max(
+            MODAL_WINDOW_MIN_HEIGHT,
+            windowHeight*MODAL_WINDOW_PCT_HEIGHT/100
+        );
+
         // Reshape the label button grid.
         reshapeLabelButtonGrid();
 
@@ -1549,6 +1567,40 @@ var AnnotationToolHelper = (function() {
                 for (var i = 0; i < unselectedPoints.length; i++) {
                     select(unselectedPoints[i])
                 }
+            });
+
+            // Info buttons.
+            $("#image-info-button").click(function() {
+                $("#image-info").dialog({
+                    width: modalWindowWidth,
+                    height: modalWindowHeight,
+                    modal: true,
+                    title: "Image information"
+                });
+            });
+            $("#history-button").click(function() {
+                $("#history").dialog({
+                    width: modalWindowWidth,
+                    height: modalWindowHeight,
+                    modal: true,
+                    title: "Annotation History"
+                });
+            });
+            $("#settings-button").click(function() {
+                $("#settings").dialog({
+                    width: modalWindowWidth,
+                    height: modalWindowHeight,
+                    modal: true,
+                    title: "Settings"
+                });
+            });
+            $("#help-button").click(function() {
+                $("#help").dialog({
+                    width: modalWindowWidth,
+                    height: modalWindowHeight,
+                    modal: true,
+                    title: "Help and Controls"
+                });
             });
 
             // Keymap.

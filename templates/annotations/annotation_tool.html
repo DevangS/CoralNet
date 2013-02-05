@@ -23,6 +23,7 @@
 {% block content %}
 
 
+{% comment %}
 <button id="id_button_show_instructions" style="display:none">Help/Controls</button>
 
 <div id="id_instructions_wrapper" style="display:none">
@@ -34,7 +35,9 @@
 
     <hr/>
 </div>
+{% endcomment %}
 
+{% comment %}
 <button id="id_button_show_settings" style="display:none">Settings</button>
 
 <div id="id_settings_wrapper" style="display:none">
@@ -46,6 +49,7 @@
 
     <hr/>
 </div>
+{% endcomment %}
 
 <button id="id_button_show_image_tools" style="display:none">Image Tools</button>
 
@@ -142,18 +146,16 @@
     <table>
         <tr>
             <td class="image-info">
-                <button title="Information on this image">Image Info</button>
+                <button id="image-info-button" title="Information on this image">Image Info</button>
             </td>
             <td class="history">
-                <button title="Annotation history for this image">History</button>
+                <button id="history-button" title="Annotation history for this image">History</button>
             </td>
-{#        </tr>#}
-{#        <tr>#}
             <td class="settings">
-                <button title="Annotation tool settings">Settings</button>
+                <button id="settings-button" title="Annotation tool settings">Settings</button>
             </td>
             <td class="help">
-                <button title="Help, controls, and browser compatibility">Help</button>
+                <button id="help-button" title="Help, controls, and compatibility info">Help</button>
             </td>
         </tr>
     </table>
@@ -170,7 +172,7 @@
             <td class="prev">
                 <a href="{% url annotation_tool prev_image.id %}"
                    title="Go to image: {{ prev_image.get_image_element_title }}">
-{#                    <button>Previous Image</button>#}
+{#                    <button>Prev Image</button>#}
                     <span>Prev Image</span>
                 </a>
             </td>
@@ -181,16 +183,40 @@
                     <span>Next Image</span>
                 </a>
             </td>
-{#        </tr>#}
-{#        <tr>#}
             <td class="exit" colspan="2">
                 <a href="{% url image_detail image.id %}" title="Exit Annotation Tool and return to main site">
-{#                    <button>Exit Annotation Tool</button>#}
+{#                    <button>Exit Tool</button>#}
                     <span>Exit Tool</span>
                 </a>
             </td>
         </tr>
     </table>
+</div>
+
+
+<div id="dialog-items">
+
+    <div id="image-info">
+        {% include "images/location_values_table.html" with image=image %}
+        <hr class="light">
+        <ul class="detail_list">
+            <li>Annotation points: {{ image.point_gen_method_display }}</li>
+            <li>Annotation area: {{ image.annotation_area_display|default:"(Not specified)" }}</li>
+        </ul>
+    </div>
+
+    <div id="history">
+
+    </div>
+
+    <div id="settings">
+        {% include "annotations/annotation_tool_settings.html" %}
+    </div>
+
+    <div id="help">
+        {% include "annotations/annotation_tool_help.html" %}
+    </div>
+
 </div>
 
 
