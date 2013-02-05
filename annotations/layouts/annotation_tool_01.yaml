@@ -1,4 +1,4 @@
-- y-85%:
+- y-92%:
 #- y-100%:
 
   - x-70%:
@@ -20,10 +20,10 @@
 #    y-20%: zoom
 #    y-15%: image-tools
 
-- y-15%:
+- y-8%:
 
   - x-55%: info-buttons
-#  - x-45%: nav-buttons
-  - x-leftover: nav-buttons
+  - x-45%: nav-buttons
+#  - x-leftover: nav-buttons
 #  - x-400px: info-buttons
 #  - x-300px: nav-buttons

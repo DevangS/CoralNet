@@ -142,18 +142,18 @@
     <table>
         <tr>
             <td class="image-info">
-                <button>Image Info</button>
+                <button title="Information on this image">Image Info</button>
             </td>
             <td class="history">
-                <button>History</button>
+                <button title="Annotation history for this image">History</button>
             </td>
-        </tr>
-        <tr>
+{#        </tr>#}
+{#        <tr>#}
             <td class="settings">
-                <button>Settings</button>
+                <button title="Annotation tool settings">Settings</button>
             </td>
             <td class="help">
-                <button>Help &amp; Controls</button>
+                <button title="Help, controls, and browser compatibility">Help</button>
             </td>
         </tr>
     </table>
@@ -165,28 +165,28 @@
             {# TODO: Handle the cases where there is no prev or no next image. #}
 
             {# TODO: Make the link fill up the whole table cell. #}
-            {# (And later, consider making the link a rounded-corner button.) #}
+            {# (And later, consider making the link a rounded-corner button on top of that.) #}
 
             <td class="prev">
                 <a href="{% url annotation_tool prev_image.id %}"
-                   title="{{ prev_image.get_image_element_title }}">
+                   title="Go to image: {{ prev_image.get_image_element_title }}">
 {#                    <button>Previous Image</button>#}
-                    <span>Previous Image</span>
+                    <span>Prev Image</span>
                 </a>
             </td>
             <td class="next">
                 <a href="{% url annotation_tool next_image.id %}"
-                   title="{{ next_image.get_image_element_title }}">
+                   title="Go to image: {{ next_image.get_image_element_title }}">
 {#                    <button>Next Image</button>#}
                     <span>Next Image</span>
                 </a>
             </td>
-        </tr>
-        <tr>
+{#        </tr>#}
+{#        <tr>#}
             <td class="exit" colspan="2">
-                <a href="{% url image_detail image.id %}">
+                <a href="{% url image_detail image.id %}" title="Exit Annotation Tool and return to main site">
 {#                    <button>Exit Annotation Tool</button>#}
-                    <span>Exit Annotation Tool</span>
+                    <span>Exit Tool</span>
                 </a>
             </td>
         </tr>
