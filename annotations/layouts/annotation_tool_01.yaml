@@ -1,12 +1,13 @@
 - y-92%:
-#- y-100%:
 
   - x-70%:
 
     - y-70%: annotationArea
-    - y-30%: label-button-area
+    - y-2px: divider
+    - y-leftover: label-button-area
 
-  - x-30%:
+  - x-2px: divider
+  - x-leftover:
 
 #    y-65%:
     - y-100%:
@@ -20,10 +21,9 @@
 #    y-20%: zoom
 #    y-15%: image-tools
 
-- y-8%:
+- y-2px: divider
+- y-leftover:
 
   - x-55%: info-buttons
-  - x-45%: nav-buttons
-#  - x-leftover: nav-buttons
-#  - x-400px: info-buttons
-#  - x-300px: nav-buttons
+  - x-2px: divider
+  - x-leftover: nav-buttons
