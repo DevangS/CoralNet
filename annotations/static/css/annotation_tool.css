@@ -9,6 +9,7 @@
     /* Fixed width shouldn't apply to this page. */
     width: inherit;
 
+    border: none;
     margin: 0;
     padding: 0;
 }
@@ -202,63 +203,82 @@ td.annotationFormLabelCell {
 }
 
 #info-buttons table tr td, #nav-buttons table tr td {
-    /* Have borders around the button so the text isn't right up against
-    the button's edge.*/
-    border: 3px solid transparent;
 
-    /* The button text should be center-aligned on the button,
-    both horizontally and vertically. */
+    /* The button text should be center-aligned horizontally on the button. */
     text-align: center;
-    vertical-align: middle;
 }
 
-#info-buttons table tr td button, #nav-buttons table tr td a {
+#nav-buttons table tr td a {
     /* Get rid of the default link color */
     color: inherit;
     /* Get rid of the default link underline */
     text-decoration: none;
 
-    /* 3D button look */
+    /* Make the button fill the table cell's horizontal space */
+    display: block;
+
+    /* TODO: Make the button text centered vertically. */
+    /* The best way might be to dynamically set the line-height to the
+    same as the parent element's height. */
+
+    /* Make the button fill the table cell's vertical space */
+    height: 100%;
+
+    /* Make the link buttons rounded to (a) distinguish them from the other
+    buttons, and (b) make them consistent with other navigation buttons
+    elsewhere on the site. */
+    /* TODO: Might want to set this dynamically according to the button size? */
+    border-radius: 10px;
+
+    /* 3D button look: button seems to stick out. */
     border-style: outset;
     border-width: 2px;
     border-color: #eeeeee;
-
-    /* TODO: Placeholder styling to make the buttons a little bigger for now.
-    Might want to set this dynamically according to the space we have for the
-    buttons. */
-    padding: 5px;
-
-    /* Makes the button the right width and height, but then the text isn't
-    vertically aligned correctly... */
-    /*display: block;*/
-    /*height: 100%;*/
 }
-#info-buttons table tr td button:active, #nav-buttons table tr td a:active {
+#nav-buttons table tr td a:active {
     /* 3D button look: button is pressed in when clicked. */
     border-style: inset;
 }
 
-#info-buttons table tr td button, #nav-buttons table tr td a span {
+#info-buttons table tr td {
+    /* Make the button text centered vertically. */
+    vertical-align: middle;
+
+    /* 3D button look: button seems to stick out. */
+    /* This is basically the same as the "outset" border-style, but applying
+    that border-style to td elements makes it looks messed up (at least in
+    Chrome), regardless of border-collapse or border-width properties. */
+    border-style: solid;
+    border-width: 2px;
+
+    border-top-color: #eeeeee;
+    border-left-color: #eeeeee;
+    border-bottom-color: #888888;
+    border-right-color: #888888;
+}
+#info-buttons table tr td:active {
+    /* 3D button look: button is pressed in when clicked. */
+    border-top-color: #888888;
+    border-left-color: #888888;
+    border-bottom-color: #eeeeee;
+    border-right-color: #eeeeee;
+}
+
+#info-buttons table tr td, #nav-buttons table tr td a span {
     /* Button text. */
     font-weight: bold;
     font-size: 0.9em;
 }
 
-#info-buttons table tr td button {
+#info-buttons table tr td {
     background-color: #b8e8e8;
 }
-#info-buttons table tr td button:hover {
+#info-buttons table tr td:hover {
     background-color: #c8f8f8;
 }
 
 #nav-buttons table tr td a {
     background-color: #b8e8b8;
-
-    /* Make the link buttons rounded to (a) distinguish them from the other
-    buttons, and (b) make them consistent with other navigation buttons
-    elsewhere on the site. */
-    /* TODO: Might want to set this dynamically according to the button size. */
-    border-radius: 10px;
 }
 #nav-buttons table tr td a:hover {
     background-color: #c8f8c8;
