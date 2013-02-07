@@ -58,6 +58,12 @@ var AnnotationToolHelper = (function() {
     // The annotation tool layout and size parameters
     var annotationToolLayout = null;
     var annotationToolSizeDict = null;
+    // Timeout variable; for delaying the resize event until the user has
+    // stopped resizing for a certain time.
+    var resizeTimeout = false;
+    // Timeout length, in milliseconds.
+    var resizeTimeoutLength = 200;
+
     // The original image's dimensions
     var IMAGE_FULL_WIDTH = null;
     var IMAGE_FULL_HEIGHT = null;
@@ -98,6 +104,7 @@ var AnnotationToolHelper = (function() {
     var MODAL_WINDOW_PCT_HEIGHT = 50;
     var modalWindowWidth = null;
     var modalWindowHeight = null;
+    var defaultDialogOptions = {};
 
 
     /*
@@ -1359,14 +1366,13 @@ var AnnotationToolHelper = (function() {
             resizeElements();
 
             // Recompute element sizes when the browser window is resized.
-            // TODO: Test to see if this is overwhelming when resizing the
-            // window on a netbook.  If so, is there any way to make it
-            // more performant, such as re-computing the layout only when
-            // the user stops dragging the browser resize handle?  (Of
-            // course, don't forget other methods of changing the window
-            // size, like maximize/unmaximize and inspect element...)
             $(window).resize(function() {
-                resizeElements();
+                // Don't resize everything continually as the window is being
+                // continually resized.  Wait until the window has stopped
+                // resizing for resizeTimeoutLength milliseconds.
+                if(resizeTimeout !== false)
+                    clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(resizeElements, resizeTimeoutLength);
             });
 
             // Set the initial point view mode.  This'll trigger a redraw of
@@ -1461,7 +1467,7 @@ var AnnotationToolHelper = (function() {
 
             // A label button is clicked
             // TODO: Make $labelButtons a jQuery object so we don't have to
-            // re-jQueryisze it with $($labelButtons) ?
+            // re-jQueryize it with $($labelButtons) ?
             $($labelButtons).each( function() {
                 $(this).click( function() {
                     // Label the selected points with this button's label code
@@ -1570,37 +1576,45 @@ var AnnotationToolHelper = (function() {
             });
 
             // Info buttons.
+            defaultDialogOptions = {
+
+                width: modalWindowWidth,
+                height: modalWindowHeight,
+                modal: true,
+
+                // Resizing triggers the browser-window resize events
+                // for some reason. No idea how to stop that, other than
+                // just disabling resize entirely for now...
+                resizable: false
+            };
+
             $("#image-info-button").click(function() {
-                $("#image-info").dialog({
-                    width: modalWindowWidth,
-                    height: modalWindowHeight,
-                    modal: true,
-                    title: "Image information"
-                });
+                $("#image-info").dialog(
+                    util.createOptions(defaultDialogOptions, {
+                        title: "Image information"
+                    })
+                );
             });
             $("#history-button").click(function() {
-                $("#history").dialog({
-                    width: modalWindowWidth,
-                    height: modalWindowHeight,
-                    modal: true,
-                    title: "Annotation History"
-                });
+                $("#history").dialog(
+                    util.createOptions(defaultDialogOptions, {
+                        title: "Annotation History"
+                    })
+                );
             });
             $("#settings-button").click(function() {
-                $("#settings").dialog({
-                    width: modalWindowWidth,
-                    height: modalWindowHeight,
-                    modal: true,
-                    title: "Settings"
-                });
+                $("#settings").dialog(
+                    util.createOptions(defaultDialogOptions, {
+                        title: "Settings"
+                    })
+                );
             });
             $("#help-button").click(function() {
-                $("#help").dialog({
-                    width: modalWindowWidth,
-                    height: modalWindowHeight,
-                    modal: true,
-                    title: "Help and Controls"
-                });
+                $("#help").dialog(
+                    util.createOptions(defaultDialogOptions, {
+                        title: "Help and Controls"
+                    })
+                );
             });
 
             // Keymap.
