@@ -1021,6 +1021,12 @@ var AnnotationToolHelper = (function() {
         // Reshape the label button grid.
         reshapeLabelButtonGrid();
 
+        // Vertically re-center the nav-button text.
+        var $navButtons = $('#nav-buttons table tr td a');
+        var navButtonHeight = $('#nav-buttons').height();
+        //var navButtonHeight = $navButtons.height();
+        $navButtons.css('line-height', (navButtonHeight-1)+'px');
+
         // Based on the zoom level, set up the image area.
         // (No need to define centerOfZoom since we're not zooming in to start with.)
         setupImageArea();

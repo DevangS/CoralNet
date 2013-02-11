@@ -241,16 +241,19 @@ td.annotationFormLabelCell {
 }
 
 #info-buttons table tr td {
+    /* Display the default cursor, even when hovering over the button text. */
+    cursor: default;
+
     /* Make the button text centered vertically. */
     vertical-align: middle;
+
+    border-style: solid;
+    border-width: 2px;
 
     /* 3D button look: button seems to stick out. */
     /* This is basically the same as the "outset" border-style, but applying
     that border-style to td elements makes it looks messed up (at least in
     Chrome), regardless of border-collapse or border-width properties. */
-    border-style: solid;
-    border-width: 2px;
-
     border-top-color: #eeeeee;
     border-left-color: #eeeeee;
     border-bottom-color: #888888;
@@ -278,10 +281,26 @@ td.annotationFormLabelCell {
 }
 
 #nav-buttons table tr td a {
-    background-color: #b8e8b8;
+    /* Gradient background: made with Colorzilla's gradient generator */
+    background: rgb(232,252,232); /* Old browsers */
+    background: -moz-linear-gradient(top,  rgb(232,252,232) 0%, rgb(184,232,184) 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgb(232,252,232)), color-stop(100%,rgb(184,232,184))); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top,  rgb(232,252,232) 0%,rgb(184,232,184) 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top,  rgb(232,252,232) 0%,rgb(184,232,184) 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top,  rgb(232,252,232) 0%,rgb(184,232,184) 100%); /* IE10+ */
+    background: linear-gradient(to bottom,  rgb(232,252,232) 0%,rgb(184,232,184) 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e8fce8', endColorstr='#b8e8b8',GradientType=0 ); /* IE6-9 */
 }
 #nav-buttons table tr td a:hover {
-    background-color: #c8f8c8;
+    /* Gradient background: made with Colorzilla's gradient generator */
+    background: rgb(255,255,255); /* Old browsers */
+    background: -moz-linear-gradient(top,  rgb(255,255,255) 0%, rgb(200,248,200) 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgb(255,255,255)), color-stop(100%,rgb(200,248,200))); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top,  rgb(255,255,255) 0%,rgb(200,248,200) 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top,  rgb(255,255,255) 0%,rgb(200,248,200) 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top,  rgb(255,255,255) 0%,rgb(200,248,200) 100%); /* IE10+ */
+    background: linear-gradient(to bottom,  rgb(255,255,255) 0%,rgb(200,248,200) 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#c8f8c8',GradientType=0 ); /* IE6-9 */
 }
 
 #dialog-items {
