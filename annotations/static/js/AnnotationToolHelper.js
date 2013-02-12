@@ -104,7 +104,6 @@ var AnnotationToolHelper = (function() {
     var MODAL_WINDOW_PCT_HEIGHT = 50;
     var modalWindowWidth = null;
     var modalWindowHeight = null;
-    var defaultDialogOptions = {};
 
 
     /*
@@ -1269,6 +1268,22 @@ var AnnotationToolHelper = (function() {
             //$('#label-button-table tr td').css('width', LABEL_BUTTON_WIDTH.toString() + "px");
     }
 
+    function createModalWindowOptions(customOptions) {
+        var options = {
+            width: modalWindowWidth,
+            height: modalWindowHeight,
+            modal: true,
+
+            // Resizing triggers the browser-window resize events
+            // for some reason. No idea how to stop that, other than
+            // just disabling resize entirely for now...
+            resizable: false
+        };
+        $.extend(options, customOptions);
+
+        return options;
+    }
+
 
     /* Public methods.
      * These are the only methods that need to be referred to as
@@ -1582,42 +1597,30 @@ var AnnotationToolHelper = (function() {
             });
 
             // Info buttons.
-            defaultDialogOptions = {
-
-                width: modalWindowWidth,
-                height: modalWindowHeight,
-                modal: true,
-
-                // Resizing triggers the browser-window resize events
-                // for some reason. No idea how to stop that, other than
-                // just disabling resize entirely for now...
-                resizable: false
-            };
-
             $("#image-info-button").click(function() {
                 $("#image-info").dialog(
-                    util.createOptions(defaultDialogOptions, {
+                    createModalWindowOptions({
                         title: "Image information"
                     })
                 );
             });
             $("#history-button").click(function() {
                 $("#history").dialog(
-                    util.createOptions(defaultDialogOptions, {
+                    createModalWindowOptions({
                         title: "Annotation History"
                     })
                 );
             });
             $("#settings-button").click(function() {
                 $("#settings").dialog(
-                    util.createOptions(defaultDialogOptions, {
+                    createModalWindowOptions({
                         title: "Settings"
                     })
                 );
             });
             $("#help-button").click(function() {
                 $("#help").dialog(
-                    util.createOptions(defaultDialogOptions, {
+                    createModalWindowOptions({
                         title: "Help and Controls"
                     })
                 );
