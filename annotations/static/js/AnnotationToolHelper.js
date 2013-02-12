@@ -939,18 +939,30 @@ var AnnotationToolHelper = (function() {
 
         var i;
 
-        var windowWidth = $(window).width();
-        var windowHeight = $(window).height();
+        // innerWidth and innerHeight are the width and height of the
+        // page view, including the scrollbars.
+        //
+        // It's important that the scrollbars are included.  If scrollbars
+        // weren't included, then we could resize the window such that
+        // scrollbars appear (momentarily, before the layout resize kicks
+        // in), and then after the layout resize kicks in, the scrollbars
+        // disappear, but the resulting layout is too small for the
+        // scrollbar-less window.
+        var windowWidth = window.innerWidth;
+        var windowHeight = window.innerHeight;
 
         var $annotationTool = $(annotationToolElement);
 
         // Fit the annotation tool to the window size - or, if the
         // window size is too small, to the designated minimum
         // dimensions.
+        // If fitting to the window size, make it a pixel smaller than
+        // the window, so that the layout can fit even when there's a
+        // bit of math imprecision.
         var minWidth = 600;
         var minHeight = 450;
-        $annotationTool.width(Math.max(windowWidth, minWidth));
-        $annotationTool.height(Math.max(windowHeight, minHeight));
+        $annotationTool.width(Math.max(windowWidth - 2, minWidth));
+        $annotationTool.height(Math.max(windowHeight - 2, minHeight));
 
         // Figure out the sizing of everything according to the annotation
         // tool size and the layout specification.
@@ -1020,11 +1032,31 @@ var AnnotationToolHelper = (function() {
         // Reshape the label button grid.
         reshapeLabelButtonGrid();
 
-        // Vertically re-center the nav-button text.
+        // Ensure that the info/nav button table/tr/td elements have their
+        // dimensions updated.  In Chrome at least, sometimes it doesn't
+        // update after a resize, until you click somewhere on the browser
+        // window.  This can be avoided by making the elements re-compute
+        // their dimensions.
+        var infoAreaHeight = $('#info-buttons').height();
+        $('#info-buttons table').height(infoAreaHeight);
+        $('#info-buttons table tr').height(infoAreaHeight);
+        $('#info-buttons table tr td').height(infoAreaHeight);
+        var navAreaHeight = $('#nav-buttons').height();
+        $('#nav-buttons table').height(navAreaHeight);
+        $('#nav-buttons table tr').height(navAreaHeight);
+        $('#nav-buttons table tr td').height(navAreaHeight);
+
+        // Vertically re-center the nav-button text.  To do so, define the
+        // CSS line-height to be the same height as the button.
+        // But since the button dimensions haven't been re-computed quite
+        // yet, use the button area's height instead of the button's height.
+        //
+        // Also, since the nav buttons have borders, be sure to exclude the
+        // borders in the nav button element's height calculation.
         var $navButtons = $('#nav-buttons table tr td a');
-        var navButtonHeight = $('#nav-buttons').height();
-        //var navButtonHeight = $navButtons.height();
-        $navButtons.css('line-height', (navButtonHeight-1)+'px');
+        var navButtonBorderHeight = parseFloat($navButtons.css('border-top-width'))
+                                    + parseFloat($navButtons.css('border-bottom-width'));
+        $navButtons.css('line-height', (navAreaHeight - navButtonBorderHeight)+'px');
 
         // Based on the zoom level, set up the image area.
         // (No need to define centerOfZoom since we're not zooming in to start with.)
