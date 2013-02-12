@@ -194,58 +194,48 @@ td.annotationFormLabelCell {
 }
 
 
-/* Info and nav buttons */
+/*****
+Info and nav buttons
+*****/
 
+/* Alignment and layout. */
 #info-buttons table, #nav-buttons table {
-    /* Make the tables expand to the size of its enclosing area. */
+    /* Make each table expand to the size of its enclosing area. */
     width: inherit;
     height: inherit;
 }
-
-#info-buttons table tr td, #nav-buttons table tr td {
-
+#info-buttons table tr td {
     /* The button text should be center-aligned horizontally on the button. */
     text-align: center;
-}
 
+    /* Make the button text centered vertically. */
+    vertical-align: middle;
+}
 #nav-buttons table tr td a {
-    /* Get rid of the default link color */
-    color: inherit;
-    /* Get rid of the default link underline */
-    text-decoration: none;
+    /* The button text should be center-aligned horizontally on the button. */
+    text-align: center;
 
     /* Make the button fill the table cell's horizontal space */
     display: block;
 
-    /* TODO: Make the button text centered vertically. */
-    /* The best way might be to dynamically set the line-height to the
-    same as the parent element's height. */
-
     /* Make the button fill the table cell's vertical space */
     height: 100%;
 
-    /* Make the link buttons rounded to (a) distinguish them from the other
-    buttons, and (b) make them consistent with other navigation buttons
-    elsewhere on the site. */
-    /* TODO: Might want to set this dynamically according to the button size? */
-    border-radius: 10px;
-
-    /* 3D button look: button seems to stick out. */
-    border-style: outset;
-    border-width: 2px;
-    border-color: #eeeeee;
-}
-#nav-buttons table tr td a:active {
-    /* 3D button look: button is pressed in when clicked. */
-    border-style: inset;
+    /* TODO: Make the button text centered vertically. */
+    /* The best way might be to dynamically set the line-height to the
+    same as the parent element's height. */
 }
 
+/* Text appearance. */
+#info-buttons table tr td, #nav-buttons table tr td a span {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+/* Other appearance stuff, including colors. */
 #info-buttons table tr td {
     /* Display the default cursor, even when hovering over the button text. */
     cursor: default;
-
-    /* Make the button text centered vertically. */
-    vertical-align: middle;
 
     border-style: solid;
     border-width: 2px;
@@ -258,6 +248,11 @@ td.annotationFormLabelCell {
     border-left-color: #eeeeee;
     border-bottom-color: #888888;
     border-right-color: #888888;
+
+    background-color: #b8e8e8;
+}
+#info-buttons table tr td:hover {
+    background-color: #c8f8f8;
 }
 #info-buttons table tr td:active {
     /* 3D button look: button is pressed in when clicked. */
@@ -267,20 +262,23 @@ td.annotationFormLabelCell {
     border-right-color: #eeeeee;
 }
 
-#info-buttons table tr td, #nav-buttons table tr td a span {
-    /* Button text. */
-    font-weight: bold;
-    font-size: 0.9em;
-}
-
-#info-buttons table tr td {
-    background-color: #b8e8e8;
-}
-#info-buttons table tr td:hover {
-    background-color: #c8f8f8;
-}
-
 #nav-buttons table tr td a {
+    /* Get rid of the default link color */
+    color: inherit;
+    /* Get rid of the default link underline */
+    text-decoration: none;
+
+    /* Make the link buttons rounded to (a) distinguish them from the other
+    buttons, and (b) make them consistent with other navigation buttons
+    elsewhere on the site. */
+    /* TODO: Might want to set this dynamically according to the button size? */
+    border-radius: 10px;
+
+    /* 3D button look: button seems to stick out. */
+    border-style: outset;
+    border-width: 2px;
+    border-color: #eeeeee;
+
     /* Gradient background: made with Colorzilla's gradient generator */
     background: rgb(232,252,232); /* Old browsers */
     background: -moz-linear-gradient(top,  rgb(232,252,232) 0%, rgb(184,232,184) 100%); /* FF3.6+ */
@@ -301,6 +299,10 @@ td.annotationFormLabelCell {
     background: -ms-linear-gradient(top,  rgb(255,255,255) 0%,rgb(200,248,200) 100%); /* IE10+ */
     background: linear-gradient(to bottom,  rgb(255,255,255) 0%,rgb(200,248,200) 100%); /* W3C */
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#c8f8c8',GradientType=0 ); /* IE6-9 */
+}
+#nav-buttons table tr td a:active {
+    /* 3D button look: button is pressed in when clicked. */
+    border-style: inset;
 }
 
 #dialog-items {
