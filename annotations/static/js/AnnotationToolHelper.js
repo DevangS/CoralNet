@@ -940,29 +940,67 @@ var AnnotationToolHelper = (function() {
         var i;
 
         // innerWidth and innerHeight are the width and height of the
-        // page view, including the scrollbars.
+        // page view, including any scrollbars.
+        // $(window).width() and $(window).height() are the width and
+        // height of the page view, excluding any scrollbars; i.e. these
+        // values change depending on the presence/absence of scrollbars.
         //
-        // It's important that the scrollbars are included.  If scrollbars
-        // weren't included, then we could resize the window such that
-        // scrollbars appear (momentarily, before the layout resize kicks
-        // in), and then after the layout resize kicks in, the scrollbars
-        // disappear, but the resulting layout is too small for the
-        // scrollbar-less window.
-        var windowWidth = window.innerWidth;
-        var windowHeight = window.innerHeight;
+        // The idea behind using innerWidth/Height vs.
+        // $(window).width()/height() is that, when setting the annotation
+        // tool's width or height to best fit the window, we have to watch
+        // out for the presence/absence of scrollbars.  When there is an
+        // x scrollbar, that takes up height on the bottom.  When there is
+        // a y scrollbar, that takes up width on the right.
+        //
+        // We want to avoid two scenarios:
+        // (1) Anticipating a scrollbar when in fact, there will be no
+        // scrollbar after resizing the layout.  This means the layout ends
+        // up noticeably smaller than the window space.
+        // (2) Anticipating no scrollbar when in fact, there will be a
+        // scrollbar after resizing the layout.  This means the layout ends
+        // up larger than the window space, which will generate a possibly
+        // unnecessary scrollbar in the other direction.
+        //
+        // Also, pretend that the window is a couple of pixels smaller than
+        // it really is.  That way, even if there is some math imprecision,
+        // the annotation tool should still fit in the window.
+        var windowWidthFull = window.innerWidth - 2;
+        var windowHeightFull = window.innerHeight - 2;
+        var windowWidthMinusScrollbar = $(window).width() - 2;
+        var windowHeightMinusScrollbar = $(window).height() - 2;
 
         var $annotationTool = $(annotationToolElement);
 
         // Fit the annotation tool to the window size - or, if the
         // window size is too small, to the designated minimum
         // dimensions.
-        // If fitting to the window size, make it a pixel smaller than
-        // the window, so that the layout can fit even when there's a
-        // bit of math imprecision.
         var minWidth = 600;
         var minHeight = 450;
-        $annotationTool.width(Math.max(windowWidth - 2, minWidth));
-        $annotationTool.height(Math.max(windowHeight - 2, minHeight));
+        var annoToolWidth, annoToolHeight;
+
+        if (windowWidthFull >= minWidth && windowHeightFull >= minHeight) {
+            // we have no scrollbars.
+            annoToolWidth = windowWidthFull;
+            annoToolHeight = windowHeightFull;
+        }
+        else if (windowWidthFull < minWidth && windowHeightMinusScrollbar >= minHeight) {
+            // we have only a horizontal scrollbar.
+            annoToolWidth = minWidth;
+            annoToolHeight = windowHeightMinusScrollbar;
+        }
+        else if (windowWidthMinusScrollbar >= minWidth && windowHeightFull < minHeight) {
+            // we have only a vertical scrollbar.
+            annoToolWidth = windowWidthMinusScrollbar;
+            annoToolHeight = minHeight;
+        }
+        else {
+            // we have both scrollbars.
+            annoToolWidth = minWidth;
+            annoToolHeight = minHeight;
+        }
+
+        $annotationTool.width(annoToolWidth);
+        $annotationTool.height(annoToolHeight);
 
         // Figure out the sizing of everything according to the annotation
         // tool size and the layout specification.
@@ -1022,11 +1060,11 @@ var AnnotationToolHelper = (function() {
         // Set the modal window size.
         modalWindowWidth = Math.max(
             MODAL_WINDOW_MIN_WIDTH,
-            windowWidth*MODAL_WINDOW_PCT_WIDTH/100
+            annoToolWidth*MODAL_WINDOW_PCT_WIDTH/100
         );
         modalWindowHeight = Math.max(
             MODAL_WINDOW_MIN_HEIGHT,
-            windowHeight*MODAL_WINDOW_PCT_HEIGHT/100
+            annoToolHeight*MODAL_WINDOW_PCT_HEIGHT/100
         );
 
         // Reshape the label button grid.
