@@ -964,10 +964,11 @@ var AnnotationToolHelper = (function() {
         // Also, pretend that the window is a couple of pixels smaller than
         // it really is.  That way, even if there is some math imprecision,
         // the annotation tool should still fit in the window.
-        var windowWidthFull = window.innerWidth - 2;
-        var windowHeightFull = window.innerHeight - 2;
-        var windowWidthMinusScrollbar = $(window).width() - 2;
-        var windowHeightMinusScrollbar = $(window).height() - 2;
+        var leeway = 5;
+        var windowWidthFull = window.innerWidth - leeway;
+        var windowHeightFull = window.innerHeight - leeway;
+        var windowWidthMinusScrollbar = $(window).width() - leeway;
+        var windowHeightMinusScrollbar = $(window).height() - leeway;
 
         var $annotationTool = $(annotationToolElement);
 
@@ -1077,12 +1078,19 @@ var AnnotationToolHelper = (function() {
         // their dimensions.
         var infoAreaHeight = $('#info-buttons').height();
         $('#info-buttons table').height(infoAreaHeight);
-        $('#info-buttons table tr').height(infoAreaHeight);
-        $('#info-buttons table tr td').height(infoAreaHeight);
+        // The below turns out to be not needed.
+        //$('#info-buttons table tr').height(infoAreaHeight);
+        // When sizing the td elements, take the borders into account.
+        //var $infoButtons = $('#info-buttons table tr td');
+        //var infoButtonBorderHeight = parseFloat($infoButtons.css('border-top-width'))
+        //                             + parseFloat($infoButtons.css('border-bottom-width'));
+        //$infoButtons.height(infoAreaHeight - infoButtonBorderHeight);
+
         var navAreaHeight = $('#nav-buttons').height();
         $('#nav-buttons table').height(navAreaHeight);
-        $('#nav-buttons table tr').height(navAreaHeight);
-        $('#nav-buttons table tr td').height(navAreaHeight);
+        // The below turns out to be not needed.
+        //$('#nav-buttons table tr').height(navAreaHeight);
+        //$('#nav-buttons table tr td').height(navAreaHeight);
 
         // Vertically re-center the nav-button text.  To do so, define the
         // CSS line-height to be the same height as the button.

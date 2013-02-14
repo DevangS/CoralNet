@@ -218,12 +218,9 @@ Info and nav buttons
     /* Make the button fill the table cell's horizontal space */
     display: block;
 
-    /* Make the button fill the table cell's vertical space */
-    height: 100%;
-
-    /* TODO: Make the button text centered vertically. */
-    /* The best way might be to dynamically set the line-height to the
-    same as the parent element's height. */
+    /* Make the button fill the table cell's vertical space + center the
+       text vertically: done by dynamically setting the line-height to the
+       same as the parent element's height. */
 }
 
 /* Text appearance. */
