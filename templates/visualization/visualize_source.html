@@ -5,9 +5,14 @@
 
 {% block title %}{{ source.name }} - Visualization | CoralNet{% endblock %}
 
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
+{% endblock %}
+
 {% block page-specific-includes %}
     {% include "form_media_versioned.html" with form=searchForm %}
     {% include "form_media_versioned.html" with form=actionForm %}
+    {% include "static-local-include.html" with type="js" path="js/ImageMetadataFormHelper.js" %}
 {% endblock %}
 
 {% block css-code %}
@@ -61,29 +66,31 @@ fieldset.fieldset_visualization label {
             {% endfor %}
         </ul>
     {% else %}
-        {% for image in images.object_list %}
-            {% if image.type == "full_images" %}
-                {% with image_obj=image.image_obj %}
-                <span class="thumb_wrapper">
-                <a href="{% url image_detail image_obj.id %}">
-                    <img class="thumb {{ image_obj.get_annotation_status_code }}"
-                         src="{% thumbnail image_obj.original_file 150x150 %}"
-                         title="{{ image_obj.get_image_element_title }} - {{ image_obj.get_annotation_status_str }}"/>
-                </a>
-                </span>
-                {% endwith %}
-            {% else %} {# image.type == "patches" #}
-                {% with fullImage=image.fullImage %}
-                <span class="thumb_wrapper">
-                <a href="{% url image_detail fullImage.id %}">
-                    <img class="thumb"
-                         src="{{ MEDIA_URL }}{{ image.patchPath }}"
-                         title="Point {{ image.pointNum }} ({{ image.row }},{{ image.col }}) in: {{ fullImage.get_image_element_title }}"/>
-                </a>
-                </span>
-                {% endwith %}
-            {% endif %}
-        {% endfor %}
+        {% if not view %}
+            {% for image in images.object_list %}
+                {% if image.type == "full_images" %}
+                    {% with image_obj=image.image_obj %}
+                    <span class="thumb_wrapper">
+                    <a href="{% url image_detail image_obj.id %}">
+                        <img class="thumb {{ image_obj.get_annotation_status_code }}"
+                             src="{% thumbnail image_obj.original_file 150x150 %}"
+                             title="{{ image_obj.get_image_element_title }} - {{ image_obj.get_annotation_status_str }}"/>
+                    </a>
+                    </span>
+                    {% endwith %}
+                {% else %} {# image.type == "patches" #}
+                    {% with fullImage=image.fullImage %}
+                    <span class="thumb_wrapper">
+                    <a href="{% url image_detail fullImage.id %}">
+                        <img class="thumb"
+                             src="{{ MEDIA_URL }}{{ image.patchPath }}"
+                             title="Point {{ image.pointNum }} ({{ image.row }},{{ image.col }}) in: {{ fullImage.get_image_element_title }}"/>
+                    </a>
+                    </span>
+                    {% endwith %}
+                {% endif %}
+            {% endfor %}
+
 
         <div class="pagination">
             <span>
@@ -105,6 +112,63 @@ fieldset.fieldset_visualization label {
             </span>
         </div>
 
+        {% else %}
+            <form method="post" id="form">{% csrf_token %}
+                {{ metadataForm.management_form }}
+                <div style="overflow:auto;max-height:1000px">
+                <ul>
+                    {% for error in metadataForm.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+
+                {% for field in selectAllForm %}
+                    {{ field }}
+                {% endfor %}
+
+                <table id="metadataFormTable">
+                    <tr>
+                        <th>Filename</th>
+                        <th></th>
+                        <th>Date</th>
+                        {% for key in key_list %}
+                            <th>{{ key }}</th>
+                        {% endfor %}
+                        <th>Height (cm)</th>
+                        <th>Latitude</th>
+                        <th>Longitude</th>
+                        <th>Depth</th>
+                        <th>Camera</th>
+                        <th>Photographer</th>
+                        <th>Water Quality</th>
+                        <th>Strobes</th>
+                        <th>Framing Gear Used</th>
+                        <th>White Balance Card</th>
+
+                    </tr>
+                    {% for form, filename in metadataFormWithExtra %}
+                        <tr>
+                            <td>{{ filename }}</td>
+                            {% for field in form %}
+                                <td>{{ field }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </table>
+                </div>
+                <input type="submit" value="Submit" />
+            </form>
+
+            <!-- Script in the body will run on page load. -->
+            <script type="text/javascript">
+                test();
+                $(function() {
+                    $("#id_form-0-date").datepicker({ dateFormat: 'yy-mm-dd' });
+
+                });
+            </script>
+
+        {% endif %}
         <hr />
 
         {# Image action form, with functionality such as deleting images. #}

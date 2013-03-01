@@ -74,7 +74,7 @@
         {% if latest_images %}
             <div style="padding:10px;float:right">
                 {% if source.enable_robot_classifier %}
-                    <h2>Not annotated: <a>{{ image_stats.need_comp_anno }}</a></h2>
+                    <h2>Not annotated:<a>{{ image_stats.need_comp_anno }}</a></h2>
                     <h2>Needs review:
                     {% if image_stats.need_human_anno_first %}
                         <a href="{% url annotation_tool image_stats.need_human_anno_first.id %}"
@@ -84,7 +84,7 @@
                         {{ image_stats.need_human_anno }}
                     {% endif %}
                     </h2>
-                    <h2>Completed: <a>{{ image_stats.anno_completed }}</a></h2>
+                    <h2>Completed: <a href="{% url visualize_source source.id %}?image_status=3">{{ image_stats.anno_completed }}</a></h2>
                 {% else %}
                     <h2>Not annotated:
                     {% if image_stats.need_anno_first %}
@@ -95,12 +95,15 @@
                         {{ image_stats.need_anno }}
                     {% endif %}
                     </h2>
-                    <h2>Completed: <a>{{ image_stats.anno_completed }}</a></h2>
+                    <h2>Completed: <a href="{% url visualize_source source.id %}?image_status=2">{{ image_stats.anno_completed }}</a></h2>
                 {% endif %}
-                <h2>Total images: <a>{{ image_stats.total }}</a></h2>
+                <h2>Total images: <a href="{% url visualize_source source.id %}?image_status=0">{{ image_stats.total }}</a></h2>
             </div>
         {% endif %}
     </div>
+
+
+
 
     {% if source.enable_robot_classifier %}
     <hr />
@@ -153,10 +156,6 @@
 
           <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
         </ul>
-
-        {% if "source_admin" in source_perms %}
-        <a href="{% url source_edit source.id %}">{% trans 'Edit Source Details' %}</a>
-        {% endif %}
 
     </div>
 

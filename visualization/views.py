@@ -13,6 +13,9 @@ from images.models import Source, Image
 from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
 from visualization.utils import generate_patch_if_doesnt_exist
 from GChartWrapper import *
+from upload.forms import MetadataForm, SelectAllCheckbox
+from django.forms.formsets import formset_factory
+from django.utils.functional import curry
 
 def image_search_args_to_queryset_args(searchDict, source):
     """
@@ -52,8 +55,8 @@ def image_search_args_to_url_arg_str(searchDict):
         if isinstance(searchDict[paramName], models.Model):
             argsList.append('%s=%s' % (paramName, searchDict[paramName].pk))
 
-        # Don't include the arg if it's None or '', or 'page'
-        elif searchDict[paramName] and paramName != 'page':
+        # Don't include the arg if it's None or '', or 'page' or 'view'
+        elif searchDict[paramName] and paramName != 'page' and paramName != 'view':
             argsList.append('%s=%s' % (paramName, searchDict[paramName]))
 
     return '&'.join(argsList)
@@ -151,7 +154,6 @@ def visualize_source(request, source_id):
                             allSearchResults = allSearchResults.filter(status__annotatedByHuman=False)
                         elif value == 2:
                             allSearchResults = allSearchResults.filter(status__annotatedByHuman=True)
-                        
             # Sort the images.
             # TODO: Stop duplicating this DB-specific extras query; put it in a separate function...
             # Also, despite the fact that we're dealing with images and not metadatas, selecting photo_date does indeed work.
@@ -160,6 +162,79 @@ def visualize_source(request, source_id):
             sort_keys = ['metadata__'+k for k in (['year'] + source.get_value_field_list())]
             allSearchResults = allSearchResults.extra(select=db_extra_select)
             allSearchResults = allSearchResults.order_by(*sort_keys)
+
+            # Do we show the metadata form or the image viewer?
+            view = request.GET.get('view', '')
+
+            if view:
+                # This initializes the form set with default values; namely, the values
+                # for the keys that already exist in our records.
+                initValues = {'form-TOTAL_FORMS': '%s' % len(allSearchResults), 'form-INITIAL_FORMS': '%s' % len(allSearchResults)}
+                additionalValues = [];
+                for i, image in enumerate(allSearchResults):
+                    keys = image.get_location_value_str_list()
+                    for j, key in enumerate(keys):
+                        initValues['form-%s-key%s' % (i,j+1)] = key
+                    initValues['form-%s-date' % i] = image.metadata.photo_date
+                    initValues['form-%s-height' % i] = image.metadata.height_in_cm
+                    initValues['form-%s-latitude' % i] = image.metadata.latitude
+                    initValues['form-%s-longitude' % i] = image.metadata.longitude
+                    initValues['form-%s-depth' % i] = image.metadata.depth
+                    initValues['form-%s-camera' % i] = image.metadata.camera
+                    initValues['form-%s-photographer' % i] = image.metadata.photographer
+                    initValues['form-%s-waterQuality' % i] = image.metadata.water_quality
+                    initValues['form-%s-strobes' % i] = image.metadata.strobes
+                    initValues['form-%s-framingGear' % i] = image.metadata.framing
+                    initValues['form-%s-whiteBalance' % i] = image.metadata.balance
+                    additionalValues.append(image.metadata.name)
+
+                # This is used to create a formset out of the metadataForm. I need to do this
+                # in order to pass in the source id.
+                metadataFormSet = formset_factory(MetadataForm)
+                metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
+
+                if request.method == 'POST' and request.user.has_perm(Source.PermTypes.EDIT.code, source):
+                    metadataForm = metadataFormSet(request.POST)
+                    selectAllCheckbox = SelectAllCheckbox(request.POST)
+                    metadataFormWithExtra = zip(metadataForm.forms, additionalValues)
+                    if metadataForm.is_valid():
+                        # Here we save the data to the database, since data is valid.
+                        for image, formData in zip(allSearchResults, metadataForm.cleaned_data):
+                            image.metadata.photo_date = formData['date']
+                            image.metadata.height_in_cm = formData['height']
+                            image.metadata.latitude = formData['latitude']
+                            image.metadata.longitude = formData['longitude']
+                            image.metadata.depth = formData['depth']
+                            image.metadata.camera = formData['camera']
+                            image.metadata.photographer = formData['photographer']
+                            image.metadata.water_quality = formData['waterQuality']
+                            image.metadata.strobes = formData['strobes']
+                            image.metadata.framing = formData['framingGear']
+                            image.metadata.balance = formData['whiteBalance']
+
+                            if 'key1' in formData:
+                                image.metadata.value1 = formData['key1']
+                            if 'key2' in formData:
+                                image.metadata.value2 = formData['key2']
+                            if 'key3' in formData:
+                                image.metadata.value3 = formData['key3']
+                            if 'key4' in formData:
+                                image.metadata.value4 = formData['key4']
+                            if 'key5' in formData:
+                                image.metadata.value5 = formData['key5']
+                            image.metadata.save()
+                        messages.success(request, 'Image metadata file has now been saved.')
+                    else:
+                        # Display error message in addition to other error messages below.
+                        messages.error(request, 'Please correct the errors below.')
+                else:
+                    metadataForm = metadataFormSet(initValues)
+                    metadataFormWithExtra = zip(metadataForm.forms, additionalValues)
+                    selectAllCheckbox = SelectAllCheckbox()
+            else:
+                metadataForm = None
+                metadataFormWithExtra = None
+                selectAllCheckbox = None
 
         else:
             #since user specified a label, generate patches to show instead of whole images
@@ -240,6 +315,11 @@ def visualize_source(request, source_id):
         'showPatches': showPatches,
         'searchParamsStr': urlArgsStr,
         'actionForm': actionForm,
+        'key_list': source.get_key_list(),
+        'metadataForm': metadataForm,
+        'selectAllForm': selectAllCheckbox,
+        'metadataFormWithExtra': metadataFormWithExtra,
+        'view':view,
         },
         context_instance=RequestContext(request)
     )
