@@ -74,7 +74,6 @@
 }
 
 #label-button-table tr td {
-
     /* Set a transparent border that is the same size as the "current button"
     border.  That way, the border size doesn't change (and thus elements
     don't shift) when the button becomes the "current" button. */
@@ -112,7 +111,7 @@
 #label-button-table tr td.group8:hover{ background-color: #55aaee; }
 
 #toolButtonArea {
-    margin-bottom: 5px;
+    /*margin-bottom: 5px;*/
     text-align: center;
 }
 #toolButtonArea input[type="image"] {
@@ -128,15 +127,15 @@
 }
 
 #annotationList {
-    /* scrollbars will appear only if they're necessary */
-    overflow: auto;
-
     /* height is set dynamically. */
 }
 
 #annotationForm {
+    /* scrollbars will appear only if they're necessary */
+    overflow: auto;
+
     width: auto;
-    margin: auto;
+    margin: 0;
     padding: 0;
 }
 
@@ -338,13 +337,29 @@ kbd {
     border: 2px solid black;
 }
 
-/* jQuery-UI sliders. */
-.ui-slider {
-    margin: 3px 0 3px 254px;  /* top right bottom left */
-    width: 250px;
+/* Image tools */
+#annotationImageOptionsForm {
+    width: auto;
+    margin: auto;
+    padding: 0;
+}
+#annotationImageOptionsForm input {
+    margin: 1px 0;
+    padding: 1px 1px;
+}
+#annotationImageOptionsForm label {
+    width: auto;
 }
 
-/* Place for "Applying..." text for image options/tools form */
+/* Bri/Con sliders. */
+.ui-slider {
+    margin: 3px 0 3px 0;  /* top right bottom left */
+
+    /* TODO: Size dynamically */
+    width: 150px;
+}
+
+/* Place for "Applying..." text for image tools form */
 #applyingText {
     margin-left: 254px;
 

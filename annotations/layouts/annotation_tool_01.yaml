@@ -10,17 +10,18 @@
   - x-2px: divider
   - x-leftover:
 
-#    y-65%:
-    - y-100%:
+    - y-55%:
+#    - y-100%:
 
       - x-20%: toolButtonArea
-      - x-80%:
+      - x-leftover:
 
         - y-85%: annotationForm
-        - y-15%: progressIndicator
+        - y-leftover: progressIndicator
 
-#    y-20%: zoom
-#    y-15%: image-tools
+    - y-2px: divider
+    - y-20%: zoom-controls
+    - y-leftover: image-tools
 
 - y-2px: divider
 - y-leftover:

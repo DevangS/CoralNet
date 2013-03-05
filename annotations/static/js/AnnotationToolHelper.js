@@ -1032,12 +1032,12 @@ var AnnotationToolHelper = (function() {
         pointsCanvas.width = annotationAreaWidth;
         pointsCanvas.height = annotationAreaHeight;
 
-//        var annotationListMaxHeight =
-//            annotationAreaHeight - parseFloat($("#toolButtonArea").outerHeight(true));
-//
-//        $(annotationList).css({
-//            "max-height": annotationListMaxHeight + "px"
-//        });
+        var annotationListMaxHeight =
+            annotationAreaHeight - parseFloat($("#annotationForm").outerHeight(true));
+
+        $(annotationList).css({
+            "max-height": annotationListMaxHeight + "px"
+        });
 
 
         // Set initial image scaling so the whole image is shown.

@@ -1,7 +1,7 @@
-<legend>Image Tools</legend>
 <form id="annotationImageOptionsForm"
       action="" method="post">{% csrf_token %}
 
+    {# TODO: Stop displaying this field generically, that doesn't work. #}
     {% for field in image_options_form %}
         {% include "form_generic_one_field.html" with field=field dont_mark_required='yes' %}
 
@@ -9,6 +9,8 @@
             <div id="{{ field.name }}_slider"></div>
         {% endif %}
     {% endfor %}
+
+    {{ image_options_form.brightness }}
 
     <div class="submit_button_wrapper_column_form">
         <button id="applyImageOptionsButton" type="button">Apply</button>

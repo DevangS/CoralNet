@@ -51,6 +51,7 @@
 </div>
 {% endcomment %}
 
+{% comment %}
 <button id="id_button_show_image_tools" style="display:none">Image Tools</button>
 
 <div id="id_image_tools_wrapper" style="display:none">
@@ -62,6 +63,7 @@
 
     <hr/>
 </div>
+{% endcomment %}
 
 <div id="annotation-tool"></div>
 
@@ -81,6 +83,7 @@
 </div>
 
 <div id="toolButtonArea">
+    {% comment %}
     <input class="zoomButton" type="image"
            id="zoomInButton" src="/static/img/Icon_zoom-in.png" title="Zoom in"/>
     <input class="zoomButton" type="image"
@@ -88,21 +91,27 @@
     <input class="zoomButton" type="image"
            id="zoomFitButton" src="/static/img/Icon_zoom-fit.png" title="Zoom all the way out"/>
     <br/>
+    {% endcomment %}
 
     <input class="pointModeButton" type="image"
            id="pointModeButtonAll" src="/static/img/Icon_point-mode-all.png" title="Show all points"/>
+    <br/>
     <input class="pointModeButton" type="image"
            id="pointModeButtonSelected" src="/static/img/Icon_point-mode-selected.png" title="Show selected points only"/>
+    <br/>
     <input class="pointModeButton" type="image"
            id="pointModeButtonNone" src="/static/img/Icon_point-mode-none.png" title="Hide all points"/>
     <br/>
 
     <input class="quickSelectButton" type="image"
            id="quickSelectButtonNone" src="/static/img/Icon_select-none.png" title="Un-select all points"/>
+    <br/>
     <input class="quickSelectButton" type="image"
            id="quickSelectButtonUnannotated" src="/static/img/Icon_select-unannotated.png" title="Select all unannotated points"/>
+    <br/>
     <input class="quickSelectButton" type="image"
            id="quickSelectButtonInvert" src="/static/img/Icon_select-inversion.png" title="Invert current selections"/>
+    <br/>
 </div>
 
 <form id="annotationForm"
@@ -140,6 +149,14 @@
 
   <div id="allDone"></div>
 
+</div>
+
+<div id="zoom-controls">
+
+</div>
+
+<div id="image-tools">
+    {% include "annotations/annotation_image_options.html" with image_options_form=image_options_form %}
 </div>
 
 <div id="info-buttons">
