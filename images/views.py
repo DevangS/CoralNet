@@ -173,12 +173,11 @@ def source_main(request, source_id):
 
     latestRobot = source.get_latest_robot()
     if latestRobot == None:
-       # robotStats = dict(
-      #      hasRobot=False,
-     #   )
-    #else:
-        f = open('robot46.meta.json')
-        #f = open(latestRobot.path_to_model + '.meta.json')
+        robotStats = dict(
+            hasRobot=False,
+        )
+    else:
+        f = open(latestRobot.path_to_model + '.meta.json')
         jsonstring = f.read()
         f.close()
         meta=json.loads(jsonstring)
@@ -206,10 +205,8 @@ def source_main(request, source_id):
         
         labelNames = []
         groupsNames = []
-        labelid = [1,4,3,3,4,4,2,1,3,2,1,4,3,3,2,4,2,1,2,4]
 
-        #for ids in labelMap:
-        for ids in labelid:
+        for ids in labelMap:
           labelNames.append( get_object_or_404(Label, id=ids))
         for label in labelNames:
           groupsNames.append(str(label.group.name))
@@ -287,6 +284,7 @@ def source_main(request, source_id):
         i = j = 0
         groupcm = [None] * (len(finalGroup) + groupLen )
 
+        #functional group CM
         for items in finalGroup:
           if ( i % (groupLen + 1 ) ) == 0:
               groupcm[i] = groupsNames[j]
@@ -307,12 +305,12 @@ def source_main(request, source_id):
             i+=1
 
         robotStats = dict(
-            version=69,
-            #version=latestRobot.version,
+            version=latestRobot.version,
             trainTime=round(meta['totalRuntime']),
             precision = 100 * (1 - meta['hp']['estPrecision']),
             cm = groupcm,
             labelMap = setMap,
+            row_sum = rowSumList,
             matrixSize = len(setMap) + 1,
             hasRobot=True,
         )

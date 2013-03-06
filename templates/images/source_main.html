@@ -102,8 +102,8 @@
                     <td>{{ robotStats.trainTime }}</td>
                 </tr>
             </table></br>
-	    <p> Confusion Matrix </p>
-	    <table class="detail_table">
+	    <p> Functional Group Confusion Matrix </p>
+	    <table class="detail_table" style = "float:left;">
 		<tr>
 		    <td> cm </td>
 	            {% for labels in robotStats.labelMap %}
@@ -123,7 +123,20 @@
 		     {% endif %}
 
 		{% endfor %}
+      </table>
+          <table class="detail_table" >
+                      <tr>
+      <td>Count</td>
+     </tr>
+     		    {% for labels in robotStats.row_sum %}
+                  <tr>
+                    	<td>{{ labels}}</td>
+                   </tr>
+		    {% endfor %}
+     </tr>
+
               </table></br>
+              </br>
 	      <p>The first row and column indicate the label ID</p>
 
         {% else %}
