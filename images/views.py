@@ -20,6 +20,7 @@ from images.forms import *
 from images.model_utils import PointGen
 from images.utils import *
 import json , math
+from numpy import array
 
 def source_list(request):
     """
@@ -187,12 +188,87 @@ def source_main(request, source_id):
         sizeOfNewMatrix = (int( len(cmx) + matrixSize) )
         newcm = [None] * (sizeOfNewMatrix -1)
         labelMap = meta['labelMap']
+
+        temp = []
+        groupCM = []
+
+        for x in range(len(cmx)):
+            temp.append(cmx[x])
+            if (x+1) % len(labelMap) == 0:
+                groupCM.append(temp)
+                temp = []
+
+        groupCM = array(groupCM)
+        labelNames = []
+        groupsNames = []
+
+        for ids in labelMap:
+          labelNames.append( get_object_or_404(Label, id=ids))
+        for label in labelNames:
+          groupsNames.append(str(label.group.name))
+
+        numofGroups = len( set(groupsNames) )
+        setMap = list(set(groupsNames) )
+        
+        sizeOfGroup = len(setMap) ** 2
+        groupCols = []
+        temp = None
+
+        #reduce the cols and create a list of cols
+        for col in range(len(setMap)):
+            for x in range(len(groupsNames)):
+                if setMap[col] == groupsNames[x]:
+                    if temp == None:
+                        temp = groupCM[:,x]
+                    else:
+                        temp += groupCM[:,x]
+            groupCols.append(temp)
+            temp = None
+ 
+        temp = []
+        colList = []
+        for x in range(len(groupCols)):
+            colList.append ( groupCols[x].tolist())
+
+        #convert to single matrix format from cols list
+        cmint = []
+        for x in range(len(groupsNames)):
+            for col in range(len(colList)):
+                temp.append( colList[col][x])
+            cmint.append(temp)
+            temp = []
+
+        #reduce rows and create a list of rows
+        cmint = array(cmint)
+        temp = None
+        cmout = []
+        for row in range(len(setMap)):
+            for x in range(len(groupsNames)):
+                if setMap[row] == groupsNames[x]:
+                    if temp == None:
+                        temp = cmint[x,:]
+                    else:
+                        temp += cmint[x,:]
+            cmout.append(temp)
+            temp = None
+
+        rowList = []
+        for x in cmout:
+            rowList.append ( x.tolist())
+
+        #convert to single matrix format from row list
+        finalGroup = []
+        for x in rowList:
+            for cell in x:
+                finalGroup.append(cell)
+
         i = j = 0
+
 
         #creating a new cm matrix that contains the label set as the first column
         for items in cmx:
             if ( i % (matrixSize ) ) == 0:
-                newcm[i] = labelMap[j]
+                newcm[i] = labelNames[j].name
                 j+=1
                 i+=1
             newcm[i] = items
@@ -203,7 +279,7 @@ def source_main(request, source_id):
             trainTime=round(meta['totalRuntime']),
             precision = 100 * (1 - meta['hp']['estPrecision']),
             cm = newcm,
-            labelMap = labelMap,
+            labelMap = labelNames,
             matrixSize = matrixSize,
             hasRobot=True,
         )
@@ -214,7 +290,7 @@ def source_main(request, source_id):
         'members': memberDicts,
         'latest_images': latest_images,
         'image_stats': image_stats,
-		'robotStats':robotStats,
+		    'robotStats':robotStats,
         },
         context_instance=RequestContext(request)
         )
