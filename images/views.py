@@ -173,50 +173,58 @@ def source_main(request, source_id):
 
     latestRobot = source.get_latest_robot()
     if latestRobot == None:
-        robotStats = dict(
-            hasRobot=False,
-        )
-    else:
-        f = open(latestRobot.path_to_model + '.meta.json')
+       # robotStats = dict(
+      #      hasRobot=False,
+     #   )
+    #else:
+        f = open('robot46.meta.json')
+        #f = open(latestRobot.path_to_model + '.meta.json')
         jsonstring = f.read()
         f.close()
         meta=json.loads(jsonstring)
 
         #getting raw confusion matrix from json file
         cmx = meta['hp']['gridStats'][-1]['cmOpt']
-        matrixSize = math.sqrt ( len(cmx) ) + 1
-        sizeOfNewMatrix = (int( len(cmx) + matrixSize) )
-        newcm = [None] * (sizeOfNewMatrix -1)
         labelMap = meta['labelMap']
+        dimension = len(labelMap)
+        matrixSize =  dimension + 1
+        sizeOfNewMatrix = (int( len(cmx) + matrixSize) )
+        newcm = [None] * (sizeOfNewMatrix -1 )
 
         temp = []
         groupCM = []
 
+        #create an array out of the the raw cm list
         for x in range(len(cmx)):
             temp.append(cmx[x])
-            if (x+1) % len(labelMap) == 0:
+            if (x+1) % dimension == 0:
                 groupCM.append(temp)
                 temp = []
-
         groupCM = array(groupCM)
+        
+        
+        
         labelNames = []
         groupsNames = []
+        labelid = [1,4,3,3,4,4,2,1,3,2,1,4,3,3,2,4,2,1,2,4]
 
-        for ids in labelMap:
+        #for ids in labelMap:
+        for ids in labelid:
           labelNames.append( get_object_or_404(Label, id=ids))
         for label in labelNames:
           groupsNames.append(str(label.group.name))
 
         numofGroups = len( set(groupsNames) )
         setMap = list(set(groupsNames) )
-        
+        groupLen = len(setMap)
+
         sizeOfGroup = len(setMap) ** 2
         groupCols = []
         temp = None
 
         #reduce the cols and create a list of cols
-        for col in range(len(setMap)):
-            for x in range(len(groupsNames)):
+        for col in range(groupLen):
+            for x in range(dimension):
                 if setMap[col] == groupsNames[x]:
                     if temp == None:
                         temp = groupCM[:,x]
@@ -227,12 +235,12 @@ def source_main(request, source_id):
  
         temp = []
         colList = []
-        for x in range(len(groupCols)):
-            colList.append ( groupCols[x].tolist())
+        for x in groupCols:
+            colList.append ( x.tolist())
 
         #convert to single matrix format from cols list
         cmint = []
-        for x in range(len(groupsNames)):
+        for x in range(dimension):
             for col in range(len(colList)):
                 temp.append( colList[col][x])
             cmint.append(temp)
@@ -242,8 +250,8 @@ def source_main(request, source_id):
         cmint = array(cmint)
         temp = None
         cmout = []
-        for row in range(len(setMap)):
-            for x in range(len(groupsNames)):
+        for row in range(groupLen):
+            for x in range(dimension):
                 if setMap[row] == groupsNames[x]:
                     if temp == None:
                         temp = cmint[x,:]
@@ -256,14 +264,38 @@ def source_main(request, source_id):
         for x in cmout:
             rowList.append ( x.tolist())
 
+        rowSum = 0
+        rowSumList = []
         #convert to single matrix format from row list
         finalGroup = []
         for x in rowList:
             for cell in x:
-                finalGroup.append(cell)
+                rowSum += cell
+            rowSumList.append(rowSum)
+            rowSum = 0
+
+        i = 0
+        #convert to single matrix format from row list
+        finalGroup = []
+        for x in rowList:
+            for cell in x:
+                percent = cell/float(rowSumList[i])
+                finalGroup.append(("%.2f" % percent).lstrip('0'))
+            i += 1     
+             
 
         i = j = 0
+        groupcm = [None] * (len(finalGroup) + groupLen )
 
+        for items in finalGroup:
+          if ( i % (groupLen + 1 ) ) == 0:
+              groupcm[i] = groupsNames[j]
+              j+=1
+              i+=1
+          groupcm[i] = items
+          i+=1
+
+        i = j = 0
 
         #creating a new cm matrix that contains the label set as the first column
         for items in cmx:
@@ -275,15 +307,17 @@ def source_main(request, source_id):
             i+=1
 
         robotStats = dict(
-            version=latestRobot.version,
+            version=69,
+            #version=latestRobot.version,
             trainTime=round(meta['totalRuntime']),
             precision = 100 * (1 - meta['hp']['estPrecision']),
-            cm = newcm,
-            labelMap = labelNames,
-            matrixSize = matrixSize,
+            cm = groupcm,
+            labelMap = setMap,
+            matrixSize = len(setMap) + 1,
             hasRobot=True,
         )
-    
+
+
     return render_to_response('images/source_main.html', {
         'source': source,
         'loc_keys': ', '.join(source.get_key_list()),
