@@ -206,6 +206,7 @@ def source_main(request, source_id):
         labelNames = []
         groupsNames = []
 
+        #getting label objects 
         for ids in labelMap:
           labelNames.append( get_object_or_404(Label, id=ids))
         for label in labelNames:
