@@ -170,7 +170,8 @@ def visualize_source(request, source_id):
                 # This initializes the form set with default values; namely, the values
                 # for the keys that already exist in our records.
                 initValues = {'form-TOTAL_FORMS': '%s' % len(allSearchResults), 'form-INITIAL_FORMS': '%s' % len(allSearchResults)}
-                additionalValues = [];
+                images = [];
+                statuses = [];
                 for i, image in enumerate(allSearchResults):
                     keys = image.get_location_value_str_list()
                     for j, key in enumerate(keys):
@@ -186,7 +187,8 @@ def visualize_source(request, source_id):
                     initValues['form-%s-strobes' % i] = image.metadata.strobes
                     initValues['form-%s-framingGear' % i] = image.metadata.framing
                     initValues['form-%s-whiteBalance' % i] = image.metadata.balance
-                    additionalValues.append(image.metadata.name)
+                    images.append(image)
+                    statuses.append(image.get_annotation_status_str)
 
                 # This is used to create a formset out of the metadataForm. I need to do this
                 # in order to pass in the source id.
@@ -196,7 +198,7 @@ def visualize_source(request, source_id):
                 if request.method == 'POST' and request.user.has_perm(Source.PermTypes.EDIT.code, source):
                     metadataForm = metadataFormSet(request.POST)
                     selectAllCheckbox = SelectAllCheckbox(request.POST)
-                    metadataFormWithExtra = zip(metadataForm.forms, additionalValues)
+                    metadataFormWithExtra = zip(metadataForm.forms, images, statuses)
                     if metadataForm.is_valid():
                         # Here we save the data to the database, since data is valid.
                         for image, formData in zip(allSearchResults, metadataForm.cleaned_data):
@@ -229,7 +231,7 @@ def visualize_source(request, source_id):
                         messages.error(request, 'Please correct the errors below.')
                 else:
                     metadataForm = metadataFormSet(initValues)
-                    metadataFormWithExtra = zip(metadataForm.forms, additionalValues)
+                    metadataFormWithExtra = zip(metadataForm.forms, images, statuses)
                     selectAllCheckbox = SelectAllCheckbox()
             else:
                 metadataForm = None
