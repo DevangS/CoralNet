@@ -312,17 +312,17 @@ class MetadataForm(Form):
     a form set whenever it is used.
     """
     selected = BooleanField(required=False)
-    date = DateField()
-    height = CharField()
-    latitude = CharField()
-    longitude = CharField()
-    depth = CharField(required=False)
-    camera = CharField(required=False)
-    photographer = CharField(required=False)
-    waterQuality = CharField(required=False)
-    strobes = CharField(required=False)
-    framingGear = CharField(required=False)
-    whiteBalance = CharField(required=False)
+    date = DateField(widget= TextInput(attrs={'size': 8,}))
+    height = CharField(widget= TextInput(attrs={'size': 10,}))
+    latitude = CharField(widget= TextInput(attrs={'size': 10,}))
+    longitude = CharField(widget= TextInput(attrs={'size': 10,}))
+    depth = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    camera = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    photographer = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    waterQuality = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    strobes = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    framingGear = CharField(required=False, widget= TextInput(attrs={'size': 16,}))
+    whiteBalance = CharField(required=False, widget= TextInput(attrs={'size': 16,}))
 
     def __init__(self, *args, **kwargs):
         self.source_id = kwargs.pop('source_id')

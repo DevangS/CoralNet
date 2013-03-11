@@ -113,60 +113,8 @@ fieldset.fieldset_visualization label {
         </div>
 
         {% else %}
-            <form method="post" id="form">{% csrf_token %}
-                {{ metadataForm.management_form }}
-                <div style="overflow:auto;max-height:1000px">
-                <ul>
-                    {% for error in metadataForm.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-
-                {% for field in selectAllForm %}
-                    {{ field }}
-                {% endfor %}
-
-                <table id="metadataFormTable">
-                    <tr>
-                        <th>Filename</th>
-                        <th></th>
-                        <th>Date</th>
-                        {% for key in key_list %}
-                            <th>{{ key }}</th>
-                        {% endfor %}
-                        <th>Height (cm)</th>
-                        <th>Latitude</th>
-                        <th>Longitude</th>
-                        <th>Depth</th>
-                        <th>Camera</th>
-                        <th>Photographer</th>
-                        <th>Water Quality</th>
-                        <th>Strobes</th>
-                        <th>Framing Gear Used</th>
-                        <th>White Balance Card</th>
-
-                    </tr>
-                    {% for form, filename in metadataFormWithExtra %}
-                        <tr>
-                            <td>{{ filename }}</td>
-                            {% for field in form %}
-                                <td>{{ field }}</td>
-                            {% endfor %}
-                        </tr>
-                    {% endfor %}
-                </table>
-                </div>
-                <input type="submit" value="Submit" />
-            </form>
-
-            <!-- Script in the body will run on page load. -->
-            <script type="text/javascript">
-                test();
-                $(function() {
-                    $("#id_form-0-date").datepicker({ dateFormat: 'yy-mm-dd' });
-
-                });
-            </script>
+            {# If the view is selected, here we use the metadata form template #}
+            {% include "upload/metadata_form.html" with metadataForm=metadataForm metadataFormWithExtra=metadataFormWithExtra selectAllForm=selectAllForm %}
 
         {% endif %}
         <hr />
