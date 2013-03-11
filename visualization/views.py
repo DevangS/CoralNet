@@ -16,6 +16,7 @@ from GChartWrapper import *
 from upload.forms import MetadataForm, SelectAllCheckbox
 from django.forms.formsets import formset_factory
 from django.utils.functional import curry
+from lib.utils import JsonResponse
 
 def image_search_args_to_queryset_args(searchDict, source):
     """
@@ -121,6 +122,10 @@ def visualize_source(request, source_id):
     # (This must happen after processing the action form, so that
     # images can be deleted/modified before we get search results.)
     errors = []
+    metadataForm = None
+    metadataFormWithExtra = None
+    selectAllCheckbox = None
+    view = ''
     if searchFormErrors:
         errors.append("There were errors in the search parameters.")
         images = []
@@ -170,7 +175,8 @@ def visualize_source(request, source_id):
                 # This initializes the form set with default values; namely, the values
                 # for the keys that already exist in our records.
                 initValues = {'form-TOTAL_FORMS': '%s' % len(allSearchResults), 'form-INITIAL_FORMS': '%s' % len(allSearchResults)}
-                additionalValues = [];
+                images = [];
+                statuses = [];
                 for i, image in enumerate(allSearchResults):
                     keys = image.get_location_value_str_list()
                     for j, key in enumerate(keys):
@@ -186,7 +192,8 @@ def visualize_source(request, source_id):
                     initValues['form-%s-strobes' % i] = image.metadata.strobes
                     initValues['form-%s-framingGear' % i] = image.metadata.framing
                     initValues['form-%s-whiteBalance' % i] = image.metadata.balance
-                    additionalValues.append(image.metadata.name)
+                    images.append(image)
+                    statuses.append(image.get_annotation_status_str())
 
                 # This is used to create a formset out of the metadataForm. I need to do this
                 # in order to pass in the source id.
@@ -196,7 +203,7 @@ def visualize_source(request, source_id):
                 if request.method == 'POST' and request.user.has_perm(Source.PermTypes.EDIT.code, source):
                     metadataForm = metadataFormSet(request.POST)
                     selectAllCheckbox = SelectAllCheckbox(request.POST)
-                    metadataFormWithExtra = zip(metadataForm.forms, additionalValues)
+                    metadataFormWithExtra = zip(metadataForm.forms, images, statuses)
                     if metadataForm.is_valid():
                         # Here we save the data to the database, since data is valid.
                         for image, formData in zip(allSearchResults, metadataForm.cleaned_data):
@@ -229,12 +236,8 @@ def visualize_source(request, source_id):
                         messages.error(request, 'Please correct the errors below.')
                 else:
                     metadataForm = metadataFormSet(initValues)
-                    metadataFormWithExtra = zip(metadataForm.forms, additionalValues)
+                    metadataFormWithExtra = zip(metadataForm.forms, images, statuses)
                     selectAllCheckbox = SelectAllCheckbox()
-            else:
-                metadataForm = None
-                metadataFormWithExtra = None
-                selectAllCheckbox = None
 
         else:
             #since user specified a label, generate patches to show instead of whole images
@@ -323,6 +326,49 @@ def visualize_source(request, source_id):
         },
         context_instance=RequestContext(request)
     )
+"""
+@source_visibility_required('source_id')
+def visualize_source_ajax(request, source_id):
+    data = request.POST
+    checked = False
+    if 'checked' in data:
+        checked = True
+
+    if checked:
+        # This initializes the form set with default values; namely, the values
+        # for the keys that already exist in our records.
+        initValues = {'form-TOTAL_FORMS': '%s' % len(allSearchResults), 'form-INITIAL_FORMS': '%s' % len(allSearchResults)}
+        images = [];
+        statuses = [];
+        for i, image in enumerate(allSearchResults):
+            keys = image.get_location_value_str_list()
+            for j, key in enumerate(keys):
+                initValues['form-%s-key%s' % (i,j+1)] = key
+            initValues['form-%s-date' % i] = image.metadata.photo_date
+            initValues['form-%s-height' % i] = image.metadata.height_in_cm
+            initValues['form-%s-latitude' % i] = image.metadata.latitude
+            initValues['form-%s-longitude' % i] = image.metadata.longitude
+            initValues['form-%s-depth' % i] = image.metadata.depth
+            initValues['form-%s-camera' % i] = image.metadata.camera
+            initValues['form-%s-photographer' % i] = image.metadata.photographer
+            initValues['form-%s-waterQuality' % i] = image.metadata.water_quality
+            initValues['form-%s-strobes' % i] = image.metadata.strobes
+            initValues['form-%s-framingGear' % i] = image.metadata.framing
+            initValues['form-%s-whiteBalance' % i] = image.metadata.balance
+            images.append(image)
+            statuses.append(image.get_annotation_status_str())
+
+        # This is used to create a formset out of the metadataForm. I need to do this
+        # in order to pass in the source id.
+        metadataFormSet = formset_factory(MetadataForm)
+        metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
+
+    return render_to_response('upload/metadata_form.html', {
+        'blah':checked,
+    },
+        context_instance=RequestContext(request)
+    )
+"""
 
 @source_visibility_required('source_id')
 def generate_statistics(request, source_id):
