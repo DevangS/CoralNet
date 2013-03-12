@@ -298,7 +298,7 @@ def source_main(request, source_id):
         #functional group CM
         for items in finalGroup:
           if ( i % (groupLen + 1 ) ) == 0:
-              groupcm[i] = groupsNames[j]
+              groupcm[i] = setMap[j]
               j+=1
               i+=1
           else:
