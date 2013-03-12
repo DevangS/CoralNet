@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Map | CoralNet{% endblock %}
+
+{% block page-specific-includes %}
+
+    {# Google Maps API #}
+    <script type="text/javascript"
+{#            src="https://maps.googleapis.com/maps/api/js?sensor=false">#}
+            src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">
+    </script>
+
+    {% include "static-local-include.html" with type="css" path="css/map.css" %}
+    {% include "static-local-include.html" with type="js" path="js/map.js" %}
+
+{% endblock %}
+
+{% block content %}
+
+{# <legend>Map of Sources</legend>#}
+
+<div id="map-canvas"></div>
+
+<script type="text/javascript">
+    Map.init();
+</script>
+
+{% endblock %}

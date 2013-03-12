@@ -197,6 +197,7 @@ MY_INSTALLED_APPS = (
     'visualization',
     'bug_reporting',
     'requests',
+    'map',
     'lib',
 )
 
