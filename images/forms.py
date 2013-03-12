@@ -33,6 +33,10 @@ class ImageSourceForm(ModelForm):
 
         super(ImageSourceForm, self).__init__(*args, **kwargs)
 
+        # This is used to make longitude and latitude required
+        self.fields['longitude'].required = True
+        self.fields['latitude'].required = True
+
         # For use in templates.  Can iterate over fieldsets instead of the entire form.
         self.fieldsets = {'general_info': [self[name] for name in ['name', 'visibility', 'description']],
                           'image_height_in_cm': [self[name] for name in ['image_height_in_cm']],
@@ -74,6 +78,18 @@ class ImageSourceForm(ModelForm):
         self.cleaned_data = data
 
         return super(ImageSourceForm, self).clean()
+"""
+    def clean_latitude(self):
+        latitude = self.cleaned_data['latitude']
+        if latitude < -90 or latitude > 90:
+            raise ValidationError("Latitude is out of range.")
+
+    def clean_longitude(self):
+        longitude = self.cleaned_data['longitude']
+        if longitude < -180 or longitude > 180:
+            raise ValidationError("Longitude is out of range.")
+"""
+
 
 
 class LocationKeyForm(Form):
