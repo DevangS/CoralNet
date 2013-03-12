@@ -285,7 +285,10 @@ def source_main(request, source_id):
         finalGroup = []
         for x in rowList:
             for cell in x:
-                percent = cell/float(rowSumList[i])
+                if rowSumList[i] == 0:
+                    percent = 0.0
+                else:
+                    percent = cell/float(rowSumList[i])
                 finalGroup.append(("%.2f" % percent).lstrip('0'))
             i += 1     
              
