@@ -315,6 +315,9 @@ BROKER_VHOST = settings_2.BROKER_VHOST
 #Celery configuration
 CELERYD_CONCURRENCY = settings_2.CELERYD_CONCURRENCY
 
+# Google Maps
+GOOGLE_MAPS_API_KEY = settings_2.GOOGLE_MAPS_API_KEY
+
 # App URL bases
 IMAGES_URL = '/images/'
 ANNOTATIONS_URL = '/annotations/'
