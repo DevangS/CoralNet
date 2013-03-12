@@ -1,6 +1,7 @@
 var VSH = {
     $labelsField: undefined,
     $imageStatusFieldWrapper: undefined,
+    $viewFieldWrapper: undefined,
     $annotatorFieldWrapper: undefined,
 
     sourceUsesRobotClassifier: undefined,
@@ -8,6 +9,7 @@ var VSH = {
     init: function(sourceUsesRobotClassifier) {
         VSH.$labelsField = $('#id_labels');
         VSH.$imageStatusFieldWrapper = $('#id_image_status_wrapper');
+        VSH.$viewFieldWrapper = $('#id_view_wrapper');
         VSH.$annotatorFieldWrapper = $('#id_annotator_wrapper');
         VSH.sourceUsesRobotClassifier = sourceUsesRobotClassifier;
 
@@ -23,6 +25,7 @@ var VSH = {
         if (VSH.$labelsField.val() === '') {
             // Whole images
             VSH.$imageStatusFieldWrapper.show();
+            VSH.$viewFieldWrapper.show();
             VSH.$annotatorFieldWrapper.hide();
         }
         else {
@@ -32,6 +35,7 @@ var VSH = {
             else
                 VSH.$annotatorFieldWrapper.hide();
             VSH.$imageStatusFieldWrapper.hide();
+            VSH.$viewFieldWrapper.hide();
         }
     }
 };

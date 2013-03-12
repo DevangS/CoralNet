@@ -1,8 +1,10 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.forms import FileInput, ImageField, Form, ChoiceField, FileField
+from django.forms import FileInput, ImageField, Form, ChoiceField, FileField, CharField, BooleanField, TextInput, DateField
 from django.utils.translation import ugettext_lazy as _
 from upload.utils import metadata_to_filename
+from images.models import Source, Value1, Value2, Value3, Value4, Value5
+from datetime import date
 
 class MultipleFileInput(FileInput):
     """
@@ -304,3 +306,60 @@ class AnnotationImportOptionsForm(Form):
             raise ValidationError("Unknown value for {field_name}".format(field_name=field_name))
 
         return self.cleaned_data[field_name]
+
+class SelectAllCheckbox(Form):
+    """
+    This is used in conjunction with the metadataForm; but since the metadata form is rendered as
+    a form set, and I only want one select all checkbox, this form exists.
+    """
+    selectAll = BooleanField(required=False)
+
+class MetadataForm(Form):
+    """
+    This form is used to edit the metadata of images within this source. This is commonly used within
+    a form set whenever it is used.
+    """
+    selected = BooleanField(required=False)
+    date = DateField(widget= TextInput(attrs={'size': 8,}))
+    height = CharField(widget= TextInput(attrs={'size': 10,}))
+    latitude = CharField(widget= TextInput(attrs={'size': 10,}))
+    longitude = CharField(widget= TextInput(attrs={'size': 10,}))
+    depth = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    camera = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    photographer = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    waterQuality = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    strobes = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    framingGear = CharField(required=False, widget= TextInput(attrs={'size': 16,}))
+    whiteBalance = CharField(required=False, widget= TextInput(attrs={'size': 16,}))
+
+    def __init__(self, *args, **kwargs):
+        self.source_id = kwargs.pop('source_id')
+        super(MetadataForm,self).__init__(*args, **kwargs)
+        self.source = Source.objects.get(pk=self.source_id)
+
+        # Need to create fields for keys based on the number that exist in this source.
+        # Using insert so that the fields appear in the right order.
+        for j in range(self.source.num_of_keys()):
+            self.fields.insert(j+2,'key%s' % (j+1), CharField(widget= TextInput(attrs={'size': 10,})));
+
+    def clean(self):
+        data = self.cleaned_data
+
+        # Parse key entries as Value objects.
+        if 'key1' in data:
+            newValueObj, created = Value1.objects.get_or_create(name=data['key1'], source=self.source)
+            data['key1'] = newValueObj
+        if 'key2' in data:
+            newValueObj, created = Value2.objects.get_or_create(name=data['key2'], source=self.source)
+            data['key2'] = newValueObj
+        if 'key3' in data:
+            newValueObj, created = Value3.objects.get_or_create(name=data['key3'], source=self.source)
+            data['key3'] = newValueObj
+        if 'key4' in data:
+            newValueObj, created = Value4.objects.get_or_create(name=data['key4'], source=self.source)
+            data['key4'] = newValueObj
+        if 'key5' in data:
+            newValueObj, created = Value5.objects.get_or_create(name=data['key5'], source=self.source)
+            data['key5'] = newValueObj
+
+        return super(MetadataForm, self).clean()

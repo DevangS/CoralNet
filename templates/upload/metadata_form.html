@@ -1,0 +1,60 @@
+{% comment %}
+This is a template that is used to render a form for editing metadata
+{% endcomment %}
+
+<form method="post" id="form">{% csrf_token %}
+    {{ metadataForm.management_form }}
+    <div style="overflow:auto;max-height:500px">
+        <ul>
+            {% for error in metadataForm.errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+
+        {% for field in selectAllForm %}
+            {{ field }}
+        {% endfor %}
+
+        <table id="metadataFormTable" style="white-space:nowrap">
+            <tr>
+                <th>Filename</th>
+                <th>Status</th>
+                <th></th> {# This is the checkbox column #}
+                <th>Date</th>
+                {% for key in key_list %}
+                    <th>{{ key }}</th>
+                {% endfor %}
+                <th>Height (cm)</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Depth</th>
+                <th>Camera</th>
+                <th>Photographer</th>
+                <th>Water Quality</th>
+                <th>Strobes</th>
+                <th>Framing Gear Used</th>
+                <th>White Balance Card</th>
+
+            </tr>
+            {% for form, image, status in metadataFormWithExtra %}
+                <tr>
+                    <td><a href="{% url image_detail image.id %}">{{ image.metadata.name }}</a></td>
+                    <td>{{ status }}</td>
+                    {% for field in form %}
+                        <td>{{ field }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <input type="submit" value="Submit" />
+</form>
+
+<!-- Script in the body will run on page load. ImageMetadataFormHelper.js needs to be included -->
+<script type="text/javascript">
+    setUpBindings();
+    $(function() {
+        $("#id_form-0-date").datepicker({ dateFormat: 'yy-mm-dd' });
+
+    });
+</script>
