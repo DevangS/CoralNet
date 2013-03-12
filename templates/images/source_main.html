@@ -139,12 +139,12 @@
               </br>
 	      <p>The First Row and Column Indicate the Functional Group</p>
         <p><a href="{% url csv_download source.id %}">Download Full Confusion Matrix</a></p>
-
+        <p>{{robotStats.edit}}</p>
         {% else %}
             <p>(No machine annotator available yet)</p>
         {% endif %}
 	</div>
-    {% else %} 
+    {% else %}
         <p>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</p>
     {% endif %}
 

@@ -19,7 +19,7 @@ from images.models import Source, Image, SourceInvite
 from images.forms import *
 from images.model_utils import PointGen
 from images.utils import *
-import json , math, csv
+import json , csv, os.path, time
 from numpy import array
 
 def source_list(request):
@@ -181,6 +181,9 @@ def source_main(request, source_id):
         jsonstring = f.read()
         f.close()
         meta=json.loads(jsonstring)
+        
+        lastedit = 'Last Robot Run: %s' %  time.ctime(os.path.getmtime(\
+        latestRobot.path_to_model + '.meta.json'))
 
         #getting raw confusion matrix from json file
         cmx = meta['hp']['gridStats'][-1]['cmOpt']
@@ -301,6 +304,7 @@ def source_main(request, source_id):
 
         robotStats = dict(
             version=latestRobot.version,
+            edit = lastedit,
             trainTime=round(meta['totalRuntime']),
             precision = 100 * (1 - meta['hp']['estPrecision']),
             cm = groupcm,
