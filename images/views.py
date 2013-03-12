@@ -301,8 +301,9 @@ def source_main(request, source_id):
               groupcm[i] = groupsNames[j]
               j+=1
               i+=1
-          groupcm[i] = items
-          i+=1
+          else:
+            groupcm[i] = items
+            i+=1
 
 
         robotStats = dict(
