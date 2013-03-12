@@ -5,7 +5,7 @@ from django.db import transaction
 from django.forms import ValidationError
 from django.forms.models import model_to_dict
 from django.shortcuts import render_to_response, get_object_or_404
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.template import RequestContext
 
 from userena.models import User
@@ -19,7 +19,7 @@ from images.models import Source, Image, SourceInvite
 from images.forms import *
 from images.model_utils import PointGen
 from images.utils import *
-import json , math
+import json , math, csv
 from numpy import array
 
 def source_list(request):
@@ -185,6 +185,7 @@ def source_main(request, source_id):
         #getting raw confusion matrix from json file
         cmx = meta['hp']['gridStats'][-1]['cmOpt']
         labelMap = meta['labelMap']
+        
         dimension = len(labelMap)
         matrixSize =  dimension + 1
         sizeOfNewMatrix = (int( len(cmx) + matrixSize) )
@@ -205,12 +206,16 @@ def source_main(request, source_id):
         
         labelNames = []
         groupsNames = []
+        label_fullName = []
 
         #getting label objects 
         for ids in labelMap:
           labelNames.append( get_object_or_404(Label, id=ids))
         for label in labelNames:
           groupsNames.append(str(label.group.name))
+        for label in labelNames:
+          label_fullName.append(str(label.name))
+
 
         numofGroups = len( set(groupsNames) )
         setMap = list(set(groupsNames) )
@@ -281,7 +286,6 @@ def source_main(request, source_id):
                 finalGroup.append(("%.2f" % percent).lstrip('0'))
             i += 1     
              
-
         i = j = 0
         groupcm = [None] * (len(finalGroup) + groupLen )
 
@@ -294,16 +298,6 @@ def source_main(request, source_id):
           groupcm[i] = items
           i+=1
 
-        i = j = 0
-
-        #creating a new cm matrix that contains the label set as the first column
-        for items in cmx:
-            if ( i % (matrixSize ) ) == 0:
-                newcm[i] = labelNames[j].name
-                j+=1
-                i+=1
-            newcm[i] = items
-            i+=1
 
         robotStats = dict(
             version=latestRobot.version,
@@ -393,6 +387,56 @@ def source_edit(request, source_id):
         },
         context_instance=RequestContext(request)
     )
+
+@source_visibility_required('source_id')
+def csv_download(request, source_id):
+    source = get_object_or_404(Source, id=source_id)
+    latestRobot = source.get_latest_robot()
+    
+    if latestRobot == None:
+        return HttpResponse('No Robot Stats')  
+    else:
+        f = open(latestRobot.path_to_model + '.meta.json')
+        jsonstring = f.read()
+        f.close()
+        meta=json.loads(jsonstring)
+
+        #getting raw confusion matrix from json file
+        cmx = meta['hp']['gridStats'][-1]['cmOpt']
+        labelMap = meta['labelMap']
+        dimension = len(labelMap)
+
+        temp = []
+        groupCM = []
+
+        #create an array out of the the raw cm list
+        for x in range(len(cmx)):
+            temp.append(cmx[x])
+            if (x+1) % dimension == 0:
+                groupCM.append(temp)
+                temp = []
+        groupCM = array(groupCM)
+              
+        
+        labelNames = []
+        label_fullName = []
+
+        #getting label objects 
+        for ids in labelMap:
+          labelNames.append( get_object_or_404(Label, id=ids))
+        for label in labelNames:
+          label_fullName.append(str(label.name))
+        
+        #creating csv file
+        response = HttpResponse(mimetype='text/csv')
+        response['Content-Disposition'] = 'attachment;filename=Full_CM.csv'
+        writer = csv.writer(response)
+
+        writer.writerow(label_fullName)
+        for rows in groupCM:
+          writer.writerow (rows.tolist())
+
+        return response
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
