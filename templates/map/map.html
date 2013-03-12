@@ -6,8 +6,8 @@
 
     {# Google Maps API #}
     <script type="text/javascript"
-{#            src="https://maps.googleapis.com/maps/api/js?sensor=false">#}
-            src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">
+            src="https://maps.googleapis.com/maps/api/js?sensor=false">
+{#            src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">#}
     </script>
 
     {% include "static-local-include.html" with type="css" path="css/map.css" %}
@@ -21,8 +21,13 @@
 
 <div id="map-canvas"></div>
 
+
+<div id="marker-info-initial-container">
+    <div id="marker-info">Marker info goes here.</div>
+</div>
+
 <script type="text/javascript">
-    Map.init();
+    CNMap.init();
 </script>
 
 {% endblock %}

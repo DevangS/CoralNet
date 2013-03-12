@@ -6,6 +6,11 @@
 
     /*width: 100%;*/
     /*height: 100%;*/
-    width: 800px;
-    height: 600px;
+    width: 100%;
+    height: 800px;
+}
+
+#marker-info-initial-container {
+    /* Keep the marker-info element here, hidden from view,
+    until we need it. */
 }
