@@ -167,26 +167,10 @@ def visualize_source(request, source_id):
             view = request.GET.get('view', '')
 
             if view:
-                # This initializes the form set with default values; namely, the values
-                # for the keys that already exist in our records.
-                initValues = {'form-TOTAL_FORMS': '%s' % len(allSearchResults), 'form-INITIAL_FORMS': '%s' % len(allSearchResults)}
+                # Get images and statuses
                 images = [];
                 statuses = [];
                 for i, image in enumerate(allSearchResults):
-                    keys = image.get_location_value_str_list()
-                    for j, key in enumerate(keys):
-                        initValues['form-%s-key%s' % (i,j+1)] = key
-                    initValues['form-%s-date' % i] = image.metadata.photo_date
-                    initValues['form-%s-height' % i] = image.metadata.height_in_cm
-                    initValues['form-%s-latitude' % i] = image.metadata.latitude
-                    initValues['form-%s-longitude' % i] = image.metadata.longitude
-                    initValues['form-%s-depth' % i] = image.metadata.depth
-                    initValues['form-%s-camera' % i] = image.metadata.camera
-                    initValues['form-%s-photographer' % i] = image.metadata.photographer
-                    initValues['form-%s-waterQuality' % i] = image.metadata.water_quality
-                    initValues['form-%s-strobes' % i] = image.metadata.strobes
-                    initValues['form-%s-framingGear' % i] = image.metadata.framing
-                    initValues['form-%s-whiteBalance' % i] = image.metadata.balance
                     images.append(image)
                     statuses.append(image.get_annotation_status_str)
 
@@ -225,11 +209,32 @@ def visualize_source(request, source_id):
                             if 'key5' in formData:
                                 image.metadata.value5 = formData['key5']
                             image.metadata.save()
+
+                        # After entering data, try to remove unused key values
+                        source.remove_unused_key_values()
                         messages.success(request, 'Image metadata file has now been saved.')
                     else:
                         # Display error message in addition to other error messages below.
                         messages.error(request, 'Please correct the errors below.')
                 else:
+                    # This initializes the form set with default values; namely, the values
+                    # for the keys that already exist in our records.
+                    initValues = {'form-TOTAL_FORMS': '%s' % len(allSearchResults), 'form-INITIAL_FORMS': '%s' % len(allSearchResults)}
+                    for i, image in enumerate(allSearchResults):
+                        keys = image.get_location_value_str_list()
+                        for j, key in enumerate(keys):
+                            initValues['form-%s-key%s' % (i,j+1)] = key
+                        initValues['form-%s-date' % i] = image.metadata.photo_date
+                        initValues['form-%s-height' % i] = image.metadata.height_in_cm
+                        initValues['form-%s-latitude' % i] = image.metadata.latitude
+                        initValues['form-%s-longitude' % i] = image.metadata.longitude
+                        initValues['form-%s-depth' % i] = image.metadata.depth
+                        initValues['form-%s-camera' % i] = image.metadata.camera
+                        initValues['form-%s-photographer' % i] = image.metadata.photographer
+                        initValues['form-%s-waterQuality' % i] = image.metadata.water_quality
+                        initValues['form-%s-strobes' % i] = image.metadata.strobes
+                        initValues['form-%s-framingGear' % i] = image.metadata.framing
+                        initValues['form-%s-whiteBalance' % i] = image.metadata.balance
                     metadataForm = metadataFormSet(initValues)
                     metadataFormWithExtra = zip(metadataForm.forms, images, statuses)
                     selectAllCheckbox = SelectAllCheckbox()
