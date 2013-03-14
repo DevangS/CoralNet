@@ -413,7 +413,10 @@ def csv_download(request, source_id):
         meta=json.loads(jsonstring)
 
         #getting raw confusion matrix from json file
-        cmx = meta['hp']['gridStats'][-1]['cmOpt']
+        if 'cmOpt' in meta['hp']['gridStats']:
+            cmx = meta['hp']['gridStats']['cmOpt']
+        else:
+            cmx = meta['hp']['gridStats'][-1]['cmOpt']
         labelMap = meta['labelMap']
         dimension = len(labelMap)
 
