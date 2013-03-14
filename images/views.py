@@ -186,7 +186,11 @@ def source_main(request, source_id):
         latestRobot.path_to_model + '.meta.json'))
 
         #getting raw confusion matrix from json file
-        cmx = meta['hp']['gridStats'][-1]['cmOpt']
+        if 'cmOpt' in meta['hp']['gridStats']:
+            cmx = meta['hp']['gridStats']['cmOpt']
+        else:
+            cmx = meta['hp']['gridStats'][-1]['cmOpt']
+          
         labelMap = meta['labelMap']
         
         dimension = len(labelMap)
