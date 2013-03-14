@@ -75,6 +75,11 @@ def visualize_source(request, source_id):
     label = False
     imageArgs = dict()
 
+    metadataForm = None
+    metadataFormWithExtra = None
+    selectAllCheckbox = None
+    view = None
+
     # Get image search filters, if any
     if request.GET:
 
@@ -238,10 +243,6 @@ def visualize_source(request, source_id):
                     metadataForm = metadataFormSet(initValues)
                     metadataFormWithExtra = zip(metadataForm.forms, images, statuses)
                     selectAllCheckbox = SelectAllCheckbox()
-            else:
-                metadataForm = None
-                metadataFormWithExtra = None
-                selectAllCheckbox = None
 
         else:
             #since user specified a label, generate patches to show instead of whole images
