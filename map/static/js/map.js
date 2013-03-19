@@ -1,46 +1,87 @@
 var CNMap = (function() {
 
-    var map;
+    var map = null;
     var markers = [];
+    var sources = [];
 
-    function showMarkerDialog() {
+    var markerInfoElmt = null;
 
-        $("#marker-info").dialog(
-            createModalWindowOptions({
-                title: "Marker information"
-            })
-        );
+    var markerInfoName = null;
+    var markerInfoDescription = null;
+    var markerInfoNumOfImages = null;
+    var markerInfoCoordinates = null;
+
+    var infoWindow = null;
+
+    function showMarkerDialog(source, sourceLatLon) {
+
+        if (infoWindow === null) {
+            infoWindow = new google.maps.InfoWindow();
+        }
+
+        infoWindow.setPosition(sourceLatLon);
+
+        $(markerInfoName).text(source.name);
+        $(markerInfoDescription).text(source.description);
+        $(markerInfoNumOfImages).text("Number of images: {0}".format(source.num_of_images));
+        $(markerInfoCoordinates).text("Lat/Lon: {0}, {1}".format(source.latitude, source.longitude));
+
+        infoWindow.setContent(markerInfoElmt);
+
+        infoWindow.open(map);
     }
 
     return {
 
-        init: function() {
+        init: function(params) {
+
+            console.log(params.mapSources.length);
+
+            if (!google) {
+                console.log("Couldn't load the Google API.");
+                return;
+            }
 
             // https://developers.google.com/maps/documentation/javascript/tutorial#MapOptions
             var mapOptions = {
-                center: new google.maps.LatLng(-34.397, 150.644),
+
+                center: new google.maps.LatLng(0.0, 0.0),
+
                 zoom: 2,
+
                 mapTypeId: google.maps.MapTypeId.SATELLITE
             };
+
             map = new google.maps.Map(
                 document.getElementById("map-canvas"),
                 mapOptions
             );
 
-            markers.push(new google.maps.Marker({
-                position: new google.maps.LatLng(-34.397, 150.644),
-                map: map,
-                title:"Hello World!"
-            }));
-            markers.push(new google.maps.Marker({
-                position: new google.maps.LatLng(-54.397, 120.644),
-                map: map,
-                title:"Hello World!"
-            }));
+            var markerInfoElmtId = 'marker-info';
+            markerInfoElmt = document.getElementById(markerInfoElmtId);
+
+            markerInfoName = $('#{0} .name strong'.format(markerInfoElmtId));
+            markerInfoDescription = $('#{0} .description'.format(markerInfoElmtId));
+            markerInfoNumOfImages = $('#{0} .num-of-images'.format(markerInfoElmtId));
+            markerInfoCoordinates = $('#{0} .coordinates'.format(markerInfoElmtId));
+
 
             var i;
-            for (i = 0; i < markers.length; i++) {
-                google.maps.event.addListener(markers[i], 'click', showMarkerDialog);
+
+            for (i = 0; i < params.mapSources.length; i++) {
+
+                var source = params.mapSources[i];
+                var sourceLatLon = new google.maps.LatLng(source.latitude, source.longitude);
+
+                var marker = new google.maps.Marker({
+                    position: sourceLatLon,
+                    map: map,
+                    title: source.name
+                });
+
+                google.maps.event.addListener(marker, 'click', showMarkerDialog.curry(source, sourceLatLon));
+                sources.push(source);
+                markers.push(marker);
             }
         }
     }

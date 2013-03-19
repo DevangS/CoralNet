@@ -1,13 +1,20 @@
 {% extends "base.html" %}
+{% load common_tags %}
+
 
 {% block title %}Map | CoralNet{% endblock %}
+
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_ui="yes" %}
+{% endblock %}
 
 {% block page-specific-includes %}
 
     {# Google Maps API #}
     <script type="text/javascript"
             src="https://maps.googleapis.com/maps/api/js?sensor=false">
-{#            src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">#}
+        {# TODO: Get this working with an API key. #}
+        {# src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">#}
     </script>
 
     {% include "static-local-include.html" with type="css" path="css/map.css" %}
@@ -17,17 +24,50 @@
 
 {% block content %}
 
-{# <legend>Map of Sources</legend>#}
-
 <div id="map-canvas"></div>
 
 
 <div id="marker-info-initial-container">
-    <div id="marker-info">Marker info goes here.</div>
+    <div id="marker-info">
+
+        <div class="name"><strong>Source name goes here.</strong></div>
+
+        {# TODO: Ensure that the description looks good even when it's multilined. #}
+        <div class="description">Description goes here.</div>
+
+        <div class="num-of-images">Number of images goes here.</div>
+
+        <div class="coordinates">Coordinates go here.</div>
+
+    </div>
+</div>
+
+<br>
+
+<div id="site-stats">
+
+    <h3>Sitewide statistics</h3>
+
+    <table class="detail_table">
+        <tr>
+            <td>Total sources</td>
+            <td>{{ total_sources }}</td>
+        </tr>
+        <tr>
+            <td>Total images</td>
+            <td>{{ total_images }}</td>
+        </tr>
+        <tr>
+            <td>Total annotations</td>
+            <td>{{ total_annotations }}</td>
+        </tr>
+    </table>
 </div>
 
 <script type="text/javascript">
-    CNMap.init();
+    CNMap.init({
+        'mapSources': {{ map_sources|jsonify }}
+    });
 </script>
 
 {% endblock %}
