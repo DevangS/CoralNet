@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
@@ -13,16 +14,26 @@ def map(request):
     # TODO: When we have hidden sources, don't count the hidden sources.
     map_sources_queryset = Source.objects.exclude(latitude='').exclude(longitude='')
 
-    map_sources = [
-        dict(
+    map_sources = []
+
+    for source in map_sources_queryset:
+
+        # If the source is public, include a link to the source main page.
+        # Otherwise, don't include a link.
+        if source.visibility == Source.VisibilityTypes.PUBLIC:
+            source_url = reverse('source_main', args=[source.id])
+        else:
+            source_url = ''
+
+        map_sources.append(dict(
             description=source.description,
             latitude=str(source.latitude),
             longitude=str(source.longitude),
             name=source.name,
             num_of_images=str( Image.objects.filter(source=source).count() ),
-        )
-        for source in map_sources_queryset
-    ]
+            url=source_url,
+        ))
+
 
     # TODO: When we have hidden sources, don't count the hidden sources.
     # TODO: Should we not count sources that don't have latitude/longitude
