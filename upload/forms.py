@@ -340,7 +340,7 @@ class MetadataForm(Form):
         # Need to create fields for keys based on the number that exist in this source.
         # Using insert so that the fields appear in the right order.
         for j in range(self.source.num_of_keys()):
-            self.fields.insert(j+2,'key%s' % (j+1), CharField(widget= TextInput(attrs={'size': 10,})));
+            self.fields.insert(j+2,'key%s' % (j+1), CharField(required=False, widget= TextInput(attrs={'size': 10,})));
 
     def clean(self):
         data = self.cleaned_data
