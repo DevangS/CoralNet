@@ -30,8 +30,12 @@ from django.contrib import admin
 admin.autodiscover()
 
 
-join_project_root = lambda *p: os.path.join(settings.PROJECT_ROOT, *p)
 join_processing_root = lambda *p: os.path.join(settings.PROCESSING_ROOT, *p)
+
+# In most cases you'll join from the image-processing root directory, not
+# from the project root directory.  Uncomment this if needed though.
+# - Stephen
+#join_project_root = lambda *p: os.path.join(settings.PROJECT_ROOT, *p)
 
 PREPROCESS_ERROR_LOG = join_processing_root("logs/preprocess_error.txt")
 FEATURE_ERROR_LOG = join_processing_root("logs/features_error.txt")
@@ -368,8 +372,13 @@ def trainRobot(source_id):
     ################### EVERYTHING OK, START TRAINING NEW MODEL ################
 
     # create the new Robot object
-    newRobot = Robot(source=source, version = Robot.objects.all().order_by('-version')[0].version + 1, time_to_train = 1);
-    newRobot.path_to_model = join_project_root("images/models/robot" + str(newRobot.version))
+    if Robot.objects.all().count() == 0:
+        version = 1
+    else:
+        version = Robot.objects.all().order_by('-version')[0].version + 1
+
+    newRobot = Robot(source=source, version = version, time_to_train = 1)
+    newRobot.path_to_model = os.path.join(MODEL_DIR, "robot"+str(newRobot.version))
     newRobot.save();
     print 'new robot version:' + str(newRobot.version)
     # update the data base.
@@ -390,7 +399,13 @@ def trainRobot(source_id):
     workingDir = newRobot.path_to_model + '.workdir/'
     pointInfoPath = os.path.join(workingDir + 'points')
     fileNamesPath = os.path.join(workingDir, 'fileNames')
-    os.mkdir(workingDir)
+
+    try:
+        os.mkdir(workingDir)
+    except OSError as e:
+        print "Error creating workingDir: {error}".format(error=e.strerror)
+        raise
+
     fItt = 0 #image iterator
     pointFile = open(pointInfoPath, 'w')
     fileNameFile = open(fileNamesPath, 'w')
