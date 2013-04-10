@@ -3,6 +3,7 @@ import random
 from django.conf import settings
 
 from django.contrib.auth.models import User
+from accounts.utils import get_robot_user, get_imported_user
 
 from annotations.models import Annotation
 from images.models import Source, Image, Point, Robot
@@ -35,22 +36,30 @@ class ImageProcessingTaskTest(ClientTest):
         # Sub-classes can override this to upload more images as needed.
         self.image_id = self.upload_image('001_2012-05-01_color-grid-001.png')[0]
 
-    def add_human_annotations(self, image_id):
-        # Add human annotations to an image.
-        # For each point, pick a label randomly from the source's labelset.
+    def add_human_annotations(self, image_id, user=None):
+        """
+        Add human annotations to an image.
+
+        :param user - The user who will be the annotator of these
+        annotations.  If not specified, default to the User of
+        self.username.
+        """
 
         source = Source.objects.get(pk=self.source_id)
         img = Image.objects.get(pk=image_id)
         points = Point.objects.filter(image=img)
         labels = source.labelset.labels.all()
+        if user is None:
+            user = User.objects.get(username=self.username)
 
+        # For each point, pick a label randomly from the source's labelset.
         for pt in points:
             label = random.choice(labels)
             anno = Annotation(
                 point=pt,
                 image=img,
                 source=source,
-                user=User.objects.get(username=self.username),
+                user=user,
                 label=label,
             )
             anno.save()
@@ -261,6 +270,9 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskTest):
         Test that we can classify an image twice with two different robots,
         and that the robot annotations are actually updated on the second
         classification.
+
+        Note: this test is able to catch errors ONLY if the two different
+        robots assign different labels to the image points.
         """
 
 
@@ -357,6 +369,9 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskTest):
 
         self.assertTrue(result.successful())
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
+
+        # We'd better still have one annotation per point
+        # (not two annotations per point).
         self.assertEqual(
             Annotation.objects.filter(image__pk=img_id).count(),
             Point.objects.filter(image__pk=img_id).count(),
@@ -386,3 +401,133 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskTest):
 
             label_id = Annotation.objects.get(image__pk=img_id, point__point_number=point_num).label.id
             self.assertEqual(label_id, labels_in_label_file[point_num])
+
+
+        # TODO: Check that new history entries are created / not created accordingly?
+
+
+    def helper_classify_does_not_overwrite_manual_annotations(self, annotator_user):
+        """
+        Helper function for the tests that follow.
+        """
+
+
+        # Take at least (min number for training) images.
+        # Preprocess, feature extract, and add human annotations to
+        # the features.
+        for img in Image.objects.filter(source__pk=self.source_id):
+            PreprocessImages.delay(img.id)
+            MakeFeatures.delay(img.id)
+            self.add_human_annotations(img.id)
+            addLabelsToFeatures.delay(img.id)
+
+        # Create a robot.
+        result = trainRobot.delay(self.source_id)
+        self.assertTrue(result.successful())
+
+
+        # Upload a new image.
+        img_id = self.upload_image('006_2012-06-28_color-grid-006.png')[0]
+
+        # Preprocess and feature extract.
+        PreprocessImages.delay(img_id)
+        MakeFeatures.delay(img_id)
+
+        # Add annotations.
+        source = Source.objects.get(pk=self.source_id)
+        img = Image.objects.get(pk=img_id)
+        points = Point.objects.filter(image=img)
+        labels = source.labelset.labels.all()
+
+        # For odd-numbered points, make an annotation by picking a
+        # label randomly from the source's labelset.
+        # Leave the even-numbered points alone.
+        # (Assumption: the test source has at least 2 points per image)
+        for pt in points:
+
+            if pt.point_number % 2 == 0:
+                continue
+
+            label = random.choice(labels)
+            anno = Annotation(
+                point=pt,
+                image=img,
+                source=source,
+                user=annotator_user,
+                label=label,
+            )
+            anno.save()
+
+        img.status.save()
+
+
+        # Get those annotations (again, only odd-numbered points).
+        num_points = Point.objects.filter(image__pk=img_id).count()
+        manual_annotations = dict()
+
+        for point_num in range(1, num_points+1, 2):
+
+            label_id = Annotation.objects.get(image__pk=img_id, point__point_number=point_num).label.id
+            manual_annotations[point_num] = label_id
+
+
+        # Try to Classify.
+        result = Classify.delay(img_id)
+
+        # Shouldn't throw exception.
+        self.assertTrue(result.successful())
+        self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
+
+
+        # Check the Annotations.
+        for point_num in range(1, num_points+1):
+
+            anno = Annotation.objects.get(image__pk=img_id, point__point_number=point_num)
+            label_id = anno.label.id
+
+            if point_num % 2 == 0:
+                # Even; should be robot
+                self.assertEqual(anno.user.id, get_robot_user().id)
+            else:
+                # Odd; should be manual (and same as before)
+                self.assertEqual(label_id, manual_annotations[point_num])
+                self.assertEqual(anno.user.id, annotator_user.id)
+
+            if settings.UNIT_TEST_VERBOSITY >= 1:
+                print "Point {num} | {username} | {label_id}".format(
+                    num=point_num,
+                    username=anno.user.username,
+                    label_id=label_id,
+                )
+
+
+
+    def test_classify_does_not_overwrite_human_user_annotations(self):
+        """
+        Tests that when an image is partially annotated by a non-robot
+        CoralNet user, automatic classification doesn't overwrite any
+        of that user's points.
+        """
+        self.helper_classify_does_not_overwrite_manual_annotations(
+            User.objects.get(username=self.username)
+        )
+
+
+    def test_classify_does_not_overwrite_imported_annotations(self):
+        """
+        Tests that when an image is partially annotated by imported data,
+        automatic classification doesn't overwrite any of the imported
+        points.
+        """
+        self.helper_classify_does_not_overwrite_manual_annotations(
+            get_imported_user()
+        )
+
+
+    def test_classify_with_multiple_points_on_same_pixel(self):
+        """
+        Tests that classification still works as expected when the classified
+        image has more than one point on a single pixel (row/col) location.
+        """
+        # TODO
+        pass

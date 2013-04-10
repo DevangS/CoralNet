@@ -283,26 +283,46 @@ def Classify(image_id):
     label_file = open(labelFile, 'r')
     row_file = open(rowColFile, 'r')
 
-    for line in row_file: #words[0] is row, words[1] is column 
-        words = line.split(',')
+    for line in row_file:
+        row, column = line.split(',')
 
         #gets the label object based on the label id the algorithm specified
         label_id = label_file.readline()
         label_id.replace('\n', '')
-        label = Label.objects.filter(id=label_id)
+        label = Label.objects.get(id=label_id)
 
         #gets the point object(s) that have that row and column.
         #if there's more than one such point, add annotations to all of
-        #these points the first time we see this row+col, and don't do
-        #anything on subsequent times (filtering with annotation=None accomplishes this).
-        points = Point.objects.filter(image=image, row=words[0], column=words[1], annotation=None)
-        for point in points:
-            #create the annotation object and save it
-            Ann = Annotation.objects.filter(point=point, image=image)
-            if ( len(Ann) > 0 and ( not is_robot_user(Ann[0].user) ) ): # if this is an imported or human, we don't want to overwrite it, so continue
-                continue
-            annotation = Annotation(image=image, label=label[0], point=point, user=user, robot_version=latestRobot, source=image.source)
-            annotation.save()
+        #these points.
+        points_at_this_row_col = Point.objects.filter(image=image, row=row, column=column)
+
+        for point in points_at_this_row_col:
+
+            existing_annotations = Annotation.objects.filter(point=point, image=image)
+
+            if (len(existing_annotations) > 0):
+                # there's an existing Annotation object for this point.
+                # (assumption: this means there's only one Annotation object
+                # for this point, never multiple.)
+                existing_annotation = existing_annotations[0]
+
+                # if this is an imported or human, we don't want to overwrite it, so continue
+                if not is_robot_user(existing_annotation.user):
+                    continue
+
+                # we have an annotation that was annotated by a previous
+                # robot version.  if the current robot's label is different
+                # from the previous robot's label, update the annotation.
+                if existing_annotation.label.id != label.id:
+                    existing_annotation.label = label
+                    existing_annotation.robot_version = latestRobot
+                    existing_annotation.save()
+
+            else:
+                # there's no existing Annotation object for this point.
+                # create a new annotation object and save it.
+                new_annotation = Annotation(image=image, label=label, point=point, user=user, robot_version=latestRobot, source=image.source)
+                new_annotation.save()
 
     print 'Finished classification of image id {id}'.format(id = image_id)
 
