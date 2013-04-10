@@ -6,10 +6,9 @@ from guardian.shortcuts import get_objects_for_user
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import LabelSet
 from images.model_utils import PointGen
-from images.models import Source, Image
-from images.tasks import PreprocessImages, MakeFeatures, Classify, addLabelsToFeatures, trainRobot
+from images.models import Source
 from lib import str_consts
-from lib.test_utils import ClientTest, MediaTestComponent, ProcessingTestComponent
+from lib.test_utils import ClientTest, MediaTestComponent
 
 
 class SourceAboutTest(ClientTest):
@@ -32,7 +31,7 @@ class SourceListTestWithSources(ClientTest):
         ('public1', 'user4', Source.PermTypes.EDIT.code),
         ('private1', 'user3', Source.PermTypes.ADMIN.code),
         ('private1', 'user4', Source.PermTypes.VIEW.code),
-    ]
+        ]
 
     def source_list_as_user(self, username, password,
                             num_your_sources_predicted,
@@ -163,6 +162,8 @@ class SourceNewTest(ClientTest):
             max_x=100,
             min_y=0,
             max_y=100,
+            longitude='45.1982',
+            latitude='-17.0776',
         )
 
     def test_get_success(self):
@@ -192,7 +193,7 @@ class SourceNewTest(ClientTest):
         self.assertRedirects(response, reverse('source_main',
             kwargs={
                 'source_id': source_id,
-            }
+                }
         ))
 
         new_source = Source.objects.get(pk=source_id)
@@ -214,6 +215,9 @@ class SourceNewTest(ClientTest):
             min_x=self.source_args['min_x'], max_x=self.source_args['max_x'],
             min_y=self.source_args['min_y'], max_y=self.source_args['max_y'],
         ))
+        self.assertEqual(new_source.longitude, self.source_args['longitude'])
+        self.assertEqual(new_source.latitude, self.source_args['latitude'])
+
         self.assertEqual(new_source.enable_robot_classifier, False)
 
         # This check is of limited use since database datetimes (in
@@ -247,8 +251,6 @@ class SourceNewTest(ClientTest):
         self.assertEqual(new_source.key3, self.source_args['key3'])
         self.assertEqual(new_source.key4, self.source_args['key4'])
         self.assertEqual(new_source.key5, self.source_args['key5'])
-        self.assertEqual(new_source.longitude, self.source_args['longitude'])
-        self.assertEqual(new_source.latitude, self.source_args['latitude'])
 
     def test_zero_keys(self):
         """
@@ -285,8 +287,8 @@ class SourceNewTest(ClientTest):
         self.assertEqual(new_source.key2, self.source_args['key2'])
         self.assertEqual(new_source.key4, "")
 
-    # TODO: Test other successful and unsuccessful inputs for the
-    # new source form.
+        # TODO: Test other successful and unsuccessful inputs for the
+        # new source form.
 
 
 class SourceEditTest(ClientTest):
@@ -302,7 +304,7 @@ class SourceEditTest(ClientTest):
         ('private1', 'user4', Source.PermTypes.VIEW.code),
         ('2 keys', 'user2', Source.PermTypes.ADMIN.code),
         ('5 keys', 'user2', Source.PermTypes.ADMIN.code),
-    ]
+        ]
 
     def setUp(self):
         super(SourceEditTest, self).setUp()
@@ -323,6 +325,8 @@ class SourceEditTest(ClientTest):
             max_x=90,
             min_y=10,
             max_y=90,
+            longitude='25.1982',
+            latitude='-17.3776',
         )
 
     def test_get_permissions(self):
@@ -372,6 +376,8 @@ class SourceEditTest(ClientTest):
             min_x=self.source_args['min_x'], max_x=self.source_args['max_x'],
             min_y=self.source_args['min_y'], max_y=self.source_args['max_y'],
         ))
+        self.assertEqual(edited_source.longitude, self.source_args['longitude'])
+        self.assertEqual(edited_source.latitude, self.source_args['latitude'])
         self.assertEqual(edited_source.enable_robot_classifier, original_enable_robot)
 
     def test_optional_fields(self):
@@ -387,8 +393,6 @@ class SourceEditTest(ClientTest):
             key3="Habitat",
             key4="Section",
             key5="ID",
-            longitude='45.1982',
-            latitude='-17.0776',
         )
 
         response = self.client.post(reverse('source_edit', kwargs={'source_id': self.source_id}),
@@ -403,8 +407,6 @@ class SourceEditTest(ClientTest):
         self.assertEqual(edited_source.key3, self.source_args['key3'])
         self.assertEqual(edited_source.key4, self.source_args['key4'])
         self.assertEqual(edited_source.key5, self.source_args['key5'])
-        self.assertEqual(edited_source.longitude, self.source_args['longitude'])
-        self.assertEqual(edited_source.latitude, self.source_args['latitude'])
 
     def test_missing_keys(self):
         """
@@ -427,8 +429,8 @@ class SourceEditTest(ClientTest):
             key2=[forms.Field.default_error_messages['required']],
         ))
 
-    # TODO: Test other successful and unsuccessful inputs for the
-    # edit source form.
+        # TODO: Test other successful and unsuccessful inputs for the
+        # edit source form.
 
 
 class ImageViewTest(ClientTest):
@@ -440,7 +442,7 @@ class ImageViewTest(ClientTest):
     fixtures = ['test_users.yaml', 'test_sources.yaml']
     source_member_roles = [
         ('public1', 'user2', Source.PermTypes.ADMIN.code),
-    ]
+        ]
 
     def setUp(self):
         super(ImageViewTest, self).setUp()
@@ -466,148 +468,3 @@ class ImageViewTest(ClientTest):
 
     def test_view_page_with_large_image(self):
         self.view_page_with_image('002_2012-05-29_color-grid-001_large.png')
-
-
-class ImageProcessingTaskTest(ClientTest):
-    """
-    Test the image processing tasks' logic with respect to
-    database interfacing, preparation for subsequent tasks,
-    and final results.
-
-    Don't explicitly check for certain input/output files.
-    Simply check that running task n prepares for task n+1
-    in a sequence of tasks.
-    """
-    extra_components = [MediaTestComponent, ProcessingTestComponent]
-    fixtures = ['test_users.yaml', 'test_sources.yaml']
-    source_member_roles = [
-        ('public1', 'user2', Source.PermTypes.ADMIN.code),
-    ]
-
-    def setUp(self):
-        super(ImageProcessingTaskTest, self).setUp()
-        self.source_id = Source.objects.get(name='public1').pk
-
-        self.client.login(username='user2', password='secret')
-
-        self.image_id = self.upload_image('001_2012-05-01_color-grid-001.png')[0]
-
-    def test_preprocess_task(self):
-        # The uploaded image should start out not preprocessed.
-        # Otherwise, we need to change the setup code so that
-        # the prepared image has preprocessed == False.
-        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, False)
-
-        # Run task, attempt 1.
-        result = PreprocessImages.delay(self.image_id)
-        # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
-
-        # Should be preprocessed, and process_date should be set
-        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
-        process_date = Image.objects.get(pk=self.image_id).process_date
-        self.assertNotEqual(process_date, None)
-
-        # Run task, attempt 2.
-        result = PreprocessImages.delay(self.image_id)
-        # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
-
-        # Should have exited without re-doing the preprocess
-        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
-        # process_date should have stayed the same
-        self.assertEqual(Image.objects.get(pk=self.image_id).process_date, process_date)
-
-    def test_make_features_task(self):
-        # Preprocess the image first.
-        result = PreprocessImages.delay(self.image_id)
-        self.assertTrue(result.successful())
-        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
-
-        # Sanity check: features have not been made yet
-        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, False)
-
-        # Run task, attempt 1.
-        result = MakeFeatures.delay(self.image_id)
-        # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
-
-        # Should have extracted features
-        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
-
-        # Run task, attempt 2.
-        result = MakeFeatures.delay(self.image_id)
-        # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
-
-        # Should have exited without re-doing the feature making
-        # TODO: Check file ctime/mtime to check that it wasn't redone?
-        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
-
-#    def test_add_feature_labels_task(self):
-#        # Preprocess and feature-extract first.
-#        result = PreprocessImages.delay(self.image_id)
-#        self.assertTrue(result.successful())
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
-#        result = MakeFeatures.delay(self.image_id)
-#        self.assertTrue(result.successful())
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
-#
-#        # TODO: The image needs to be human annotated first.
-#
-#        # Sanity check: haven't added labels to features yet
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featureFileHasHumanLabels, False)
-#
-#        # Run task, attempt 1.
-#        result = addLabelsToFeatures.delay(self.image_id)
-#        # Check that the task didn't encounter an exception
-#        self.assertTrue(result.successful())
-#
-#        # Should have added labels to features
-#        # TODO: Check file ctime/mtime to check that the file was changed
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featureFileHasHumanLabels, True)
-#
-#        # Run task, attempt 2.
-#        result = addLabelsToFeatures.delay(self.image_id)
-#        # Check that the task didn't encounter an exception
-#        self.assertTrue(result.successful())
-#
-#        # Should have exited without re-doing label adding
-#        # TODO: Check file ctime/mtime to check that it wasn't redone?
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featureFileHasHumanLabels, True)
-#
-#    def test_train_robot_task(self):
-#        # TODO
-#        #trainRobot
-#        pass
-#
-#    def test_classify_task(self):
-#        # Preprocess and feature-extract first.
-#        result = PreprocessImages.delay(self.image_id)
-#        self.assertTrue(result.successful())
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
-#        result = MakeFeatures.delay(self.image_id)
-#        self.assertTrue(result.successful())
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
-#
-#        # TODO: Do other preparation tasks.
-#
-#        # Sanity check: not classified yet
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.annotatedByRobot, False)
-#
-#        # Run task, attempt 1.
-#        result = Classify.delay(self.image_id)
-#        # Check that the task didn't encounter an exception
-#        self.assertTrue(result.successful())
-#
-#        # Should have classified the image
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.annotatedByRobot, True)
-#
-#        # Run task, attempt 2.
-#        result = Classify.delay(self.image_id)
-#        # Check that the task didn't encounter an exception
-#        self.assertTrue(result.successful())
-#
-#        # Should have exited without re-doing the classification
-#        # TODO: Check file ctime/mtime to check that it wasn't redone?
-#        self.assertEqual(Image.objects.get(pk=self.image_id).status.annotatedByRobot, True)

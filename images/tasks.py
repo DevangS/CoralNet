@@ -30,8 +30,12 @@ from django.contrib import admin
 admin.autodiscover()
 
 
-join_project_root = lambda *p: os.path.join(settings.PROJECT_ROOT, *p)
 join_processing_root = lambda *p: os.path.join(settings.PROCESSING_ROOT, *p)
+
+# In most cases you'll join from the image-processing root directory, not
+# from the project root directory.  Uncomment this if needed though.
+# - Stephen
+#join_project_root = lambda *p: os.path.join(settings.PROJECT_ROOT, *p)
 
 PREPROCESS_ERROR_LOG = join_processing_root("logs/preprocess_error.txt")
 FEATURE_ERROR_LOG = join_processing_root("logs/features_error.txt")
@@ -279,26 +283,46 @@ def Classify(image_id):
     label_file = open(labelFile, 'r')
     row_file = open(rowColFile, 'r')
 
-    for line in row_file: #words[0] is row, words[1] is column 
-        words = line.split(',')
+    for line in row_file:
+        row, column = line.split(',')
 
         #gets the label object based on the label id the algorithm specified
         label_id = label_file.readline()
         label_id.replace('\n', '')
-        label = Label.objects.filter(id=label_id)
+        label = Label.objects.get(id=label_id)
 
         #gets the point object(s) that have that row and column.
         #if there's more than one such point, add annotations to all of
-        #these points the first time we see this row+col, and don't do
-        #anything on subsequent times (filtering with annotation=None accomplishes this).
-        points = Point.objects.filter(image=image, row=words[0], column=words[1], annotation=None)
-        for point in points:
-            #create the annotation object and save it
-            Ann = Annotation.objects.filter(point=point, image=image)
-            if ( len(Ann) > 0 and ( not is_robot_user(Ann[0].user) ) ): # if this is an imported or human, we don't want to overwrite it, so continue
-                continue
-            annotation = Annotation(image=image, label=label[0], point=point, user=user, robot_version=latestRobot, source=image.source)
-            annotation.save()
+        #these points.
+        points_at_this_row_col = Point.objects.filter(image=image, row=row, column=column)
+
+        for point in points_at_this_row_col:
+
+            existing_annotations = Annotation.objects.filter(point=point, image=image)
+
+            if (len(existing_annotations) > 0):
+                # there's an existing Annotation object for this point.
+                # (assumption: this means there's only one Annotation object
+                # for this point, never multiple.)
+                existing_annotation = existing_annotations[0]
+
+                # if this is an imported or human, we don't want to overwrite it, so continue
+                if not is_robot_user(existing_annotation.user):
+                    continue
+
+                # we have an annotation that was annotated by a previous
+                # robot version.  if the current robot's label is different
+                # from the previous robot's label, update the annotation.
+                if existing_annotation.label.id != label.id:
+                    existing_annotation.label = label
+                    existing_annotation.robot_version = latestRobot
+                    existing_annotation.save()
+
+            else:
+                # there's no existing Annotation object for this point.
+                # create a new annotation object and save it.
+                new_annotation = Annotation(image=image, label=label, point=point, user=user, robot_version=latestRobot, source=image.source)
+                new_annotation.save()
 
     print 'Finished classification of image id {id}'.format(id = image_id)
 
@@ -368,8 +392,13 @@ def trainRobot(source_id):
     ################### EVERYTHING OK, START TRAINING NEW MODEL ################
 
     # create the new Robot object
-    newRobot = Robot(source=source, version = Robot.objects.all().order_by('-version')[0].version + 1, time_to_train = 1);
-    newRobot.path_to_model = join_project_root("images/models/robot" + str(newRobot.version))
+    if Robot.objects.all().count() == 0:
+        version = 1
+    else:
+        version = Robot.objects.all().order_by('-version')[0].version + 1
+
+    newRobot = Robot(source=source, version = version, time_to_train = 1)
+    newRobot.path_to_model = os.path.join(MODEL_DIR, "robot"+str(newRobot.version))
     newRobot.save();
     print 'new robot version:' + str(newRobot.version)
     # update the data base.
@@ -390,7 +419,13 @@ def trainRobot(source_id):
     workingDir = newRobot.path_to_model + '.workdir/'
     pointInfoPath = os.path.join(workingDir + 'points')
     fileNamesPath = os.path.join(workingDir, 'fileNames')
-    os.mkdir(workingDir)
+
+    try:
+        os.mkdir(workingDir)
+    except OSError as e:
+        print "Error creating workingDir: {error}".format(error=e.strerror)
+        raise
+
     fItt = 0 #image iterator
     pointFile = open(pointInfoPath, 'w')
     fileNameFile = open(fileNamesPath, 'w')
