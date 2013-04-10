@@ -1,4 +1,6 @@
+import os
 import random
+from django.conf import settings
 
 from django.contrib.auth.models import User
 
@@ -202,19 +204,14 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskTest):
     def test_classify_task(self):
 
 
-        # Take at least (min number for training) images.  Preprocess,
-        # feature extract, and add human annotations to the features.
-        source_images = Image.objects.filter(source__pk=self.source_id)
-
-        for img in source_images:
+        # Take at least (min number for training) images.
+        # Preprocess, feature extract, and add human annotations to
+        # the features.
+        for img in Image.objects.filter(source__pk=self.source_id):
             PreprocessImages.delay(img.id)
             MakeFeatures.delay(img.id)
             self.add_human_annotations(img.id)
             addLabelsToFeatures.delay(img.id)
-
-        # From now on, this variable may be out of date.
-        # del it to avoid mistakes.
-        del source_images
 
 
         # Create a robot.
@@ -239,6 +236,14 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskTest):
         self.assertTrue(result.successful())
         # Should have classified the image
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
+        # Check that the image's actual Annotation objects are there.
+        # Should have 1 annotation per point.
+        self.assertEqual(
+            Annotation.objects.filter(image__pk=img_id).count(),
+            Point.objects.filter(image__pk=img_id).count(),
+        )
+
+        # TODO: Check that the history entries are there?
 
 
         # Run task, attempt 2.
@@ -249,3 +254,135 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskTest):
         # Should have exited without re-doing the classification
         # TODO: Check file ctime/mtime to check that it wasn't redone?
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
+
+
+    def test_reclassify(self):
+        """
+        Test that we can classify an image twice with two different robots,
+        and that the robot annotations are actually updated on the second
+        classification.
+        """
+
+
+        # Take at least (min number for training) images.
+        # Preprocess, feature extract, and add human annotations to
+        # the features.
+        for img in Image.objects.filter(source__pk=self.source_id):
+            PreprocessImages.delay(img.id)
+            MakeFeatures.delay(img.id)
+            self.add_human_annotations(img.id)
+            addLabelsToFeatures.delay(img.id)
+
+        # Create a robot.
+        result = trainRobot.delay(self.source_id)
+        self.assertTrue(result.successful())
+
+
+        # Upload a new image.
+        img_id = self.upload_image('006_2012-06-28_color-grid-006.png')[0]
+
+        # Preprocess and feature extract.
+        PreprocessImages.delay(img_id)
+        MakeFeatures.delay(img_id)
+        # Sanity check: not classified yet
+        self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, False)
+
+
+        # Classify, 1st time.
+        result = Classify.delay(img_id)
+
+        self.assertTrue(result.successful())
+        self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
+
+        num_points = Point.objects.filter(image__pk=img_id).count()
+        self.assertEqual(
+            Annotation.objects.filter(image__pk=img_id).count(),
+            num_points,
+        )
+
+
+        # Verify that the points match those in the label file output by the
+        # classification task.
+        label_filename = os.path.join(
+            settings.PROCESSING_ROOT,
+            'images',
+            'classify',
+            '{img_id}_{process_date}.txt'.format(
+                img_id=str(img_id),
+                process_date=Image.objects.get(pk=img_id).get_process_date_short_str(),
+            )
+        )
+
+        label_file = open(label_filename)
+
+        # The label file should have one label id per line, with each line
+        # corresponding to one point of the image.
+        labels_in_label_file = dict()
+        point_num = 1
+
+        for line in label_file:
+
+            line = line.strip()
+            if line == '':
+                continue
+
+            label_id = int(line)
+            labels_in_label_file[point_num] = label_id
+            point_num += 1
+
+        label_file.close()
+
+        for point_num in range(1, num_points+1):
+
+            label_id = Annotation.objects.get(image__pk=img_id, point__point_number=point_num).label.id
+            self.assertEqual(label_id, labels_in_label_file[point_num])
+
+
+        # Add another training image.
+        extra_training_img_id = self.upload_image(
+            os.path.join('1key', '001_2011-05-28.png')
+        )[0]
+        PreprocessImages.delay(extra_training_img_id)
+        MakeFeatures.delay(extra_training_img_id)
+        self.add_human_annotations(extra_training_img_id)
+        addLabelsToFeatures.delay(extra_training_img_id)
+
+        # Create another robot.
+        result = trainRobot.delay(self.source_id)
+        self.assertTrue(result.successful())
+
+
+        # Classify, 2nd time.
+        result = Classify.delay(img_id)
+
+        self.assertTrue(result.successful())
+        self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
+        self.assertEqual(
+            Annotation.objects.filter(image__pk=img_id).count(),
+            Point.objects.filter(image__pk=img_id).count(),
+        )
+
+
+        # Verify, again, that the points match those in the label file output
+        # by the classification task.
+        label_file = open(label_filename)
+
+        labels_in_label_file = dict()
+        point_num = 1
+
+        for line in label_file:
+
+            line = line.strip()
+            if line == '':
+                continue
+
+            label_id = int(line)
+            labels_in_label_file[point_num] = label_id
+            point_num += 1
+
+        label_file.close()
+
+        for point_num in range(1, num_points+1):
+
+            label_id = Annotation.objects.get(image__pk=img_id, point__point_number=point_num).label.id
+            self.assertEqual(label_id, labels_in_label_file[point_num])
