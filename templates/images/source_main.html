@@ -5,243 +5,190 @@
 
 {% block title %}{{ source.name }} | CoralNet{% endblock %}
 
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
+{% endblock %}
+
 {% block page-specific-includes %}
-  {{ editSourceForm.media }}
+    {{ editSourceForm.media }}
 {% endblock %}
 
 {% block content %}
 
     {% get_obj_perms user for source as "source_perms" %}
 
-    <h1>{{ source.name }}</h1>
-
-    <hr />
-
     <div id="images">
-        <h3>Latest images</h3>
         {% if latest_images %}
             {% for image in latest_images %}
-                <span class="thumb_small_wrapper">
+                <span class="thumb_large_wrapper">
                 <a href="{% url image_detail image.id %}">
                     <img class="thumb_small"
-                         src="{% thumbnail image.original_file 100x100 %}"
+                         src="{% thumbnail image.original_file 300x300 %}"
                          title="{{ image.get_image_element_title }}"/>
                 </a>
                 </span>
             {% endfor %}
+        {% endif %}
 
-            <br/>
-            <a href="{% url visualize_source source.id %}">Browse Images</a>
-            <br/><br/>
+        <div class="detail_box">
+            <div style="float:left">
+            <ul>
+                <li>Date Created: {{ source.create_date }}</li>
+            {% if not source.enable_robot_classifier %}
+                <li>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</li>
+            {% else %}
+                {% if robotStats.hasRobot %}
+                    <li>{{robotStats.edit}}</li>
+                {% endif %}
+            {% endif %}
+            </ul>
+            </div>
+            <div style="float:right">
+            <ul>
+                {% if source.image_height_in_cm %}
+                    <li>Default image height coverage(cm): {{ source.image_height_in_cm }}</li>
+                {% endif %}
+                {% if source.image_annotation_area %}
+                    <li>Default image annotation area: {{ source.image_annotation_area_display }}</li>
+                {% endif %}
+                <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
+            </ul>
+            </div>
+            <div style="clear:left">
+                {% if source.description %}
+                    <br><br>
+                    {{ source.description }}
+                {% endif %}
+            </div>
+        </div>
 
-            <p>Total images: {{ image_stats.total }}</p>
 
-            <table class="detail_table">
-            {% if source.enable_robot_classifier %}
-                <tr>
-                    <td>Not annotated</td>
-                    <td>{{ image_stats.need_comp_anno }}</td>
-                </tr>
-                <tr>
-                    <td>Computer annotated, needs human annotation</td>
-                    <td>
+        <div style="float:left;">
+            {% if members %}
+                <div class="detail_box">
+                    <h3 style="text-align:center">Members</h3>
+                    <table class="detail_box_table">
+                        {% for member in members %}
+                            <tr>
+                                <td><a href="{% url userena_profile_detail member.username %}">{{ member.username }}</a></td>
+                                <td><b>{{ member.role }}</b></td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            {% endif %}
+
+            <div class="detail_box">
+                <h3 style="text-align:center">Source Details</h3>
+                <table class="detail_box_table">
+                    <tr>
+                        <td>Visibility: <b>{{ source.get_visibility_display }}</b></td>
+                    </tr>
+                    {% if source.latitude %}
+                        <tr>
+                            <td>Latitude: <b>{{ source.latitude }}</b></td>
+                        </tr>
+                    {% endif %}
+                    {% if source.longitude %}
+                        <tr>
+                            <td>Longitude: <b>{{ source.longitude }}</b></td>
+                        </tr>
+                    {% endif %}
+                    {% if source.enable_robot_classifier  %}
+                        {% if robotStats.hasRobot %}
+                            <tr>
+                                <td>Robot Version: <b>{{ robotStats.version }}</b></td>
+                            </tr>
+                            <tr>
+                                <td>Est. Precision (%): <b>{{ robotStats.precision|floatformat:2 }}</b></td>
+                            </tr>
+                            <tr>
+                                <td>Traintime (s): <b>{{ robotStats.trainTime }}</b></td>
+                            </tr>
+                            <tr>
+                                <td><a href="javascript:openDialog();">Confusion Matrix</a></td>
+                            </tr>
+                        {% endif %}
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        {% if latest_images %}
+            <div style="padding:10px;float:right">
+                {% if source.enable_robot_classifier %}
+                    <h2>Not annotated: <a href="{% url visualize_source source.id %}?image_status=1">{{ image_stats.need_comp_anno }}</a></h2>
+                    <h2>Needs review:
                         {% if image_stats.need_human_anno_first %}
-                            <a href="{% url annotation_tool image_stats.need_human_anno_first.id %}"
-                               title="{{ image_stats.need_human_anno_first.get_image_element_title }}">
-                                {{ image_stats.need_human_anno }}</a>
+                            <a href="{% url visualize_source source.id %}?image_status=2">{{ image_stats.need_human_anno }}</a>
                         {% else %}
                             {{ image_stats.need_human_anno }}
                         {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <td>Completed (human annotated)</td>
-                    <td>{{ image_stats.anno_completed }}</td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td>Needs annotation</td>
-                    <td>
+                    </h2>
+                    <h2>Completed: <a href="{% url visualize_source source.id %}?image_status=3">{{ image_stats.anno_completed }}</a></h2>
+                {% else %}
+                    <h2>Not annotated:
                         {% if image_stats.need_anno_first %}
-                            <a href="{% url annotation_tool image_stats.need_anno_first.id %}"
-                               title="{{ image_stats.need_anno_first.get_image_element_title }}">
-                                {{ image_stats.need_anno }}</a>
+                            <a href="{% url visualize_source source.id %}?image_status=1">{{ image_stats.need_anno }}</a>
                         {% else %}
                             {{ image_stats.need_anno }}
                         {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <td>Completed</td>
-                    <td>{{ image_stats.anno_completed }}</td>
-                </tr>
-            {% endif %}
-            </table>
-
-        {% else %}
-            <p>(No images yet)</p>
+                    </h2>
+                    <h2>Completed: <a href="{% url visualize_source source.id %}?image_status=2">{{ image_stats.anno_completed }}</a></h2>
+                {% endif %}
+                <h2>Total images: <a href="{% url visualize_source source.id %}?image_status=0">{{ image_stats.total }}</a></h2>
+            </div>
         {% endif %}
     </div>
 
-    {% if source.enable_robot_classifier %} 
-    <hr />
-    <div id="robots">
-		{% if robotStats.hasRobot %} 
-        <h3>Machine annotator stats</h3>
-            <table class="detail_table">
-                <tr>
-                    <td>Version</td>
-                    <td>{{ robotStats.version }}</td>
-                </tr>
-                <tr>
-                    <td>Estimated precision (%)</td>
-                    <td>{{ robotStats.precision }}</td>
-                </tr>
-                <tr>
-                    <td>Traintime (s)</td>
-                    <td>{{ robotStats.trainTime }}</td>
-                </tr>
-            </table></br>
-	    <p> Functional Group Confusion Matrix </p>
-	    <table class="detail_table" style = "float:left;">
-		<tr>
-		    <td> cm </td>
-	            {% for labels in robotStats.labelMap %}
-                    	<td>{{ labels}}</td>
-		    {% endfor %}
-                </tr>
-		{% for value in robotStats.cm %}
-		    {% if forloop.counter0|divisibleby:robotStats.matrixSize %}
-	              <tr>	
-                          <td> {{value}} </td>
-		     {%else %}
-		    	  <td> {{value}} </td>
-		     {% endif %}
+    <div style="clear:left"></div>
 
-		     {% if forloop.counter|divisibleby:robotStats.matrixSize %}
-		       </tr>
-		     {% endif %}
+    <script>
+        function openDialog() {
+            $( "#dialog" ).dialog({resizable: false,modal: true,width:'auto'});
+        }
+    </script>
 
-		{% endfor %}
-      </table>
-          <table class="detail_table" >
-                      <tr>
-      <td>Count</td>
-     </tr>
-     		    {% for labels in robotStats.row_sum %}
-                  <tr>
-                    	<td>{{ labels}}</td>
-                   </tr>
-		    {% endfor %}
-     </tr>
-
-              </table></br>
-              </br>
-	      <p>The First Row and Column Indicate the Functional Group</p>
-        <p><a href="{% url csv_download source.id %}">Download Full Confusion Matrix</a></p>
-        <p>{{robotStats.edit}}</p>
-        {% else %}
-            <p>(No machine annotator available yet)</p>
-        {% endif %}
-	</div>
-    {% else %}
-        <p>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</p>
-    {% endif %}
-
-    <hr />
-    <div id="annotations">
-        <h3>Annotations</h3>
-
-        {% if source.labelset.isEmptyLabelset %}
-            {% if "source_admin" in source_perms %}
-            <p><a href="{% url labelset_new source.id %}">Create a labelset</a> to get started with annotations</p>
-            {% else %}
-            <p>The Source admin hasn't created a labelset yet.</p>
-            {% endif %}
-        {% else %}
-        <p>Labelset: <a href="{% url labelset_main source.id %}">View labelset</a></p>
-        {% endif %}
-    </div>
-
-    {% if members %}
-    <hr />
-    <div id="members">
-        <h3>Members</h3>
-
-        <div>
+    <div id="dialog" title="Confusion Matrix" style="display:none;font-size: 62.5%;">
+        <p>The First Row and Column Indicate the Functional Group</p>
+        <table>
+        <tr>
+        <td>
         <table class="detail_table">
             <tr>
-                <th>Member</th>
-                <th>Role</th>
+                <td> cm </td>
+                {% for labels in robotStats.labelMap %}
+                    <td>{{labels}}</td>
+                {% endfor %}
             </tr>
-            {% for member in members %}
-            <tr>
-                <td><a href="{% url userena_profile_detail member.username %}">{{ member.username }}</a></td>
-                <td>{{ member.role }}</td>
-            </tr>
+            {% for value in robotStats.cm %}
+                {% if forloop.counter0|divisibleby:robotStats.matrixSize %}
+                    <tr>
+                    <td> {{value}} </td>
+                {%else %}
+                    <td> {{value}} </td>
+                {% endif %}
+
+            {% if forloop.counter|divisibleby:robotStats.matrixSize %}
+                </tr>
+            {% endif %}
             {% endfor %}
         </table>
-        </div>
-
-        <br />
-        <div>
-        {% if "source_admin" in source_perms %}
-          {% for invite in source.sourceinvite_set.all %}
-            <p>({{ invite.recipient.username }} has been invited with {{ invite.source_perm_verbose }} permissions)</p>
-          {% endfor %}
-          <p><a href="{% url source_admin source.id %}">+ Invite a new member</a></p>
-        {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    <hr />
-
-    <div class="details">
-
-        <h3>Source Details</h3>
-
-        <ul>
-          <li>Visibility: {{ source.get_visibility_display }}</li>
-          <li>Date Created: {{ source.create_date }}</li>
-
-          {% if source.description %}
-            <li>Description:
-              <span style="display:block; margin-left:30px;">
-                {{ source.description|linebreaks }}
-              </span>
-            </li>
-          {% else %}
-            <li>Description: (None)</li>
-          {% endif %}
-        </ul>
-
-        <ul>
-          <li>Location keys: {{ loc_keys }}</li>
-
-          {% if source.image_height_in_cm %}
-            <li>Default image height coverage: {{ source.image_height_in_cm }} centimeters</li>
-          {% else %}
-            <li>Default image height coverage: (Not specified)</li>
-          {% endif %}
-
-          {% if source.image_annotation_area %}
-            <li>Default image annotation area: {{ source.image_annotation_area_display }}</li>
-          {% else %}
-            <li>Default image annotation area: (Not specified)</li>
-          {% endif %}
-
-          <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
-        </ul>
-
-        <ul>
-          <li>Longitude: {{ source.longitude|default:"(Not specified)" }}</li>
-          <li>Latitude: {{ source.latitude|default:"(Not specified)" }}</li>
-        </ul>
-
-        {% if "source_admin" in source_perms %}
-        <a href="{% url source_edit source.id %}">{% trans 'Edit Source Details' %}</a>
-        {% endif %}
+        </td>
+        <td>
+        <table class="detail_table">
+            <tr>
+                <td>Count</td>
+            </tr>
+            {% for labels in robotStats.row_sum %}
+                <tr>
+                    <td>{{ labels}}</td>
+                </tr>
+            {% endfor %}
+            </tr>
+        </table>
+        </td>
+        </table>
+        <p><a href="{% url csv_download source.id %}">Download Full Confusion Matrix</a></p>
 
     </div>
 
