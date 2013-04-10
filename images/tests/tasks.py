@@ -11,7 +11,7 @@ from images.tasks import PreprocessImages, MakeFeatures, Classify, addLabelsToFe
 from lib.test_utils import ProcessingTestComponent, ClientTest, MediaTestComponent
 
 
-class ImageProcessingTaskTest(ClientTest):
+class ImageProcessingTaskBaseTest(ClientTest):
     """
     Test the image processing tasks' logic with respect to
     database interfacing, preparation for subsequent tasks,
@@ -21,6 +21,8 @@ class ImageProcessingTaskTest(ClientTest):
     Simply check that running task n prepares for task n+1
     in a sequence of tasks.
     """
+
+
     extra_components = [MediaTestComponent, ProcessingTestComponent]
     fixtures = [
         'test_users.yaml',
@@ -32,9 +34,13 @@ class ImageProcessingTaskTest(ClientTest):
         ('Labelset 1key', 'user2', Source.PermTypes.ADMIN.code),
     ]
 
+
     def upload_images(self):
-        # Sub-classes can override this to upload more images as needed.
-        self.image_id = self.upload_image('001_2012-05-01_color-grid-001.png')[0]
+
+
+        # Implemented by subclasses.
+        raise NotImplementedError
+
 
     def add_human_annotations(self, image_id, user=None):
         """
@@ -44,6 +50,7 @@ class ImageProcessingTaskTest(ClientTest):
         annotations.  If not specified, default to the User of
         self.username.
         """
+
 
         source = Source.objects.get(pk=self.source_id)
         img = Image.objects.get(pk=image_id)
@@ -66,8 +73,11 @@ class ImageProcessingTaskTest(ClientTest):
         img.status.annotatedByHuman = True
         img.status.save()
 
+
     def setUp(self):
-        super(ImageProcessingTaskTest, self).setUp()
+
+
+        super(ImageProcessingTaskBaseTest, self).setUp()
         self.source_id = Source.objects.get(name='Labelset 1key').pk
 
         self.client.login(username='user2', password='secret')
@@ -75,7 +85,19 @@ class ImageProcessingTaskTest(ClientTest):
 
         self.upload_images()
 
+
+class SingleImageProcessingTaskTest(ImageProcessingTaskBaseTest):
+
+
+    def upload_images(self):
+
+
+        self.image_id = self.upload_image('001_2012-05-01_color-grid-001.png')[0]
+
+
     def test_preprocess_task(self):
+
+
         # The uploaded image should start out not preprocessed.
         # Otherwise, we need to change the setup code so that
         # the prepared image has preprocessed == False.
@@ -101,7 +123,10 @@ class ImageProcessingTaskTest(ClientTest):
         # process_date should have stayed the same
         self.assertEqual(Image.objects.get(pk=self.image_id).process_date, process_date)
 
+
     def test_make_features_task(self):
+
+
         # Preprocess the image first.
         result = PreprocessImages.delay(self.image_id)
         self.assertTrue(result.successful())
@@ -166,7 +191,7 @@ class ImageProcessingTaskTest(ClientTest):
         self.assertEqual(Image.objects.get(pk=self.image_id).status.featureFileHasHumanLabels, True)
 
 
-class MultiImageProcessingTaskTest(ImageProcessingTaskTest):
+class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
 
 
     def upload_images(self):
@@ -499,7 +524,6 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskTest):
                     username=anno.user.username,
                     label_id=label_id,
                 )
-
 
 
     def test_classify_does_not_overwrite_human_user_annotations(self):
