@@ -206,7 +206,8 @@ class SourceChangePermissionForm(Form):
         memberList = [(member.id,member.username) for member in members]
 
         # This removes the current user from users that can have their permission changed
-        memberList.remove((user.id,user.username))
+        if (user.id,user.username) in memberList:
+            memberList.remove((user.id,user.username))
         self.fields['user'] = ChoiceField(label='User', choices=[member for member in memberList], required=True)
 
 class SourceRemoveUserForm(Form):
@@ -220,7 +221,8 @@ class SourceRemoveUserForm(Form):
         memberList = [(member.id,member.username) for member in members]
 
         # This removes the current user from users that can have their permission changed
-        memberList.remove((self.user.id,self.user.username))
+        if (self.user.id,self.user.username) in memberList:
+            memberList.remove((self.user.id,self.user.username))
         self.fields['user'] = ChoiceField(label='User', choices=[member for member in memberList], required=True)
 
 class SourceInviteForm(Form):
