@@ -453,8 +453,11 @@ class Value5(LocationValue):
 
 class Metadata(models.Model):
     name = models.CharField(max_length=200, blank=True)
-    photo_date = models.DateField('Photo date',
-                                  help_text='Format: YYYY-MM-DD')
+    photo_date = models.DateField(
+        'Photo date',
+        help_text='Format: YYYY-MM-DD',
+        null=True, blank=True,
+    )
 
     latitude = models.CharField(max_length=20, blank=True)
     longitude = models.CharField(max_length=20, blank=True)
