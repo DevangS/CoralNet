@@ -160,21 +160,21 @@
         <td>
         <table class="detail_table">
             <tr>
-                <td height="30"> cm </td>
+                <td height="20"> cm </td>
                 {% for labels in robotStats.labelMap %}
-                    <td height="30">{{labels}}</td>
+                    <td height="20">{{labels}}</td>
                 {% endfor %}
             </tr>
             {% for value in robotStats.cm %}
                 {% if forloop.counter0|divisibleby:robotStats.matrixSize %}
                     <tr>
-                    <td height="30"> {{value}} </td>
+                    <td height="20"> {{value}} </td>
                 {% else %}
                 {% if forloop.revcounter0|divisibleby:robotStats.diaglen %}
-                    <td height="30"> <b>{{value}} </b></td>
+                    <td height="20"> <b>{{value}} </b></td>
                 
                 {%else %}
-                    <td height="30"> {{value}} </td>
+                    <td height="20"> {{value}} </td>
                 {% endif %}
                 {% endif %}
 
@@ -187,11 +187,11 @@
         <td>
         <table class="detail_table">
             <tr>
-                <td height="30">Count</td>
+                <td height="20">Count</td>
             </tr>
             {% for labels in robotStats.row_sum %}
                 <tr>
-                    <td height="30">{{ labels}}</td>
+                    <td height="20">{{ labels}}</td>
                 </tr>
             {% endfor %}
             </tr>
@@ -208,21 +208,21 @@
       <td>
       <table class="detail_table">
     <tr>
-        <td height="30"> cm </td>
+        <td height="20"> cm </td>
               {% for labels in robotStats.labels %}
-                      <td height="30">{{ labels}}</td>
+                      <td height="20">{{ labels}}</td>
         {% endfor %}
                 </tr>
     {% for value in robotStats.fullcm %}
         {% if forloop.counter0|divisibleby:robotStats.FullmatrixSize %}
                 <tr>  
-                          <td height="30"> {{value}} </td>
+                          <td height="20"> {{value}} </td>
          {%else %}
         {% if forloop.revcounter0|divisibleby:robotStats.full_diaglen %}
          
-            <td height="30"> <b>{{value}}</b> </td>
+            <td height="20"> <b>{{value}}</b> </td>
             {%else%}
-            <td height="30"> {{value}} </td>
+            <td height="20"> {{value}} </td>
             {% endif %}
          {% endif %}
 
@@ -235,11 +235,11 @@
               </td><td>
                       <table class="detail_table">
             <tr>
-                <td height="30">Count</td>
+                <td height="20">Count</td>
             </tr>
             {% for labels in robotStats.full_row_sum %}
                 <tr>
-                    <td height="30">{{ labels}}</td>
+                    <td height="20">{{ labels}}</td>
                 </tr>
             {% endfor %}
             </tr>
