@@ -128,13 +128,14 @@ class ImageUploadOptionsForm(Form):
     """
 
     specify_metadata = ChoiceField(
-        label='How to specify metadata',
+        label='Specify image metadata',
         help_text='',  # To be filled in by the form's __init__()
         choices=(
-            ('filenames', 'From filenames'),
+            ('after', 'After upload'),
+            ('filenames', 'In the image filenames'),
             ('csv', 'From CSV file')
         ),
-        initial='filenames',
+        initial='after',
         required=True
     )
 
@@ -153,43 +154,50 @@ class ImageUploadOptionsForm(Form):
     )
 
     def __init__(self, *args, **kwargs):
-        """
-        - Dynamically generate metadata field's help_text.
-        - Add extra_help_text to metadata field.
-        - Add additional details to display beside the form.
-        """
+
         source = kwargs.pop('source')
         super(ImageUploadOptionsForm, self).__init__(*args, **kwargs)
 
-        # Dynamically generate help_text for the metadata field.
+        # Dynamically generate a source-specific string for the metadata
+        # field's help text.
         filename_format_args = dict(year='YYYY', month='MM', day='DD')
         source_keys = source.get_key_list()
         filename_format_args['values'] = source_keys
 
-        filename_format_str = metadata_to_filename(**filename_format_args)
+        self.fields['specify_metadata'].source_specific_filename_format =\
+        metadata_to_filename(**filename_format_args)
 
-        self.fields['specify_metadata'].help_text = \
-            "Required filename format: {format_str}".format(format_str=filename_format_str)
+        # This field's help text will go in a separate template, which
+        # can be displayed in a modal dialog.
+        self.fields['specify_metadata'].dialog_help_text_template = \
+            'upload/help_specify_metadata.html'
 
-        # Extra help text for the metadata field.
-        # Initially hidden, and the user can click a button or link
-        # to show/hide it.
-        self.fields['specify_metadata'].extra_help_text = (
-            "For example, let's say your source has the following location keys: Site, Depth, Transect Line and Quadrant. "
-            "If you want to upload a .jpg image that was taken at "
-            "Site: sharkPoint, Depth: 10m, Transect Line: 3, and Quadrant: qu4, "
-            "on 14 January 2010, the filename for upload should be:\n\n"
-
-            "sharkPoint_10m_3_qu4_2010-01-14.jpg\n\n"
-
-            "Alternatively, if you also want to store the original filename - say it's "
-            "IMG_0032.jpg - you can use:\n\n"
-
-            "sharkPoint_10m_3_qu4_2010-01-14_IMG_0032.jpg\n\n"
-
-            "The original file name is not used by CoralNet, but could be "
-            "useful for your own reference."
-        )
+#        self.fields['specify_metadata'].help_text['after'] = (
+#            "After your images are done uploading, you'll be able to "
+#            "continue to another page where you can manually enter metadata for your images."
+#        )
+#        self.fields['specify_metadata'].help_text['filenames'] = \
+#            "Required filename format: {format_str}".format(format_str=self.source_specific_filename_format)
+#
+#        # Extra help text for the metadata field.
+#        # Initially hidden, and the user can click a button or link
+#        # to show/hide it.
+#        self.fields['specify_metadata'].extra_help_text['filenames'] = (
+#            "For example, let's say your source has the following location keys: Site, Depth, Transect Line and Quadrant. "
+#            "If you want to upload a .jpg image that was taken at "
+#            "Site: sharkPoint, Depth: 10m, Transect Line: 3, and Quadrant: qu4, "
+#            "on 14 January 2010, the filename for upload should be:\n\n"
+#
+#            "sharkPoint_10m_3_qu4_2010-01-14.jpg\n\n"
+#
+#            "Alternatively, if you also want to store the original filename - say it's "
+#            "IMG_0032.jpg - you can use:\n\n"
+#
+#            "sharkPoint_10m_3_qu4_2010-01-14_IMG_0032.jpg\n\n"
+#
+#            "The original filename is not used by CoralNet, but could be "
+#            "useful for your own reference."
+#        )
 
 
 class AnnotationImportForm(Form):

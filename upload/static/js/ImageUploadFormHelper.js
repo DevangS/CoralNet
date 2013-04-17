@@ -51,8 +51,6 @@ var ImageUploadFormHelper = (function() {
 
     var $uploadStartInfo = null;
 
-    var $metadataExtraHelpText = null;
-    var $metadataExtraHelpTextLink = null;
     var $dupeOptionWrapper = null;
     var $annotationForm = null;
     var $pointGenText = null;
@@ -1090,30 +1088,36 @@ var ImageUploadFormHelper = (function() {
                 updateFilesTable();
             });
 
-            // This'll become relevant again when we support other methods of specifying metadata
-            /*        $("#id_specify_metadata").change( function(){
-             updateFiles();
-             updateFilesTable();
-             });*/
-
-            // Extra help text for specify_metadata field.
-            // Can show by clicking "(More info)" and
-            // hide by clicking "(Less info)".
-            $metadataExtraHelpText = $("#id_specify_metadata_extra_help_text");
-            $metadataExtraHelpTextLink = $("#id_specify_metadata_extra_help_text_link");
-
-            $metadataExtraHelpTextLink.click(function() {
-                if ($metadataExtraHelpText.is(':hidden')) {
-                    $metadataExtraHelpText.show();
-                    $(this).text("(Less info)");
-                }
-                else {
-                    $metadataExtraHelpText.hide();
-                    $(this).text("(More info)");
-                }
+            // TODO: Once the skip or replace duplicates field is gone,
+            // decide whether this update is still necessary.
+            $(metadataOptionField).change( function(){
+                updateFiles();
+                updateFilesTable();
             });
 
-            // Extra help text for annotation file field field.
+
+            // Separate-dialog help text for specify_metadata field.
+            // Can show by clicking "(More info)".
+            $("#id_specify_metadata_dialog_help_text_link").click(function() {
+
+                // TODO: Reduce the text size in this dialog
+                // TODO: Come up with sensible (possibly flexible) dimensions
+                $("#id_specify_metadata_dialog_help_text").dialog({
+                        width: 800,
+                        height: 400,
+                        title: "Specifying Metadata"
+                });
+//                if ($metadataExtraHelpText.is(':hidden')) {
+//                    $metadataExtraHelpText.show();
+//                    $(this).text("(Less info)");
+//                }
+//                else {
+//                    $metadataExtraHelpText.hide();
+//                    $(this).text("(More info)");
+//                }
+            });
+
+            // Extra help text for annotation file field.
             $annoFileExtraHelpText = $("#id_annotations_file_extra_help_text");
             $annoFileExtraHelpTextLink = $("#id_annotations_file_extra_help_text_link");
 
