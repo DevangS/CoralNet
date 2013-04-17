@@ -331,7 +331,7 @@ def source_main(request, source_id):
                j += 1
                i += 1
             
-            if x == 0:
+            if full_row_sum[j-1] == 0:
                 percent = 0.0
             else:
                 percent = x/float(full_row_sum[j-1])
