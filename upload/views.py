@@ -20,7 +20,6 @@ def image_upload(request, source_id):
     """
 
     source = get_object_or_404(Source, id=source_id)
-    uploaded_images = []
 
     images_form = MultiImageUploadForm()
     options_form = ImageUploadOptionsForm(source=source)
@@ -46,7 +45,6 @@ def image_upload(request, source_id):
         'annotation_import_form': annotation_import_form,
         'annotation_import_options_form': annotation_import_options_form,
         'auto_generate_points_message': auto_generate_points_message,
-        'uploaded_images': uploaded_images,
         },
         context_instance=RequestContext(request)
     )
