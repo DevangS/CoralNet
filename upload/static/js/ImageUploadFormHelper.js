@@ -1107,14 +1107,6 @@ var ImageUploadFormHelper = (function() {
                         height: 400,
                         title: "Specifying Metadata"
                 });
-//                if ($metadataExtraHelpText.is(':hidden')) {
-//                    $metadataExtraHelpText.show();
-//                    $(this).text("(Less info)");
-//                }
-//                else {
-//                    $metadataExtraHelpText.hide();
-//                    $(this).text("(More info)");
-//                }
             });
 
             // Extra help text for annotation file field.

@@ -172,33 +172,6 @@ class ImageUploadOptionsForm(Form):
         self.fields['specify_metadata'].dialog_help_text_template = \
             'upload/help_specify_metadata.html'
 
-#        self.fields['specify_metadata'].help_text['after'] = (
-#            "After your images are done uploading, you'll be able to "
-#            "continue to another page where you can manually enter metadata for your images."
-#        )
-#        self.fields['specify_metadata'].help_text['filenames'] = \
-#            "Required filename format: {format_str}".format(format_str=self.source_specific_filename_format)
-#
-#        # Extra help text for the metadata field.
-#        # Initially hidden, and the user can click a button or link
-#        # to show/hide it.
-#        self.fields['specify_metadata'].extra_help_text['filenames'] = (
-#            "For example, let's say your source has the following location keys: Site, Depth, Transect Line and Quadrant. "
-#            "If you want to upload a .jpg image that was taken at "
-#            "Site: sharkPoint, Depth: 10m, Transect Line: 3, and Quadrant: qu4, "
-#            "on 14 January 2010, the filename for upload should be:\n\n"
-#
-#            "sharkPoint_10m_3_qu4_2010-01-14.jpg\n\n"
-#
-#            "Alternatively, if you also want to store the original filename - say it's "
-#            "IMG_0032.jpg - you can use:\n\n"
-#
-#            "sharkPoint_10m_3_qu4_2010-01-14_IMG_0032.jpg\n\n"
-#
-#            "The original filename is not used by CoralNet, but could be "
-#            "useful for your own reference."
-#        )
-
 
 class AnnotationImportForm(Form):
     annotations_file = FileField(
