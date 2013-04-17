@@ -320,7 +320,7 @@ def source_main(request, source_id):
         for items in cmx:
             temp += items
             i += 1
-            if(i % (matrixSize-1)) == (matrixSize -2):
+            if(i % (matrixSize-1)) == 0:
                 full_row_sum.append(temp)
                 temp = 0
             
