@@ -25,10 +25,17 @@ def map(request):
         else:
             source_url = ''
 
+        try:
+            latitude = str(source.latitude)
+            longitude = str(source.longitude)
+        except:
+            latitude = 'invalid'
+            longitude = 'invalid'
+
         map_sources.append(dict(
             description=source.description,
-            latitude=str(source.latitude),
-            longitude=str(source.longitude),
+            latitude=latitude,
+            longitude=longitude,
             name=source.name,
             num_of_images=str( Image.objects.filter(source=source).count() ),
             url=source_url,
