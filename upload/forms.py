@@ -301,7 +301,8 @@ class MetadataForm(Form):
     This form is used to edit the metadata of images within this source. This is commonly used within
     a form set whenever it is used.
     """
-    date = DateField(widget= TextInput(attrs={'size': 8,}))
+    selected = BooleanField(required=False)
+    date = DateField(required=False, widget= TextInput(attrs={'size': 8,}))
     height = CharField(widget= TextInput(attrs={'size': 10,}))
     latitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
     longitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
