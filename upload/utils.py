@@ -528,10 +528,6 @@ def image_upload_process(imageFile, imageOptionsForm,
 
         is_dupe = False
 
-    # Use the location values and the year to build a string identifier for the image, such as:
-    # Shore1;Reef5;...;2008
-    # Convert to a string (instead of a unicode string) for the shelve key lookup.
-    image_identifier = str(get_image_identifier(metadata_dict['values'], metadata_dict['year']))
 
     image_annotations = None
     has_points_or_annotations = False
@@ -566,6 +562,12 @@ def image_upload_process(imageFile, imageOptionsForm,
                 link=None,
                 title=None,
             )
+
+
+        # Use the location values and the year to build a string identifier for the image, such as:
+        # Shore1;Reef5;...;2008
+        # Convert to a string (instead of a unicode string) for the shelve key lookup.
+        image_identifier = str(get_image_identifier(metadata_dict['values'], metadata_dict['year']))
 
         annotation_dict = shelve.open(annotation_dict_filename)
 

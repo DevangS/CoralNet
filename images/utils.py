@@ -57,33 +57,25 @@ def get_location_value_objs(source, valueList, createNewValues=False):
 def get_first_image(source, conditions=None):
     """
     Gets the first image in the source.
-    Ordering is done by photo_date's year, then by
-    location value 1, ..., location value n.
+    Ordering is done by image id.
 
     conditions:
     A dict specifying additional filters.
-
-    *** WARNING ***
-    The use of extra() on querysets involves database-specific arguments!
-    For example, MySQL and PostgreSQL may have to use different arguments.
     """
-    db_extra_select = {'year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
-
-    metadatas = Metadata.objects.filter(image__source=source).extra(select=db_extra_select)
+    imgs = Image.objects.filter(source=source)
 
     if conditions:
         filter_kwargs = dict()
         for key, value in conditions.iteritems():
-            filter_kwargs['image__'+key] = value
-        metadatas = metadatas.filter(**filter_kwargs)
+            filter_kwargs[key] = value
+        imgs = imgs.filter(**filter_kwargs)
 
-    if not metadatas:
+    if not imgs:
         return None
 
-    sort_keys = ['year'] + source.get_value_field_list()
-    metadatas_ordered = metadatas.order_by(*sort_keys)
+    imgs_ordered = imgs.order_by('pk')
 
-    return Image.objects.get(metadata=metadatas_ordered[0])
+    return imgs_ordered[0]
 
 
 def get_prev_or_next_image(current_image, kind, conditions=None):
@@ -92,66 +84,33 @@ def get_prev_or_next_image(current_image, kind, conditions=None):
 
     conditions:
     A list specifying additional filters. For example, 'needs_human_annotation'.
-
-    *** WARNING ***
-    The use of extra() on querysets involves database-specific arguments!
     """
-    db_extra_select = {'year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
-
-    metadatas = Metadata.objects.filter(image__source=current_image.source).extra(select=db_extra_select)
+    imgs = Image.objects.filter(source=current_image.source)
 
     if conditions:
         filter_kwargs = dict()
         for key, value in conditions.iteritems():
-            filter_kwargs['image__'+key] = value
-        metadatas = metadatas.filter(**filter_kwargs)
+            filter_kwargs[key] = value
+        imgs = imgs.filter(**filter_kwargs)
 
-    sort_keys = ['year'] + [vf+'__name' for vf in current_image.source.get_value_field_list()]
-    sort_keys_reverse = sort_keys[::-1]
-    self_metadata_values = Metadata.objects.filter(pk=current_image.metadata.id).extra(select=db_extra_select).values(*sort_keys)[0]
+    if kind == 'prev':
+        # Order imgs so that highest pk comes first.
+        # Then keep only the imgs with pk less than this image.
+        imgs_ordered = imgs.order_by('-pk')
+        candidate_imgs = imgs_ordered.filter(pk__lt=current_image.pk)
+    else: # next
+        # Order imgs so that lowest pk comes first.
+        # Then keep only the imgs with pk greater than this image.
+        imgs_ordered = imgs.order_by('pk')
+        candidate_imgs = imgs_ordered.filter(pk__gt=current_image.pk)
 
-    # If we have 3 sort keys, and are getting the next image, then the algorithm is:
-    # - Look for metadatas where key 1 is equal, key 2 is equal, and key 3 is greater
-    # - If no matches, look where key 1 is equal and key 2 is greater
-    # - If no matches, look where key 1 is greater
-    # - Whenever there are matches, get the first one (the matches should be ordered,
-    #   so this should be the next image). If no matches in any step, return None.
+    if candidate_imgs:
+        return candidate_imgs[0]
+    else:
+        # No matching images before this image (if requesting prev) or
+        # after this image (if requesting next).
+        return None
 
-    if kind == 'next':
-        compare_query_str = '{0}__gt'
-        metadatas_ordered = metadatas.order_by(*sort_keys)
-    else:  # 'prev'
-        compare_query_str = '{0}__lt'
-        metadatas_ordered = metadatas.order_by(*['-'+sk for sk in sort_keys])
-
-    matching_sort_keys = sort_keys[:]
-    for sort_key_to_compare in sort_keys_reverse:
-        kwargs = dict()
-        del matching_sort_keys[-1]
-
-        for sort_key in matching_sort_keys:
-            if sort_key == 'year':
-                # For some reason, filter() doesn't seem to care about extra values obtained
-                # with extra().  So instead of the 'year' extra value, we need to give
-                # something that filter() understands.
-                kwargs['photo_date__year'] = self_metadata_values[sort_key]
-            else:
-                kwargs[sort_key] = self_metadata_values[sort_key]
-
-        if sort_key_to_compare == 'year':
-            # And accommodating filter() is even nastier here.
-            if kind == 'next':
-                kwargs['photo_date__gte'] = datetime.datetime(self_metadata_values['year']+1, 1, 1)
-            else:  # 'prev'
-                kwargs['photo_date__lt'] = datetime.datetime(self_metadata_values['year'],1,1)
-        else:
-            kwargs[compare_query_str.format(sort_key_to_compare)] = self_metadata_values[sort_key_to_compare]
-
-        candidate_metadatas = metadatas_ordered.filter(**kwargs)
-        if candidate_metadatas:
-            return Image.objects.get(metadata=candidate_metadatas[0])
-
-    return None
 
 def get_next_image(current_image, conditions=None):
     """
