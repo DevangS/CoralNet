@@ -132,6 +132,7 @@ class ImageUploadOptionsForm(Form):
         help_text='',  # To be filled in by the form's __init__()
         choices=(
             ('filenames', 'From filenames'),
+            ('csv', 'From CSV file')
         ),
         initial='filenames',
         required=True
@@ -362,3 +363,27 @@ class MetadataForm(Form):
             data['key5'] = newValueObj
 
         return super(MetadataForm, self).clean()
+
+class CSVImportForm(Form):
+    csv_file = FileField(
+        label='CSV file',
+    )
+
+    def __init__(self, *args, **kwargs):
+        """
+        Add extra_help_text to the file field.
+        """
+        super(CSVImportForm, self).__init__(*args, **kwargs)
+
+        self.fields['csv_file'].extra_help_text = (
+            "This is placeholder help text!\n"
+            )
+
+    def clean_annotations_file(self):
+        csv_file = self.cleaned_data['csv_file']
+
+        general_content_type = csv_file.content_type.split('/')[0]
+        if general_content_type != 'csv':
+            raise ValidationError("This file is not a csv file.")
+
+        return self.cleaned_data['csv_file']

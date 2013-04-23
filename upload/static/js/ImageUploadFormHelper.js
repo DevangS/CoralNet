@@ -37,6 +37,12 @@ var ImageUploadFormHelper = (function() {
     var pointsOnlyFieldId = 'id_is_uploading_annotations_not_just_points';
     var pointsOnlyField = null;
 
+    var $csvForm = null;
+    var $csvFileStatusDisplay = null;
+    var csvFileField = null;
+    var csvFileStatus = null;
+    var csvFileDictId = null;
+
     var $annotationFileProcessButton = null;
     var $uploadStartButton = null;
     var $uploadAbortButton = null;
@@ -56,6 +62,7 @@ var ImageUploadFormHelper = (function() {
     var uploadPreviewUrl = null;
     var annotationFileProcessUrl = null;
     var uploadStartUrl = null;
+    var csvFileProcessUrl = null;
     //var uploadProgressUrl = null;
 
     var $formToSubmit = null;
@@ -94,10 +101,14 @@ var ImageUploadFormHelper = (function() {
     function updateFormFields() {
         // Show or hide the skip-or-replace-dupes option
         // depending on whether it's relevant or not.
-        if ($(metadataOptionField).val() === 'filenames') {
+        var metadataOptionFieldValue = $(metadataOptionField).val();
+
+        if (metadataOptionFieldValue === 'filenames') {
             $dupeOptionWrapper.show();
+            $csvForm.hide();
         }
         else {
+            $csvForm.show();
             $dupeOptionWrapper.hide();
         }
 
@@ -424,6 +435,57 @@ var ImageUploadFormHelper = (function() {
             if (statusList[i].hasOwnProperty('metadataKey')) {
                 files[i].metadataKey = statusList[i].metadataKey;
             }
+        }
+
+        updateFilesTable();
+    }
+
+    // This calls an ajax view to process the CSV file just uploaded.
+    function processCsvFile() {
+        if (csvFileField.files.length === 0) {
+            // No file, return.
+            return;
+        }
+
+        var options = {
+            // Expected datatype of response
+            dataType: 'json',
+            // URL to submit to
+            url: csvFileProcessUrl,
+
+            // Callback
+            success: processCsvFileAjaxResponseHandler
+        };
+        $csvForm.ajaxSubmit(options);
+        $csvFileStatusDisplay.text("Processing...");
+    }
+
+    function processCsvFileAjaxResponseHandler(response) {
+
+        $csvFileStatusDisplay.empty();
+        csvFileStatus = response.status;
+
+        if (csvFileStatus === 'ok') {
+            $csvFileStatusDisplay.text("CSV file is OK.");
+            $csvFileStatusDisplay.removeClass('ok error');
+            $csvFileStatusDisplay.addClass('ok');
+
+            csvFileDictId = response.csv_dict_id;
+        }
+        else if (csvFileStatus === 'error') {
+            var messageLines = response.message.split('\n');
+            messageLines[0] = "Error: " + messageLines[0];
+
+            for (i = 0; i < messageLines.length; i++) {
+                $csvFileStatusDisplay.append(messageLines[i]);
+
+                if (i < messageLines.length-1) {
+                    $csvFileStatusDisplay.append('<br>');
+                }
+            }
+
+            $csvFileStatusDisplay.removeClass('ok error');
+            $csvFileStatusDisplay.addClass('error');
         }
 
         updateFilesTable();
@@ -852,6 +914,7 @@ var ImageUploadFormHelper = (function() {
             uploadPreviewUrl = params.uploadPreviewUrl;
             annotationFileProcessUrl = params.annotationFileProcessUrl;
             uploadStartUrl = params.uploadStartUrl;
+            csvFileProcessUrl = params.csvFileProcessUrl;
             //uploadProgressUrl = params.uploadProgressUrl;
 
             // Upload status summary elements.
@@ -859,6 +922,8 @@ var ImageUploadFormHelper = (function() {
             $midUploadSummary = $('#mid_upload_summary');
             // Annotation file status elements.
             $annotationFileStatusDisplay = $('#annotation_file_status');
+            // CSV file status elements.
+            $csvFileStatusDisplay = $('#csv_file_status');
 
             // The upload file table.
             $filesTable = $('table#files_table');
@@ -877,12 +942,14 @@ var ImageUploadFormHelper = (function() {
             annotationsCheckboxField = $('#' + annotationsCheckboxFieldId)[0];
             $annotationsCheckboxLabel = $('#annotations_checkbox_label');
             annotationFileField = $('#id_annotations_file')[0];
+            csvFileField = $('#id_csv_file')[0];
             pointsOnlyField = $('#' + pointsOnlyFieldId)[0];
 
             // Other form field related elements.
             $dupeOptionWrapper = $("#id_skip_or_replace_duplicates_wrapper");
             $annotationForm = $('#annotations_form');
             $pointGenText = $('#auto_generate_points_page_section');
+            $csvForm = $('#csv_form');
 
             // Button elements.
             $annotationFileProcessButton = $('#annotation_file_process_button');
@@ -954,6 +1021,15 @@ var ImageUploadFormHelper = (function() {
                     $filesExtraHelpText.hide();
                     $(this).text("(More info)");
                 }
+            });
+
+            // csv field event handlers.
+            $(metadataOptionField).change(function() {
+                updateFilesTable();
+            });
+
+            $(csvFileField).change(function() {
+                processCsvFile();
             });
 
             // Annotation field event handlers.

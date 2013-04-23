@@ -41,6 +41,27 @@
             {% include "form_generic.html" with form=options_form dont_mark_required="yes" %}
         </form>
 
+        <form id="csv_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+            {% with field=csv_import_form.csv_file %}
+                {# The field label #}
+                <label for="{{ field.id_for_label }}" class="column_form_text_field">
+                    {{ field.label }}:
+                </label>
+
+                <div class="field_wrapper">
+                    {# The file field element #}
+                    {{ field }}
+
+                    {# Result of csv file processing #}
+                    <div id="csv_file_status" class="helptext_small"></div>
+
+                    {# Help text #}
+                    {% include "form_generic_one_field_help_text.html" %}
+                </div>
+            {% endwith %}
+        </form>
+
+
         <input type="checkbox" name="is_uploading_points_or_annotations" id="annotations_checkbox">
         <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations (optional)</label>
 
@@ -127,7 +148,8 @@
         ImageUploadFormHelper.initForm({
             uploadPreviewUrl: "{% url image_upload_preview_ajax source.id %}",
             uploadStartUrl: "{% url image_upload_ajax source.id %}",
-            annotationFileProcessUrl: "{% url annotation_file_process_ajax source.id %}"
+            annotationFileProcessUrl: "{% url annotation_file_process_ajax source.id %}",
+            csvFileProcessUrl: "{% url csv_file_process_ajax source.id %}"
 {#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
         });
 

@@ -9,8 +9,8 @@ from images.models import Source
 from lib import str_consts
 from lib.exceptions import FileContentError
 from lib.utils import JsonResponse
-from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm
-from upload.utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, metadata_dupe_comparison_key_to_display, check_image_filename
+from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm
+from upload.utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, metadata_dupe_comparison_key_to_display, check_image_filename, store_csv_file
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload(request, source_id):
@@ -24,6 +24,7 @@ def image_upload(request, source_id):
 
     images_form = MultiImageUploadForm()
     options_form = ImageUploadOptionsForm(source=source)
+    csv_import_form = CSVImportForm()
     annotation_import_form = AnnotationImportForm()
     annotation_import_options_form = AnnotationImportOptionsForm(source=source)
 
@@ -41,6 +42,7 @@ def image_upload(request, source_id):
         'source': source,
         'images_form': images_form,
         'options_form': options_form,
+        'csv_import_form': csv_import_form,
         'annotation_import_form': annotation_import_form,
         'annotation_import_options_form': annotation_import_options_form,
         'auto_generate_points_message': auto_generate_points_message,
@@ -274,3 +276,41 @@ def image_upload_ajax(request, source_id):
             link=None,
             title=None,
         ))
+
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
+def csv_file_process_ajax(request,source_id):
+
+    source = get_object_or_404(Source, id=source_id)
+
+    if request.method == 'POST':
+
+        csv_import_form = CSVImportForm(request.POST, request.FILES)
+
+        if not csv_import_form.is_valid():
+            return JsonResponse(dict(
+                status='error',
+                message=csv_import_form.errors['csv_file'][0],
+            ))
+
+        csv_file = csv_import_form.cleaned_data['csv_file']
+
+        try:
+            csv_dict, csv_dict_id = store_csv_file(csv_file, source);
+        except FileContentError as error:
+            return JsonResponse(dict(
+                status='error',
+                message=error.message,
+             ))
+
+        # We're done with the shelved dict for now.
+        csv_dict.close()
+
+        return JsonResponse(dict(
+            status='ok',
+            csv_dict_id=csv_dict_id,
+        ))
+
+    return JsonResponse(dict(
+        status='error',
+        message="Request was not POST",
+    ))
