@@ -10,7 +10,7 @@ from lib import str_consts
 from lib.exceptions import FileContentError
 from lib.utils import JsonResponse
 from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm
-from upload.utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, metadata_dupe_comparison_key_to_display, check_image_filename, store_csv_file
+from upload.utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, metadata_dupe_comparison_key_to_display, check_image_filename, store_csv_file, filename_to_metadata_in_csv
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload(request, source_id):
@@ -311,6 +311,44 @@ def csv_file_process_ajax(request,source_id):
         return JsonResponse(dict(
             status='ok',
             csv_dict_id=csv_dict_id,
+        ))
+
+    return JsonResponse(dict(
+        status='error',
+        message="Request was not POST",
+    ))
+
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
+def image_upload_preview_with_csv_ajax(request,source_id):
+
+    source = get_object_or_404(Source, id=source_id)
+
+    if request.method == 'POST':
+
+        filenames = request.POST.getlist('filenames[]')
+        csv_dict_id = request.POST.get("csv_file_id");
+
+        # List of filename statuses.
+        statusList = []
+        for filename in filenames:
+            result = filename_to_metadata_in_csv(filename, source, csv_dict_id)
+            status = result['status']
+
+            if status == "error":
+                statusList.append(dict(
+                    status=status,
+                    message=u"{m}".format(m=result['message']),
+                ))
+            else:
+                #metadata_list = metadata_dict_to_list(result['metadata_dict'])
+                statusList.append(dict(
+                    status=status,
+                    filename=filename,
+                    metadata_list=result["metadata_dict"]),
+                )
+
+        return JsonResponse(dict(
+            statusList=statusList,
         ))
 
     return JsonResponse(dict(

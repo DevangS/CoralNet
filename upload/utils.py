@@ -142,6 +142,56 @@ def store_csv_file(csv_file, source):
 
     return (csv_dict, csv_dict_id)
 
+def filename_to_metadata_in_csv(filename, source, csv_dict_id):
+    """
+    This will take the csv_dict_id, the source, and a filename, and attempt to match the filename with metadata.
+    If it does find a match, a dictionary of the file will be returned. If not, an error will be thrown.
+    """
+
+    # these errors should not happen, but good to check anyway
+    if not csv_dict_id:
+        return dict(
+            status='error',
+            message=u"{m}".format(m="CSV file was not uploaded."),
+            link=None,
+            title=None,
+        )
+
+    csv_dict_filename = os.path.join(
+        settings.SHELVED_ANNOTATIONS_DIR,
+        'csv_source{source_id}_{dict_id}.db'.format(
+            source_id=source.id,
+            dict_id=csv_dict_id,
+        ),
+    )
+
+    if not os.path.isfile(csv_dict_filename):
+        return dict(
+            status='error',
+            message="CSV file could not be found.",
+            link=None,
+            title=None,
+        )
+
+    csv_dict = shelve.open(csv_dict_filename)
+
+
+    try:
+        metadata = csv_dict[filename]
+        #if filename in the dict, then return the dict containing metadata
+        return dict(
+            status="ok",
+            metadata_dict=metadata
+        )
+    except KeyError:
+        #if filename is not in the dict, we return an error message.
+        return dict(
+            status='error',
+            message="Does not have any metadata specified in CSV file.",
+            link=None,
+            title=None,
+        )
+
 def annotations_file_to_python(annoFile, source, expecting_labels):
     """
     Takes: an annotations file

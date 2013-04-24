@@ -142,7 +142,10 @@
 
     </div>
 
-    <div id="csv_file_upload_preview" title="Preview CSV Data" style="font-size: 62.5%;"><p>Data will be displayed here.</p></div>
+    <div id="csv_file_upload_preview" title="Preview CSV Data">
+        <p>Based on the CSV file uploaded, this is what will be saved:</p>
+        <table id="metadata_table"></table>
+    </div>
 
     <!-- Script in the body will run on page load. -->
     <script type="text/javascript">
@@ -151,8 +154,9 @@
             uploadPreviewUrl: "{% url image_upload_preview_ajax source.id %}",
             uploadStartUrl: "{% url image_upload_ajax source.id %}",
             annotationFileProcessUrl: "{% url annotation_file_process_ajax source.id %}",
-            csvFileProcessUrl: "{% url csv_file_process_ajax source.id %}"
-{#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
+            csvFileProcessUrl: "{% url csv_file_process_ajax source.id %}",
+            uploadPreviewWithCsvUrl: "{% url image_upload_preview_with_csv_ajax source.id %}",
+            {#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
         });
 
     </script>

@@ -103,6 +103,32 @@
     background-color: #88ff88;
 }
 
+#metadata_table{
+    border: 2px solid #999;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+#metadata_table th, #metadata_table td{
+    border: 2px solid #999;
+    padding: 2px 10px;  /* top/bottom left/right */
+}
+
+#metadata_table td{
+    font-size: 0.9em;
+}
+
+#csv_file_upload_preview{
+    margin: 10px 0;  /* top/bottom left/right */
+
+    /* scrollbars will appear only if the files table
+       exceeds the container's max height. */
+    overflow: auto;
+    max-height: 20em;
+    display:none;
+    font-size: 62.5%;
+}
+
 /* TODO: Merge this rule into master.css at some point. */
 form, div.page_section {
     margin: 20px 0 30px;  /* top left/right bottom */
