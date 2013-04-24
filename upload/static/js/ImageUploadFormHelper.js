@@ -42,6 +42,7 @@ var ImageUploadFormHelper = (function() {
     var csvFileField = null;
     var csvFileStatus = null;
     var csvFileDictId = null;
+    var $csvFileUploadPreview = null;
 
     var $annotationFileProcessButton = null;
     var $uploadStartButton = null;
@@ -878,6 +879,29 @@ var ImageUploadFormHelper = (function() {
         }
     }
 
+    // This displays a confirmation message to the user, and displays metadata applied to each file
+    // This will only display a dialog box if the CSV file upload is selected. Otherwise it is ignored.
+    // After confirmation, this will then begin the image upload process
+    function confirmUpload() {
+        var metadataOptionFieldValue = $(metadataOptionField).val();
+        if (metadataOptionFieldValue !== "csv") {
+            startAjaxImageUpload();
+        }
+        else {
+            $csvFileUploadPreview.dialog({
+                buttons: {
+                    "Abort": function() {
+                        $(this).dialog("close");
+                    },
+                    "Upload": function() {
+                        $ (this).dialog("close");
+                        startAjaxImageUpload();
+                    }
+                }
+            });
+        }
+    }
+
     /* Abort the Ajax upload.
      *
      * Notes:
@@ -937,6 +961,8 @@ var ImageUploadFormHelper = (function() {
             $annotationFileStatusDisplay = $('#annotation_file_status');
             // CSV file status elements.
             $csvFileStatusDisplay = $('#csv_file_status');
+            // CSV file preview upload div.
+            $csvFileUploadPreview = $("#csv_file_upload_preview");
 
             // The upload file table.
             $filesTable = $('table#files_table');
@@ -1063,8 +1089,13 @@ var ImageUploadFormHelper = (function() {
                 clearAnnotationFileStatus();
                 processAnnotationFile();
             });
-            $uploadStartButton.click(startAjaxImageUpload);
+            // This one begins file upload. But if CSV files are made use of, do
+            // an extra check with the user to see if the data is correct.
+            $uploadStartButton.click(function() {
+                confirmUpload()
+            });
             $uploadAbortButton.click(abortAjaxUpload);
+
         }
     }
 })();
