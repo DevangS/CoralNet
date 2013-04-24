@@ -756,7 +756,7 @@ def metadata_dupe_comparison_key_to_display(metadata_key):
     return metadata_key.replace(';', ' ')
 
 
-def check_image_filename(filename, source):
+def check_image_filename(filename, source, verify_metadata=True):
     """
     When gathering uploaded-image metadata from filenames, this function
     checks the filename and determines whether the file:
@@ -764,24 +764,32 @@ def check_image_filename(filename, source):
     - Is a duplicate of an existing image
     - Neither
     """
-    try:
-        metadata_dict = filename_to_metadata(filename, source)
-    except FilenameError as error:
-        # Filename parse error.
-        return dict(
-            status='error',
-            message=error.message,
-        )
+    metadata_dict = None
 
-    dupe = find_dupe_image(source, metadata_dict['name'])
-    if dupe:
-        return dict(
-            status='possible_dupe',
-            metadata_dict=metadata_dict,
-            dupe=dupe,
-        )
+    if verify_metadata:
+        try:
+            metadata_dict = filename_to_metadata(filename, source)
+        except FilenameError as error:
+            # Filename parse error.
+            return dict(
+                status='error',
+                message=error.message,
+            )
+        image_name = metadata_dict['name']
     else:
-        return dict(
-            status='ok',
-            metadata_dict=metadata_dict,
-        )
+        image_name = filename
+
+    dupe = find_dupe_image(source, image_name)
+
+    return_dict = dict()
+
+    if dupe:
+        return_dict['status'] = 'possible_dupe'
+        return_dict['dupe'] = dupe
+    else:
+        return_dict['status'] = 'ok'
+
+    if metadata_dict:
+        return_dict['metadata_dict'] = metadata_dict
+
+    return return_dict

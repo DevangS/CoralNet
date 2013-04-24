@@ -64,13 +64,18 @@ def image_upload_preview_ajax(request, source_id):
     if request.method == 'POST':
 
         filenames = request.POST.getlist('filenames[]')
+        metadataOption = request.POST['metadataOption']
 
         # List of filename statuses.
         statusList = []
 
         for index, filename in enumerate(filenames):
 
-            result = check_image_filename(filename, source)
+            if metadataOption == 'filenames':
+                result = check_image_filename(filename, source)
+            else:
+                result = check_image_filename(filename, source, verify_metadata=False)
+
             status = result['status']
             metadata_key = None
 

@@ -364,13 +364,18 @@ var ImageUploadFormHelper = (function() {
             filenameList[i] = files[i].file.name;
         }
 
-        if ($(metadataOptionField).val() === 'filenames') {
+        var metadataOption = $(metadataOptionField).val();
+
+        if (metadataOption === 'filenames'
+            || metadataOption === 'after') {
 
             // Ask the server (via Ajax) about the filenames: are they in the
-            // right format? Do they have duplicate keys with existing files?
+            // right format (if applicable)? Are they duplicates of files on
+            // the server?
             $.ajax({
                 // Data to send in the request
                 data: {
+                    metadataOption: metadataOption,
                     filenames: filenameList
                 },
 
@@ -383,7 +388,8 @@ var ImageUploadFormHelper = (function() {
                 url: uploadPreviewUrl
             });
         }
-        else {
+        else {  // 'csv'
+
             // This is done if there is a CSV file present. This will do separate
             // error checking.
             $.ajax({
