@@ -53,6 +53,7 @@ var ImageUploadFormHelper = (function() {
 
     var $dupeOptionWrapper = null;
     var $annotationForm = null;
+    var $annotationSection = null;
     var $pointGenText = null;
     var $annoFileExtraHelpText = null;
     var $annoFileExtraHelpTextLink = null;
@@ -1065,6 +1066,7 @@ var ImageUploadFormHelper = (function() {
 
             // Other form field related elements.
             $dupeOptionWrapper = $("#id_skip_or_replace_duplicates_wrapper");
+            $annotationSection = $('#annotations_section');
             $annotationForm = $('#annotations_form');
             $pointGenText = $('#auto_generate_points_page_section');
             $csvForm = $('#csv_form');
@@ -1076,8 +1078,6 @@ var ImageUploadFormHelper = (function() {
 
             $uploadStartInfo = $('#upload_start_info');
 
-            updateFilesTable();
-
             // Set onchange handlers for form fields.
             $(filesField).change( function(){
                 updateFiles();
@@ -1088,12 +1088,37 @@ var ImageUploadFormHelper = (function() {
                 updateFilesTable();
             });
 
-            // TODO: Once the skip or replace duplicates field is gone,
-            // decide whether this update is still necessary.
             $(metadataOptionField).change( function(){
+                // For now, annotation upload is only allowed when getting
+                // metadata from filenames.
+                if ($(metadataOptionField).val() === 'filenames') {
+                    $annotationSection.show();
+                    $(annotationsCheckboxField).prop('disabled', false);
+                }
+                else {
+                    $annotationSection.hide();
+                    $(annotationsCheckboxField).prop('checked', false);
+                    $(annotationsCheckboxField).prop('disabled', true);
+                }
+
                 updateFiles();
                 updateFilesTable();
             });
+
+            // Ensure that the annotations section is also toggled properly
+            // upon page load.  Yes, this code is duplicated from above...
+            if ($(metadataOptionField).val() === 'filenames') {
+                $annotationSection.show();
+                $(annotationsCheckboxField).prop('disabled', false);
+            }
+            else {
+                $annotationSection.hide();
+                $(annotationsCheckboxField).prop('checked', false);
+                $(annotationsCheckboxField).prop('disabled', true);
+            }
+
+            // Make sure the files table initially looks right
+            updateFilesTable();
 
 
             // Separate-dialog help text for specify_metadata field.

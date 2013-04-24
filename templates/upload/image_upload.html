@@ -45,40 +45,43 @@
             {% endwith %}
         </form>
 
+        <div id="annotations_section">
 
-        <input type="checkbox" name="is_uploading_points_or_annotations" id="annotations_checkbox">
-        <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations (optional)</label>
+            <input type="checkbox" name="is_uploading_points_or_annotations" id="annotations_checkbox">
+            <label for="annotations_checkbox" class="section_header" id="annotations_checkbox_label">Points and annotations (optional)</label>
 
-        <form id="annotations_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+            <form id="annotations_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
 
-            {% comment %}
-            Field for the annotations file. We'll specify elements manually
-            instead of using form_generic.html, so we can put the annotation
-            file status between elements.
-            {% endcomment %}
-            {% with field=annotation_import_form.annotations_file %}
-                {# The field label #}
-                <label for="{{ field.id_for_label }}" class="column_form_text_field">
-                    {{ field.label }}:
-                </label>
+                {% comment %}
+                Field for the annotations file. We'll specify elements manually
+                instead of using form_generic.html, so we can put the annotation
+                file status between elements.
+                {% endcomment %}
+                {% with field=annotation_import_form.annotations_file %}
+                    {# The field label #}
+                    <label for="{{ field.id_for_label }}" class="column_form_text_field">
+                        {{ field.label }}:
+                    </label>
 
-                <div class="field_wrapper">
-                    {# The file field element #}
-                    {{ field }}
+                    <div class="field_wrapper">
+                        {# The file field element #}
+                        {{ field }}
 
-                    <button type="button" class="submit" id="annotation_file_process_button">Re-process file</button>
+                        <button type="button" class="submit" id="annotation_file_process_button">Re-process file</button>
 
-                    {# Result of annotation file processing #}
-                    <div id="annotation_file_status" class="helptext_small"></div>
+                        {# Result of annotation file processing #}
+                        <div id="annotation_file_status" class="helptext_small"></div>
 
-                    {# Help text #}
-                    {% include "form_generic_one_field_help_text.html" %}
-                </div>
-            {% endwith %}
+                        {# Help text #}
+                        {% include "form_generic_one_field_help_text.html" %}
+                    </div>
+                {% endwith %}
 
-            {# Options related to the annotations file. #}
-            {% include "form_generic_one_field.html" with field=annotation_import_options_form.is_uploading_annotations_not_just_points dont_mark_required="yes" %}
-        </form>
+                {# Options related to the annotations file. #}
+                {% include "form_generic_one_field.html" with field=annotation_import_options_form.is_uploading_annotations_not_just_points dont_mark_required="yes" %}
+            </form>
+
+        </div>
 
         <div class="page_section" id="auto_generate_points_page_section">
             <span class="helptext">{{ auto_generate_points_message|linebreaksbr }}</span>

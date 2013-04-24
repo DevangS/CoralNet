@@ -28,8 +28,7 @@ def image_upload(request, source_id):
     annotation_import_options_form = AnnotationImportOptionsForm(source=source)
 
     auto_generate_points_message = (
-        "You haven't specified any points or annotations, so we will\n"
-        "generate points for the images you upload.\n"
+        "We will generate points for the images you upload.\n"
         "Your Source's point generation settings: {pointgen}\n"
         "Your Source's annotation area settings: {annoarea}").format(
             pointgen=PointGen.db_to_readable_format(source.default_point_generation_method),
