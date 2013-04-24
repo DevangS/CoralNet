@@ -88,10 +88,40 @@ var CNMap = (function() {
 
                 var source = params.mapSources[i];
                 var sourceLatLon = new google.maps.LatLng(source.latitude, source.longitude);
+                var randomColor = (Math.random()*0xFFFFFF<<0).toString(16);
+		var markerSize = null
+		
+
+		if (source.num_of_images < 5) {
+		    markerSize = new google.maps.Size(15, 24);
+		}
+		else if(source.num_of_images < 50){
+		    markerSize = new google.maps.Size(20, 32);
+		}
+		else if(source.num_of_images < 500){
+		    markerSize = new google.maps.Size(25, 40);		
+		}
+		else {
+		    markerSize = new google.maps.Size(30, 48);
+		}
 
                 var marker = new google.maps.Marker({
                     position: sourceLatLon,
                     map: map,
+		    icon: new google.maps.MarkerImage(
+                        'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|' + randomColor, 
+                        null,
+		        null,
+		        null,
+		        markerSize
+                    ),
+		    shadow: new google.maps.MarkerImage(
+                        "http://chart.apis.google.com/chart?chst=d_map_pin_shadow",
+                        null,
+                        null,
+                        /* Offset x axis 33% of overall size, Offset y axis 100% of overall size */
+                        new google.maps.Point(40, 110), 
+                        new google.maps.Size(120, 110)),
                     title: source.name
                 });
 
