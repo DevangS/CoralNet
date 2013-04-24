@@ -156,6 +156,18 @@ var ImageUploadFormHelper = (function() {
             $uploadStartButton.prop('disabled', true);
             $uploadStartInfo.text("Points/annotations file has an error");
         }
+        else if (metadataOptionFieldValue === "csv" && csvFileField.files.length === 0) {
+            $uploadStartButton.prop('disabled', true);
+            $uploadStartInfo.text("CSV file not selected yet");
+        }
+        else if (metadataOptionFieldValue === "csv" && csvFileStatus === null) {
+            $uploadStartButton.prop('disabled', true);
+            $uploadStartInfo.text("CSV file needs processing");
+        }
+        else if (metadataOptionFieldValue === "csv" && csvFileStatus === 'error') {
+            $uploadStartButton.prop('disabled', true);
+            $uploadStartInfo.text("CSV file has an error");
+        }
         else if (files.length === 0) {
             // No image files
             $uploadStartButton.prop('disabled', true);
@@ -678,7 +690,8 @@ var ImageUploadFormHelper = (function() {
         $formToSubmit.find('#'+pointsOnlyFieldId).val($(pointsOnlyField).val());
         // Also add a field for the shelved annotation dict's id.
         $formToSubmit.append($('<input type="text" name="annotation_dict_id">').val(annotationDictId));
-
+        // Add a field for the shelved csv dict's id.
+        $formToSubmit.append($('<input type="text" name="csv_dict_id">').val(csvFileDictId));
         // Disable all form fields and buttons on the page.
         $(filesField).prop('disabled', true);
         $(dupeOptionField).prop('disabled', true);

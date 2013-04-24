@@ -142,104 +142,6 @@ def store_csv_file(csv_file, source):
 
     return (csv_dict, csv_dict_id)
 
-def get_metadata_from_csv(uploaded_filename, source):
-    """
-    Based on the filename given, it looks through the csv file to find the first
-    line where the filename is located. So if there are multiple filenames,
-    it will only take data from the first one.
-    It then builds a dictionary with all the metadata it finds on the line.
-    If it cannot match a filename, it will return an empty dictionary.
-    Throws an error if the date cannot be parsed.
-    """
-    csvfile = open("test.csv", 'rb')
-    reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-    num_keys = source.num_of_keys()
-    filename_row = None
-    metadata = {}
-
-    # This gets us the first row in the CSV file containing the file name.
-    for row in reader:
-        filename = row.pop(0)
-        if (filename == uploaded_filename):
-            filename_row = row
-            metadata['name'] = filename
-            break
-
-    # if a filename didn't exist, just return a dictionary with no metadata
-    if not filename_row:
-        return metadata
-
-    valueList = []
-    date = ""
-    # Now loop through that row and gather metadata from the file.
-    for i, element in enumerate(filename_row):
-        if (i == 0):
-            date = element
-        elif (i == 1):
-            valueList.append(element)
-        elif (i == 2):
-            if (num_keys < 2):
-                continue
-            valueList.append(element)
-        elif (i == 3):
-            if (num_keys < 3):
-                continue
-            valueList.append(element)
-        elif (i == 4):
-            if (num_keys < 4):
-                continue
-            valueList.append(element)
-        elif (i == 5):
-            if (num_keys < 5):
-                continue
-            valueList.append(element)
-        elif (i == 6):
-            metadata['height'] = element
-        elif (i == 7):
-            metadata['latitude'] = element
-        elif (i == 8):
-            metadata['longitude'] = element
-        elif (i == 9):
-            metadata['depth'] = element
-        elif (i == 10):
-            metadata['camera'] = element
-        elif (i == 11):
-            metadata['photographer'] = element
-        elif (i == 12):
-            metadata['water_quality'] = element
-        elif (i == 13):
-            metadata['strobes'] = element
-        elif (i == 14):
-            metadata['framing_gear'] = element
-        elif (i == 15):
-            metadata['white_balance'] = element
-
-    try:
-        year, month, day = date.split("-")
-    except ValueError:
-        # Too few or too many dash-separated tokens.
-        # Note that this may or may not be something that the user intended
-        # as a date.  An appropriately flexible error message is needed.
-        raise FilenameError(str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token=date))
-        # YYYYMMDD parsing:
-    #    if len(dateToken) != 8:
-    #        raise dateFormatError
-    #    year, month, day = dateToken[:4], dateToken[4:6], dateToken[6:8]
-
-    try:
-        datetime.date(int(year), int(month), int(day))
-    except ValueError:
-        # Either non-integer date params, or date params are
-        # out of valid range (e.g. month 13).
-        raise FilenameError(str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token=date))
-
-    metadata['day'] = day
-    metadata['month'] = month
-    metadata['year'] = year
-    metadata['values'] = valueList
-    # This contains metadata from the file found in the CSV file.
-    return metadata
-
 def annotations_file_to_python(annoFile, source, expecting_labels):
     """
     Takes: an annotations file
@@ -448,6 +350,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
 
 def image_upload_process(imageFile, imageOptionsForm,
                          annotation_dict_id,
+                         csv_dict_id,
                          annotation_options_form,
                          source, currentUser):
 
@@ -506,19 +409,39 @@ def image_upload_process(imageFile, imageOptionsForm,
         for key, value in value_dict.iteritems():
             setattr(metadata_obj, key, value)
     else:
-        filename_check_result = check_image_csv(filename, source)
-        filename_status = filename_check_result['status']
-        if filename_status == 'error':
-            # This case should never happen if the pre-upload
-            # status checking is doing its job, but just in case...
+
+        if not csv_dict_id:
             return dict(
-                status=filename_status,
-                message=u"{m}".format(m=filename_check_result['message']),
+                status='error',
+                message=u"{m}".format(m="CSV file was not uploaded."),
                 link=None,
                 title=None,
             )
 
-        metadata_dict = filename_check_result['metadata_dict']
+        csv_dict_filename = os.path.join(
+            settings.SHELVED_ANNOTATIONS_DIR,
+            'csv_source{source_id}_{dict_id}.db'.format(
+                source_id=source.id,
+                dict_id=csv_dict_id,
+            ),
+        )
+
+        # Corner case: the specified shelved annotation file doesn't exist.
+        # Perhaps the file was created a while ago and has been pruned since,
+        # or perhaps there is a bug.
+        if not os.path.isfile(csv_dict_filename):
+            return dict(
+                status='error',
+                message="CSV file could not be found - if you provided the .csv file a while ago, maybe it just timed out. Please retry the upload.",
+                link=None,
+                title=None,
+            )
+
+        csv_dict = shelve.open(csv_dict_filename)
+
+        metadata_dict = csv_dict[filename]
+
+        csv_dict.close()
 
         value_dict = get_location_value_objs(source, metadata_dict['values'], createNewValues=True)
         photo_date = datetime.date(
@@ -527,8 +450,7 @@ def image_upload_process(imageFile, imageOptionsForm,
             day = int(metadata_dict['day'])
         )
 
-        if 'name' in metadata_dict:
-            metadata_obj.name = metadata_dict['name']
+        metadata_obj.name = filename
         if photo_date:
             metadata_obj.photo_date = photo_date
         if 'latitude' in metadata_dict:
@@ -849,30 +771,6 @@ def check_image_filename(filename, source):
             status='ok',
             metadata_dict=metadata_dict,
         )
-
-def check_image_csv(filename, source):
-    """
-    When gathering uploaded-image metadata from filenames, this function
-    checks the filename and determines whether the file:
-    - Has a filename error
-    - Is a duplicate of an existing image
-    - Neither
-    """
-    try:
-        metadata_dict = get_metadata_from_csv(filename, source)
-    except FilenameError as error:
-        # Filename parse error.
-        return dict(
-            status='error',
-            message=error.message,
-        )
-
-    else:
-        return dict(
-            status='ok',
-            metadata_dict=metadata_dict,
-        )
-
 
 def image_upload_success_message(num_images_uploaded,
                                  num_dupes, dupe_option,

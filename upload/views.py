@@ -239,6 +239,8 @@ def image_upload_ajax(request, source_id):
     annotation_dict_id = request.POST.get('annotation_dict_id', None)
     annotation_options_form = AnnotationImportOptionsForm(request.POST, source=source)
 
+    csv_dict_id = request.POST.get('csv_dict_id', None)
+
     # Check for validity of the file (filetype and non-corruptness) and
     # the options forms.
     if image_form.is_valid():
@@ -249,6 +251,7 @@ def image_upload_ajax(request, source_id):
                     imageOptionsForm=options_form,
                     annotation_dict_id=annotation_dict_id,
                     annotation_options_form=annotation_options_form,
+                    csv_dict_id=csv_dict_id,
                     source=source,
                     currentUser=request.user,
                 )
