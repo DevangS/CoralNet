@@ -404,11 +404,9 @@ def image_upload_process(imageFile, imageOptionsForm,
                          annotation_options_form,
                          source, currentUser):
 
-    dupeOption = imageOptionsForm.cleaned_data['skip_or_replace_duplicates']
     is_uploading_points_or_annotations = annotation_options_form.cleaned_data['is_uploading_points_or_annotations']
 
     filename = imageFile.name
-    is_dupe = False
     metadata_dict = None
     metadata_obj = Metadata(height_in_cm=source.image_height_in_cm)
 
@@ -427,23 +425,6 @@ def image_upload_process(imageFile, imageOptionsForm,
                 title=None,
             )
 
-        elif filename_status == 'dupe':
-            is_dupe = True
-            dupe_image = filename_check_result['dupe']
-
-            if dupeOption == 'skip':
-                # This case should never happen if the pre-upload
-                # status checking is doing its job, but just in case...
-                return dict(
-                    status='error',
-                    message="Skipped (duplicate found)",
-                    link=reverse('image_detail', args=[dupe_image.id]),
-                    title=dupe_image.get_image_element_title(),
-                )
-            elif dupeOption == 'replace':
-                # Delete the dupe, and proceed with uploading this file.
-                dupe_image.delete()
-
         # Set the metadata
         metadata_dict = filename_check_result['metadata_dict']
 
@@ -458,7 +439,8 @@ def image_upload_process(imageFile, imageOptionsForm,
         metadata_obj.photo_date = photo_date
         for key, value in value_dict.iteritems():
             setattr(metadata_obj, key, value)
-    else:
+
+    elif imageOptionsForm.cleaned_data['specify_metadata'] == 'csv':
 
         if not csv_dict_id:
             return dict(
@@ -526,7 +508,10 @@ def image_upload_process(imageFile, imageOptionsForm,
         for key, value in value_dict.iteritems():
             setattr(metadata_obj, key, value)
 
-        is_dupe = False
+    else:
+
+        # Not specifying any metadata at upload time.
+        metadata_obj.name = filename
 
 
     image_annotations = None
@@ -643,10 +628,7 @@ def image_upload_process(imageFile, imageOptionsForm,
         # Generate and save points
         generate_points(img)
 
-    if is_dupe:
-        success_message = "Uploaded (replaced duplicate)"
-    else:
-        success_message = "Uploaded"
+    success_message = "Uploaded"
 
     return dict(
         status='ok',
@@ -657,36 +639,16 @@ def image_upload_process(imageFile, imageOptionsForm,
     )
 
 
-def find_dupe_image(source, values=None, year=None, **kwargs):
+def find_dupe_image(source, image_name):
     """
     Sees if the given source already has an image with the given arguments.
 
     :param source: The source to check.
-    :param values: The image's location values as a list of strings.
-    :param year: The image's photo-date year.
-    :param kwargs: This is just to accept other arguments that might've come
-        with an unpacked metadata dict (the typical input for this function),
-        although we won't be using these other arguments.
+    :param image_name: The image's name; based on its filename.
     :returns: If a duplicate image was found, returns that duplicate.  If no
         duplicate was found, returns None.
     """
-
-    # Get Value objects of the value names given in "values".
-    try:
-        valueObjDict = get_location_value_objs(source, values, createNewValues=False)
-    except ValueObjectNotFoundError:
-        # One or more of the values weren't found in the DB.
-        # So this image surely doesn't have a dupe in the DB.
-        return None
-
-    # Get all the metadata objects in the DB with these location values and year.
-    #
-    # Note: if 0 location keys is possible at all, this will get metadata from
-    # other sources.  We'll filter by source in the next step, though.
-    metaMatches = Metadata.objects.filter(photo_date__year=year, **valueObjDict)
-
-    # Get the images from our source that have this metadata.
-    imageMatches = Image.objects.filter(source=source, metadata__in=metaMatches)
+    imageMatches = Image.objects.filter(source=source, metadata__name=image_name)
 
     if len(imageMatches) >= 1:
         return imageMatches[0]
@@ -811,10 +773,10 @@ def check_image_filename(filename, source):
             message=error.message,
         )
 
-    dupe = find_dupe_image(source, **metadata_dict)
+    dupe = find_dupe_image(source, metadata_dict['name'])
     if dupe:
         return dict(
-            status='dupe',
+            status='possible_dupe',
             metadata_dict=metadata_dict,
             dupe=dupe,
         )
@@ -823,27 +785,3 @@ def check_image_filename(filename, source):
             status='ok',
             metadata_dict=metadata_dict,
         )
-
-def image_upload_success_message(num_images_uploaded,
-                                 num_dupes, dupe_option,
-                                 num_annotations):
-    """
-    Construct the message for a successful image upload operation.
-    """
-    uploaded_msg = "{num} images uploaded.".format(num=num_images_uploaded)
-
-    if num_dupes > 0:
-        if dupe_option == 'replace':
-            duplicate_msg = "{num} duplicate images replaced.".format(num=num_dupes)
-        else:
-            duplicate_msg = "{num} duplicate images skipped.".format(num=num_dupes)
-    else:
-        duplicate_msg = None
-
-    if num_annotations > 0:
-        annotation_msg = "{num} annotations imported.".format(num=num_annotations)
-    else:
-        annotation_msg = None
-
-    return ' '.join([msg for msg in [uploaded_msg, duplicate_msg, annotation_msg]
-                     if msg is not None])

@@ -124,7 +124,6 @@ class ImageUploadForm(Form):
 class ImageUploadOptionsForm(Form):
     """
     Helper form for the ImageUploadForm.
-    Has options such as choosing to skip or replace duplicate images.
     """
 
     specify_metadata = ChoiceField(
@@ -136,20 +135,6 @@ class ImageUploadOptionsForm(Form):
             ('csv', 'From CSV file')
         ),
         initial='after',
-        required=True
-    )
-
-    skip_or_replace_duplicates = ChoiceField(
-        label='Skip or replace duplicate images',
-        help_text=(
-            "An image is considered a duplicate if it has the same "
-            "location keys and year as another image in the Source."
-        ),
-        choices=(
-            ('skip', "Skip (don't re-upload)"),
-            ('replace', "Replace (re-upload)"),
-        ),
-        initial='skip',
         required=True
     )
 

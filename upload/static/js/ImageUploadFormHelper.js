@@ -26,8 +26,6 @@ var ImageUploadFormHelper = (function() {
     var annotationDictId = null;
 
     var filesField = null;
-    var dupeOptionFieldId = 'id_skip_or_replace_duplicates';
-    var dupeOptionField = null;
     var metadataOptionFieldId = 'id_specify_metadata';
     var metadataOptionField = null;
     var annotationsCheckboxFieldId = 'annotations_checkbox';
@@ -51,7 +49,6 @@ var ImageUploadFormHelper = (function() {
 
     var $uploadStartInfo = null;
 
-    var $dupeOptionWrapper = null;
     var $annotationForm = null;
     var $annotationSection = null;
     var $pointGenText = null;
@@ -101,17 +98,15 @@ var ImageUploadFormHelper = (function() {
     }
 
     function updateFormFields() {
-        // Show or hide the skip-or-replace-dupes option
-        // depending on whether it's relevant or not.
+        // Show or hide the CSV fields
+        // depending on whether they're relevant or not.
         var metadataOptionFieldValue = $(metadataOptionField).val();
 
-        if (metadataOptionFieldValue === 'filenames') {
-            $dupeOptionWrapper.show();
-            $csvForm.hide();
+        if (metadataOptionFieldValue === 'csv') {
+            $csvForm.show();
         }
         else {
-            $csvForm.show();
-            $dupeOptionWrapper.hide();
+            $csvForm.hide();
         }
 
         var annotationsChecked = $(annotationsCheckboxField).prop('checked');
@@ -223,11 +218,11 @@ var ImageUploadFormHelper = (function() {
         uploadableTotalSize = 0;
 
         for (i = 0; i < files.length; i++) {
-            // Uploadable: ok, dupe+replace
-            // Not uploadable: dupe+skip, error, null(uninitialized status)
+            // Uploadable: ok, possible dupe
+            // Not uploadable: error, null(uninitialized status)
             var isUploadable = (
                 files[i].status === 'ok'
-                || (files[i].status === 'dupe' && $(dupeOptionField).val() === 'replace')
+                || files[i].status === 'possible_dupe'
             );
 
             if (isUploadable) {
@@ -245,13 +240,8 @@ var ImageUploadFormHelper = (function() {
             if (files[i].status === 'ok') {
                 styleFilesTableRow(i, '');
             }
-            else if (files[i].status === 'dupe') {
-                if ($(dupeOptionField).val() === 'skip') {
-                    styleFilesTableRow(i, 'dupe_skip');
-                }
-                else {  // 'replace'
-                    styleFilesTableRow(i, 'preupload_dupe_replace');
-                }
+            else if (files[i].status === 'possible_dupe') {
+                styleFilesTableRow(i, 'preupload_possible_dupe');
             }
             else {
                 // 'error' status
@@ -279,12 +269,6 @@ var ImageUploadFormHelper = (function() {
             ));
         }
 
-        if (numDupes > 0 && $(dupeOptionField).val() === 'skip') {
-            $summaryList.append($('<li>').text(
-                "{0} file(s) are duplicate images that will be skipped".format(numDupes)
-            ));
-        }
-
         var $uploadableImagesListItem = $('<li>').append($('<strong>').text(
             "{0} file(s) ({1}) are uploadable images".format(
                 numUploadables, util.filesizeDisplay(uploadableTotalSize)
@@ -295,12 +279,9 @@ var ImageUploadFormHelper = (function() {
         var $summarySubList = $('<ul>');
         $uploadableImagesListItem.append($summarySubList);
 
-        if (numDupes > 0 && $(dupeOptionField).val() === 'replace') {
+        if (numDupes > 0) {
             $summarySubList.append($('<li>').text(
-                "{0} image(s) are new".format(numUploadables-numDupes)
-            ));
-            $summarySubList.append($('<li>').text(
-                "{0} image(s) are duplicates that will replace the originals".format(numDupes)
+                "{0} image(s) are possible duplicates of existing images".format(numDupes)
             ));
         }
 
@@ -499,9 +480,9 @@ var ImageUploadFormHelper = (function() {
 
             var statusStr = statusList[i].status;
 
-            if (statusStr === 'dupe') {
+            if (statusStr === 'possible_dupe') {
 
-                var linkToDupe = $("<a>").text("Duplicate found");
+                var linkToDupe = $("<a>").text("Possible duplicate");
                 linkToDupe.attr('href', statusList[i].url);    // Link to the image's page
                 linkToDupe.attr('target', '_blank');    // Open in new window
                 linkToDupe.attr('title', statusList[i].title);
@@ -755,7 +736,6 @@ var ImageUploadFormHelper = (function() {
         // clone() doesn't copy values of select inputs for some reason,
         // even when the data parameter to clone() is true. So copy these
         // values manually...
-        $formToSubmit.find('#'+dupeOptionFieldId).val($(dupeOptionField).val());
         $formToSubmit.find('#'+metadataOptionFieldId).val($(metadataOptionField).val());
 
         // Add the (cloned) annotation fields.
@@ -769,7 +749,6 @@ var ImageUploadFormHelper = (function() {
         $formToSubmit.append($('<input type="text" name="csv_dict_id">').val(csvFileDictId));
         // Disable all form fields and buttons on the page.
         $(filesField).prop('disabled', true);
-        $(dupeOptionField).prop('disabled', true);
         $(metadataOptionField).prop('disabled', true);
 
         $(annotationsCheckboxField).prop('disabled', true);
@@ -1056,7 +1035,6 @@ var ImageUploadFormHelper = (function() {
 
             // Field elements.
             filesField = $('#id_files')[0];
-            dupeOptionField = $('#' + dupeOptionFieldId)[0];
             metadataOptionField = $('#' + metadataOptionFieldId)[0];
             annotationsCheckboxField = $('#' + annotationsCheckboxFieldId)[0];
             $annotationsCheckboxLabel = $('#annotations_checkbox_label');
@@ -1065,7 +1043,6 @@ var ImageUploadFormHelper = (function() {
             pointsOnlyField = $('#' + pointsOnlyFieldId)[0];
 
             // Other form field related elements.
-            $dupeOptionWrapper = $("#id_skip_or_replace_duplicates_wrapper");
             $annotationSection = $('#annotations_section');
             $annotationForm = $('#annotations_form');
             $pointGenText = $('#auto_generate_points_page_section');
@@ -1081,10 +1058,6 @@ var ImageUploadFormHelper = (function() {
             // Set onchange handlers for form fields.
             $(filesField).change( function(){
                 updateFiles();
-                updateFilesTable();
-            });
-
-            $(dupeOptionField).change( function() {
                 updateFilesTable();
             });
 
