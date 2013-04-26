@@ -92,7 +92,7 @@ class Source(models.Model):
 
     enable_robot_classifier = models.BooleanField(
         "Enable robot classifier",
-        default=False,
+        default=True,
         help_text="With this option on, the automatic classification system will "
                   "go through your images and add unofficial annotations to them. "
                   "Then when you enter the annotation tool, you will be able to start "

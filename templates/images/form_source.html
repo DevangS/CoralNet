@@ -71,26 +71,15 @@ This form template is meant to be used with the "include" template tag.
     {% if source_form_type == "edit" %}
         <span class="helptext">
             Status:
-            {% if source.enable_automated_classifier %}
-                Enabled
+            {% if source.enable_robot_classifier %}
+                Enabled. If you wish to disable machine annotation, please
+                <a href="{% url contact %}" target="_blank">contact us</a>.
             {% else %}
-                Disabled
+                Disabled. If you wish to enable machine annotation, please
+                <a href="{% url contact %}" target="_blank">contact us</a>.
             {% endif %}
         </span>
     {% endif %}
-    <span class="helptext">
-        {% if source_form_type == "new" %}
-            For now, all sources have machine annotation disabled by
-            default, but you can request to have machine annotation
-            enabled for your source. If you wish to enable it, please
-            <a href="{% url contact %}" target="_blank">contact us</a>.
-        {% else %} {# edit #}
-            For now, enabling or disabling machine annotation for a source
-            can only be done upon request. If you wish to enable or disable
-            machine annotation, please
-            <a href="{% url contact %}" target="_blank">contact us</a>.
-        {% endif %}
-    </span>
 </fieldset>
 
 <fieldset>
