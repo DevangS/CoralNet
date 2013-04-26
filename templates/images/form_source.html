@@ -65,10 +65,10 @@ This form template is meant to be used with the "include" template tag.
     <span class="helptext">{{ pointGenForm.form_help_text|linebreaksbr }}</span>
     {% include "form_generic.html" with form=pointGenForm %}
 
+    {% if source_form_type == "edit" %}
     <hr class="light"/>
 
     <legend class="smaller">Machine annotation</legend>
-    {% if source_form_type == "edit" %}
         <span class="helptext">
             Status:
             {% if source.enable_robot_classifier %}
