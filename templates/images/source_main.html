@@ -37,7 +37,7 @@
             {% if not source.enable_robot_classifier %}
                 <li>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</li>
             {% else %}
-                {% if robotStats.hasRobot %}
+                {% if  robotStats.hasRobot %}
                     <li>{{robotStats.edit}}</li>
                 {% endif %}
             {% endif %}
@@ -107,7 +107,9 @@
                                 <td>Traintime (s): <b>{{ robotStats.trainTime }}</b></td>
                             </tr>
                             <tr>
-                                <td><a href="javascript:openDialog();">Confusion Matrix</a></td>
+                                <td><a href="javascript:openDialog();">Functional Group Confusion Matrix</a></td>
+                            </tr><tr>    
+                                <td><a href="javascript:openDialog2();">Full Confusion Matrix</a></td>
                             </tr>
                         {% endif %}
                     {% endif %}
@@ -147,6 +149,9 @@
         function openDialog() {
             $( "#dialog" ).dialog({resizable: false,modal: true,width:'auto'});
         }
+        function openDialog2() {
+            $( "#dialog2" ).dialog({resizable: false,modal: true,width:'auto'});
+        }
     </script>
 
     <div id="dialog" title="Confusion Matrix" style="display:none;font-size: 62.5%;">
@@ -156,17 +161,22 @@
         <td>
         <table class="detail_table">
             <tr>
-                <td> cm </td>
+                <td height="20"> cm </td>
                 {% for labels in robotStats.labelMap %}
-                    <td>{{labels}}</td>
+                    <td height="20">{{labels}}</td>
                 {% endfor %}
             </tr>
             {% for value in robotStats.cm %}
                 {% if forloop.counter0|divisibleby:robotStats.matrixSize %}
                     <tr>
-                    <td> {{value}} </td>
+                    <td height="20"> {{value}} </td>
+                {% else %}
+                {% if forloop.revcounter0|divisibleby:robotStats.diaglen %}
+                    <td height="20"> <b>{{value}} </b></td>
+                
                 {%else %}
-                    <td> {{value}} </td>
+                    <td height="20"> {{value}} </td>
+                {% endif %}
                 {% endif %}
 
             {% if forloop.counter|divisibleby:robotStats.matrixSize %}
@@ -178,11 +188,11 @@
         <td>
         <table class="detail_table">
             <tr>
-                <td>Count</td>
+                <td height="20">Count</td>
             </tr>
             {% for labels in robotStats.row_sum %}
                 <tr>
-                    <td>{{ labels}}</td>
+                    <td height="20">{{ labels}}</td>
                 </tr>
             {% endfor %}
             </tr>
@@ -193,4 +203,51 @@
 
     </div>
 
+    <div id="dialog2" title="Confusion Matrix" style="display:none;font-size: 62.5%;">
+      <table>
+      <tr>
+      <td>
+      <table class="detail_table">
+    <tr>
+        <td height="20"> cm </td>
+              {% for labels in robotStats.labels %}
+                      <td height="20">{{ labels}}</td>
+        {% endfor %}
+                </tr>
+    {% for value in robotStats.fullcm %}
+        {% if forloop.counter0|divisibleby:robotStats.FullmatrixSize %}
+                <tr>  
+                          <td height="20"> {{value}} </td>
+         {%else %}
+        {% if forloop.revcounter0|divisibleby:robotStats.full_diaglen %}
+         
+            <td height="20"> <b>{{value}}</b> </td>
+            {%else%}
+            <td height="20"> {{value}} </td>
+            {% endif %}
+         {% endif %}
+
+         {% if forloop.counter|divisibleby:robotStats.FullmatrixSize %}
+           </tr>
+         {% endif %}
+
+    {% endfor %}
+              </table>
+              </td><td>
+                      <table class="detail_table">
+            <tr>
+                <td height="20">Count</td>
+            </tr>
+            {% for labels in robotStats.full_row_sum %}
+                <tr>
+                    <td height="20">{{ labels}}</td>
+                </tr>
+            {% endfor %}
+            </tr>
+        </table>
+        </td>
+        </table>
+        <p><a href="{% url csv_download source.id %}">Download Full Confusion Matrix</a></p>
+
+    </div>
 {% endblock %}

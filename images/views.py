@@ -307,17 +307,53 @@ def source_main(request, source_id):
                 i+=1
             groupcm[i] = items
             i+=1
+        
+        i = j = 0
+        fullcm = [None] * (matrixSize + len(cmx) -1)
+       
 
+        full_row_sum = []
+        temp = 0
+        
+
+        #full cm
+        for items in cmx:
+            temp += items
+            i += 1
+            if(i % (matrixSize-1)) == 0:
+                full_row_sum.append(temp)
+                temp = 0
+            
+        i = 0
+        for x in cmx:
+            if(i % matrixSize) == 0:
+               fullcm[i] = label_fullName[j]
+               j += 1
+               i += 1
+            
+            if full_row_sum[j-1] == 0:
+                percent = 0.0
+            else:
+                percent = x/float(full_row_sum[j-1])
+            fullcm[i] = (("%.2f" % percent).lstrip('0'))
+            i += 1     
+             
 
         robotStats = dict(
             version=latestRobot.version,
             edit = lastedit,
             trainTime=round(meta['totalRuntime']),
             precision = 100 * (1 - meta['hp']['estPrecision']),
+            fullcm = fullcm,
+            labels = label_fullName,
             cm = groupcm,
             labelMap = setMap,
             row_sum = rowSumList,
+            full_row_sum = full_row_sum,
             matrixSize = len(setMap) + 1,
+            FullmatrixSize = matrixSize,
+            full_diaglen = matrixSize + 1,
+            diaglen = len(setMap) + 2,
             hasRobot=True,
         )
 

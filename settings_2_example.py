@@ -111,5 +111,8 @@ BROKER_VHOST = "vhostGoesHere"
 #Celery configuration
 CELERYD_CONCURRENCY = 2
 
+# Google Maps
+GOOGLE_MAPS_API_KEY = 'Go to https://code.google.com/apis/console/ and get an API key'
+
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'tg5t&4x9f8edmnhe)d55tkk$e-djc4m_q%=^xo%n-jipn&v&8j'
