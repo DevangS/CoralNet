@@ -414,13 +414,22 @@ def annotation_tool(request, image_id):
     source = image.source
     metadata = image.metadata
 
+    # Get the settings object for this user.
+    # If there is no such settings object, then create it.
+    settings_obj, created = AnnotationToolSettings.objects.get_or_create(user=request.user)
+    settings_form = AnnotationToolSettingsForm(instance=settings_obj)
+
     # Get all labels, ordered first by functional group, then by short code.
     labels = source.labelset.labels.all().order_by('group', 'code')
     # Get labels in the form {'code': <short code>, 'group': <functional group>, 'name': <full name>}.
     # Convert from a ValuesQuerySet to a list to make the structure JSON-serializable.
     labelValues = list(labels.values('code', 'group', 'name'))
 
-    form = AnnotationForm(image=image, user=request.user)
+    form = AnnotationForm(
+        image=image,
+        user=request.user,
+        show_machine_annotations=settings_obj.show_machine_annotations
+    )
 
     pointValues = Point.objects.filter(image=image).values(
         'point_number', 'row', 'column')
@@ -451,11 +460,6 @@ def annotation_tool(request, image_id):
 
     need_human_anno_next = get_next_image(image, dict(status__annotatedByHuman=False))
     need_human_anno_prev = get_prev_image(image, dict(status__annotatedByHuman=False))
-
-    # Get the settings object for this user.
-    # If there is no such settings object, then create it.
-    settings_obj, created = AnnotationToolSettings.objects.get_or_create(user=request.user)
-    settings_form = AnnotationToolSettingsForm(instance=settings_obj)
 
     # Image tools form (brightness, contrast, etc.)
     image_options_form = AnnotationImageOptionsForm()
