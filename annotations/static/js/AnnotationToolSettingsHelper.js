@@ -12,7 +12,8 @@ var ATS = {
         unannotatedColor: undefined,
         robotAnnotatedColor: undefined,
         humanAnnotatedColor: undefined,
-        selectedColor: undefined
+        selectedColor: undefined,
+        showMachineAnnotations: undefined
     },
     $fields: {
         pointMarker: undefined,
@@ -44,6 +45,7 @@ var ATS = {
         ATS.$fields.robotAnnotatedColor = $('#id_robot_annotated_point_color');
         ATS.$fields.humanAnnotatedColor = $('#id_human_annotated_point_color');
         ATS.$fields.selectedColor = $('#id_selected_point_color');
+        ATS.$fields.showMachineAnnotations = $('#id_show_machine_annotations');
 
         ATS.validators.pointMarkerSize = ATS.pointMarkerSizeIsValid;
         ATS.validators.pointNumberSize = ATS.pointNumberSizeIsValid;
@@ -70,6 +72,20 @@ var ATS = {
                 ATH.redrawAllPoints();
             });
         }
+
+        // Separate-dialog help text for this field.
+        // Can show by clicking "(More info)".
+        $("#id_show_machine_annotations_dialog_help_text_link").click(function() {
+
+            // TODO: Reduce the text size in this dialog
+            // TODO: Come up with sensible (possibly flexible) dimensions
+            $("#id_show_machine_annotations_dialog_help_text").dialog({
+                modal: true,
+                width: 600,
+                height: 300,
+                title: "Show Machine Annotations"
+            });
+        });
 
         // When the save button is clicked, save.
         ATS.$saveButton.click(ATS.saveSettings);

@@ -3,7 +3,7 @@
       action="" method="post">{% csrf_token %}
 
     {% for field in settings_form %}
-        {% if field.name == "point_marker_is_scaled" or field.name == "point_number_is_scaled" %}
+        {% if field.name == "point_marker_is_scaled" or field.name == "point_number_is_scaled" or field.name == "show_machine_annotations" %}
             {% include "form_generic_one_field.html" with field=field dont_mark_required='yes' checkbox='yes' %}
         {% else %}
             {% include "form_generic_one_field.html" with field=field dont_mark_required='yes' %}
