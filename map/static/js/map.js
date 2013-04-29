@@ -107,6 +107,7 @@ var CNMap = (function() {
 
                 var marker = new google.maps.Marker({
                     position: sourceLatLon,
+		    draggable:true,
 		    icon: new google.maps.MarkerImage(
                         'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|' + markerColor, 
                         null,
@@ -120,7 +121,7 @@ var CNMap = (function() {
                 sources.push(source);
                 markers.push(marker);
             }
-            var markerCluster = new MarkerClusterer(map, markers);
+            var markerCluster = new MarkerClusterer(map, markers,{maxZoom : 18});
 
         }
     }
