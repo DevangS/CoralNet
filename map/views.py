@@ -22,10 +22,10 @@ def map(request):
         # Otherwise, don't include a link.
         if source.visibility == Source.VisibilityTypes.PUBLIC:
             source_url = reverse('source_main', args=[source.id])
-            color = 'FF0000'
+            color = '00FF00'
         else:
             source_url = ''
-            color = '0000FF'
+            color = 'FF0000'
 
         try:
             latitude = str(source.latitude)

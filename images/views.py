@@ -505,6 +505,7 @@ def source_admin(request, source_id):
         sendInvite = request.POST.get('sendInvite', None)
         changePermission = request.POST.get('changePermission', None)
         removeUser = request.POST.get('removeUser', None)
+        deleteSource = request.POST.get('Delete', None)
 
         if inviteForm.is_valid() and sendInvite:
 
@@ -532,6 +533,22 @@ def source_admin(request, source_id):
 
             messages.success(request, 'User has been removed from the source.')
             return HttpResponseRedirect(reverse('source_main', args=[source_id]))
+        elif deleteSource:
+            images = source.get_all_images()
+            annotations = Annotation.objects.filter(source = source_id).all()
+            annotations.delete()
+            
+            for img in images:
+              original = img.original_file
+              original.delete_thumbnails()
+              original.delete()
+            images.delete()
+
+            source.delete()
+            messages.success(request, 'Source has been Deleted.')
+            
+            return HttpResponseRedirect('/')
+          
         else:
             messages.error(request, 'Please correct the errors below.')
     else:

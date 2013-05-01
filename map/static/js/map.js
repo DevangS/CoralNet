@@ -92,8 +92,8 @@ var CNMap = (function() {
 		var markerSize = null
 		
 
-		if (source.num_of_images < 5) {
-		    markerSize = new google.maps.Size(15, 24);
+		if (source.num_of_images < 10) {
+		    continue;
 		}
 		else if(source.num_of_images < 50){
 		    markerSize = new google.maps.Size(20, 32);

@@ -38,4 +38,17 @@
         </div>
     </form>
 
+    <legend style="display:inline;">Delete Source</legend>
+    </br></br></br>
+    Warning: This option will completly delete eveything that is in your source.</br>
+        This option will remove all your images, annotations, stats, and everything related to your source.
+   <form action="" 
+   method="post" onsubmit="return confirm('Are you sure you want to delete the source?')">{% csrf_token %}
+        <div class="submit_button_wrapper_column_form">
+            <input type="checkbox" name="Delete" value="Delete" /> Are you Sure?</br>
+            <input type="submit" value="Delete" />
+        </div>
+    </form>
+
+
 {% endblock %}
