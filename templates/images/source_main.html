@@ -107,7 +107,7 @@
                                 <td>Traintime (s): <b>{{ robotStats.trainTime }}</b></td>
                             </tr>
                             <tr>
-                                <td><a href="javascript:openDialog();">Functional Group Confusion Matrix</a></td>
+                                <td><a href="javascript:openDialog();">Confusion Matrix <br>(Functional Groups)</a></td>
                             </tr><tr>    
                                 <td><a href="javascript:openDialog2();">Full Confusion Matrix</a></td>
                             </tr>
@@ -147,19 +147,20 @@
 
     <script>
         function openDialog() {
-            $( "#dialog" ).dialog({resizable: false,modal: true,width:'auto'});
+            $("#dialog").dialog({resizable: false,modal: true, width:"auto"});
+
         }
         function openDialog2() {
-            $( "#dialog2" ).dialog({resizable: false,modal: true,width:'auto'});
+            $( "#dialog2" ).dialog({resizable: false,modal: true, width:"auto"});
         }
     </script>
 
-    <div id="dialog" title="Confusion Matrix" style="display:none;font-size: 62.5%;">
+    <div id="dialog" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:1000px">
         <p>The First Row and Column Indicate the Functional Group</p>
         <table>
         <tr>
         <td>
-        <table class="detail_table">
+        <table class="detail_table_popup">
             <tr>
                 <td height="20"> cm </td>
                 {% for labels in robotStats.labelMap %}
@@ -203,11 +204,11 @@
 
     </div>
 
-    <div id="dialog2" title="Confusion Matrix" style="display:none;font-size: 62.5%;">
+    <div id="dialog2" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:800px">
       <table>
       <tr>
       <td>
-      <table class="detail_table">
+      <table class="detail_table_popup">
     <tr>
         <td height="20"> cm </td>
               {% for labels in robotStats.labels %}

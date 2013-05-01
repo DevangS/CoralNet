@@ -1060,6 +1060,30 @@ table.detail_table.horizontal td {
     padding: 3px 5px;  /* vertical horizontal */
 }
 
+/* Table details popup
+ * (used in confusion matrix pop-ups) */
+table.detail_table_popup {
+    border: 1px solid #999999;
+    border-collapse: separate;  /* Firefox seems to make border widths inconsistent if border-collapse: collapse */
+    table-layout: fixed;
+}
+table.detail_table_popup th,
+table.detail_table_popup td {
+    border: 1px solid #999999;
+    padding: 5px;
+    white-space: nowrap;
+}
+
+table.detail_table_popup.horizontal {
+    border: none;
+    display: inline-block;
+}
+table.detail_table_popup.horizontal th,
+table.detail_table_popup.horizontal td {
+    border: none;
+    padding: 3px 5px;  /* vertical horizontal */
+}
+
 /* Used for grey boxes on source main page */
 div.detail_box {
     background-color:#d7d3cf;
