@@ -118,6 +118,9 @@ def visualize_source(request, source_id):
                 # database.  But the image objects are still there in the
                 # imagesToDelete list (they just don't have primary keys anymore).
                 messages.success(request, 'The %d selected images have been deleted.' % len(imagesToDelete))
+
+                # try to remove unused key values, after the files are deleted
+                source.remove_unused_key_values()
     else:
         actionForm = ImageBatchActionForm(initial={'searchKeys': simplejson.dumps(imageArgs)})
 
