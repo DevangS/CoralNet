@@ -12,7 +12,7 @@ from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
 from django import forms
 from django.forms.models import ModelForm
-from accounts.utils import is_robot_user
+from accounts.utils import is_robot_user, get_robot_user
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolSettings
 from CoralNet.forms import FormHelper
@@ -126,6 +126,7 @@ class AnnotationForm(forms.Form):
     def __init__(self, *args, **kwargs):
         image = kwargs.pop('image')
         user = kwargs.pop('user')
+        show_machine_annotations = kwargs.pop('show_machine_annotations')
         super(AnnotationForm, self).__init__(*args, **kwargs)
 
         self.fields['image_id'] = CharField(
@@ -143,7 +144,10 @@ class AnnotationForm(forms.Form):
         for point in Point.objects.filter(image=image).order_by('point_number'):
 
             try:
-                existingAnnotation = Annotation.objects.get(point=point)
+                if show_machine_annotations:
+                    existingAnnotation = Annotation.objects.get(point=point)
+                else:
+                    existingAnnotation = Annotation.objects.exclude(user=get_robot_user()).get(point=point)
             except Annotation.DoesNotExist:
                 existingAnnotation = None
 
@@ -206,6 +210,9 @@ class AnnotationToolSettingsForm(ModelForm):
                        ]
         for field in color_fields:
             field.widget.attrs.update({'class': 'color'})
+
+        self.fields['show_machine_annotations'].dialog_help_text_template = \
+            'annotations/help_show_machine_annotations.html'
 
 
 class AnnotationImageOptionsForm(Form):

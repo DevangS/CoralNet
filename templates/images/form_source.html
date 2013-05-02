@@ -65,32 +65,17 @@ This form template is meant to be used with the "include" template tag.
     <span class="helptext">{{ pointGenForm.form_help_text|linebreaksbr }}</span>
     {% include "form_generic.html" with form=pointGenForm %}
 
-    <hr class="light"/>
+    {% if source_form_type == "edit" and not source.enable_robot_classifier %}
+        <hr class="light"/>
 
-    <legend class="smaller">Machine annotation</legend>
-    {% if source_form_type == "edit" %}
+        <legend class="smaller">Machine annotation</legend>
         <span class="helptext">
             Status:
-            {% if source.enable_automated_classifier %}
-                Enabled
-            {% else %}
-                Disabled
-            {% endif %}
+            Disabled. If you wish to enable machine annotation for this
+            source, please
+            <a href="{% url contact %}" target="_blank">contact us</a>.
         </span>
     {% endif %}
-    <span class="helptext">
-        {% if source_form_type == "new" %}
-            For now, all sources have machine annotation disabled by
-            default, but you can request to have machine annotation
-            enabled for your source. If you wish to enable it, please
-            <a href="{% url contact %}" target="_blank">contact us</a>.
-        {% else %} {# edit #}
-            For now, enabling or disabling machine annotation for a source
-            can only be done upon request. If you wish to enable or disable
-            machine annotation, please
-            <a href="{% url contact %}" target="_blank">contact us</a>.
-        {% endif %}
-    </span>
 </fieldset>
 
 <fieldset>

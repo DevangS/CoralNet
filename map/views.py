@@ -22,8 +22,10 @@ def map(request):
         # Otherwise, don't include a link.
         if source.visibility == Source.VisibilityTypes.PUBLIC:
             source_url = reverse('source_main', args=[source.id])
+            color = '00FF00'
         else:
             source_url = ''
+            color = 'FF0000'
 
         try:
             latitude = str(source.latitude)
@@ -37,6 +39,7 @@ def map(request):
             latitude=latitude,
             longitude=longitude,
             name=source.name,
+            color = color,
             num_of_images=str( Image.objects.filter(source=source).count() ),
             url=source_url,
         ))
