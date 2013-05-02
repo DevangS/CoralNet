@@ -48,3 +48,13 @@ def contact(request):
         },
         context_instance=RequestContext(request)
     )
+
+def index(request):
+    """
+    This view renders the front page.
+    """
+    return render_to_response('lib/index.html', {
+
+        },
+        context_instance=RequestContext(request)
+    )
