@@ -60,7 +60,7 @@ class VisualizationSearchForm(forms.Form):
                                                         required=False)
 
         self.fields['annotator'] = forms.ChoiceField(choices=[(0,'Human'), (1,'Robot'), (2, 'Both')], required=False)
-        self.fields['view'] = forms.BooleanField(required=False)
+        self.fields['edit_metadata_view'] = forms.BooleanField(required=False)
         
 class ImageBatchActionForm(forms.Form):
     class Media:

@@ -56,7 +56,7 @@ def image_search_args_to_url_arg_str(searchDict):
             argsList.append('%s=%s' % (paramName, searchDict[paramName].pk))
 
         # Don't include the arg if it's None or '', or 'page' or 'view'
-        elif searchDict[paramName] and paramName != 'page' and paramName != 'view':
+        elif searchDict[paramName] and paramName != 'page' and paramName != 'edit_metadata_view':
             argsList.append('%s=%s' % (paramName, searchDict[paramName]))
 
     return '&'.join(argsList)
@@ -172,7 +172,7 @@ def visualize_source(request, source_id):
             allSearchResults = allSearchResults.order_by(*sort_keys)
 
             # Do we show the metadata form or the image viewer?
-            view = request.GET.get('view', '')
+            view = request.GET.get('edit_metadata_view', '')
 
             if view:
                 # Get images and statuses
