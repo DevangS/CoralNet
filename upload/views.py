@@ -9,7 +9,7 @@ from images.models import Source
 from lib import str_consts
 from lib.exceptions import FileContentError
 from lib.utils import JsonResponse
-from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, MetadataForm, SelectAllCheckbox
+from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm
 from upload.utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, metadata_dupe_comparison_key_to_display, check_image_filename
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)

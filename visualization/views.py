@@ -13,7 +13,7 @@ from images.models import Source, Image
 from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
 from visualization.utils import generate_patch_if_doesnt_exist
 from GChartWrapper import *
-from upload.forms import MetadataForm, SelectAllCheckbox
+from upload.forms import MetadataForm, CheckboxForm
 from django.forms.formsets import formset_factory
 from django.utils.functional import curry
 
@@ -187,10 +187,14 @@ def visualize_source(request, source_id):
                 metadataFormSet = formset_factory(MetadataForm)
                 metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
 
+                # There is a separate form that controls the checkboxes.
+                checkboxFormSet = formset_factory(CheckboxForm)
+
                 if request.method == 'POST' and request.user.has_perm(Source.PermTypes.EDIT.code, source):
                     metadataForm = metadataFormSet(request.POST)
-                    selectAllCheckbox = SelectAllCheckbox(request.POST)
-                    metadataFormWithExtra = zip(metadataForm.forms, images, statuses)
+                    selectAllCheckbox = CheckboxForm(request.POST)
+                    checkboxForm = checkboxFormSet(request.POST)
+                    metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, images, statuses)
                     if metadataForm.is_valid():
                         # Here we save the data to the database, since data is valid.
                         for image, formData in zip(allSearchResults, metadataForm.cleaned_data):
@@ -228,24 +232,26 @@ def visualize_source(request, source_id):
                     # This initializes the form set with default values; namely, the values
                     # for the keys that already exist in our records.
                     initValues = {'form-TOTAL_FORMS': '%s' % len(allSearchResults), 'form-INITIAL_FORMS': '%s' % len(allSearchResults)}
+                    initValuesMetadata = initValues
                     for i, image in enumerate(allSearchResults):
                         keys = image.get_location_value_str_list()
                         for j, key in enumerate(keys):
-                            initValues['form-%s-key%s' % (i,j+1)] = key
-                        initValues['form-%s-date' % i] = image.metadata.photo_date
-                        initValues['form-%s-height' % i] = image.metadata.height_in_cm
-                        initValues['form-%s-latitude' % i] = image.metadata.latitude
-                        initValues['form-%s-longitude' % i] = image.metadata.longitude
-                        initValues['form-%s-depth' % i] = image.metadata.depth
-                        initValues['form-%s-camera' % i] = image.metadata.camera
-                        initValues['form-%s-photographer' % i] = image.metadata.photographer
-                        initValues['form-%s-waterQuality' % i] = image.metadata.water_quality
-                        initValues['form-%s-strobes' % i] = image.metadata.strobes
-                        initValues['form-%s-framingGear' % i] = image.metadata.framing
-                        initValues['form-%s-whiteBalance' % i] = image.metadata.balance
-                    metadataForm = metadataFormSet(initValues)
-                    metadataFormWithExtra = zip(metadataForm.forms, images, statuses)
-                    selectAllCheckbox = SelectAllCheckbox()
+                            initValuesMetadata['form-%s-key%s' % (i,j+1)] = key
+                        initValuesMetadata['form-%s-date' % i] = image.metadata.photo_date
+                        initValuesMetadata['form-%s-height' % i] = image.metadata.height_in_cm
+                        initValuesMetadata['form-%s-latitude' % i] = image.metadata.latitude
+                        initValuesMetadata['form-%s-longitude' % i] = image.metadata.longitude
+                        initValuesMetadata['form-%s-depth' % i] = image.metadata.depth
+                        initValuesMetadata['form-%s-camera' % i] = image.metadata.camera
+                        initValuesMetadata['form-%s-photographer' % i] = image.metadata.photographer
+                        initValuesMetadata['form-%s-waterQuality' % i] = image.metadata.water_quality
+                        initValuesMetadata['form-%s-strobes' % i] = image.metadata.strobes
+                        initValuesMetadata['form-%s-framingGear' % i] = image.metadata.framing
+                        initValuesMetadata['form-%s-whiteBalance' % i] = image.metadata.balance
+                    metadataForm = metadataFormSet(initValuesMetadata)
+                    checkboxForm = checkboxFormSet(initValues)
+                    metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, images, statuses)
+                    selectAllCheckbox = CheckboxForm()
 
         else:
             #since user specified a label, generate patches to show instead of whole images

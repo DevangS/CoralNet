@@ -7,3 +7,10 @@
 #nav_visualize li a:active span {
     background-color: #f0a8f0;
 }
+
+#status.ok {
+    background-color: #88ff88;
+}
+#status.error {
+    background-color: #ff8888;
+}

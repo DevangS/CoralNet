@@ -307,19 +307,18 @@ class AnnotationImportOptionsForm(Form):
 
         return self.cleaned_data[field_name]
 
-class SelectAllCheckbox(Form):
+class CheckboxForm(Form):
     """
     This is used in conjunction with the metadataForm; but since the metadata form is rendered as
     a form set, and I only want one select all checkbox, this form exists.
     """
-    selectAll = BooleanField(required=False)
+    selected = BooleanField(required=False)
 
 class MetadataForm(Form):
     """
     This form is used to edit the metadata of images within this source. This is commonly used within
     a form set whenever it is used.
     """
-    selected = BooleanField(required=False)
     date = DateField(widget= TextInput(attrs={'size': 8,}))
     height = CharField(widget= TextInput(attrs={'size': 10,}))
     latitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}))

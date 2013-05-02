@@ -1,6 +1,6 @@
 // Selects all of the checkboxes given the value of the check all box.
 function selectall() {
-    var id = "#id_selectAll";
+    var id = "#id_selected";
     if ($(id).attr('checked'))
         setCheckedRows(true);
     else
@@ -63,7 +63,7 @@ function setUpBindings() {
     var id;
     for (var i = 1; i < images; i++)
     {
-        for (var j = 2; j < fields; j++)
+        for (var j = 3; j < fields; j++)
         {
             id = '#' + $('#metadataFormTable')[0].rows[i].cells[j].childNodes[0].getAttribute('id');
             if (j == 3)
@@ -74,7 +74,7 @@ function setUpBindings() {
             else setRowColumnBindingsKeyUp(id);
         }
     }
-    id = "#id_selectAll";
+    id = "#id_selected";
     $(id).bind("change", function() {
         selectall()
     });

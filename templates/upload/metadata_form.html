@@ -4,6 +4,11 @@ This is a template that is used to render a form for editing metadata
 
 <form method="post" id="form">{% csrf_token %}
     {{ metadataForm.management_form }}
+
+    {% for field in selectAllForm %}
+        {{ field }}
+    {% endfor %}
+
     <div style="overflow:auto;max-height:500px">
         <ul>
             {% for error in metadataForm.errors %}
@@ -11,15 +16,11 @@ This is a template that is used to render a form for editing metadata
             {% endfor %}
         </ul>
 
-        {% for field in selectAllForm %}
-            {{ field }}
-        {% endfor %}
-
         <table id="metadataFormTable" style="white-space:nowrap">
             <tr>
+                <th></th> {# This is the checkbox column #}
                 <th>Filename</th>
                 <th>Status</th>
-                <th></th> {# This is the checkbox column #}
                 <th>Date</th>
                 {% for key in key_list %}
                     <th>{{ key }}</th>
@@ -36,10 +37,13 @@ This is a template that is used to render a form for editing metadata
                 <th>White Balance Card</th>
 
             </tr>
-            {% for form, image, status in metadataFormWithExtra %}
+            {% for form, checkbox_form, image, status in metadataFormWithExtra %}
                 <tr>
+                    {% for field in checkbox_form %}
+                        <td>{{ field }}</td>
+                    {% endfor %}
                     <td><a href="{% url image_detail image.id %}">{{ image.metadata.name }}</a></td>
-                    <td>{{ status }}</td>
+                    <td id="status">{{ status }}</td>
                     {% for field in form %}
                         <td>{{ field }}</td>
                     {% endfor %}
