@@ -1,7 +1,21 @@
 {% extends "base.html" %}
 
+{% load common_tags %}
+
 {% block page-specific-includes %}
     {% include "static-local-include.html" with type="css" path="css/index.css" %}
+
+    {# Google Maps API #}
+    <script type="text/javascript"
+            src="https://maps.googleapis.com/maps/api/js?sensor=false">
+        {# TODO: Get this working with an API key. #}
+        {# src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">#}
+    </script>
+    <script type="text/javascript"
+            src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js">
+    </script>
+    {% include "static-local-include.html" with type="css" path="css/map.css" %}
+    {% include "static-local-include.html" with type="js" path="js/map.js" %}
 {% endblock %}
 
 {% block content %}
@@ -16,15 +30,30 @@
 
 <br />
 
-<div id="start">
-  <h1>Getting Started</h1>
+    <div id="map-canvas"></div>
 
-  <p>1. Create a <a href="{% url source_about %}">Source</a></p>
-  <p>2. Create a labelset for your Source</p>
-  <p>3. Upload images to the Source</p>
-  <p>4. Use our annotation tool to annotate the images</p>
 
-</div><!-- /start-->
+    <div id="marker-info-initial-container">
+        <div id="marker-info">
+
+            <div class="name"><strong>Source name goes here.</strong></div>
+
+            {# TODO: Ensure that the description looks good even when it's multilined. #}
+            <div class="description">Description goes here.</div>
+
+            <div class="num-of-images">Number of images goes here.</div>
+
+            <div class="coordinates">Coordinates go here.</div>
+
+        </div>
+    </div>
+<br>
+
+    <script type="text/javascript">
+        CNMap.init({
+            'mapSources': {{ map_sources|jsonify }}
+        });
+    </script>
 
 {% endblock %}
 

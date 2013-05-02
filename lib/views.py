@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.mail import mail_admins
 from django.core.mail.message import BadHeaderError
@@ -6,6 +7,9 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from lib.forms import ContactForm
 from lib import msg_consts, str_consts
+from lib.utils import get_map_sources
+from images.models import Image, Source
+from annotations.models import Annotation
 
 def contact(request):
     """
@@ -53,8 +57,21 @@ def index(request):
     """
     This view renders the front page.
     """
-    return render_to_response('lib/index.html', {
 
+    # Here we get the map sources
+    map_sources = get_map_sources()
+
+    # Gather some stats
+    total_sources = Source.objects.all().count()
+    total_images = Image.objects.all().count()
+    total_annotations = Annotation.objects.all().count()
+
+    return render_to_response('lib/index.html', {
+            'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+            'map_sources': map_sources,
+            'total_sources': total_sources,
+            'total_images': total_images,
+            'total_annotations': total_annotations,
         },
         context_instance=RequestContext(request)
     )
