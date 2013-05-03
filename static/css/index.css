@@ -27,15 +27,23 @@
 
 #intro p{
     font-size: 1.3em;
-	margin: 0 20px 0 460px;
+	margin: 0 20px 20px 460px;
 }
 
-/* Getting Started box */
-#start h1 {
-    font-size: 2.5em;
-    color: #ac1500;
+#intro a.signin{
+    font-size: 1.8em;
+    margin: 0 20px 0 480px;
+
 }
 
-#start p {
-    font-size: 1.3em;
+#intro a.signup{
+    font-size: 1.8em;
+    margin: 0 20px 0 20px;
+
+}
+
+#myCarousel{
+    position: absolute;
+    overflow: hidden;
+    width: 440px;
 }

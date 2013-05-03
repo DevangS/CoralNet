@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from django.utils import simplejson
 from images.models import Source, Image
 from django.core.urlresolvers import reverse
+from random import choice
 
 def JsonResponse(response):
     """
@@ -64,3 +65,34 @@ def get_map_sources():
         # TODO: Don't count images and annotations from sources that don't count.
         # TODO: Should we count robot annotations?
     return map_sources
+
+def get_random_public_images():
+    """
+    This will return a list of 5 random images that are from public sources only.
+    These will be displayed on the front page to be seen in all their glory
+    """
+    public_sources_list = Source.get_public_sources()
+
+    # return empty list if no public sources
+    if len(public_sources_list) == 0:
+        return public_sources_list
+
+    random_source_list = []
+    random_image_list = []
+
+    # get 5 random public sources
+    for i in range(5):
+        random_source = choice(public_sources_list)
+        random_source_list.append(random_source)
+
+    # get a random image from each randomly chosen public source
+    for source in random_source_list:
+        all_images = source.get_all_images()
+
+        if len(all_images) == 0:
+            continue
+
+        random_image = choice(all_images)
+        random_image_list.append(random_image)
+
+    return random_image_list

@@ -2,9 +2,17 @@
 {% extends "base_index.html" %}
 
 {% load common_tags %}
+{% load thumbnail %}
+
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" bootstrap_carousel="yes" %}
+{% endblock %}
 
 {% block page-specific-includes %}
     {% include "static-local-include.html" with type="css" path="css/index.css" %}
+
+    {# For the bootstrap carousel #}
+    {% include "static-local-include.html" with type="css" path="css/bootstrap.css" %}
 
     {# Google Maps API #}
     <script type="text/javascript"
@@ -22,10 +30,35 @@
 {% block content %}
 
 <div id="intro">
-  <h1>CoralNet</h1>
-  <h2>A Web solution for coral reef analysis</h2>
 
-  <p>Upload coral reef images, organize and annotate images, and view annotation statistics.</p>
+    <div id="myCarousel" class="carousel slide">
+        <!-- Carousel items -->
+        <div class="carousel-inner">
+            {% for image in images %}
+                {% if forloop.first %}
+                    <div class="item active">
+                {% else %}
+                    <div class="item">
+                {% endif %}
+                <a href="{% url image_detail image.id %}">
+                    <img class="thumb_small"
+                         style="margin: 0 auto; vertical-align: middle"
+                         src="{% thumbnail image.original_file 450x450 %}"
+                         title="{{ image.get_image_element_title }}"/>
+                </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+        <h1>CoralNet</h1>
+        <h2>A Web solution for coral reef analysis</h2>
+
+        <p>Upload coral reef images, organize and annotate images, and view annotation statistics.</p>
+
+        <a class="signin" href="{% url userena_signin %}">Sign In</a>
+        <a class="signup" href="{% url request_account %}">Sign Up</a>
+
 
 </div><!-- /intro-->
 
@@ -53,6 +86,9 @@
     <script type="text/javascript">
         CNMap.init({
             'mapSources': {{ map_sources|jsonify }}
+        });
+        $(document).ready(function(){
+            $('.carousel').carousel();
         });
     </script>
 
