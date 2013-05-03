@@ -78,17 +78,26 @@ class ImageSourceForm(ModelForm):
         self.cleaned_data = data
 
         return super(ImageSourceForm, self).clean()
-"""
+
     def clean_latitude(self):
-        latitude = self.cleaned_data['latitude']
+        data = self.cleaned_data['latitude']
+        try:
+            latitude = float(data)
+        except:
+            raise ValidationError("Latitude is not a number.")
         if latitude < -90 or latitude > 90:
             raise ValidationError("Latitude is out of range.")
+        return data
 
     def clean_longitude(self):
-        longitude = self.cleaned_data['longitude']
+        data = self.cleaned_data['longitude']
+        try:
+            longitude = float(data)
+        except:
+            raise ValidationError("Longitude is not a number.")
         if longitude < -180 or longitude > 180:
             raise ValidationError("Longitude is out of range.")
-"""
+        return data
 
 
 
