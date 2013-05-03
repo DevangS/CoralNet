@@ -83,6 +83,48 @@
     </div>
 <br>
 
+    <div id="site-stats" style="float:left;">
+
+        <h3>Sitewide statistics</h3>
+
+        <table class="detail_table">
+            <tr>
+                <td>Total sources</td>
+                <td>{{ total_sources }}</td>
+            </tr>
+            <tr>
+                <td>Total images</td>
+                <td>{{ total_images }}</td>
+            </tr>
+            <tr>
+                <td>Total annotations</td>
+                <td>{{ total_annotations }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="map=legend" style="float:right">
+
+        <h3>Legend</h3>
+
+        <table class="detail_table">
+            <tr>
+                <td>Green Markers</td>
+                <td>Public sources</td>
+            </tr>
+            <tr>
+                <td>Red Markers</td>
+                <td>Private Sources</td>
+            </tr>
+            <tr>
+                <td>Marker Size</td>
+                <td># of images in Source</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="clear:left"></div>
+
     <script type="text/javascript">
         CNMap.init({
             'mapSources': {{ map_sources|jsonify }}
