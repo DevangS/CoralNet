@@ -18,6 +18,10 @@
     color: #ac1500;
 }
 
+#intro span.alpha{
+    font-size: 0.4em;
+}
+
 #intro h2{
     font-size: 1.8em;
     margin: 0 20px 9px 460px;
