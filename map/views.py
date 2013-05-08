@@ -53,6 +53,18 @@ def map(request):
 
     total_sources = Source.objects.all().count()
     total_images = Image.objects.all().count()
+    
+    images_status = ImageStatus.objects.all()
+    human_annotations = 0
+    robot_annotations = 0
+    
+    for i in images_status:
+       if i.annotatedByHuman:
+           human_annotations += 1
+       if i.annotatedByRobot:
+           robot_annotations += 1
+ 
+
     total_annotations = Annotation.objects.all().count()
 
     return render_to_response('map/map.html', {
@@ -61,6 +73,8 @@ def map(request):
         'total_sources': total_sources,
         'total_images': total_images,
         'total_annotations': total_annotations,
+        'human_annotations': human_annotations,
+        'robot_annotations' : robot_annotations,
         },
         context_instance=RequestContext(request)
     )
