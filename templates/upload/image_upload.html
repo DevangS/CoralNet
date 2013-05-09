@@ -105,12 +105,33 @@
             </div>
             {% endcomment %}
 
-            {# Submit button #}
+            {# start upload #}
             <div class="submit_button_wrapper_column_form">
                 <button type="button" class="submit" id="id_upload_submit">Start upload</button>
                 <button type="button" class="submit" id="id_upload_abort_button" disabled="disabled">Abort upload</button>
                 <span id="upload_start_info"></span>
             </div>
+
+            {# start another upload #}
+            <form action="" method="get" id="id_start_another_upload_form">{% csrf_token %}
+                <div class="submit_button_wrapper_column_form">
+                    <input type="submit" value="Start another upload" id="id_start_another_upload_button" />
+                </div>
+
+            </form>
+
+            {# proceed to the page where you manage image metadata #}
+            <form action="{% url visualize_source source.id %}?view=view" method="post"
+                  id="id_proceed_to_manage_metadata_form">{% csrf_token %}
+
+                {% for field in proceed_to_manage_metadata_form %}
+                    {{ field }}
+                {% endfor %}
+
+                <div class="submit_button_wrapper_column_form">
+                    <input type="submit" value="Manage image metadata" name="uploaded_image_ids_form" id="id_proceed_to_manage_metadata_button"/>
+                </div>
+            </form>
 
             <span id="pre_upload_summary"></span>
 
@@ -142,7 +163,7 @@
             uploadStartUrl: "{% url image_upload_ajax source.id %}",
             annotationFileProcessUrl: "{% url annotation_file_process_ajax source.id %}",
             csvFileProcessUrl: "{% url csv_file_process_ajax source.id %}",
-            uploadPreviewWithCsvUrl: "{% url image_upload_preview_with_csv_ajax source.id %}",
+            uploadPreviewWithCsvUrl: "{% url image_upload_preview_with_csv_ajax source.id %}"
             {# Remnants of an attempt at a progress bar... #}
             {#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
         });

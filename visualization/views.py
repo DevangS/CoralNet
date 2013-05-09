@@ -8,12 +8,12 @@ from django.template.context import RequestContext
 from django.utils import simplejson
 from accounts.utils import get_robot_user
 from annotations.models import Annotation, Label, LabelSet, LabelGroup
-from decorators import source_visibility_required
+from decorators import source_visibility_required, source_permission_required
 from images.models import Source, Image
 from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
 from visualization.utils import generate_patch_if_doesnt_exist
 from GChartWrapper import *
-from upload.forms import MetadataForm, CheckboxForm
+from upload.forms import MetadataForm, CheckboxForm, ProceedToManageMetadataForm
 from django.forms.formsets import formset_factory
 from django.utils.functional import curry
 
@@ -102,7 +102,7 @@ def visualize_source(request, source_id):
     # Perform selected actions, if any, on the images previously shown.
     # Security check: to guard against forged POST data, make sure the
     # user actually has permission to the action form.
-    if request.POST and request.user.has_perm(Source.PermTypes.ADMIN.code, source):
+    if request.POST and 'action_form' in request.POST and request.user.has_perm(Source.PermTypes.ADMIN.code, source):
 
         actionForm = ImageBatchActionForm(request.POST)
 
@@ -114,9 +114,10 @@ def visualize_source(request, source_id):
                 for img in imagesToDelete:
                     img.delete()
 
-                # Note that img.delete() just removes the image from the
-                # database.  But the image objects are still there in the
-                # imagesToDelete list (they just don't have primary keys anymore).
+                # Note that img.delete() removes the images from the
+                # database.  But the image objects' representations in Python
+                # are still in the imagesToDelete list, which is why we can
+                # still count the deleted images with len().
                 messages.success(request, 'The %d selected images have been deleted.' % len(imagesToDelete))
 
                 # try to remove unused key values, after the files are deleted
@@ -138,7 +139,18 @@ def visualize_source(request, source_id):
         if not label:
             showPatches = False
 
-            allSearchResults = Image.objects.filter(source=source, **imageArgs)
+            # Get the images.
+            proceed_to_manage_metadata_form = ProceedToManageMetadataForm(request.POST, source=source)
+
+            if request.POST and 'uploaded_image_ids_form' in request.POST and proceed_to_manage_metadata_form.is_valid():
+                # If coming from the upload page, we'll get the image ids in
+                # the POST data.
+                uploaded_image_ids = proceed_to_manage_metadata_form.cleaned_data['uploaded_image_ids']
+                allSearchResults = Image.objects.filter(source=source, pk__in=uploaded_image_ids)
+            else:
+                # Else, use the GET arguments to filter the images.
+                allSearchResults = Image.objects.filter(source=source, **imageArgs)
+
             if form.is_valid():
                 
                 try:
@@ -190,7 +202,7 @@ def visualize_source(request, source_id):
                 # There is a separate form that controls the checkboxes.
                 checkboxFormSet = formset_factory(CheckboxForm)
 
-                if request.method == 'POST' and request.user.has_perm(Source.PermTypes.EDIT.code, source):
+                if request.method == 'POST' and 'metadata_form' in request.POST and request.user.has_perm(Source.PermTypes.EDIT.code, source):
                     metadataForm = metadataFormSet(request.POST)
                     selectAllCheckbox = CheckboxForm(request.POST)
                     checkboxForm = checkboxFormSet(request.POST)
@@ -340,6 +352,7 @@ def visualize_source(request, source_id):
         },
         context_instance=RequestContext(request)
     )
+
 
 @source_visibility_required('source_id')
 def generate_statistics(request, source_id):

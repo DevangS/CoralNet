@@ -46,6 +46,8 @@ var ImageUploadFormHelper = (function() {
     var $annotationFileProcessButton = null;
     var $uploadStartButton = null;
     var $uploadAbortButton = null;
+    var $startAnotherUploadForm = null;
+    var $proceedToManageMetadataForm = null;
 
     var $uploadStartInfo = null;
 
@@ -77,6 +79,7 @@ var ImageUploadFormHelper = (function() {
     var numUploadSuccesses = 0;
     var numUploadErrors = 0;
     var uploadedTotalSize = 0;
+    var uploadedImageIds = null;
 
     var numImagesWithAnnotations = 0;
     var numTotalAnnotations = 0;
@@ -776,6 +779,8 @@ var ImageUploadFormHelper = (function() {
         uploadedTotalSize = 0;
         updateMidUploadSummary();
 
+        uploadedImageIds = [];
+
         // Warn the user if they're trying to
         // leave the page during the upload.
         enablePageLeaveWarning();
@@ -839,6 +844,7 @@ var ImageUploadFormHelper = (function() {
         if (response.status === 'ok') {
             styleFilesTableRow(currentFileIndex, 'uploaded');
             numUploadSuccesses++;
+            uploadedImageIds.push(response.image_id);
         }
         else {  // 'error'
             styleFilesTableRow(currentFileIndex, 'upload_error');
@@ -898,6 +904,14 @@ var ImageUploadFormHelper = (function() {
         $uploadStartButton.text("Upload Complete");
 
         postUploadCleanup();
+
+        // Set uploadedImageIds in the proceed-to-edit-metadata form.
+        var commaSeparatedImageIds = uploadedImageIds.join();
+        $('input#id_uploaded_image_ids').val(commaSeparatedImageIds);
+
+        // Show the buttons for the user's next step.
+        $startAnotherUploadForm.show();
+        $proceedToManageMetadataForm.show();
     }
 
     function postUploadCleanup() {
@@ -1058,8 +1072,15 @@ var ImageUploadFormHelper = (function() {
             $annotationFileProcessButton = $('#annotation_file_process_button');
             $uploadStartButton = $('#id_upload_submit');
             $uploadAbortButton = $('#id_upload_abort_button');
+            $startAnotherUploadForm = $('#id_start_another_upload_form');
+            $proceedToManageMetadataForm = $('#id_proceed_to_manage_metadata_form');
 
             $uploadStartInfo = $('#upload_start_info');
+
+
+            // Hide the after-upload buttons for now
+            $startAnotherUploadForm.hide();
+            $proceedToManageMetadataForm.hide();
 
             // Set onchange handlers for form fields.
             $(filesField).change( function(){
