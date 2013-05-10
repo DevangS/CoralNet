@@ -40,12 +40,14 @@
                 {% else %}
                     <div class="item">
                 {% endif %}
+                <span class="thumb_front_wrapper">
                 <a href="{% url image_detail image.id %}">
                     <img class="thumb_small"
                          style="margin: 0 auto; vertical-align: middle"
-                         src="{% thumbnail image.original_file 450x450 %}"
+                         src="{% thumbnail image.original_file 500x500 %}"
                          title="{{ image.get_image_element_title }}"/>
                 </a>
+                </span>
                 </div>
             {% endfor %}
         </div>

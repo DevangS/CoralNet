@@ -1,7 +1,7 @@
 /* Top box of the index page */
 #intro{
-    padding: 30px 20px;
-    min-height: 290px;
+    padding: 20px 20px;
+    min-height: 200px;
     -moz-border-radius: 8px;
     -webkit-border-radius: 8px;
     border-radius: 8px;
