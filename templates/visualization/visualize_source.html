@@ -3,7 +3,7 @@
 {% load guardian_tags %}
 {% load common_tags %}
 
-{% block title %}{{ source.name }} - Visualization | CoralNet{% endblock %}
+{% block title %}{{ source.name }} - Browse Images | CoralNet{% endblock %}
 
 {% block js-includes %}
     {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
@@ -11,7 +11,7 @@
 
 {% block page-specific-includes %}
     {% include "form_media_versioned.html" with form=searchForm %}
-    {% include "form_media_versioned.html" with form=actionForm %}
+    {% include "static-local-include.html" with type="js" path="js/ImageBatchActionFormHelper.js" %}
     {% include "static-local-include.html" with type="js" path="js/ImageMetadataFormHelper.js" %}
 {% endblock %}
 
@@ -126,8 +126,15 @@ fieldset.fieldset_visualization label {
         {% get_obj_perms user for source as "source_perms" %}
         {% if not showPatches and "source_admin" in source_perms %}
 
-            <legend class="small">Edit these images</legend>
+            <legend class="small">Batch process these images</legend>
 
+            <label for="id_action">Select action:</label>
+            <select id="id_action">
+              <option value="" selected>---------</option>
+              <option value="delete">Delete</option>
+            </select>
+
+            {% comment %}
             <form id="id_actionForm" action="?{{ searchParamsStr }}" method="post">{% csrf_token %}
               {% for field in actionForm %}
 
@@ -146,10 +153,23 @@ fieldset.fieldset_visualization label {
                          type="submit" name="action_form" value="Perform Action"/>
               </div>
             </form>
+            {% endcomment %}
+
+            <form id="id_delete_form" action="{% url browse_delete source.id %}" method="post">{% csrf_token %}
+                {% for field in image_batch_delete_form %}
+                    {# Should be all hidden fields #}
+                    {{ field }}
+                {% endfor %}
+
+{#                <div class="submit_button_wrapper_column_form">#}
+                    <input id="id_delete_submit"
+                           type="submit" value="Delete these {{ images.paginator.count }} images"/>
+{#                </div>#}
+            </form>
 
             <!-- Script in the body will run on page load. -->
             <script type="text/javascript">
-                ImageBatchActionFormHelper.init({{ images.paginator.count }});
+                ImageBatchActionFormHelper.init();
             </script>
         {% endif %}
 

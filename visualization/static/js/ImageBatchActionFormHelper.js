@@ -1,37 +1,33 @@
 var ImageBatchActionFormHelper = {
 
-    init: function(numOfImages) {
-        this.numOfImages = numOfImages;
+    init: function() {
+        this.changeActionForm();
 
-        this.changeSubmitButton();
-
-        var actionFieldJQ = $("#id_action");
-        actionFieldJQ.change(function() {
-            ImageBatchActionFormHelper.changeSubmitButton();
+        var $actionField = $("#id_action");
+        $actionField.change(function() {
+            ImageBatchActionFormHelper.changeActionForm();
         });
 
-        var submitWithConfirmJQ = $("#id_actionFormSubmitButton_withConfirm");
-        submitWithConfirmJQ.click(function() {
+        var $deleteSubmit = $("#id_delete_submit");
+        $deleteSubmit.click(function() {
             return ImageBatchActionFormHelper.areYouSureDelete();
         });
     },
 
     areYouSureDelete: function() {
-        return window.confirm("Are you sure you want to delete these {0} images?".format(this.numOfImages));
+        return window.confirm("Are you sure you want to delete these images? You won't be able to undo this.");
     },
 
-    changeSubmitButton: function() {
-        var actionField = $("#id_action")[0];
-        var submitWithoutConfirmJQ = $("#id_actionFormSubmitButton_withoutConfirm");
-        var submitWithConfirmJQ = $("#id_actionFormSubmitButton_withConfirm");
+    changeActionForm: function() {
+        var action = $("#id_action").val();
+        var $deleteForm = $("#id_delete_form");
 
-        if (actionField.value == 'delete') {
-            submitWithConfirmJQ.show();
-            submitWithoutConfirmJQ.hide();
-        }
-        else {
-            submitWithConfirmJQ.hide();
-            submitWithoutConfirmJQ.show();
+        // Hide all forms first
+        $deleteForm.hide();
+
+        // Then show only the relevant form (if any)
+        if (action === 'delete') {
+            $deleteForm.show();
         }
     }
 };

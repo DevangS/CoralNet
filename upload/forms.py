@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import FileInput, ImageField, Form, ChoiceField, FileField, CharField, BooleanField, TextInput, DateField, HiddenInput
 from django.utils.translation import ugettext_lazy as _
+from lib.forms import clean_comma_separated_image_ids_field
 from upload.utils import metadata_to_filename
 from images.models import Source, Value1, Value2, Value3, Value4, Value5, Image
 from datetime import date
@@ -356,47 +357,29 @@ class CSVImportForm(Form):
         return self.cleaned_data['csv_file']
 
 
-class ProceedToManageMetadataForm(Form):
-    """
-    This form is shown after an upload completes. When the form is
-    submitted, the user proceeds to the metadata-edit page, where
-    the grid is populated with the images that were just uploaded.
-    """
-    uploaded_image_ids = CharField(
-        widget=HiddenInput(),
-    )
-
-    def __init__(self, *args, **kwargs):
-        self.source = kwargs.pop('source')
-        super(ProceedToManageMetadataForm,self).__init__(*args, **kwargs)
-
-    def clean_uploaded_image_ids(self):
-
-        # Turn the comma-separated string of ids into a proper list.
-        id_str_list = self.cleaned_data['uploaded_image_ids'].split(',')
-        id_list = []
-
-        for img_id in id_str_list:
-            try:
-                id_num = int(img_id)
-            except ValueError:
-                # for whatever reason, the img_id str can't be interpreted
-                # as int.  just skip this faulty id.
-                continue
-
-            # Check that these ids correspond to images in the source (not to
-            # images of other sources).
-            # This ensures that any attempt to forge POST data to specify
-            # other sources' image ids will not work.
-            try:
-                Image.objects.get(pk=id_num, source=self.source)
-            except Image.DoesNotExist:
-                # the image either doesn't exist or isn't in this source.
-                # skip it.
-                continue
-
-            id_list.append(id_num)
-
-        self.cleaned_data['uploaded_image_ids'] = id_list
-
-        return self.cleaned_data['uploaded_image_ids']
+#class ProceedToManageMetadataForm(Form):
+#    """
+#    This form is shown after an upload completes. When the form is
+#    submitted, the user proceeds to the metadata-edit page, where
+#    the grid is populated with the images that were just uploaded.
+#
+#    To do this, this form has a hidden field that contains the ids
+#    of all the images that were just uploaded. The metadata grid view
+#    then uses this field to determine which images to show.
+#    """
+#
+#    # The ids of the images in this upload, as a
+#    # comma-separated string.
+#    uploaded_image_ids = CharField(widget=HiddenInput())
+#
+#    def __init__(self, *args, **kwargs):
+#        self.source = kwargs.pop('source')
+#        super(ProceedToManageMetadataForm,self).__init__(*args, **kwargs)
+#
+#    def clean_uploaded_image_ids(self):
+#        self.cleaned_data['uploaded_image_ids'] = \
+#            clean_comma_separated_image_ids_field(
+#                self.cleaned_data['uploaded_image_ids'],
+#                self.source,
+#            )
+#        return self.cleaned_data['uploaded_image_ids']

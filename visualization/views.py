@@ -1,8 +1,10 @@
 import csv
+import json
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
+from django.core.urlresolvers import reverse
 from django.db import models
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.utils import simplejson
@@ -10,13 +12,14 @@ from accounts.utils import get_robot_user
 from annotations.models import Annotation, Label, LabelSet, LabelGroup
 from decorators import source_visibility_required, source_permission_required
 from images.models import Source, Image
-from visualization.forms import VisualizationSearchForm, ImageBatchActionForm, StatisticsSearchForm
+from visualization.forms import VisualizationSearchForm, StatisticsSearchForm, ImageBatchDeleteForm, ImageSpecifyForm
 from visualization.utils import generate_patch_if_doesnt_exist
 from GChartWrapper import *
-from upload.forms import MetadataForm, CheckboxForm, ProceedToManageMetadataForm
+from upload.forms import MetadataForm, CheckboxForm
 from django.forms.formsets import formset_factory
 from django.utils.functional import curry
 
+# TODO: Move to utils
 def image_search_args_to_queryset_args(searchDict, source):
     """
     Take the image search arguments directly from the visualization search form's
@@ -39,6 +42,7 @@ def image_search_args_to_queryset_args(searchDict, source):
 
     return querysetArgs
 
+# TODO: Move to utils
 def image_search_args_to_url_arg_str(searchDict):
     """
     Take: the image search arguments directly from the visualization search form's
@@ -66,292 +70,366 @@ def visualize_source(request, source_id):
     """
     View for browsing through a source's images.
     """
-    IMAGES_PER_PAGE = 20
+    ITEMS_PER_PAGE = 20
 
-    searchFormErrors = False
+    errors = []
     source = get_object_or_404(Source, id=source_id)
 
     urlArgsStr = ''  # GET args in url format - for constructing prev page/next page links
-    label = False
+#    label = False
     imageArgs = dict()
 
     metadataForm = None
     metadataFormWithExtra = None
     selectAllCheckbox = None
-    view = None
+#    view = None
 
-    # Get image search filters, if any
-    if request.GET:
 
-        #form to select descriptors to sort images
-        form = VisualizationSearchForm(source_id, request.GET)
+    # Defaults:
+    # Image results: all images in the source
+    # Search form: with default values
+    image_results = Image.objects.filter(source=source)
+    search_form = VisualizationSearchForm(source_id)
 
-        if form.is_valid():
+#    if request.GET:
 
-            urlArgsStr = image_search_args_to_url_arg_str(form.cleaned_data)
+    # Note that request.GET may be empty. In this case, we just got to the
+    # Browse page.
+    submitted_search_form = VisualizationSearchForm(source_id, request.GET)
 
-            label = form.cleaned_data.pop('labels')
-            imageArgs = image_search_args_to_queryset_args(form.cleaned_data, source)
-        else:
-            searchFormErrors = True
+    if submitted_search_form.is_valid():
 
+        # Have the search form on the page start with the values
+        # submitted in this search.
+        search_form = submitted_search_form
+
+        urlArgsStr = image_search_args_to_url_arg_str(search_form.cleaned_data)
+
+        # TODO: Shouldn't need this anymore
+        imageArgs = image_search_args_to_queryset_args(search_form.cleaned_data, source)
     else:
-        form = VisualizationSearchForm(source_id)
+        messages.error(request, 'There were errors in the search parameters.')
 
 
-    # Perform selected actions, if any, on the images previously shown.
-    # Security check: to guard against forged POST data, make sure the
-    # user actually has permission to the action form.
-    if request.POST and 'action_form' in request.POST and request.user.has_perm(Source.PermTypes.ADMIN.code, source):
+    label = search_form.cleaned_data['labels']
+    edit_metadata_view = search_form.cleaned_data['edit_metadata_view']
 
-        actionForm = ImageBatchActionForm(request.POST)
 
-        if actionForm.is_valid():
-            if actionForm.cleaned_data['action'] == 'delete':
-                actionFormImageArgs = simplejson.loads(actionForm.cleaned_data['searchKeys'])
-                imagesToDelete = Image.objects.filter(source=source, **actionFormImageArgs)
+#    # If we came from the upload-images page, then try to get the image
+#    # results from the image ids.
+#    if request.POST and 'uploaded_image_ids_form' in request.POST:
+#        pass
+#    # Otherwise, see if we have search filters.
+#    elif imageArgs:
+#        image_results = image_results.filter(**imageArgs)
 
-                for img in imagesToDelete:
-                    img.delete()
-
-                # Note that img.delete() removes the images from the
-                # database.  But the image objects' representations in Python
-                # are still in the imagesToDelete list, which is why we can
-                # still count the deleted images with len().
-                messages.success(request, 'The %d selected images have been deleted.' % len(imagesToDelete))
-
-                # try to remove unused key values, after the files are deleted
-                source.remove_unused_key_values()
+    # TODO: Ideally, we'd simply fill in the image specify form with the
+    # request.POST (and/or request.GET) and that'll take care of all cases
+    # where we can reach this page.
+    if request.POST and 'uploaded_image_ids_form' in request.POST:
+        # TODO: If coming from the upload page, we expect the upload page to
+        # properly fill in an ImageSpecifyForm with the image ids.
+        image_specify_form = ImageSpecifyForm(request.POST, source=source)
     else:
-        actionForm = ImageBatchActionForm(initial={'searchKeys': simplejson.dumps(imageArgs)})
+        # Use the search form.
+        image_specify_form = ImageSpecifyForm(
+            dict(
+                specify_method='search_keys',
+                specify_str=json.dumps(search_form.cleaned_data),
+            ),
+            source=source,
+        )
+
+    if image_specify_form.is_valid():
+        image_results = image_specify_form.get_images()
 
 
-    # Get the search results (all of them, not just on this page)
-    # (This must happen after processing the action form, so that
-    # images can be deleted/modified before we get search results.)
-    errors = []
-    if searchFormErrors:
-        errors.append("There were errors in the search parameters.")
-        images = []
+    # TODO: How to just give the delete form the same stuff as the image
+    # specify form?
+    image_batch_delete_form = ImageBatchDeleteForm(
+        image_specify_form.cleaned_data,
+        source=source,
+    )
+
+
+    # Get the search results (all of them, not just on this page).
+
+    #if user did not specify a label to generate patches for, assume they want to view whole images
+    if not label:
+
         showPatches = False
-    else:
-        #if user did not specify a label to generate patches for, assume they want to view whole images
-        if not label:
-            showPatches = False
+        all_items = image_results
 
-            # Get the images.
-            proceed_to_manage_metadata_form = ProceedToManageMetadataForm(request.POST, source=source)
+        # Get the images.
+#        proceed_to_manage_metadata_form = ProceedToManageMetadataForm(request.POST, source=source)
+#
+#        if request.POST and 'uploaded_image_ids_form' in request.POST and proceed_to_manage_metadata_form.is_valid():
+#            # If coming from the upload page, we'll get the image ids in
+#            # the POST data.
+#            uploaded_image_ids = proceed_to_manage_metadata_form.cleaned_data['uploaded_image_ids']
+#            allSearchResults = Image.objects.filter(source=source, pk__in=uploaded_image_ids)
+#        else:
+#            # Else, use the GET arguments to filter the images.
+#            allSearchResults = Image.objects.filter(source=source, **imageArgs)
 
-            if request.POST and 'uploaded_image_ids_form' in request.POST and proceed_to_manage_metadata_form.is_valid():
-                # If coming from the upload page, we'll get the image ids in
-                # the POST data.
-                uploaded_image_ids = proceed_to_manage_metadata_form.cleaned_data['uploaded_image_ids']
-                allSearchResults = Image.objects.filter(source=source, pk__in=uploaded_image_ids)
-            else:
-                # Else, use the GET arguments to filter the images.
-                allSearchResults = Image.objects.filter(source=source, **imageArgs)
+#        if submitted_search_form.is_valid():
+#
+#            try:
+#                value = int(submitted_search_form.cleaned_data.pop('image_status'))
+#            except ValueError:
+#                value = 0
+#
+#            #All images wanted so just return
+#            if value:
+#                #Else do check for robot classified source options
+#                if source.enable_robot_classifier:
+#                    if value == 1:
+#                        all_items = all_items.filter(status__annotatedByHuman=False, status__annotatedByRobot=False)
+#                    elif value == 2:
+#                        all_items = all_items.filter(status__annotatedByHuman=False, status__annotatedByRobot=True)
+#                    else:
+#                        all_items = all_items.filter(status__annotatedByHuman=True)
+#                #Else do check for only human annotated source options
+#                else:
+#                    if value == 1:
+#                        all_items = all_items.filter(status__annotatedByHuman=False)
+#                    elif value == 2:
+#                        all_items = all_items.filter(status__annotatedByHuman=True)
 
-            if form.is_valid():
-                
-                try:
-                    value = int(form.cleaned_data.pop('image_status'))
-                except ValueError:
-                    value = 0
-                    
-                #All images wanted so just return
-                if value:
-                    #Else do check for robot classified source options
-                    if source.enable_robot_classifier:
-                        if value == 1:
-                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=False, status__annotatedByRobot=False)
-                        elif value == 2:
-                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=False, status__annotatedByRobot=True)
-                        else:
-                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=True)
-                    #Else do check for only human annotated source options
-                    else:
-                        if value == 1:
-                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=False)
-                        elif value == 2:
-                            allSearchResults = allSearchResults.filter(status__annotatedByHuman=True)
-            # Sort the images.
-            # TODO: Stop duplicating this DB-specific extras query; put it in a separate function...
-            # Also, despite the fact that we're dealing with images and not metadatas, selecting photo_date does indeed work.
-            db_extra_select = {'metadata__year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
+        # Sort the images.
+        # TODO: Stop duplicating this DB-specific extras query; put it in a separate function...
+        # Also, despite the fact that we're dealing with images and not metadatas, selecting photo_date does indeed work.
+        db_extra_select = {'metadata__year': 'YEAR(photo_date)'}  # YEAR() is MySQL only, PostgreSQL has different syntax
 
-            sort_keys = ['metadata__'+k for k in (['year'] + source.get_value_field_list())]
-            allSearchResults = allSearchResults.extra(select=db_extra_select)
-            allSearchResults = allSearchResults.order_by(*sort_keys)
+        sort_keys = ['metadata__'+k for k in (['year'] + source.get_value_field_list())]
+        all_items = all_items.extra(select=db_extra_select)
+        all_items = all_items.order_by(*sort_keys)
 
-            # Do we show the metadata form or the image viewer?
-            view = request.GET.get('edit_metadata_view', '')
+#        view = request.GET.get('view', '')
 
-            if view:
-                # Get images and statuses
-                images = [];
-                statuses = [];
-                for i, image in enumerate(allSearchResults):
-                    images.append(image)
-                    statuses.append(image.get_annotation_status_str)
+        if edit_metadata_view:
 
-                # This is used to create a formset out of the metadataForm. I need to do this
-                # in order to pass in the source id.
-                metadataFormSet = formset_factory(MetadataForm)
-                metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
+            # Show the metadata form (grid of fields).
 
-                # There is a separate form that controls the checkboxes.
-                checkboxFormSet = formset_factory(CheckboxForm)
+            # Get images and statuses
+            images = [];
+            statuses = [];
+            for i, image in enumerate(all_items):
+                images.append(image)
+                statuses.append(image.get_annotation_status_str)
 
-                if request.method == 'POST' and 'metadata_form' in request.POST and request.user.has_perm(Source.PermTypes.EDIT.code, source):
-                    metadataForm = metadataFormSet(request.POST)
-                    selectAllCheckbox = CheckboxForm(request.POST)
-                    checkboxForm = checkboxFormSet(request.POST)
-                    metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, images, statuses)
-                    if metadataForm.is_valid():
-                        # Here we save the data to the database, since data is valid.
-                        for image, formData in zip(allSearchResults, metadataForm.cleaned_data):
-                            image.metadata.photo_date = formData['date']
-                            image.metadata.height_in_cm = formData['height']
-                            image.metadata.latitude = formData['latitude']
-                            image.metadata.longitude = formData['longitude']
-                            image.metadata.depth = formData['depth']
-                            image.metadata.camera = formData['camera']
-                            image.metadata.photographer = formData['photographer']
-                            image.metadata.water_quality = formData['waterQuality']
-                            image.metadata.strobes = formData['strobes']
-                            image.metadata.framing = formData['framingGear']
-                            image.metadata.balance = formData['whiteBalance']
+            # This is used to create a formset out of the metadataForm. I need to do this
+            # in order to pass in the source id.
+            metadataFormSet = formset_factory(MetadataForm)
+            metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
 
-                            if 'key1' in formData:
-                                image.metadata.value1 = formData['key1']
-                            if 'key2' in formData:
-                                image.metadata.value2 = formData['key2']
-                            if 'key3' in formData:
-                                image.metadata.value3 = formData['key3']
-                            if 'key4' in formData:
-                                image.metadata.value4 = formData['key4']
-                            if 'key5' in formData:
-                                image.metadata.value5 = formData['key5']
-                            image.metadata.save()
+            # There is a separate form that controls the checkboxes.
+            checkboxFormSet = formset_factory(CheckboxForm)
 
-                        # After entering data, try to remove unused key values
-                        source.remove_unused_key_values()
-                        messages.success(request, 'Image metadata file has now been saved.')
-                    else:
-                        # Display error message in addition to other error messages below.
-                        messages.error(request, 'Please correct the errors below.')
+            if request.method == 'POST' and 'metadata_form' in request.POST and request.user.has_perm(Source.PermTypes.EDIT.code, source):
+                metadataForm = metadataFormSet(request.POST)
+                selectAllCheckbox = CheckboxForm(request.POST)
+                checkboxForm = checkboxFormSet(request.POST)
+                metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, images, statuses)
+                if metadataForm.is_valid():
+                    # Here we save the data to the database, since data is valid.
+                    for image, formData in zip(all_items, metadataForm.cleaned_data):
+                        image.metadata.photo_date = formData['date']
+                        image.metadata.height_in_cm = formData['height']
+                        image.metadata.latitude = formData['latitude']
+                        image.metadata.longitude = formData['longitude']
+                        image.metadata.depth = formData['depth']
+                        image.metadata.camera = formData['camera']
+                        image.metadata.photographer = formData['photographer']
+                        image.metadata.water_quality = formData['waterQuality']
+                        image.metadata.strobes = formData['strobes']
+                        image.metadata.framing = formData['framingGear']
+                        image.metadata.balance = formData['whiteBalance']
+
+                        if 'key1' in formData:
+                            image.metadata.value1 = formData['key1']
+                        if 'key2' in formData:
+                            image.metadata.value2 = formData['key2']
+                        if 'key3' in formData:
+                            image.metadata.value3 = formData['key3']
+                        if 'key4' in formData:
+                            image.metadata.value4 = formData['key4']
+                        if 'key5' in formData:
+                            image.metadata.value5 = formData['key5']
+                        image.metadata.save()
+
+                    # After entering data, try to remove unused key values
+                    source.remove_unused_key_values()
+                    messages.success(request, 'Image metadata file has now been saved.')
                 else:
-                    # This initializes the form set with default values; namely, the values
-                    # for the keys that already exist in our records.
-                    initValues = {'form-TOTAL_FORMS': '%s' % len(allSearchResults), 'form-INITIAL_FORMS': '%s' % len(allSearchResults)}
-                    initValuesMetadata = initValues
-                    for i, image in enumerate(allSearchResults):
-                        keys = image.get_location_value_str_list()
-                        for j, key in enumerate(keys):
-                            initValuesMetadata['form-%s-key%s' % (i,j+1)] = key
-                        initValuesMetadata['form-%s-date' % i] = image.metadata.photo_date
-                        initValuesMetadata['form-%s-height' % i] = image.metadata.height_in_cm
-                        initValuesMetadata['form-%s-latitude' % i] = image.metadata.latitude
-                        initValuesMetadata['form-%s-longitude' % i] = image.metadata.longitude
-                        initValuesMetadata['form-%s-depth' % i] = image.metadata.depth
-                        initValuesMetadata['form-%s-camera' % i] = image.metadata.camera
-                        initValuesMetadata['form-%s-photographer' % i] = image.metadata.photographer
-                        initValuesMetadata['form-%s-waterQuality' % i] = image.metadata.water_quality
-                        initValuesMetadata['form-%s-strobes' % i] = image.metadata.strobes
-                        initValuesMetadata['form-%s-framingGear' % i] = image.metadata.framing
-                        initValuesMetadata['form-%s-whiteBalance' % i] = image.metadata.balance
-                    metadataForm = metadataFormSet(initValuesMetadata)
-                    checkboxForm = checkboxFormSet(initValues)
-                    metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, images, statuses)
-                    selectAllCheckbox = CheckboxForm()
-
-        else:
-            #since user specified a label, generate patches to show instead of whole images
-            showPatches = True
-            patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
-
-            #get all annotations for the source that contain the label
-            try:
-                annotator = int(form.cleaned_data.pop('annotator'))
-            except ValueError:
-                annotator = 2
-            annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).order_by('?')
-            if not annotator:
-                annotations.exclude(user=get_robot_user())
-            elif annotator == 1:
-                annotations.filter(user=get_robot_user())
-
-            # Placeholder the image patches with the annotation objects for now.
-            # We'll actually get the patches when we know which page we're showing.
-            allSearchResults = annotations
-
-        if not allSearchResults:
-            if request.GET:
-                # No image results in this search
-                errors.append("Sorry, no images matched your query")
+                    # Display error message in addition to other error messages below.
+                    messages.error(request, 'Please correct the errors below.')
             else:
-                # No image results, and just got to the visualization page
-                errors.append("Sorry, there are no images for this source yet. Please upload some.")
+                # This initializes the form set with default values; namely, the values
+                # for the keys that already exist in our records.
+                initValues = {'form-TOTAL_FORMS': '%s' % len(all_items), 'form-INITIAL_FORMS': '%s' % len(all_items)}
+                initValuesMetadata = initValues
+                for i, image in enumerate(all_items):
+                    keys = image.get_location_value_str_list()
+                    for j, key in enumerate(keys):
+                        initValuesMetadata['form-%s-key%s' % (i,j+1)] = key
+                    initValuesMetadata['form-%s-date' % i] = image.metadata.photo_date
+                    initValuesMetadata['form-%s-height' % i] = image.metadata.height_in_cm
+                    initValuesMetadata['form-%s-latitude' % i] = image.metadata.latitude
+                    initValuesMetadata['form-%s-longitude' % i] = image.metadata.longitude
+                    initValuesMetadata['form-%s-depth' % i] = image.metadata.depth
+                    initValuesMetadata['form-%s-camera' % i] = image.metadata.camera
+                    initValuesMetadata['form-%s-photographer' % i] = image.metadata.photographer
+                    initValuesMetadata['form-%s-waterQuality' % i] = image.metadata.water_quality
+                    initValuesMetadata['form-%s-strobes' % i] = image.metadata.strobes
+                    initValuesMetadata['form-%s-framingGear' % i] = image.metadata.framing
+                    initValuesMetadata['form-%s-whiteBalance' % i] = image.metadata.balance
+                metadataForm = metadataFormSet(initValuesMetadata)
+                checkboxForm = checkboxFormSet(initValues)
+                metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, images, statuses)
+                selectAllCheckbox = CheckboxForm()
 
-        paginator = Paginator(allSearchResults, IMAGES_PER_PAGE)
+    else:
+        #since user specified a label, generate patches to show instead of whole images
+        showPatches = True
+        patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
 
-        # Make sure page request is an int. If not, deliver first page.
+        #get all annotations for the source that contain the label
         try:
-            page = int(request.GET.get('page', '1'))
+            annotator = int(submitted_search_form.cleaned_data.pop('annotator'))
         except ValueError:
-            page = 1
+            annotator = 2
+        annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).order_by('?')
+        if not annotator:
+            annotations.exclude(user=get_robot_user())
+        elif annotator == 1:
+            annotations.filter(user=get_robot_user())
 
-        # If page request (9999) is out of range, deliver last page of results.
-        try:
-            images = paginator.page(page)
-        except (EmptyPage, InvalidPage):
-            images = paginator.page(paginator.num_pages)
+        # Placeholder the image patches with the annotation objects for now.
+        # We'll actually get the patches when we know which page we're showing.
+        all_items = annotations
 
-        if showPatches:
-
-            # Get an image-patch for each result on the page.
-            # Earlier we placeholdered the image patches with the annotation objects,
-            # so we're iterating over those annotations now.
-            for index, annotation in enumerate(images.object_list):
-
-                patchPath = "data/annotations/" + str(annotation.id) + ".jpg"
-
-                images.object_list[index] = dict(
-                    type="patches",
-                    fullImage=annotation.image,
-                    patchPath=patchPath,
-                    row=annotation.point.row,
-                    col=annotation.point.column,
-                    pointNum=annotation.point.point_number,
-                )
-
-                generate_patch_if_doesnt_exist(patchPath, annotation)
-
+    if not all_items:
+        if request.GET:
+            # No image results in this search
+            errors.append("Sorry, no images matched your query")
         else:
+            # No image results, and just got to the visualization page
+            errors.append("Sorry, there are no images for this source yet. Please upload some.")
 
-            for index, image_obj in enumerate(images.object_list):
+    paginator = Paginator(all_items, ITEMS_PER_PAGE)
 
-                images.object_list[index] = dict(
-                    type="full_images",
-                    image_obj=image_obj,
-                )
+    # Make sure page request is an int. If not, deliver first page.
+    try:
+        page = int(request.GET.get('page', '1'))
+    except ValueError:
+        page = 1
+
+    # If page request (9999) is out of range, deliver last page of results.
+    try:
+        images = paginator.page(page)
+    except (EmptyPage, InvalidPage):
+        images = paginator.page(paginator.num_pages)
+
+    if showPatches:
+
+        # Get an image-patch for each result on the page.
+        # Earlier we placeholdered the image patches with the annotation objects,
+        # so we're iterating over those annotations now.
+        for index, annotation in enumerate(images.object_list):
+
+            # TODO: don't hardcode the patch path
+            # (this might also apply to the label_main view)
+            patchPath = "data/annotations/" + str(annotation.id) + ".jpg"
+
+            images.object_list[index] = dict(
+                type="patches",
+                fullImage=annotation.image,
+                patchPath=patchPath,
+                row=annotation.point.row,
+                col=annotation.point.column,
+                pointNum=annotation.point.point_number,
+            )
+
+            generate_patch_if_doesnt_exist(patchPath, annotation)
+
+    else:
+
+        for index, image_obj in enumerate(images.object_list):
+
+            images.object_list[index] = dict(
+                type="full_images",
+                image_obj=image_obj,
+            )
 
     return render_to_response('visualization/visualize_source.html', {
         'errors': errors,
-        'searchForm': form,
+        'searchForm': search_form,
         'source': source,
         'images': images,
         'showPatches': showPatches,
         'searchParamsStr': urlArgsStr,
-        'actionForm': actionForm,
+#        'actionForm': actionForm,
+        'image_batch_delete_form': image_batch_delete_form,
         'key_list': source.get_key_list(),
         'metadataForm': metadataForm,
         'selectAllForm': selectAllCheckbox,
         'metadataFormWithExtra': metadataFormWithExtra,
-        'view':view,
+        'view': edit_metadata_view,
         },
         context_instance=RequestContext(request)
     )
+
+
+@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
+def browse_delete(request, source_id):
+    """
+    From the browse images page, select delete as the batch action.
+    """
+    source = get_object_or_404(Source, id=source_id)
+
+    if request.POST:
+
+        # Get the images from the POST form.
+        # Will either be in the form of a list of image ids, or in the form
+        # of search args.
+        # TODO: make a single function that takes either image ids or
+        # search args, and returns the relevant Image queryset. That'll be
+        # useful when we have multiple possible actions.
+        # It should use image ids if coming from upload. It should use
+        # search args otherwise.
+        # TODO: if search args, it should also come with the number of
+        # images, so that we can do a sanity check (do the number of images
+        # match?)
+
+        delete_form = ImageBatchDeleteForm(request.POST)
+
+        if delete_form.is_valid():
+            images_to_delete = delete_form.get_images()
+
+    #        actionFormImageArgs = simplejson.loads(searchKeys)
+    #        imagesToDelete = Image.objects.filter(source=source, **actionFormImageArgs)
+
+            num_of_images = images_to_delete.count()
+
+            for img in images_to_delete:
+                img.delete()
+
+            # try to remove unused key values, after the files are deleted
+            source.remove_unused_key_values()
+
+            messages.success(request, 'The {num} selected images have been deleted.'.format(num=num_of_images))
+
+        else:
+
+            messages.success(request, 'The delete form had an error. Nothing was deleted.')
+
+    else:
+
+        messages.success(request, 'The delete form had an error. Nothing was deleted.')
+
+    # TODO: Include search args here too, if any.
+    return HttpResponseRedirect(reverse('visualize_source', args=[source_id]))
 
 
 @source_visibility_required('source_id')
