@@ -60,11 +60,9 @@ def map(request):
 
     for i in images:
        if i.status.annotatedByHuman:
-         a +=1
          x = Point.objects.filter(image=i)
          human_annotations += len(x)
        if i.status.annotatedByRobot:
-         b += 1
          y = Point.objects.filter(image=i)
          robot_annotations += len(y)
 
