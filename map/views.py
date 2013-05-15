@@ -54,18 +54,28 @@ def map(request):
     total_sources = Source.objects.all().count()
     total_images = Image.objects.all().count()
     
-    images_status = ImageStatus.objects.all()
     human_annotations = 0
     robot_annotations = 0
-    
-    for i in images_status:
-       if i.annotatedByHuman:
-           human_annotations += 1
-       if i.annotatedByRobot:
-           robot_annotations += 1
- 
+    images = Image.objects.all()
 
-    total_annotations = Annotation.objects.all().count()
+    for i in images:
+       if i.status.annotatedByHuman:
+         a +=1
+         x = Point.objects.filter(image=i)
+         human_annotations += len(x)
+       if i.status.annotatedByRobot:
+         b += 1
+         y = Point.objects.filter(image=i)
+         robot_annotations += len(y)
+
+    total_annotations = 0
+    for i in images:
+      if i.status.annotatedByHuman:
+        total_annotations += 1
+      elif i.status.annotatedByRobot:
+        total_annotations += 1
+
+
 
     return render_to_response('map/map.html', {
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
