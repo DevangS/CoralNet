@@ -1,7 +1,7 @@
 /* Top box of the index page */
 #intro{
-    padding: 20px 20px;
-    min-height: 200px;
+    padding: 40px 20px;
+    min-height: 255px;
     -moz-border-radius: 8px;
     -webkit-border-radius: 8px;
     border-radius: 8px;
@@ -14,7 +14,7 @@
 
 #intro h1{
     font-size: 3.2em;
-    margin: 10px 20px 0 460px;
+    margin: 10px 20px 0 480px;
     color: #ac1500;
 }
 
@@ -24,14 +24,14 @@
 
 #intro h2{
     font-size: 1.8em;
-    margin: 0 20px 9px 460px;
+    margin: 0 20px 9px 480px;
     padding: 0 0 5px;    /* Padding gives room for the background stripe */
     background: url(../img/stripe.png) repeat-x 0 bottom;
 }
 
 #intro p{
-    font-size: 1.3em;
-	margin: 0 20px 20px 460px;
+    font-size: 1.2em;
+	margin: 0 20px 20px 480px;
 }
 
 #intro a.signin{
@@ -50,4 +50,5 @@
     position: absolute;
     overflow: hidden;
     width: 440px;
+    margin: 0 0 0 10px;
 }
