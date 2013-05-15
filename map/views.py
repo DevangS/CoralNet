@@ -54,18 +54,8 @@ def map(request):
     total_sources = Source.objects.all().count()
     total_images = Image.objects.all().count()
     
-    human_annotations = 0
-    robot_annotations = 0
-    images = Image.objects.all()
-
-    for i in images:
-       if i.status.annotatedByHuman:
-         x = Point.objects.filter(image=i)
-         human_annotations += len(x)
-       if i.status.annotatedByRobot:
-         y = Point.objects.filter(image=i)
-         robot_annotations += len(y)
-
+    human_annotations = Point.objects.filter(image__status__annotatedByHuman=True).count()
+    robot_annotations = Point.objects.filter(image__status__annotatedByRobot=True).count()
     total_annotations = human_annotations + robot_annotations
 
 
