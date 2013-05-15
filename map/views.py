@@ -66,12 +66,8 @@ def map(request):
          y = Point.objects.filter(image=i)
          robot_annotations += len(y)
 
-    total_annotations = 0
-    for i in images:
-      if i.status.annotatedByHuman:
-        total_annotations += 1
-      elif i.status.annotatedByRobot:
-        total_annotations += 1
+    total_annotations = human_annotations + robot_annotations
+
 
 
 
