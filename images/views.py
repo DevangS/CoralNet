@@ -7,6 +7,7 @@ from django.forms.models import model_to_dict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template import RequestContext
+from django.conf import settings
 
 from userena.models import User
 from annotations.forms import AnnotationAreaPercentsForm
@@ -19,6 +20,7 @@ from images.models import Source, Image, SourceInvite
 from images.forms import *
 from images.model_utils import PointGen
 from images.utils import *
+from lib.utils import get_map_sources
 import json , csv, os.path, time
 from numpy import array
 
@@ -35,10 +37,15 @@ def source_list(request):
                                    your_role=s.get_member_role(request.user),)
                               for s in your_sources]
         other_public_sources = Source.get_other_public_sources(request.user)
+
+        # Here we get the map sources
+        map_sources = get_map_sources()
         
         if your_sources:
             return render_to_response('images/source_list.html', {
                 'your_sources': your_sources_dicts,
+                'map_sources': map_sources,
+                'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
                 'other_public_sources': other_public_sources,
                 },
                 context_instance=RequestContext(request)

@@ -1,0 +1,15 @@
+#map-canvas {
+
+    /* The map will always take its size from that of its containing element,
+    so you must always set a size on that <div> explicitly.
+    https://developers.google.com/maps/documentation/javascript/tutorial#Map_DOM_Elements */
+
+    width: 100%;
+    height: 500px;
+}
+
+#marker-info-initial-container {
+    /* Keep the marker-info element here, hidden from view,
+    until we need it. */
+    display: none;
+}
