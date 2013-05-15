@@ -10,6 +10,8 @@ from lib import msg_consts, str_consts
 from lib.utils import get_map_sources, get_random_public_images
 from images.models import Image, Source
 from annotations.models import Annotation
+from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
 
 def contact(request):
     """
@@ -57,6 +59,9 @@ def index(request):
     """
     This view renders the front page.
     """
+
+    if request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('source_list'))
 
     # Here we get the map sources
     map_sources = get_map_sources()

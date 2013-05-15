@@ -44,8 +44,11 @@ def source_list(request):
                 context_instance=RequestContext(request)
             )
 
+    # not used
     return HttpResponseRedirect(reverse('source_about'))
 
+# This isn't really used anymore, since we now display the Home page when
+# the user is logged out.
 def source_about(request):
     """
     Page that explains what Sources are and how to use them.
