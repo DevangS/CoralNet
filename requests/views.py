@@ -4,7 +4,8 @@ from django.http import HttpResponse, HttpRequest
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from requests.forms import RequestInviteForm
-from settings import DEFAULT_FROM_EMAIL , CAPTCHA_PRIVATE_KEY, CAPTCHA_PUBLIC_KEY
+from settings import DEFAULT_FROM_EMAIL 
+from settings_2 import CAPTCHA_PRIVATE_KEY, CAPTCHA_PUBLIC_KEY
 import urllib2, urllib
 
 def request_invite(request):
