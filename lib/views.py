@@ -12,6 +12,7 @@ from images.models import Image, Source
 from annotations.models import Annotation
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from annotations.models import Point
 
 def contact(request):
     """
@@ -72,7 +73,9 @@ def index(request):
     # Gather some stats
     total_sources = Source.objects.all().count()
     total_images = Image.objects.all().count()
-    total_annotations = Annotation.objects.all().count()
+    human_annotations = Point.objects.filter(image__status__annotatedByHuman=True).count()
+    robot_annotations = Point.objects.filter(image__status__annotatedByRobot=True).count()
+    total_annotations = human_annotations + robot_annotations
 
     return render_to_response('lib/index.html', {
             'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
@@ -80,6 +83,8 @@ def index(request):
             'total_sources': total_sources,
             'total_images': total_images,
             'total_annotations': total_annotations,
+            'human_annotations': human_annotations,
+            'robot_annotations' : robot_annotations,
             'images': images
         },
         context_instance=RequestContext(request)

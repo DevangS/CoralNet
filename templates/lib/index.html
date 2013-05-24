@@ -87,27 +87,15 @@
     </div>
 <br>
 
-    <div id="site-stats" style="float:left;">
+    <div id="site-stats">
 
-        <h3>Sitewide statistics</h3>
-
-        <table class="detail_table">
-            <tr>
-                <td>Total sources</td>
-                <td>{{ total_sources }}</td>
-            </tr>
-            <tr>
-                <td>Total images</td>
-                <td>{{ total_images }}</td>
-            </tr>
-            <tr>
-                <td>Total annotations</td>
-                <td>{{ total_annotations }}</td>
-            </tr>
-        </table>
+        <p>There are currently {{ total_sources }} sources on CoralNet, with a combined total of {{ total_images }} images.
+           Out of all the annotations on the site, {{ human_annotations }} are human annotated, {{ robot_annotations }}
+           are machine annotated, out of a total of {{ total_annotations }} annotations.
+        </p>
     </div>
 
-    <div id="map-legend" style="float:right">
+    <div id="map-legend">
 
         <h3>Legend</h3>
 
@@ -128,8 +116,6 @@
     </div>
 
 </div>
-
-    <div style="clear:left"></div>
 
     <script type="text/javascript">
         CNMap.init({

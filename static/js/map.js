@@ -73,6 +73,9 @@ var CNMap = (function() {
                 mapOptions
             );
 
+            map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(
+                document.getElementById('map-legend'));
+
             var markerInfoElmtId = 'marker-info';
             markerInfoElmt = document.getElementById(markerInfoElmtId);
 
