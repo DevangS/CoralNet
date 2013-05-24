@@ -15,5 +15,13 @@
 }
 
 #map-legend {
-    
+    background: white;
+    opacity:0.4;
+    padding:10px;
+}
+
+#map-legend.div
+{
+    display: table-cell;
+    vertical-align:middle;
 }

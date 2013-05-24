@@ -73,8 +73,31 @@ var CNMap = (function() {
                 mapOptions
             );
 
-            map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(
-                document.getElementById('map-legend'));
+            var legend = document.getElementById('map-legend');
+
+            map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
+
+
+            var icons = {
+                public: {
+                    name: "Public sources",
+                    icon: "http://www.google.com/intl/en_us/mapfiles/ms/icons/green.png"
+                },
+                private: {
+                    name: "Private sources",
+                    icon: "http://www.google.com/intl/en_us/mapfiles/ms/icons/red.png"
+                }
+            };
+
+            for (var key in icons) {
+                var type = icons[key];
+                var name = type.name;
+                var icon = type.icon;
+                var div = document.createElement('div');
+                div.innerHTML = '<img src="' + icon + '"> ' + name;
+                legend.appendChild(div);
+            }
+
 
             var markerInfoElmtId = 'marker-info';
             markerInfoElmt = document.getElementById(markerInfoElmtId);
