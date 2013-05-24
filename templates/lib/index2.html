@@ -1,0 +1,126 @@
+{# This extends a different base, because the nav is eliminated on this page #}
+{% extends "base_index.html" %}
+
+{% load common_tags %}
+{% load thumbnail %}
+
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" bootstrap_carousel="yes" %}
+{% endblock %}
+
+{% block page-specific-includes %}
+    {% include "static-local-include.html" with type="css" path="css/index2.css" %}
+
+    {# For the bootstrap carousel #}
+    {% include "static-local-include.html" with type="css" path="css/bootstrap.css" %}
+
+    {# Google Maps API #}
+    <script type="text/javascript"
+            src="https://maps.googleapis.com/maps/api/js?sensor=false">
+        {# TODO: Get this working with an API key. #}
+        {# src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">#}
+    </script>
+    <script type="text/javascript"
+            src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js">
+    </script>
+    {% include "static-local-include.html" with type="css" path="css/map.css" %}
+    {% include "static-local-include.html" with type="js" path="js/map.js" %}
+{% endblock %}
+
+{% block content %}
+
+    <div id="intro">
+
+    <div id="titlebox">
+
+        <h1>CoralNet <span class="alpha">ALPHA</span></h1>
+        <h2>A Web solution for coral reef analysis</h2>
+
+        <p>Upload coral reef images, organize and annotate images, and view annotation statistics.</p>
+
+
+    </div>
+        <br><br><br><br><br>
+        <a class="signin" href="{% url userena_signin %}">Sign In</a>
+        <a class="signup" href="{% url request_account %}">Sign Up</a>
+
+    </div><!-- /intro-->
+
+    <br />
+
+    <div id="map-canvas"></div>
+
+
+    <div id="marker-info-initial-container">
+        <div id="marker-info">
+
+            <div class="name"><strong>Source name goes here.</strong></div>
+
+            {# TODO: Ensure that the description looks good even when it's multilined. #}
+            <div class="description">Description goes here.</div>
+
+            <div class="num-of-images">Number of images goes here.</div>
+
+            <div class="coordinates">Coordinates go here.</div>
+
+        </div>
+    </div>
+    <br>
+
+    <div id="site-stats" style="float:left;">
+
+        <h3>Sitewide statistics</h3>
+
+        <table class="detail_table">
+            <tr>
+                <td>Total sources</td>
+                <td>{{ total_sources }}</td>
+            </tr>
+            <tr>
+                <td>Total images</td>
+                <td>{{ total_images }}</td>
+            </tr>
+            <tr>
+                <td>Total annotations</td>
+                <td>{{ total_annotations }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="map=legend" style="float:right">
+
+        <h3>Legend</h3>
+
+        <table class="detail_table">
+            <tr>
+                <td>Green Markers</td>
+                <td>Public sources</td>
+            </tr>
+            <tr>
+                <td>Red Markers</td>
+                <td>Private Sources</td>
+            </tr>
+            <tr>
+                <td>Marker Size</td>
+                <td># of images in Source</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="clear:left"></div>
+
+    <script type="text/javascript">
+        CNMap.init({
+            'mapSources': {{ map_sources|jsonify }}
+        });
+        $(document).ready(function(){
+            $('.carousel').carousel();
+        });
+    </script>
+
+{% endblock %}
+
+{% block footer_extra %}
+    <p>Powered by <a href="https://www.djangoproject.com/" target="_blank">Django</a></p>
+    <p>Site theme adapted from <a href="http://django-userena.org/" target="_blank">Django-Userena</a></p>
+{% endblock %}

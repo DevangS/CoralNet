@@ -27,11 +27,9 @@ urlpatterns = patterns('',
 
     (r'^%s/' % settings.DAJAXICE_MEDIA_PREFIX, include('dajaxice.urls')),
 
-    url(r'^$',
-        direct_to_template,
-        {'template': 'static/index.html'},
-        name='index',
-    ),
+    url(r'^$', 'lib.views.index', name='index'),
+    url(r'^index2/$', 'lib.views.index2', name='index2'),
+
     url(r'^about/$',
         direct_to_template,
         {'template': 'static/about.html'},
