@@ -2,18 +2,8 @@
 
 {% load common_tags %}
 
-{% block page-specific-includes %}
-    {# Google Maps API #}
-    <script type="text/javascript"
-        src="https://maps.googleapis.com/maps/api/js?sensor=false">
-    {# TODO: Get this working with an API key. #}
-    {# src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">#}
-    </script>
-    <script type="text/javascript"
-        src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js">
-    </script>
-    {% include "static-local-include.html" with type="css" path="css/map.css" %}
-    {% include "static-local-include.html" with type="js" path="js/map.js" %}
+{% block js-includes %}
+    {% include "javascript-includes.html" with map="yes" %}
 {% endblock %}
 
 {% block content %}
@@ -57,6 +47,9 @@
             <div class="coordinates">Coordinates go here.</div>
 
         </div>
+    </div>
+
+    <div id="map-legend">
     </div>
 
     <div style="clear:both;"></div>

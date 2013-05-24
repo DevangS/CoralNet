@@ -5,7 +5,7 @@
 {% load thumbnail %}
 
 {% block js-includes %}
-    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" bootstrap_carousel="yes" %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" bootstrap_carousel="yes" map="yes" %}
 {% endblock %}
 
 {% block page-specific-includes %}
@@ -14,17 +14,6 @@
     {# For the bootstrap carousel #}
     {% include "static-local-include.html" with type="css" path="css/bootstrap.css" %}
 
-    {# Google Maps API #}
-    <script type="text/javascript"
-            src="https://maps.googleapis.com/maps/api/js?sensor=false">
-        {# TODO: Get this working with an API key. #}
-        {# src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">#}
-    </script>
-    <script type="text/javascript"
-            src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js">
-    </script>
-    {% include "static-local-include.html" with type="css" path="css/map.css" %}
-    {% include "static-local-include.html" with type="js" path="js/map.js" %}
 {% endblock %}
 
 {% block content %}

@@ -88,6 +88,17 @@ to any value (except the empty string) to not include it.
     {% include "static-local-include.html" with type="js" path="js/bootstrap-carousel.min.js" %}
 {% endif %}
 
+{# Google Maps API #}
+{% if map %}
+    <script type="text/javascript"
+            src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript"
+            src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js">
+    </script>
+    {% include "static-local-include.html" with type="css" path="css/map.css" %}
+    {% include "static-local-include.html" with type="js" path="js/map.js" %}
+{% endif %}
+
 {# Our own utility functions and plugin modifications. #}
 {# Not just for JS-heavy pages, but also for some basic styling. #}
 {# Must be included after: Dajaxice, jQuery #}
