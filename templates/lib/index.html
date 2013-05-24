@@ -40,12 +40,14 @@
                 {% else %}
                     <div class="item">
                 {% endif %}
+                <span class="thumb_front_wrapper">
                 <a href="{% url image_detail image.id %}">
                     <img class="thumb_small"
                          style="margin: 0 auto; vertical-align: middle"
                          src="{% thumbnail image.original_file 450x450 %}"
                          title="{{ image.get_image_element_title }}"/>
                 </a>
+                </span>
                 </div>
             {% endfor %}
         </div>
@@ -62,7 +64,9 @@
 
 </div><!-- /intro-->
 
-<br />
+<br /><br>
+
+<div style="width:95%;margin:0 auto">
 
     <div id="map-canvas"></div>
 
@@ -103,7 +107,7 @@
         </table>
     </div>
 
-    <div id="map=legend" style="float:right">
+    <div id="map-legend" style="float:right">
 
         <h3>Legend</h3>
 
@@ -122,6 +126,8 @@
             </tr>
         </table>
     </div>
+
+</div>
 
     <div style="clear:left"></div>
 

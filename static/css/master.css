@@ -1137,6 +1137,15 @@ span.thumb_large_wrapper {
     /* Effective height of <max image height in row, including border>+12px+12px */
 }
 
+span.thumb_front_wrapper {
+    display: inline-block;
+    text-align: center;
+
+    height: 230px;
+    padding: 0px 0px 20px;
+
+}
+
 img.thumb {
     vertical-align: middle;
 }

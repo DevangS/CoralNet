@@ -1,5 +1,21 @@
 {% extends "base.html" %}
 
+{% load common_tags %}
+
+{% block page-specific-includes %}
+    {# Google Maps API #}
+    <script type="text/javascript"
+        src="https://maps.googleapis.com/maps/api/js?sensor=false">
+    {# TODO: Get this working with an API key. #}
+    {# src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&sensor=false">#}
+    </script>
+    <script type="text/javascript"
+        src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js">
+    </script>
+    {% include "static-local-include.html" with type="css" path="css/map.css" %}
+    {% include "static-local-include.html" with type="js" path="js/map.js" %}
+{% endblock %}
+
 {% block content %}
     <h2>Your Sources</h2>
     <table class="detail_table">
@@ -20,10 +36,35 @@
     <hr />
     <h2>Other Public Sources</h2>
 
+    <div id="map-canvas" style="width:70%;float:right;"></div>
+
     <ul class="object_list">
-    {% for source in other_public_sources %}
-        <li><a href="{% url source_main source.id %}">{{ source.name }}</a></li>
-    {% endfor %}
+        {% for source in other_public_sources %}
+            <li><a href="{% url source_main source.id %}">{{ source.name }}</a></li>
+        {% endfor %}
     </ul>
+
+    <div id="marker-info-initial-container">
+        <div id="marker-info">
+
+            <div class="name"><strong>Source name goes here.</strong></div>
+
+            {# TODO: Ensure that the description looks good even when it's multilined. #}
+            <div class="description">Description goes here.</div>
+
+            <div class="num-of-images">Number of images goes here.</div>
+
+            <div class="coordinates">Coordinates go here.</div>
+
+        </div>
+    </div>
+
+    <div style="clear:both;"></div>
+
+    <script type="text/javascript">
+        CNMap.init({
+            'mapSources': {{ map_sources|jsonify }}
+        });
+    </script>
 
 {% endblock %}
