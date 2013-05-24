@@ -20,6 +20,7 @@
 
 #intro span.alpha{
     font-size: 0.4em;
+    vertical-align: super
 }
 
 #intro h2{
@@ -36,7 +37,7 @@
 
 #intro a.signin{
     font-size: 1.8em;
-    margin: 0 20px 0 480px;
+    margin: 0 20px 0 520px;
 
 }
 
