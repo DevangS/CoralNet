@@ -40,6 +40,14 @@ def source_list(request):
 
         # Here we get the map sources
         map_sources = get_map_sources()
+
+        list_thumbnails = []
+        # Here we get a list of a list of images, these will be displayed
+        # within each of the description windows.
+        # the latest images source will not be passed into the javascript functions
+        for source in map_sources:
+            list_thumbnails.append((source["latest_images"],source["id"]))
+            del source["latest_images"]
         
         if your_sources:
             return render_to_response('images/source_list.html', {
@@ -47,6 +55,7 @@ def source_list(request):
                 'map_sources': map_sources,
                 'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
                 'other_public_sources': other_public_sources,
+                'list_thumbnails': list_thumbnails,
                 },
                 context_instance=RequestContext(request)
             )
