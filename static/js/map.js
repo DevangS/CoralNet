@@ -9,7 +9,7 @@ var CNMap = (function() {
     var $markerInfoName = null;
     var $markerInfoDescription = null;
     var $markerInfoNumOfImages = null;
-    var $markerInfoCoordinates = null;
+    var $markerInfoImages = null;
 
     var infoWindow = null;
 
@@ -38,9 +38,13 @@ var CNMap = (function() {
             $markerInfoName.append($boldName);
         }
 
+        var $markerInfoImagesSource = $("#thumbnails-{0}".format(source.id));
+
         $markerInfoDescription.text(source.description);
         $markerInfoNumOfImages.text("Number of images: {0}".format(source.num_of_images));
-        $markerInfoCoordinates.text("Lat/Lon: {0}, {1}".format(source.latitude, source.longitude));
+        $markerInfoImages.append($markerInfoImagesSource);
+
+        $markerInfoImagesSource.css("display","inline");
 
         infoWindow.setContent(markerInfoElmt);
 
@@ -105,8 +109,7 @@ var CNMap = (function() {
             $markerInfoName = $('#{0} .name'.format(markerInfoElmtId));
             $markerInfoDescription = $('#{0} .description'.format(markerInfoElmtId));
             $markerInfoNumOfImages = $('#{0} .num-of-images'.format(markerInfoElmtId));
-            $markerInfoCoordinates = $('#{0} .coordinates'.format(markerInfoElmtId));
-
+            $markerInfoImages = $('#{0} .images'.format(markerInfoElmtId));
 
             var i;
 

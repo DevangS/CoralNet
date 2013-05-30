@@ -48,6 +48,10 @@ def get_map_sources():
             latitude = 'invalid'
             longitude = 'invalid'
 
+        all_images = source.get_all_images()
+        latest_images = all_images.order_by('-upload_date')[:3]
+
+
         map_sources.append(dict(
             description=source.description,
             latitude=latitude,
@@ -56,6 +60,8 @@ def get_map_sources():
             color = color,
             num_of_images=str( Image.objects.filter(source=source).count() ),
             url=source_url,
+            latest_images=latest_images,
+            id=source.id
         ))
 
 
@@ -96,3 +102,4 @@ def get_random_public_images():
         random_image_list.append(random_image)
 
     return random_image_list
+

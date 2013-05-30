@@ -14,6 +14,37 @@
     display: none;
 }
 
+#marker-info div.name {
+    font-size: 1.4em;
+    padding-bottom: 5px;
+}
+
+#marker-info div.description {
+    padding: 5px 0px 5px 0px;
+}
+
+#marker-info div.num-of-images {
+    padding: 5px 0px 5px 0px;
+}
+
+#marker-info span.thumbnail_container
+{
+    display: inline-block;
+    text-align: center;
+
+    width: 100px;
+    padding: 0px 2.5px 0px 2.5px;
+}
+
+#marker-info span.thumbnails
+{
+    padding: 5px 0px 5px 0px;
+    white-space: nowrap;
+}
+
+/*
+    Stylings for the map legend
+*/
 #map-legend {
     background: white;
     opacity:0.5;
@@ -24,4 +55,12 @@
 {
     display: table-cell;
     vertical-align:middle;
+}
+
+/*
+    Contains the initial thumbnails
+*/
+#initial-thumbnails
+{
+    display: none;
 }

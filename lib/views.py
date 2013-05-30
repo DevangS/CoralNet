@@ -67,6 +67,14 @@ def index(request):
     # Here we get the map sources
     map_sources = get_map_sources()
 
+    list_thumbnails = []
+    # Here we get a list of a list of images, these will be displayed
+    # within each of the description windows.
+    # the latest images source will not be passed into the javascript functions
+    for source in map_sources:
+        list_thumbnails.append((source["latest_images"],source["id"]))
+        del source["latest_images"]
+
     # and here we get 5 random public images
     images = get_random_public_images()
 
@@ -85,7 +93,8 @@ def index(request):
             'total_annotations': total_annotations,
             'human_annotations': human_annotations,
             'robot_annotations' : robot_annotations,
-            'images': images
+            'images': images,
+            'list_thumbnails': list_thumbnails,
         },
         context_instance=RequestContext(request)
     )
