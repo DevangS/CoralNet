@@ -45,19 +45,10 @@
 
             <div class="num-of-images">Number of images goes here.</div>
 
-            <div class="images"></div>
-
-        </div>
-    </div>
-
-    <div id="map-legend">
-    </div>
-
-    <div id="initial-thumbnails">
-        {# These divs will later go into each initial container per source via javascript#}
-        {% for thumbnails, id in list_thumbnails %}
-            <div id="thumbnails-{{ id }}">
-                <span class="thumbnails">
+            <div class="images">
+                {# These divs will later go into each initial container per source via javascript#}
+                {% for thumbnails, id in list_thumbnails %}
+                    <div id="thumbnails-{{ id }}" class="thumbnails">
                     {% for thumb in thumbnails %}
                         <span class="thumbnail_container">
                         <img class="thumb_small"
@@ -66,9 +57,14 @@
                              title="{{ thumb.get_image_element_title }}"/>
                         </span>
                     {% endfor %}
-                </span>
+                    </div>
+                {% endfor %}
             </div>
-        {% endfor %}
+
+        </div>
+    </div>
+
+    <div id="map-legend">
     </div>
 
     <div style="clear:both;"></div>
