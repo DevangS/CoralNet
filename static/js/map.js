@@ -38,14 +38,16 @@ var CNMap = (function() {
             $markerInfoName.append($boldName);
         }
 
+        // clear whatever is being displayed first:
+        $markerInfoImages.css("display", "none");
+
+        // selects the correct set of thumbnails to display
         var $markerInfoImagesSource = $("#thumbnails-{0}".format(source.id));
+        $markerInfoImagesSource.css("display","inline");
 
         $markerInfoDescription.text(source.description);
         $markerInfoNumOfImages.text("Number of images: {0}".format(source.num_of_images));
-        $markerInfoImages.html("");
-        $markerInfoImages.append($markerInfoImagesSource);
 
-        $markerInfoImagesSource.css("display","inline");
 
         infoWindow.setContent(markerInfoElmt);
 
@@ -110,7 +112,7 @@ var CNMap = (function() {
             $markerInfoName = $('#{0} .name'.format(markerInfoElmtId));
             $markerInfoDescription = $('#{0} .description'.format(markerInfoElmtId));
             $markerInfoNumOfImages = $('#{0} .num-of-images'.format(markerInfoElmtId));
-            $markerInfoImages = $('#{0} .images'.format(markerInfoElmtId));
+            $markerInfoImages = $('#{0} div.thumbnails'.format(markerInfoElmtId));
 
             var i;
 

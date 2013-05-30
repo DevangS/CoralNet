@@ -36,10 +36,11 @@
     padding: 0px 2.5px 0px 2.5px;
 }
 
-#marker-info span.thumbnails
+#marker-info div.thumbnails
 {
     padding: 5px 0px 5px 0px;
     white-space: nowrap;
+    display: none;
 }
 
 /*
@@ -55,12 +56,4 @@
 {
     display: table-cell;
     vertical-align:middle;
-}
-
-/*
-    Contains the initial thumbnails
-*/
-#initial-thumbnails
-{
-    display: none;
 }
