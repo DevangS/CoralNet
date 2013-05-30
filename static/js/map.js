@@ -42,6 +42,7 @@ var CNMap = (function() {
 
         $markerInfoDescription.text(source.description);
         $markerInfoNumOfImages.text("Number of images: {0}".format(source.num_of_images));
+        $markerInfoImages.html("");
         $markerInfoImages.append($markerInfoImagesSource);
 
         $markerInfoImagesSource.css("display","inline");
