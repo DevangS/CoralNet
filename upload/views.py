@@ -9,8 +9,9 @@ from images.models import Source
 from lib import str_consts
 from lib.exceptions import FileContentError
 from lib.utils import JsonResponse
-from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm, ProceedToManageMetadataForm
-from upload.utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, metadata_dupe_comparison_key_to_display, check_image_filename, store_csv_file, filename_to_metadata_in_csv
+from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm
+from upload.utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, check_image_filename, store_csv_file, filename_to_metadata_in_csv
+from visualization.forms import ImageSpecifyForm
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload(request, source_id):
@@ -26,7 +27,10 @@ def image_upload(request, source_id):
     csv_import_form = CSVImportForm()
     annotation_import_form = AnnotationImportForm()
     annotation_import_options_form = AnnotationImportOptionsForm(source=source)
-    proceed_to_manage_metadata_form = ProceedToManageMetadataForm(source=source)
+    proceed_to_manage_metadata_form = ImageSpecifyForm(
+        initial=dict(specify_method='image_ids'),
+        source=source,
+    )
 
     auto_generate_points_message = (
         "We will generate points for the images you upload.\n"

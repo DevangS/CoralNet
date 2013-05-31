@@ -125,10 +125,21 @@
     font-size: 62.5%;
 }
 
-/* TODO: Merge this rule into master.css at some point. */
+/* TODO: Merge this rule into master.css at some point? */
 form, div.page_section {
     margin: 20px 0 30px;  /* top left/right bottom */
     padding: 0;
 
     width: auto;
+}
+
+form.inline {
+    margin: 0;
+    padding: 0;
+    width: auto;
+}
+
+div#upload_summary_section {
+    /*TODO*/
+    /*background-color: #FFFF88;*/
 }

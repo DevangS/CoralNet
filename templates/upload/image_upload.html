@@ -113,7 +113,7 @@
             </div>
 
             {# start another upload #}
-            <form action="" method="get" id="id_start_another_upload_form">{% csrf_token %}
+            <form action="" method="get" id="id_start_another_upload_form" class="inline">{% csrf_token %}
                 <div class="submit_button_wrapper_column_form">
                     <input type="submit" value="Start another upload" id="id_start_another_upload_button" />
                 </div>
@@ -122,30 +122,34 @@
 
             {# proceed to the page where you manage image metadata #}
             <form action="{% url visualize_source source.id %}?view=view" method="post"
-                  id="id_proceed_to_manage_metadata_form">{% csrf_token %}
+                  id="id_proceed_to_manage_metadata_form" class="inline">{% csrf_token %}
 
                 {% for field in proceed_to_manage_metadata_form %}
                     {{ field }}
                 {% endfor %}
 
                 <div class="submit_button_wrapper_column_form">
-                    <input type="submit" value="Manage image metadata" name="uploaded_image_ids_form" id="id_proceed_to_manage_metadata_button"/>
+                    <input type="submit" value="Manage image metadata"
+                           name="image_specify_form_from_upload"
+                           id="id_proceed_to_manage_metadata_button"/>
                 </div>
             </form>
 
-            <span id="pre_upload_summary"></span>
+            <div id="upload_summary_section">
+                <span id="pre_upload_summary"></span>
 
-            <div id="files_table_auto_scroll_checkbox_container">
-                <input type="checkbox" id="files_table_auto_scroll_checkbox" checked="checked">
-                <label for="files_table_auto_scroll_checkbox">Auto-scroll to the currently uploading file</label>
+                <div id="files_table_auto_scroll_checkbox_container">
+                    <input type="checkbox" id="files_table_auto_scroll_checkbox" checked="checked">
+                    <label for="files_table_auto_scroll_checkbox">Auto-scroll to the currently uploading file</label>
+                </div>
+
+                {# Table showing the files selected for upload. #}
+                <div id="files_table_container">
+                    <table id="files_table"></table>
+                </div>
+
+                <span id="mid_upload_summary"></span>
             </div>
-
-            {# Table showing the files selected for upload. #}
-            <div id="files_table_container">
-                <table id="files_table"></table>
-            </div>
-
-            <span id="mid_upload_summary"></span>
         </div>
 
     </div>

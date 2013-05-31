@@ -55,11 +55,11 @@ class VisualizationSearchForm(forms.Form):
                 
                 self.fields[valueField] = ChoiceField(choices, label=key, required=False)
 
-        status_choices = [('', 'All'), (1,'Needs annotation')]
+        status_choices = [('', 'All'), ('n','Needs annotation')]
         if source.enable_robot_classifier:
-            status_choices.extend([(2, 'Annotated by robot'),(3, 'Annotated by human')])
+            status_choices.extend([('r', 'Annotated by robot'),('h', 'Annotated by human')])
         else:
-            status_choices.append((2, 'Annotated'))
+            status_choices.append(('a', 'Annotated'))
 
         self.fields['image_status'] = forms.ChoiceField(choices=status_choices,
                                                         required=False)
@@ -139,23 +139,22 @@ class ImageSpecifyForm(forms.Form):
 
                     # annotation status (by human, or by robot).
                     # ONLY account for this if not searching in patch mode.
-                    #
-                    # TODO: Use letters instead of numbers, for less
-                    # potential of confusion?
                     if self.source.enable_robot_classifier:
-                        if v == 1:
+                        if v == 'n':
                             filter_args['status__annotatedByHuman'] = False
                             filter_args['status__annotatedByRobot'] = False
-                        elif v == 2:
+                        elif v == 'r':
                             filter_args['status__annotatedByHuman'] = False
                             filter_args['status__annotatedByRobot'] = True
-                        else:  # v == something else
+                        elif v == 'h':
                             filter_args['status__annotatedByHuman'] = True
+                        # else, don't filter
                     else:
-                        if v == 1:
+                        if v == 'n':
                             filter_args['status__annotatedByHuman'] = False
-                        else:  # v == something else
+                        elif v == 'a':
                             filter_args['status__annotatedByHuman'] = True
+                        # else, don't filter
 
                 elif k in ['view', 'labels', 'annotator']:
 

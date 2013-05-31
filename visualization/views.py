@@ -115,18 +115,10 @@ def visualize_source(request, source_id):
     edit_metadata_view = search_form.cleaned_data['edit_metadata_view']
 
 
-#    # If we came from the upload-images page, then try to get the image
-#    # results from the image ids.
-#    if request.POST and 'uploaded_image_ids_form' in request.POST:
-#        pass
-#    # Otherwise, see if we have search filters.
-#    elif imageArgs:
-#        image_results = image_results.filter(**imageArgs)
-
     # TODO: Ideally, we'd simply fill in the image specify form with the
     # request.POST (and/or request.GET) and that'll take care of all cases
     # where we can reach this page.
-    if request.POST and 'uploaded_image_ids_form' in request.POST:
+    if request.POST and 'image_specify_form_from_upload' in request.POST:
         # TODO: If coming from the upload page, we expect the upload page to
         # properly fill in an ImageSpecifyForm with the image ids.
         image_specify_form = ImageSpecifyForm(request.POST, source=source)
@@ -143,13 +135,12 @@ def visualize_source(request, source_id):
     if image_specify_form.is_valid():
         image_results = image_specify_form.get_images()
 
-
-    # TODO: How to just give the delete form the same stuff as the image
-    # specify form?
-    image_batch_delete_form = ImageBatchDeleteForm(
-        image_specify_form.cleaned_data,
-        source=source,
-    )
+        # Give the delete form the same stuff as the image
+        # specify form.
+        image_batch_delete_form = ImageBatchDeleteForm(
+            image_specify_form.data,
+            source=source,
+        )
 
 
     # Get the search results (all of them, not just on this page).
@@ -160,42 +151,6 @@ def visualize_source(request, source_id):
         showPatches = False
         all_items = image_results
 
-        # Get the images.
-#        proceed_to_manage_metadata_form = ProceedToManageMetadataForm(request.POST, source=source)
-#
-#        if request.POST and 'uploaded_image_ids_form' in request.POST and proceed_to_manage_metadata_form.is_valid():
-#            # If coming from the upload page, we'll get the image ids in
-#            # the POST data.
-#            uploaded_image_ids = proceed_to_manage_metadata_form.cleaned_data['uploaded_image_ids']
-#            allSearchResults = Image.objects.filter(source=source, pk__in=uploaded_image_ids)
-#        else:
-#            # Else, use the GET arguments to filter the images.
-#            allSearchResults = Image.objects.filter(source=source, **imageArgs)
-
-#        if submitted_search_form.is_valid():
-#
-#            try:
-#                value = int(submitted_search_form.cleaned_data.pop('image_status'))
-#            except ValueError:
-#                value = 0
-#
-#            #All images wanted so just return
-#            if value:
-#                #Else do check for robot classified source options
-#                if source.enable_robot_classifier:
-#                    if value == 1:
-#                        all_items = all_items.filter(status__annotatedByHuman=False, status__annotatedByRobot=False)
-#                    elif value == 2:
-#                        all_items = all_items.filter(status__annotatedByHuman=False, status__annotatedByRobot=True)
-#                    else:
-#                        all_items = all_items.filter(status__annotatedByHuman=True)
-#                #Else do check for only human annotated source options
-#                else:
-#                    if value == 1:
-#                        all_items = all_items.filter(status__annotatedByHuman=False)
-#                    elif value == 2:
-#                        all_items = all_items.filter(status__annotatedByHuman=True)
-
         # Sort the images.
         # TODO: Stop duplicating this DB-specific extras query; put it in a separate function...
         # Also, despite the fact that we're dealing with images and not metadatas, selecting photo_date does indeed work.
@@ -205,7 +160,6 @@ def visualize_source(request, source_id):
         all_items = all_items.extra(select=db_extra_select)
         all_items = all_items.order_by(*sort_keys)
 
-#        view = request.GET.get('view', '')
 
         if edit_metadata_view:
 
@@ -393,16 +347,11 @@ def browse_delete(request, source_id):
         # Get the images from the POST form.
         # Will either be in the form of a list of image ids, or in the form
         # of search args.
-        # TODO: make a single function that takes either image ids or
-        # search args, and returns the relevant Image queryset. That'll be
-        # useful when we have multiple possible actions.
-        # It should use image ids if coming from upload. It should use
-        # search args otherwise.
         # TODO: if search args, it should also come with the number of
         # images, so that we can do a sanity check (do the number of images
         # match?)
 
-        delete_form = ImageBatchDeleteForm(request.POST)
+        delete_form = ImageBatchDeleteForm(request.POST, source=source)
 
         if delete_form.is_valid():
             images_to_delete = delete_form.get_images()
