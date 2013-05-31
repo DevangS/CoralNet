@@ -26,24 +26,24 @@ var CNMap = (function() {
         var $boldName = $('<strong>');
         $boldName.text(source.name);
 
-        if (source.url) {
+        // clear whatever is being displayed first:
+        $markerInfoImages.css("display", "none");
+
+        if (source.url) { // marker is public
 
             var $sourceLink = $('<a>');
             $sourceLink.append($boldName);
             $sourceLink.attr('href', source.url);
 
             $markerInfoName.append($sourceLink);
+
+            // selects the correct set of thumbnails to display
+            var $markerInfoImagesSource = $("#thumbnails-{0}".format(source.id));
+            $markerInfoImagesSource.css("display","inline");
         }
-        else {
+        else { // marker is private
             $markerInfoName.append($boldName);
         }
-
-        // clear whatever is being displayed first:
-        $markerInfoImages.css("display", "none");
-
-        // selects the correct set of thumbnails to display
-        var $markerInfoImagesSource = $("#thumbnails-{0}".format(source.id));
-        $markerInfoImagesSource.css("display","inline");
 
         $markerInfoDescription.text(source.description);
         $markerInfoNumOfImages.text("Number of images: {0}".format(source.num_of_images));

@@ -49,7 +49,7 @@ def get_map_sources():
             longitude = 'invalid'
 
         all_images = source.get_all_images()
-        latest_images = all_images.order_by('-upload_date')[:3]
+        latest_images = all_images.order_by('-upload_date')[:6]
 
 
         map_sources.append(dict(
