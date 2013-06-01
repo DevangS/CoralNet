@@ -572,6 +572,7 @@ input[type=submit]:active, button.submit:active {
 input[type=submit][disabled], button.submit[disabled] {
     line-height: 34px;
     background-color: #666666;
+    color: #9f9f9f;
     border: 1px outset #888888;
     cursor: default;
 }

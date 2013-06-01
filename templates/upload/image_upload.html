@@ -105,37 +105,11 @@
             </div>
             {% endcomment %}
 
-            {# start upload #}
-            <div class="submit_button_wrapper_column_form">
-                <button type="button" class="submit" id="id_upload_submit">Start upload</button>
-                <button type="button" class="submit" id="id_upload_abort_button" disabled="disabled">Abort upload</button>
-                <span id="upload_start_info"></span>
-            </div>
-
-            {# start another upload #}
-            <form action="" method="get" id="id_start_another_upload_form" class="inline">{% csrf_token %}
-                <div class="submit_button_wrapper_column_form">
-                    <input type="submit" value="Start another upload" id="id_start_another_upload_button" />
-                </div>
-
-            </form>
-
-            {# proceed to the page where you manage image metadata #}
-            <form action="{% url visualize_source source.id %}?view=view" method="post"
-                  id="id_proceed_to_manage_metadata_form" class="inline">{% csrf_token %}
-
-                {% for field in proceed_to_manage_metadata_form %}
-                    {{ field }}
-                {% endfor %}
-
-                <div class="submit_button_wrapper_column_form">
-                    <input type="submit" value="Manage image metadata"
-                           name="image_specify_form_from_upload"
-                           id="id_proceed_to_manage_metadata_button"/>
-                </div>
-            </form>
-
             <div id="upload_summary_section">
+
+                <span id="upload_start_info"></span>
+                <hr>
+
                 <span id="pre_upload_summary"></span>
 
                 <div id="files_table_auto_scroll_checkbox_container">
@@ -150,6 +124,36 @@
 
                 <span id="mid_upload_summary"></span>
             </div>
+
+
+            <div id="upload_and_proceed_buttons">
+
+                {# start/abort upload #}
+                <button type="button" class="submit" id="id_upload_submit" disabled="disabled">Start upload</button>
+                <button type="button" class="submit" id="id_upload_abort_button" disabled="disabled">Abort upload</button>
+
+                {# start another upload #}
+                <form action="" method="get" id="id_start_another_upload_form" class="inline">{% csrf_token %}
+                    <input type="submit" value="Start another upload" id="id_start_another_upload_button" />
+                    <p class="helptext_small">Upload another set of images.</p>
+                </form>
+
+                {# proceed to the page where you manage image metadata #}
+                <form action="{% url visualize_source source.id %}?view=view" method="post"
+                      id="id_proceed_to_manage_metadata_form" class="inline">{% csrf_token %}
+
+                    {% for field in proceed_to_manage_metadata_form %}
+                        {{ field }}
+                    {% endfor %}
+
+                    <input type="submit" value="Manage image metadata"
+                           name="image_specify_form_from_upload"
+                           id="id_proceed_to_manage_metadata_button"/>
+                    <p class="helptext_small">Edit the metadata of the images you just uploaded.</p>
+                </form>
+
+            </div>
+
         </div>
 
     </div>

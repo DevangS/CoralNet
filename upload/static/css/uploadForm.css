@@ -32,6 +32,25 @@
     display: none;
 }
 
+
+div#upload_summary_section {
+    display: inline-block;
+
+    padding: 0 10px;
+    margin: 10px 0;
+
+    /*background-color: #ffe3cc;*/
+    background-color: #e0e0e0;
+    border: 1px solid #000000;
+    border-radius: 5px;
+}
+
+#upload_start_info {
+    display: block;
+    margin: 10px 0;
+    font-size: 120%;
+}
+
 #pre_upload_summary{
     display: block;
     margin: 10px 0;  /* top/bottom left/right */
@@ -41,7 +60,7 @@
     margin-left: 20px;
 }
 #pre_upload_summary li{
-    padding: 3px 0;
+    margin: 3px 0;
 }
 
 #files_table_container{
@@ -87,7 +106,7 @@
     color: green;
 }
 #files_table tr.preupload_error{
-    background-color: #cccccc;
+    background-color: #bbbbbb;
 }
 #files_table tr.uploading{
     background-color: #ffff88;
@@ -96,8 +115,14 @@
     background-color: #ff8888;
 }
 #files_table tr.uploaded{
-    background-color: #88ff88;
+    background-color: #80e860;
 }
+
+#mid_upload_summary{
+    display: block;
+    margin: 10px 0;
+}
+
 
 #metadata_table{
     border: 2px solid #999;
@@ -139,7 +164,19 @@ form.inline {
     width: auto;
 }
 
-div#upload_summary_section {
-    /*TODO*/
-    /*background-color: #FFFF88;*/
+
+.ui-widget {
+    /* Override jQuery defaults */
+    font-family: inherit;
+    font-size: 1.0em;
+}
+
+.ui-widget ul li {
+    /* Make help-dialog lists bulleted */
+    list-style-type: disc;
+    list-style-position: outside;
+
+    line-height: 1.2em;
+
+    margin: 10px 0 10px 20px;   /* t r b l */
 }

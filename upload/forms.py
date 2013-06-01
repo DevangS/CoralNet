@@ -80,11 +80,10 @@ class MultiImageUploadForm(Form):
         """
         super(MultiImageUploadForm, self).__init__(*args, **kwargs)
 
-        self.fields['files'].extra_help_text = (
-            "Accepted file formats: JPG, PNG, GIF, and possibly others.\n"
-            "You can select multiple files, but you can only select files within a single folder.\n"
-            "Tip: When selecting files, click inside the folder area and then hit Ctrl+A (or Cmd+A for Mac) to select all files in that folder."
-        )
+        # This field's help text will go in a separate template, which
+        # can be displayed in a modal dialog.
+        self.fields['files'].dialog_help_text_template = \
+            'upload/help_image_files.html'
 
 
 class ImageUploadForm(Form):
@@ -170,54 +169,10 @@ class AnnotationImportForm(Form):
         """
         super(AnnotationImportForm, self).__init__(*args, **kwargs)
 
-        self.fields['annotations_file'].extra_help_text = (
-            "The points/annotations file is a text file. Each line of text "
-            "should correspond to one point/annotation. Here is the format "
-            "for each line:\n"
-            "\n"
-            "location value 1; value 2; ... ; value n; year; row; column[; label code]\n"
-            "\n"
-            "An example:\n"
-            "- Your source has the following location keys: Site, Depth, "
-            "Transect Line and Quadrant.\n"
-            "- You are uploading an image that was taken at Site: sharkPoint, "
-            "Depth: 10m, Transect Line: 3, and Quadrant: qu4, on 14 January "
-            "2010.\n"
-            "- You want to specify a point for this image that is on the "
-            "100th row and 150th column of the image (with rows and columns "
-            "measured in pixels).\n"
-            "- That point should be annotated with a label whose short code "
-            "is Porit.\n"
-            "\n"
-            "Then you will have the following line of text:\n"
-            "\n"
-            "sharkPoint; 10m; 3; qu4; 2010; 100; 150; Porit\n"
-            "\n"
-            "If you are uploading points only and not annotations, then your "
-            "line of text may specify a label code anyway (which will be "
-            "ignored), or you may omit the label code like so:\n"
-            "\n"
-            "sharkPoint; 10m; 3; qu4; 2010; 100; 150\n"
-            "\n"
-            "Notes:\n"
-            "- When you choose a points/annotations file, it automatically "
-            "gets processed. If the processing results are not what you "
-            "expect, you can make corrections to the file and then click the "
-            "\"Re-process file\" button to process the file again.\n"
-            "If the file contains points/annotations for an image that is not "
-            "selected for upload below, those particular points/annotations "
-            "will simply be ignored at upload time.\n"
-            "- If you're used to expressing point positions with x and y, "
-            "note that x corresponds to columns, and y corresponds to rows.\n"
-            "- If your image is 1000 pixels wide, then the possible column "
-            "numbers are 1-1000, not 0-999. The same thing applies to row "
-            "numbers.\n"
-            "- Label codes in the points/annotations file must correspond to "
-            "a label in your source's labelset.\n"
-            "- Label codes are case-insensitive. If your labelset has a label "
-            "code PORIT, and the points/annotations file has Porit, then "
-            "these codes will match.\n"
-        )
+        # This field's help text will go in a separate template, which
+        # can be displayed in a modal dialog.
+        self.fields['annotations_file'].dialog_help_text_template = \
+            'upload/help_annotations_file.html'
 
     def clean_annotations_file(self):
         anno_file = self.cleaned_data['annotations_file']

@@ -1,0 +1,63 @@
+<p>The points/annotations file is a text file. Each line of text
+    should correspond to one point/annotation. Here is the format
+    for each line:</p>
+
+<p>location value 1; value 2; ... ; value n; year; row; column[; label code]</p>
+
+<p>An example:</p>
+
+<ul>
+
+<li>Your source has the following location keys: Site, Depth,
+    Transect Line and Quadrant.</li>
+
+<li>You are uploading an image that was taken at Site: sharkPoint,
+    Depth: 10m, Transect Line: 3, and Quadrant: qu4, on 14 January
+    2010.</li>
+
+<li>You want to specify a point for this image that is on the
+    100th row and 150th column of the image (with rows and columns
+    measured in pixels).</li>
+
+<li>That point should be annotated with a label whose short code
+    is Porit.</li>
+
+</ul>
+
+<p>Then you will have the following line of text:</p>
+
+<p>sharkPoint; 10m; 3; qu4; 2010; 100; 150; Porit</p>
+
+<p>If you are uploading points only and not annotations, then your
+    line of text may specify a label code anyway (which will be
+    ignored), or you may omit the label code like so:</p>
+
+<p>sharkPoint; 10m; 3; qu4; 2010; 100; 150</p>
+
+<p>Notes:</p>
+
+<ul>
+
+<li>When you choose a points/annotations file, it automatically
+gets processed. If the processing results are not what you
+expect, you can make corrections to the file and then click the
+"Re-process file" button to process the file again.
+If the file contains points/annotations for an image that is not
+selected for upload below, those particular points/annotations
+will simply be ignored at upload time.</li>
+
+<li>If you're used to expressing point positions with x and y,
+note that x corresponds to columns, and y corresponds to rows.</li>
+
+<li>If your image is 1000 pixels wide, then the possible column
+numbers are 1-1000, not 0-999. The same thing applies to row
+numbers.</li>
+
+<li>Label codes in the points/annotations file must correspond to
+a label in your source's labelset.</li>
+
+<li>Label codes are case-insensitive. If your labelset has a label
+code PORIT, and the points/annotations file has Porit, then
+these codes will match.</li>
+
+</ul>

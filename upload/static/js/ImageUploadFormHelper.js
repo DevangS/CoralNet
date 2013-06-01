@@ -144,44 +144,44 @@ var ImageUploadFormHelper = (function() {
 
         // Update the upload start button.
         if (annotationsChecked && annotationFileField.files.length === 0) {
-            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.disable();
             $uploadStartInfo.text("Points/annotations file not selected yet");
         }
         else if (annotationsChecked && annotationFileStatus === null) {
-            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.disable();
             $uploadStartInfo.text("Points/annotations file needs processing");
         }
         else if (annotationsChecked && annotationFileStatus === 'error') {
             // No annotation file
-            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.disable();
             $uploadStartInfo.text("Points/annotations file has an error");
         }
         else if (metadataOptionFieldValue === "csv" && csvFileField.files.length === 0) {
-            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.disable();
             $uploadStartInfo.text("CSV file not selected yet");
         }
         else if (metadataOptionFieldValue === "csv" && csvFileStatus === null) {
-            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.disable();
             $uploadStartInfo.text("CSV file needs processing");
         }
         else if (metadataOptionFieldValue === "csv" && csvFileStatus === 'error') {
-            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.disable();
             $uploadStartInfo.text("CSV file has an error");
         }
         else if (files.length === 0) {
             // No image files
-            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.disable();
             $uploadStartInfo.text("No image files selected yet");
         }
         else if (numUploadables === 0) {
             // No uploadable image files
-            $uploadStartButton.prop('disabled', true);
+            $uploadStartButton.disable();
             $uploadStartInfo.text("Cannot upload any of these image files");
         }
         else {
             // Uploadable image files present
-            $uploadStartButton.prop('disabled', false);
-            $uploadStartInfo.empty();
+            $uploadStartButton.enable();
+            $uploadStartInfo.text("Ready for upload");
         }
 
         // Show or hide the files list auto-scroll option
@@ -766,8 +766,8 @@ var ImageUploadFormHelper = (function() {
 
         $annotationFileProcessButton.prop('disabled', true);
 
-        $uploadStartButton.prop('disabled', true);
-        $uploadStartButton.text("Uploading...");
+        $uploadStartButton.hideAndDisable();
+        $uploadStartInfo.text("Uploading...");
 
         $uploadAbortButton.prop('disabled', false);
         $uploadAbortButton.show();
@@ -901,7 +901,7 @@ var ImageUploadFormHelper = (function() {
         }
 
         // Reached the end of the files array.
-        $uploadStartButton.text("Upload Complete");
+        $uploadStartInfo.text("Upload Complete");
 
         postUploadCleanup();
 
@@ -999,7 +999,7 @@ var ImageUploadFormHelper = (function() {
         if (confirmation) {
             if (uploadXhrObj !== null) {
                 uploadXhrObj.abort();
-                $uploadStartButton.text("Upload aborted");
+                $uploadStartInfo.text("Upload aborted");
                 postUploadCleanup();
             }
             // Else, the upload finished before the user could confirm the
@@ -1121,16 +1121,38 @@ var ImageUploadFormHelper = (function() {
             updateFilesTable();
 
 
-            // Separate-dialog help text for specify_metadata field.
+            // Separate-dialog help text for some fields.
             // Can show by clicking "(More info)".
             $("#id_specify_metadata_dialog_help_text_link").click(function() {
 
                 // TODO: Reduce the text size in this dialog
                 // TODO: Come up with sensible (possibly flexible) dimensions
                 $("#id_specify_metadata_dialog_help_text").dialog({
-                        width: 800,
-                        height: 400,
-                        title: "Specifying Metadata"
+                    width: 800,
+                    height: 400,
+                    title: "Specifying Metadata"
+                });
+            });
+
+            $("#id_annotations_file_dialog_help_text_link").click(function() {
+
+                // TODO: Reduce the text size in this dialog
+                // TODO: Come up with sensible (possibly flexible) dimensions
+                $("#id_annotations_file_dialog_help_text").dialog({
+                    width: 800,
+                    height: 400,
+                    title: "Image files"
+                });
+            });
+
+            $("#id_files_dialog_help_text_link").click(function() {
+
+                // TODO: Reduce the text size in this dialog
+                // TODO: Come up with sensible (possibly flexible) dimensions
+                $("#id_files_dialog_help_text").dialog({
+                    width: 800,
+                    height: 300,
+                    title: "Image files"
                 });
             });
 
