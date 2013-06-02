@@ -3,8 +3,11 @@ import os
 import csv
 from os.path import splitext
 import shelve
+
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from BeautifulSoup import UnicodeDammit
+
 from accounts.utils import get_imported_user
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, Annotation
@@ -47,7 +50,13 @@ def store_csv_file(csv_file, source):
         ),
     ))
 
-    reader = csv.reader(csv_file, delimiter=',', quotechar='|')
+    # TODO: Fix this so it works with various charsets
+
+#    csv_file_to_unicode_string = UnicodeDammit(csv_file.read()).unicode
+#    csv_file_converted = csv_file_to_unicode_string.splitlines()
+
+#    reader = csv.reader(csv_file_converted, dialect='excel')
+    reader = csv.reader(csv_file, dialect='excel')
     num_keys = source.num_of_keys()
     filenames_processed = []
 
@@ -121,7 +130,7 @@ def store_csv_file(csv_file, source):
                 # Note that this may or may not be something that the user intended
                 # as a date.  An appropriately flexible error message is needed.
                 csv_dict.close()
-                raise FilenameError(str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token=date))
+                raise FileContentError(str_consts.DATE_PARSE_ERROR_FMTSTR.format(date_token=date))
             # YYYYMMDD parsing:
             #    if len(dateToken) != 8:
             #        raise dateFormatError
@@ -132,7 +141,7 @@ def store_csv_file(csv_file, source):
                 # Either non-integer date params, or date params are
                 # out of valid range (e.g. month 13).
                 csv_dict.close()
-                raise FilenameError(str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token=date))
+                raise FilenameError(str_consts.DATE_VALUE_ERROR_FMTSTR.format(date_token=date))
 
             metadata_for_file['day'] = day
             metadata_for_file['month'] = month
@@ -706,7 +715,7 @@ def filename_to_metadata(filename, source):
         # Too few or too many dash-separated tokens.
         # Note that this may or may not be something that the user intended
         # as a date.  An appropriately flexible error message is needed.
-        raise FilenameError(str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token=dateToken))
+        raise FilenameError(str_consts.DATE_PARSE_ERROR_FMTSTR.format(date_token=dateToken))
     # YYYYMMDD parsing:
 #    if len(dateToken) != 8:
 #        raise dateFormatError
@@ -717,7 +726,7 @@ def filename_to_metadata(filename, source):
     except ValueError:
         # Either non-integer date params, or date params are
         # out of valid range (e.g. month 13).
-        raise FilenameError(str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token=dateToken))
+        raise FilenameError(str_consts.DATE_VALUE_ERROR_FMTSTR.format(date_token=dateToken))
 
     # Make the values into a tuple, so the metadata can potentially be
     # hashed and used in lookups.

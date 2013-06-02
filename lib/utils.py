@@ -4,11 +4,13 @@
 # it's not always obvious how to import a file that's at the top
 # level of a Django project (you have to refer to the project name).
 
+import json
+
 from django.http import HttpResponse
-from django.utils import simplejson
 from images.models import Source, Image
 from django.core.urlresolvers import reverse
 from random import choice
+
 
 def JsonResponse(response):
     """
@@ -20,7 +22,7 @@ def JsonResponse(response):
     Example:
     return JsonResponse({'message': "Hello"})
     """
-    return HttpResponse(simplejson.dumps(response), mimetype="application/json")
+    return HttpResponse(json.dumps(response), mimetype="application/json")
 
 def get_map_sources():
     # Get all sources that have both latitude and longitude specified.
@@ -103,4 +105,3 @@ def get_random_public_images():
         random_image_list.append(random_image)
 
     return random_image_list
-

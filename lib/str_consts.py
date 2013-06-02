@@ -16,8 +16,8 @@ SOURCE_ONE_KEY_REQUIRED_ERROR_STR = _(u"You need at least one location key.")
 
 # Upload related
 
-FILENAME_DATE_PARSE_ERROR_FMTSTR = _(u"Tried to parse {date_token} as a date, but failed")
-FILENAME_DATE_VALUE_ERROR_FMTSTR = _(u"Could not recognize {date_token} as a valid year-month-day combination")
+DATE_PARSE_ERROR_FMTSTR = _(u"Tried to parse {date_token} as a date, but failed")
+DATE_VALUE_ERROR_FMTSTR = _(u"Could not recognize {date_token} as a valid year-month-day combination")
 FILENAME_PARSE_ERROR_STR = _(u"Could not extract metadata from filename")
 
 UPLOAD_PREVIEW_SAME_METADATA_ERROR_FMTSTR = _(u"Multiple images with same metadata: {metadata}")

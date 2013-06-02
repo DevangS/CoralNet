@@ -492,7 +492,7 @@ class UploadFilenameCheckTest(ImageUploadBaseTest):
         # as a date, and that will fail.
         self.upload_image_test(
             os.path.join('2keys', 'cool_001_2012-05-28.png'),
-            expected_error=str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='001'),
+            expected_error=str_consts.DATE_PARSE_ERROR_FMTSTR.format(date_token='001'),
         )
 
     def test_filename_date_formats(self):
@@ -514,15 +514,15 @@ class UploadFilenameCheckTest(ImageUploadBaseTest):
 
         self.upload_image_test(
             os.path.join('dates', '001_20120229.png'),
-            expected_error=str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='20120229'),
+            expected_error=str_consts.DATE_PARSE_ERROR_FMTSTR.format(date_token='20120229'),
         )
         self.upload_image_test(
             os.path.join('dates', '001_2012-0229.png'),
-            expected_error=str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='2012-0229'),
+            expected_error=str_consts.DATE_PARSE_ERROR_FMTSTR.format(date_token='2012-0229'),
         )
         self.upload_image_test(
             os.path.join('dates', '001_2012-02-2-9.png'),
-            expected_error=str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='2012-02-2-9'),
+            expected_error=str_consts.DATE_PARSE_ERROR_FMTSTR.format(date_token='2012-02-2-9'),
         )
 
         # Incorrect or missing y/m/d.
@@ -530,27 +530,27 @@ class UploadFilenameCheckTest(ImageUploadBaseTest):
         # Missing
         self.upload_image_test(
             os.path.join('dates', '001_2012--29.png'),
-            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012--29'),
+            expected_error=str_consts.DATE_VALUE_ERROR_FMTSTR.format(date_token='2012--29'),
         )
         # Not a number
         self.upload_image_test(
             os.path.join('dates', '001_2012-02-ab.png'),
-            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-02-ab'),
+            expected_error=str_consts.DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-02-ab'),
         )
         # Day out of range (for the month)
         self.upload_image_test(
             os.path.join('dates', '001_2012-02-30.png'),
-            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-02-30'),
+            expected_error=str_consts.DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-02-30'),
         )
         # Month out of range
         self.upload_image_test(
             os.path.join('dates', '001_2012-00-01.png'),
-            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-00-01'),
+            expected_error=str_consts.DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-00-01'),
         )
         # Year out of range
         self.upload_image_test(
             os.path.join('dates', '001_10000-01-01.png'),
-            expected_error=str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='10000-01-01'),
+            expected_error=str_consts.DATE_VALUE_ERROR_FMTSTR.format(date_token='10000-01-01'),
         )
         # Could test more dates, but would kind of boil down to whether the
         # built-in library datetime is doing its job or not.
@@ -634,8 +634,8 @@ class PreviewFilenameTest(ImageUploadBaseTest):
         """
         files = [
             ('2011-05-28.png', str_consts.FILENAME_PARSE_ERROR_STR),
-            ('001_20120229.png', str_consts.FILENAME_DATE_PARSE_ERROR_FMTSTR.format(date_token='20120229')),
-            ('001_2012-02-30.png', str_consts.FILENAME_DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-02-30')),
+            ('001_20120229.png', str_consts.DATE_PARSE_ERROR_FMTSTR.format(date_token='20120229')),
+            ('001_2012-02-30.png', str_consts.DATE_VALUE_ERROR_FMTSTR.format(date_token='2012-02-30')),
             ('001_2011-01-01.png', str_consts.UPLOAD_PREVIEW_SAME_METADATA_ERROR_FMTSTR.format(metadata='001 2011')),
             ('001_2011-05-28.png', str_consts.UPLOAD_PREVIEW_SAME_METADATA_ERROR_FMTSTR.format(metadata='001 2011')),
         ]
