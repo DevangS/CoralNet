@@ -147,7 +147,6 @@ div#upload_summary_section {
     overflow: auto;
     max-height: 20em;
     display:none;
-    font-size: 62.5%;
 }
 
 /* TODO: Merge this rule into master.css at some point? */
@@ -168,7 +167,7 @@ form.inline {
 .ui-widget {
     /* Override jQuery defaults */
     font-family: inherit;
-    font-size: 1.0em;
+    font-size: 0.9em;
 }
 
 .ui-widget ul li {

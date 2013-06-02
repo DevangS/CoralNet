@@ -1,37 +1,44 @@
-<h3>After Upload</h3>
+<h3>Later (after upload)</h3>
 
 <p>After your images are done uploading, you'll be able to continue to another page where
 you can manually enter metadata for your images.</p>
 
-{# TODO *Images go here: one of the upload page with the button, one of the next page with the metadata grid* #}
 
 
+<h3>In the image filenames</h3>
 
-<h3>In Filenames</h3>
+<p>This is one way to automate the process of setting certain image metadata
+    fields.</p>
 
-<p>Required filename format: {{ field.field.source_specific_filename_format }}</p>
+<p>This is also the only way where we currently support uploading points and
+    annotations.</p>
 
-<p>For example, let's say your source has the following location keys: Site, Depth, Transect Line and Quadrant.
+<p>Required filename format: <code>{{ field.field.source_specific_filename_format }}</code></p>
+
+<p>For example, let's say your source has the following location keys: Site,
+Depth, Transect Line and Quadrant.
 If you want to upload a .jpg image that was taken at
 Site: sharkPoint, Depth: 10m, Transect Line: 3, and Quadrant: qu4,
 on 14 January 2010, the filename for upload should be:</p>
 
-<p>sharkPoint_10m_3_qu4_2010-01-14.jpg</p>
+<p><code>sharkPoint_10m_3_qu4_2010-01-14.jpg</code></p>
 
 <p>Alternatively, if you also want to store the original filename - say it's
-IMG_0032.jpg - you can use:</p>
+    <code>IMG_0032.jpg</code> - you can use:</p>
 
-<p>sharkPoint_10m_3_qu4_2010-01-14_IMG_0032.jpg</p>
+<p><code>sharkPoint_10m_3_qu4_2010-01-14_IMG_0032.jpg</code></p>
 
 <p>The original filename is not used by CoralNet, but could be
-useful for your own reference.</p>
+    useful for your own reference.</p>
 
-<p><b>Note:</b> the filenames option is currently the only way to upload previously-made points and annotations.</p>
+<p>The filename format can be tricky to get right. When you select your files,
+    we will try to check your filenames for formatting mistakes, so that you
+    can fix any mistakes before actually starting the upload.</p>
 
 
 
-<h3>From CSV File</h3>
+<h3>From a CSV file</h3>
 
-<p>You may specify image metadata through a CSV (comma-separated values) file.</p>
-
-{# (TODO: Details on the required format) #}
+<p>With a CSV (comma-separated values) file, you can automate the process of
+    setting all of the image metadata fields. One CSV row specifies the
+    metadata for one image.</p>

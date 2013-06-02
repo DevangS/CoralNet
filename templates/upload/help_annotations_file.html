@@ -2,7 +2,7 @@
     should correspond to one point/annotation. Here is the format
     for each line:</p>
 
-<p>location value 1; value 2; ... ; value n; year; row; column[; label code]</p>
+<p><code>location value 1; value 2; ... ; value n; year; row; column[; label code]</code></p>
 
 <p>An example:</p>
 
@@ -20,19 +20,19 @@
     measured in pixels).</li>
 
 <li>That point should be annotated with a label whose short code
-    is Porit.</li>
+    is <code>Porit</code>.</li>
 
 </ul>
 
 <p>Then you will have the following line of text:</p>
 
-<p>sharkPoint; 10m; 3; qu4; 2010; 100; 150; Porit</p>
+<p><code>sharkPoint; 10m; 3; qu4; 2010; 100; 150; Porit</code></p>
 
 <p>If you are uploading points only and not annotations, then your
     line of text may specify a label code anyway (which will be
     ignored), or you may omit the label code like so:</p>
 
-<p>sharkPoint; 10m; 3; qu4; 2010; 100; 150</p>
+<p><code>sharkPoint; 10m; 3; qu4; 2010; 100; 150</code></p>
 
 <p>Notes:</p>
 
@@ -57,7 +57,7 @@ numbers.</li>
 a label in your source's labelset.</li>
 
 <li>Label codes are case-insensitive. If your labelset has a label
-code PORIT, and the points/annotations file has Porit, then
-these codes will match.</li>
+code <code>PORIT</code>, and the points/annotations file has
+<code>Porit</code>, then these codes will match.</li>
 
 </ul>

@@ -130,9 +130,9 @@ class ImageUploadOptionsForm(Form):
         label='Specify image metadata',
         help_text='',  # To be filled in by the form's __init__()
         choices=(
-            ('after', 'After upload'),
+            ('after', 'Later (after upload)'),
             ('filenames', 'In the image filenames'),
-            ('csv', 'From CSV file')
+            ('csv', 'From a CSV file')
         ),
         initial='after',
         required=True
@@ -298,9 +298,8 @@ class CSVImportForm(Form):
         """
         super(CSVImportForm, self).__init__(*args, **kwargs)
 
-        self.fields['csv_file'].extra_help_text = (
-            "This is placeholder help text!\n"
-            )
+        self.fields['csv_file'].dialog_help_text_template =\
+            'upload/help_csv_file.html'
 
     def clean_annotations_file(self):
         csv_file = self.cleaned_data['csv_file']

@@ -41,7 +41,7 @@ def store_csv_file(csv_file, source):
     csv_dict_id = rand_string(10)
     csv_dict = shelve.open(os.path.join(
         settings.SHELVED_ANNOTATIONS_DIR,
-        'csv_source{source_id}_{dict_id}'.format(
+        'csv_source{source_id}_{dict_id}.db'.format(
             source_id=source.id,
             dict_id=csv_dict_id,
         ),
@@ -177,7 +177,10 @@ def filename_to_metadata_in_csv(filename, source, csv_dict_id):
 
 
     try:
-        metadata = csv_dict[filename]
+        #index into the csv_dict with the filename. the str() is to handle
+        #the case where the filename is a unicode object instead of a str;
+        #unicode objects can't index into dicts.
+        metadata = csv_dict[str(filename)]
         #if filename in the dict, then return the dict containing metadata
         return dict(
             status="ok",
@@ -471,7 +474,10 @@ def image_upload_process(imageFile, imageOptionsForm,
 
         csv_dict = shelve.open(csv_dict_filename)
 
-        metadata_dict = csv_dict[filename]
+        #index into the csv_dict with the filename. the str() is to handle
+        #the case where the filename is a unicode object instead of a str;
+        #unicode objects can't index into dicts.
+        metadata_dict = csv_dict[str(filename)]
 
         csv_dict.close()
 

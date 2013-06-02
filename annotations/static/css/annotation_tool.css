@@ -193,16 +193,6 @@ td.annotationFormLabelCell {
     line-height: 2.0em;
 }
 
-/* Styling to indicate keyboard keys, such as Ctrl, arrow keys, etc. */
-kbd {
-    font: inherit;    /* No monospaced font, just the usual font */
-    font-size: 0.9em;
-    line-height: 1.4em;
-    padding: 0 2px;    /* 2px of horizontal padding */
-    background-color: #DDDDDD;
-    border: 2px solid black;
-}
-
 /* jQuery-UI sliders. */
 .ui-slider {
     margin: 3px 0 3px 254px;  /* top right bottom left */

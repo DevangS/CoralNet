@@ -1,0 +1,35 @@
+<p>Each CSV row should correspond to one image, and each comma-separated
+    field is one piece of metadata.</p>
+
+<p>The metadata fields should be in this order:</p>
+
+<ul>
+
+    <li>Filename</li>
+    <li>Date (YYYY-MM-DD format)</li>
+    <li>Location value 1</li>
+    <li>Location value 2 (if applicable)</li>
+    <li>Location value 3 (if applicable)</li>
+    <li>Location value 4 (if applicable)</li>
+    <li>Location value 5 (if applicable)</li>
+    <li>Height coverage in centimeters</li>
+    <li>Latitude</li>
+    <li>Longitude</li>
+    <li>Depth</li>
+    <li>Camera</li>
+    <li>Photographer</li>
+    <li>Water quality</li>
+    <li>Strobes</li>
+    <li>Framing gear</li>
+    <li>White balance</li>
+
+</ul>
+
+<p>All fields must be present, but any field except the filename field may
+    be left blank. For example, if you want to specify just the date, 4
+    location values, height in centimeters, and the photographer:</p>
+
+<p><code>DSC_4289.JPG,2010-01-14,sharkPoint,10m,3,qu4,,50,,,,,John Smith,,,,</code></p>
+
+<p>After you specify your CSV file in the provided field, you can verify
+    that the CSV is in the correct format by previewing the data.</p>

@@ -1125,31 +1125,42 @@ var ImageUploadFormHelper = (function() {
             // Can show by clicking "(More info)".
             $("#id_specify_metadata_dialog_help_text_link").click(function() {
 
-                // TODO: Reduce the text size in this dialog
-                // TODO: Come up with sensible (possibly flexible) dimensions
+                // TODO: Make the width/height flexible?
                 $("#id_specify_metadata_dialog_help_text").dialog({
+                    modal: true,
                     width: 800,
                     height: 400,
-                    title: "Specifying Metadata"
+                    title: "Specifying metadata"
                 });
             });
 
             $("#id_annotations_file_dialog_help_text_link").click(function() {
 
-                // TODO: Reduce the text size in this dialog
-                // TODO: Come up with sensible (possibly flexible) dimensions
+                // TODO: Make the width/height flexible?
                 $("#id_annotations_file_dialog_help_text").dialog({
+                    modal: true,
                     width: 800,
                     height: 400,
-                    title: "Image files"
+                    title: "Annotation file"
+                });
+            });
+
+            $("#id_csv_file_dialog_help_text_link").click(function() {
+
+                // TODO: Make the width/height flexible?
+                $("#id_csv_file_dialog_help_text").dialog({
+                    modal: true,
+                    width: 800,
+                    height: 400,
+                    title: "CSV metadata file"
                 });
             });
 
             $("#id_files_dialog_help_text_link").click(function() {
 
-                // TODO: Reduce the text size in this dialog
-                // TODO: Come up with sensible (possibly flexible) dimensions
+                // TODO: Make the width/height flexible?
                 $("#id_files_dialog_help_text").dialog({
+                    modal: true,
                     width: 800,
                     height: 300,
                     title: "Image files"
