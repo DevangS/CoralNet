@@ -165,7 +165,7 @@ form.inline {
 
 
 .ui-widget {
-    /* Override jQuery defaults */
+    /* Override jQuery UI defaults */
     font-family: inherit;
     font-size: 0.9em;
 }
