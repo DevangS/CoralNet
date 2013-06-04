@@ -52,6 +52,13 @@ var CNMap = (function() {
         infoWindow.setContent(markerInfoElmt);
 
         infoWindow.open(map);
+
+        // This is a TEMPORARY fix to a graphical issue, will fix this later
+        if (source.url)
+        {
+            $markerInfoImagesSource = $("#thumbnails-{0}".format(source.id));
+            $markerInfoImagesSource.css("display","inline");
+        }
     }
 
     return {
