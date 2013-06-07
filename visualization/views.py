@@ -12,7 +12,7 @@ from accounts.utils import get_robot_user
 from annotations.models import Annotation, Label, LabelSet, LabelGroup
 from decorators import source_visibility_required, source_permission_required
 from images.models import Source, Image
-from visualization.forms import VisualizationSearchForm, StatisticsSearchForm, ImageBatchDeleteForm, ImageSpecifyForm
+from visualization.forms import VisualizationSearchForm, StatisticsSearchForm, ImageBatchDeleteForm, ImageSpecifyForm, ImageBatchDownloadForm
 from visualization.utils import generate_patch_if_doesnt_exist
 from GChartWrapper import *
 from upload.forms import MetadataForm, CheckboxForm
@@ -132,12 +132,20 @@ def visualize_source(request, source_id):
             source=source,
         )
 
+    # TODO: Is it enough to set these forms as None by default?
+    image_batch_delete_form = None
+    image_batch_download_form = None
+
     if image_specify_form.is_valid():
         image_results = image_specify_form.get_images()
 
         # Give the delete form the same stuff as the image
         # specify form.
         image_batch_delete_form = ImageBatchDeleteForm(
+            image_specify_form.data,
+            source=source,
+        )
+        image_batch_download_form = ImageBatchDownloadForm(
             image_specify_form.data,
             source=source,
         )
@@ -325,6 +333,7 @@ def visualize_source(request, source_id):
         'searchParamsStr': urlArgsStr,
 #        'actionForm': actionForm,
         'image_batch_delete_form': image_batch_delete_form,
+        'image_batch_download_form': image_batch_download_form,
         'key_list': source.get_key_list(),
         'metadataForm': metadataForm,
         'selectAllForm': selectAllCheckbox,
@@ -335,7 +344,7 @@ def visualize_source(request, source_id):
     )
 
 
-@source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def browse_delete(request, source_id):
     """
     From the browse images page, select delete as the batch action.
@@ -379,6 +388,60 @@ def browse_delete(request, source_id):
 
     # TODO: Include search args here too, if any.
     return HttpResponseRedirect(reverse('visualize_source', args=[source_id]))
+
+
+@source_permission_required('source_id', perm=Source.PermTypes.VIEW.code)
+def browse_download(request, source_id):
+    """
+    From the browse images page, select download as the batch action.
+    """
+    source = get_object_or_404(Source, id=source_id)
+
+    if request.POST:
+
+        # Get the images from the POST form.
+        # Will either be in the form of a list of image ids, or in the form
+        # of search args.
+        # TODO: if search args, it should also come with the number of
+        # images, so that we can do a sanity check (do the number of images
+        # match?)
+
+        download_form = ImageBatchDownloadForm(request.POST, source=source)
+
+
+        if download_form.is_valid():
+
+            images_to_download = download_form.get_images()
+
+            # TODO: Instead of putting up a CSV for download, put the
+            # requested images in a .zip (with the images'
+            # original filenames) and put that up for download.
+
+            # get the response object, this can be used as a stream.
+            response = HttpResponse(mimetype='text/csv')
+            # force download.
+            response['Content-Disposition'] = 'attachment;filename="images.csv"'
+            # the csv writer
+            writer = csv.writer(response)
+            writer.writerow(["Download test"])
+
+            return response
+
+        else:
+
+            # TODO: Include a way to reach the admin from here. This is a
+            # dev error, not a user error
+            # TODO: Include search args here too, if any.
+            response = HttpResponseRedirect(reverse('visualize_source', args=[source_id]))
+            messages.success(request, 'The download form had an error.')
+
+    else:
+
+        # TODO: Include search args here too, if any.
+        response = HttpResponseRedirect(reverse('visualize_source', args=[source_id]))
+        messages.success(request, 'The download form had an error.')
+
+    return response
 
 
 @source_visibility_required('source_id')

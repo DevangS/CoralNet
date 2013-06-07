@@ -198,6 +198,9 @@ class ImageSpecifyForm(forms.Form):
 class ImageBatchDeleteForm(ImageSpecifyForm):
     pass
 
+class ImageBatchDownloadForm(ImageSpecifyForm):
+    pass
+
 
 # Similar to VisualizationSearchForm with the difference that
 # label selection appears on a multi-select checkbox form

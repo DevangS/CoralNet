@@ -509,10 +509,6 @@ input[type=checkbox] {
     width: 20px;
 }
 
-input[type=radio] {
-    margin: 0 8px 0 0;
-}
-
 /* Dropdown box */
 select {
     min-width: 60px;
