@@ -38,7 +38,7 @@ class ImageSourceForm(ModelForm):
         self.fields['latitude'].required = True
 
         # For use in templates.  Can iterate over fieldsets instead of the entire form.
-        self.fieldsets = {'general_info': [self[name] for name in ['name', 'visibility', 'description']],
+        self.fieldsets = {'general_info': [self[name] for name in ['name', 'visibility', 'affiliation', 'description']],
                           'image_height_in_cm': [self[name] for name in ['image_height_in_cm']],
                           'world_location': [self[name] for name in ['latitude', 'longitude']]}
 

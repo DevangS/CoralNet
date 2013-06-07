@@ -47,6 +47,8 @@ class Source(models.Model):
 
     description = models.TextField(blank=True)
 
+    affiliation = models.CharField(max_length=200, blank=True)
+
     labelset = models.ForeignKey('annotations.LabelSet')
     
     # Each of these fields is allowed to be blank (an empty string).
