@@ -7,6 +7,7 @@ var CNMap = (function() {
     var markerInfoElmt = null;
 
     var $markerInfoName = null;
+    var $markerInfoAffiliation = null;
     var $markerInfoDescription = null;
     var $markerInfoNumOfImages = null;
     var $markerInfoImages = null;
@@ -48,6 +49,8 @@ var CNMap = (function() {
         $markerInfoDescription.text(source.description);
         $markerInfoNumOfImages.text("Number of images: {0}".format(source.num_of_images));
 
+        // Source affiliation
+        $markerInfoAffiliation.text(source.affiliation);
 
         infoWindow.setContent(markerInfoElmt);
 
@@ -117,6 +120,7 @@ var CNMap = (function() {
             markerInfoElmt = document.getElementById(markerInfoElmtId);
 
             $markerInfoName = $('#{0} .name'.format(markerInfoElmtId));
+            $markerInfoAffiliation = $('#{0} .affiliation'.format(markerInfoElmtId));
             $markerInfoDescription = $('#{0} .description'.format(markerInfoElmtId));
             $markerInfoNumOfImages = $('#{0} .num-of-images'.format(markerInfoElmtId));
             $markerInfoImages = $('#{0} div.thumbnails'.format(markerInfoElmtId));

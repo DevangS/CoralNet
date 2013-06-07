@@ -54,6 +54,7 @@ def get_map_sources():
 
         map_sources.append(dict(
             description=source.description,
+            affiliation=source.affiliation,
             latitude=latitude,
             longitude=longitude,
             name=source.name,
