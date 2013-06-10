@@ -139,7 +139,7 @@
                 </form>
 
                 {# proceed to the page where you manage image metadata #}
-                <form action="{% url visualize_source source.id %}?view=view" method="post"
+                <form action="{% url visualize_source source.id %}?edit_metadata_view=on" method="post"
                       id="id_proceed_to_manage_metadata_form" class="inline">{% csrf_token %}
 
                     {% for field in proceed_to_manage_metadata_form %}

@@ -156,7 +156,7 @@ class ImageSpecifyForm(forms.Form):
                             filter_args['status__annotatedByHuman'] = True
                         # else, don't filter
 
-                elif k in ['view', 'labels', 'annotator']:
+                elif k in ['edit_metadata_view', 'labels', 'annotator']:
 
                     # these args aren't for filtering images, so don't do
                     # anything for them.
