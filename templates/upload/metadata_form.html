@@ -43,7 +43,7 @@ This is a template that is used to render a form for editing metadata
                         <td>{{ field }}</td>
                     {% endfor %}
                     <td><a href="{% url image_detail image.id %}">{{ image.metadata.name }}</a></td>
-                    <td id="status">{{ status }}</td>
+                    <td id="status" style="padding: 0 10px 0 10px">{{ status }}</td>
                     {% for field in form %}
                         <td>{{ field }}</td>
                     {% endfor %}
