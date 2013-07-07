@@ -6,6 +6,10 @@
     {% include "form_media_versioned.html" with form=pointGenForm %}
 {% endblock %}
 
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
+{% endblock %}
+
 {% block content %}
 
     <legend>Edit Source</legend>
