@@ -6,7 +6,7 @@ import shelve
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from BeautifulSoup import UnicodeDammit
+#from BeautifulSoup import UnicodeDammit
 
 from accounts.utils import get_imported_user
 from annotations.model_utils import AnnotationAreaUtils
