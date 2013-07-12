@@ -1,31 +1,25 @@
 import json
 from django import forms
-from django.forms.fields import ChoiceField, CharField, BooleanField, IntegerField
+from django.forms.fields import ChoiceField, BooleanField
 from django.forms.widgets import HiddenInput
-from annotations.forms import CustomCheckboxSelectMultiple
-from annotations.models import LabelSet, Label, LabelGroup
+from annotations.models import LabelSet, LabelGroup
 from images.models import Source, Value1, Value2, Value3, Value4, Value5, Metadata, Image
 from lib.forms import clean_comma_separated_image_ids_field
+
 
 class YearModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, Metadata):
         return Metadata.photo_date.year
 
 
-class VisualizationSearchForm(forms.Form):
-    class Meta:
-        fields = ('value1', 'value2', 'value3',
-              'value4', 'value5', 'year', 'labels', 'image_status', 'annotator')
-    class Media:
-        js = (
-            # From app-specific static directory
-            "js/VisSearchFormHelper.js",
-            )
-        
+class ImageLocationValueForm(forms.Form):
+
     def __init__(self,source_id,*args,**kwargs):
 
-        super(VisualizationSearchForm,self).__init__(*args,**kwargs)
-        source = Source.objects.filter(id=source_id)[0]
+        super(ImageLocationValueForm,self).__init__(*args,**kwargs)
+        source = Source.objects.get(id=source_id)
+
+        # year
 
         metadatas = Metadata.objects.filter(image__source=source).distinct().dates('photo_date', 'year')
         years = []
@@ -34,43 +28,90 @@ class VisualizationSearchForm(forms.Form):
                 if not metadata.year in years:
                     years.append(metadata.year)
 
-        self.fields['year'] = ChoiceField(choices=[('',"All")] + [(year,year) for year in years],
-                                          required=False)
-        labelset = LabelSet.objects.filter(source=source)[0]
-        self.fields['labels'] = forms.ModelChoiceField(labelset.labels.all(),
-                                            empty_label="View Whole Images",
-                                            required=False)
+        self.fields['year'] = ChoiceField(
+            choices=[('',"All")] + [(year,year) for year in years],
+            required=False
+        )
+
+        # value1, value2, etc.
+
         for key, valueField, valueClass in [
-                (source.key1, 'value1', Value1),
-                (source.key2, 'value2', Value2),
-                (source.key3, 'value3', Value3),
-                (source.key4, 'value4', Value4),
-                (source.key5, 'value5', Value5)
-                ]:
+            (source.key1, 'value1', Value1),
+            (source.key2, 'value2', Value2),
+            (source.key3, 'value3', Value3),
+            (source.key4, 'value4', Value4),
+            (source.key5, 'value5', Value5)
+        ]:
             if key:
                 choices = [('', 'All')]
                 valueObjs = valueClass.objects.filter(source=source).order_by('name')
                 for valueObj in valueObjs:
                     choices.append((valueObj.id, valueObj.name))
-                
-                self.fields[valueField] = ChoiceField(choices, label=key, required=False)
+
+                self.fields[valueField] = ChoiceField(
+                    choices,
+                    label=key,
+                    required=False
+                )
+
+
+class BrowseSearchForm(ImageLocationValueForm):
+
+    page_view = forms.ChoiceField(
+        choices=[('images','Images'), ('metadata','Metadata'), ('patches','Image Patches')],
+        # TODO: Make it a radio button widget?
+        #widget=forms.widgets.RadioSelect(),
+        required=False,
+    )
+
+    annotated_by = forms.ChoiceField(
+        choices=[(0,'Human'), (1,'Machine'), (2,'Both')],
+        required=False,
+    )
+
+    class Media:
+        js = (
+            # From app-specific static directory
+            "js/VisSearchFormHelper.js",
+            )
+        
+    def __init__(self,source_id,*args,**kwargs):
+
+        ImageLocationValueForm.__init__(self, source_id,*args,**kwargs)
+        source = Source.objects.get(id=source_id)
+
+        # labels
+
+        labelset = LabelSet.objects.filter(source=source)[0]
+        self.fields['label'] = forms.ModelChoiceField(
+            labelset.labels.all(),
+#            empty_label="View Whole Images",
+            required=False,
+        )
+
+        # image_status
 
         status_choices = [('', 'All'), ('n','Needs annotation')]
         if source.enable_robot_classifier:
-            status_choices.extend([('r', 'Annotated by robot'),('h', 'Annotated by human')])
+            status_choices.extend([('m', 'Annotated by machine'),('h', 'Annotated by human')])
         else:
             status_choices.append(('a', 'Annotated'))
 
-        self.fields['image_status'] = forms.ChoiceField(choices=status_choices,
-                                                        required=False)
+        self.fields['image_status'] = forms.ChoiceField(
+            choices=status_choices,
+            required=False,
+        )
 
-        # TODO: Move these fields out of __init__()?  Seems not necessary to
-        # instantiate them dynamically. -Stephen
-        self.fields['annotator'] = forms.ChoiceField(choices=[(0,'Human'), (1,'Robot'), (2, 'Both')], required=False)
-        self.fields['edit_metadata_view'] = forms.BooleanField(required=False)
+        # group the fields
 
-        # TODO: Move labels, annotator, and view fields to other
-        # form classes?
+        self.field_groups = dict(
+            location_values=[self[name] for name in [
+                'year', 'value1', 'value2', 'value3', 'value4', 'value5']
+                if name in self.fields
+            ],
+            image_patch_view=[self[name] for name in ['label', 'annotated_by']],
+            image_or_metadata_view=[self[name] for name in ['image_status']],
+        )
 
 
 class ImageSpecifyForm(forms.Form):
@@ -112,7 +153,7 @@ class ImageSpecifyForm(forms.Form):
 
             # Load the dict of search keys from the string input.
             search_keys_dict_raw = json.loads(self.cleaned_data['specify_str'])
-            patch_mode = (search_keys_dict_raw['labels'] is not None)
+            patch_mode = (search_keys_dict_raw['page_view'] == 'patches')
 
             # Get rid of empty-valued search keys.
             search_keys_dict = dict(
@@ -143,7 +184,7 @@ class ImageSpecifyForm(forms.Form):
                         if v == 'n':
                             filter_args['status__annotatedByHuman'] = False
                             filter_args['status__annotatedByRobot'] = False
-                        elif v == 'r':
+                        elif v == 'm':
                             filter_args['status__annotatedByHuman'] = False
                             filter_args['status__annotatedByRobot'] = True
                         elif v == 'h':
@@ -156,7 +197,7 @@ class ImageSpecifyForm(forms.Form):
                             filter_args['status__annotatedByHuman'] = True
                         # else, don't filter
 
-                elif k in ['edit_metadata_view', 'labels', 'annotator']:
+                elif k in ['page_view', 'label', 'annotated_by']:
 
                     # these args aren't for filtering images, so don't do
                     # anything for them.
