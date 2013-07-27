@@ -7,10 +7,13 @@
     {% include "form_media_versioned.html" with form=pointGenForm %}
 {% endblock %}
 
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
+{% endblock %}
+
 {% block content %}
 
     <legend>Create a New Source</legend>
-    
     <p><b>Creating and managing your own sources is still in "alpha" stages.</b>
        We are still working on making sources more intuitive, flexible, and easier to navigate.
        However, feel free to create a source and try it out. Please send us your feedback to help us improve.</p>

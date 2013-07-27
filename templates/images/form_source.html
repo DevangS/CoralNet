@@ -8,43 +8,41 @@ This form template is meant to be used with the "include" template tag.
 </fieldset>
 
 <fieldset>
-    <legend class="small">Location Keys
-        <div class="tutorial-message"> {# Tutorial message starts here #}
-            This is how you organize your source's images.  Location keys are a hierarchy of categories.
-            As the name suggests, location keys typically refer to the location where the image was taken,
-            but this is not strictly required.  Here's an example:<br /><br />
+    <legend class="small">Location Keys</legend>
+        <span class="helptext_long">
+        This is how you organize your source's images.  Location keys are a hierarchy of categories.
+        As the name suggests, location keys typically refer to the location where the image was taken,
+        but this is not strictly required.  Here's an example:<br /><br />
 
-            Suppose you take your coral images at 3 different islands: North, South, and East.  At each
-            island, you take photos at 3 different coral habitats based on their distance from the shore:
-            Fringing Reef, 5m out, and 10m out.  For each island + habitat combination, you have multiple
-            images with no particular organization to them.<br /><br />
+        Suppose you take your coral images at 3 different islands: North, South, and East.  At each
+        island, you take photos at 3 different coral habitats based on their distance from the shore:
+        Fringing Reef, 5m out, and 10m out.  For each island + habitat combination, you have multiple
+        images with no particular organization to them.<br /><br />
 
-            In this case you would have 3 location keys: Key 1 would be Island, Key 2 would be Habitat, and
-            Key 3 would be something arbitrary to differentiate between images, like Number.  When you
-            upload an image, you'll specify the "location values" that correspond to each of these keys.
-            For example, one image may have the values North, 5m out, and 4, indicating that it's the 4th
-            image that is from North island at 5m out.<br /><br />
+        In this case you would have 3 location keys: Key 1 would be Island, Key 2 would be Habitat, and
+        Key 3 would be something arbitrary to differentiate between images, like Number.  When you
+        upload an image, you'll specify the "location values" that correspond to each of these keys.
+        For example, one image may have the values North, 5m out, and 4, indicating that it's the 4th
+        image that is from North island at 5m out.<br /><br />
 
-            {% if source_form_type == "new" %}
-                You can have 1 to 5 location keys, depending on how much organization you need.  Once you've
-                uploaded some images, you'll be able to search through them using location values: you can
-                search for all the images that are from the North island, all the images that are from the
-                South island's fringing reef, and so on.<br /><br />
+        {% if source_form_type == "new" %}
+            You can have 1 to 5 location keys, depending on how much organization you need.  Once you've
+            uploaded some images, you'll be able to search through them using location values: you can
+            search for all the images that are from the North island, all the images that are from the
+            South island's fringing reef, and so on.<br /><br />
 
-                NOTE: Once you create your source, you cannot change the number of location keys.
-                You'll only be able to change the keys' names.  So please take the time now to think
-                carefully about the organization of your source.
-            {% else %} {# edit #}
-                Once you've uploaded some images, you'll be able to search through them using location
-                values: you can search for all the images that are from the North island, all the images
-                that are from the South island's fringing reef, and so on.<br /><br />
+            NOTE: Once you create your source, you cannot change the number of location keys.
+            You'll only be able to change the keys' names.  So please take the time now to think
+            carefully about the organization of your source.
+        {% else %} {# edit #}
+            Once you've uploaded some images, you'll be able to search through them using location
+            values: you can search for all the images that are from the North island, all the images
+            that are from the South island's fringing reef, and so on.<br /><br />
 
-                NOTE: Since you are editing a source that's already been created, you cannot change the
-                number of location keys.  You can only change the keys' names.
-            {% endif %}
-        </div> {# end tutorial message #}
-    </legend>
-
+            NOTE: Since you are editing a source that's already been created, you cannot change the
+            number of location keys.  You can only change the keys' names.
+        {% endif %}
+        </span>
     {% include "form_generic.html" with form=location_key_form %}
 </fieldset>
 
