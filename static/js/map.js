@@ -25,12 +25,12 @@ var CNMap = (function() {
         // Source name, with a link to the source if provided
         $markerInfoName.empty();
         var $boldName = $('<strong>');
-        $boldName.text(source.name);
 
         // clear whatever is being displayed first:
         $markerInfoImages.css("display", "none");
 
         if (source.url) { // marker is public
+            $boldName.text("Click to explore the " + source.name + " data source.");
 
             var $sourceLink = $('<a>');
             $sourceLink.append($boldName);
@@ -43,6 +43,7 @@ var CNMap = (function() {
             $markerInfoImagesSource.css("display","inline");
         }
         else { // marker is private
+            $boldName.text(source.name);
             $markerInfoName.append($boldName);
         }
 
@@ -104,6 +105,10 @@ var CNMap = (function() {
                 private: {
                     name: "Private sources",
                     icon: "http://www.google.com/intl/en_us/mapfiles/ms/icons/red.png"
+                },
+                multipleSources: {
+                    name: "Multiple sources",
+                    icon: "http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/images/m1.png"
                 }
             };
 
@@ -112,7 +117,7 @@ var CNMap = (function() {
                 var name = type.name;
                 var icon = type.icon;
                 var div = document.createElement('div');
-                div.innerHTML = '<img src="' + icon + '"> ' + name;
+                div.innerHTML = '<img style="width:40px" src="' + icon + '"> ' + name;
                 legend.appendChild(div);
             }
 

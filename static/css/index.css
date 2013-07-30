@@ -47,6 +47,10 @@
 
 }
 
+#intro a.about{
+    margin: 0 20px 0 20px;
+}
+
 #myCarousel{
     position: absolute;
     overflow: hidden;
