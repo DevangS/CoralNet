@@ -259,30 +259,38 @@ class MetadataForm(Form):
         super(MetadataForm,self).__init__(*args, **kwargs)
         self.source = Source.objects.get(pk=self.source_id)
 
-        # Need to create fields for keys based on the number that exist in this source.
-        # Using insert so that the fields appear in the right order.
-        for j in range(self.source.num_of_keys()):
-            self.fields.insert(j+2,'key%s' % (j+1), CharField(required=False, widget= TextInput(attrs={'size': 10,})));
+        # Need to create fields for keys based on the number of keys in this source.
+        #
+        # Using insert so that the fields appear in the right order on the
+        # page. This field order should match the order of the table headers
+        # in the page template.
+        for key_num in range(1, self.source.num_of_keys()+1):
+            self.fields.insert(
+                key_num,
+                'key%s' % key_num,
+                CharField(required=False, widget=TextInput(attrs={'size': 10,}))
+            )
 
     def clean(self):
         data = self.cleaned_data
 
         # Parse key entries as Value objects.
-        if 'key1' in data:
-            newValueObj, created = Value1.objects.get_or_create(name=data['key1'], source=self.source)
-            data['key1'] = newValueObj
-        if 'key2' in data:
-            newValueObj, created = Value2.objects.get_or_create(name=data['key2'], source=self.source)
-            data['key2'] = newValueObj
-        if 'key3' in data:
-            newValueObj, created = Value3.objects.get_or_create(name=data['key3'], source=self.source)
-            data['key3'] = newValueObj
-        if 'key4' in data:
-            newValueObj, created = Value4.objects.get_or_create(name=data['key4'], source=self.source)
-            data['key4'] = newValueObj
-        if 'key5' in data:
-            newValueObj, created = Value5.objects.get_or_create(name=data['key5'], source=self.source)
-            data['key5'] = newValueObj
+        key_fields = ['key1', 'key2', 'key3', 'key4', 'key5']
+        value_models = [Value1, Value2, Value3, Value4, Value5]
+        for key_field, value_model in zip(key_fields, value_models):
+            if key_field in data:
+                # This key field is in the form. (key5 won't be there
+                # if the source has only 4 keys)
+                if data[key_field] == '':
+                    # If the field value is empty, don't try to make an
+                    # empty-string Value object. Set it to None instead.
+                    data[key_field] = None
+                else:
+                    newValueObj, created = value_model.objects.get_or_create(
+                        name=data[key_field],
+                        source=self.source
+                    )
+                    data[key_field] = newValueObj
 
         return super(MetadataForm, self).clean()
 

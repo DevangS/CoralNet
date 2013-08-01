@@ -29,7 +29,7 @@ class ImageLocationValueForm(forms.Form):
                     years.append(metadata.year)
 
         self.fields['year'] = ChoiceField(
-            choices=[('',"All")] + [(year,year) for year in years],
+            choices=[('',"All")] + [(year,year) for year in years] + [(None, '(None)')],
             required=False
         )
 
@@ -47,8 +47,9 @@ class ImageLocationValueForm(forms.Form):
                 valueObjs = valueClass.objects.filter(source=source).order_by('name')
                 for valueObj in valueObjs:
                     choices.append((valueObj.id, valueObj.name))
+                choices.append((None, '(None)'))
 
-                self.fields[valueField] = ChoiceField(
+                self.fields[valueField] = forms.ChoiceField(
                     choices,
                     label=key,
                     required=False
@@ -65,7 +66,7 @@ class BrowseSearchForm(ImageLocationValueForm):
     )
 
     annotated_by = forms.ChoiceField(
-        choices=[(0,'Human'), (1,'Machine'), (2,'Both')],
+        choices=[('human','Human'), ('machine','Machine'), ('either','Human or Machine')],
         required=False,
     )
 
@@ -85,7 +86,6 @@ class BrowseSearchForm(ImageLocationValueForm):
         labelset = LabelSet.objects.filter(source=source)[0]
         self.fields['label'] = forms.ModelChoiceField(
             labelset.labels.all(),
-#            empty_label="View Whole Images",
             required=False,
         )
 
@@ -125,21 +125,8 @@ class ImageSpecifyForm(forms.Form):
         widget=HiddenInput(),
     )
 
+    # String that specifies images according to the specify_method.
     specify_str = forms.CharField(widget=HiddenInput())
-
-
-    # TODO: Will the field ideas below be needed anymore?
-
-    # The search keys as a JSON-ized dictionary
-    #searchKeys = forms.CharField(widget=HiddenInput())
-
-    # Number of images, as a sanity check when using the
-    # search keys.
-    #num_of_images = forms.IntegerField(widget=HiddenInput())
-
-    # The ids of the images in this search, as a
-    # comma-separated string.
-    #image_ids = forms.CharField(widget=HiddenInput())
 
 
     def __init__(self, *args, **kwargs):
@@ -153,7 +140,8 @@ class ImageSpecifyForm(forms.Form):
 
             # Load the dict of search keys from the string input.
             search_keys_dict_raw = json.loads(self.cleaned_data['specify_str'])
-            patch_mode = (search_keys_dict_raw['page_view'] == 'patches')
+            patch_mode = ('page_view' in search_keys_dict_raw) and \
+                         (search_keys_dict_raw['page_view'] == 'patches')
 
             # Get rid of empty-valued search keys.
             search_keys_dict = dict(
@@ -170,11 +158,22 @@ class ImageSpecifyForm(forms.Form):
                 if k.startswith('value'):
 
                     # value1, value2, ..., value5
-                    filter_args['metadata__'+k+'__id'] = v
+                    if v == 'None':
+                        # Search for images with no ValueN object.
+                        filter_args['metadata__'+k] = None
+                    else:
+                        # Search for images with the ValueN object of this id.
+                        filter_args['metadata__'+k+'__id'] = v
 
                 elif k == 'year':
 
-                    filter_args['metadata__photo_date__year'] = int(v)
+                    if v == 'None':
+                        # Search for images with no photo date.
+                        filter_args['metadata__photo_date'] = None
+                    else:
+                        # Search for images with a photo date of the given year.
+                        filter_args['metadata__photo_date__year'] = int(v)
+
 
                 elif k == 'image_status' and not patch_mode:
 
@@ -196,12 +195,6 @@ class ImageSpecifyForm(forms.Form):
                         elif v == 'a':
                             filter_args['status__annotatedByHuman'] = True
                         # else, don't filter
-
-                elif k in ['page_view', 'label', 'annotated_by']:
-
-                    # these args aren't for filtering images, so don't do
-                    # anything for them.
-                    pass
 
                 else:
 

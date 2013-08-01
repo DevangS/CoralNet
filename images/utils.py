@@ -10,7 +10,7 @@ from images.model_utils import PointGen
 from images.models import Point, Metadata, Image, Value1, Value2, Value3, Value4, Value5
 
 
-def get_location_value_objs(source, valueList, createNewValues=False):
+def get_location_value_objs(source, value_names, createNewValues=False):
     """
     Takes a list of values as strings:
     ['Shore3', 'Reef 5', 'Loc10']
@@ -22,36 +22,45 @@ def get_location_value_objs(source, valueList, createNewValues=False):
      created and inserted into the DB.
     - If createNewValues is False, then this method returns None.
     """
-    valueNameGen = (v for v in valueList)
-    valueDict = dict()
 
-    for valueIndex , valueClass in [
-            ('value1', Value1),
-            ('value2', Value2),
-            ('value3', Value3),
-            ('value4', Value4),
-            ('value5', Value5)
-    ]:
-        try:
-            valueName = valueNameGen.next()
-        except StopIteration:
-            # That's all the values the valueList had
-            break
+    # Get the value field names and model classes corresponding to
+    # the given value_names.
+    num_of_location_values = len(value_names)
+    value_fields = ['value1', 'value2', 'value3', 'value4', 'value5'][:num_of_location_values]
+    value_classes = [Value1, Value2, Value3, Value4, Value5][:num_of_location_values]
+
+    value_dict = dict()
+
+    for value_field, value_class, value_name in zip(value_fields, value_classes, value_names):
+
+        if value_name == '':
+
+            # Don't allow empty-string values. The empty or null value is
+            # represented by having no Value object at all.
+            value_dict[value_field] = None
+
         else:
+
+            # Non-empty value.
+
             if createNewValues:
                 # Get the Value object if there is one, or create it otherwise.
-                valueDict[valueIndex], created = valueClass.objects.get_or_create(source=source, name=valueName)
+                value_dict[value_field], created = value_class.objects.get_or_create(
+                    source=source, name=value_name
+                )
             else:
                 try:
                     # Get the Value object if there is one.
-                    valueDict[valueIndex] = valueClass.objects.get(source=source, name=valueName)
-                except valueClass.DoesNotExist:
+                    value_dict[value_field] = value_class.objects.get(
+                        source=source, name=value_name
+                    )
+                except value_class.DoesNotExist:
                     # Value object not found, and can't create it.
                     # Can't return a valueDict.
                     raise ValueObjectNotFoundError
 
-    # All value objects were found/created
-    return valueDict
+    # All the desired Value objects were found/created.
+    return value_dict
 
 
 def get_first_image(source, conditions=None):

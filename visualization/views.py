@@ -74,71 +74,98 @@ def visualize_source(request, source_id):
     errors = []
     source = get_object_or_404(Source, id=source_id)
 
-    urlArgsStr = ''  # GET args in url format - for constructing prev page/next page links
-#    label = False
-    imageArgs = dict()
 
-    metadataForm = None
-    metadataFormWithExtra = None
-    selectAllCheckbox = None
-#    view = None
-
-
-    # Defaults:
-    # Image results: all images in the source
-    # Search form: with default values
-    image_results = Image.objects.filter(source=source)
-    search_form = BrowseSearchForm(source_id)
-
-#    if request.GET:
-
-    # Note that request.GET may be empty. In this case, we just got to the
-    # Browse page.
-    submitted_search_form = BrowseSearchForm(source_id, request.GET)
-
-    if submitted_search_form.is_valid():
-
-        # Have the search form on the page start with the values
-        # submitted in this search.
-        search_form = submitted_search_form
-
-        urlArgsStr = image_search_args_to_url_arg_str(search_form.cleaned_data)
-
-        # TODO: Shouldn't need this anymore
-        imageArgs = image_search_args_to_queryset_args(search_form.cleaned_data, source)
-    else:
-        messages.error(request, 'There were errors in the search parameters.')
-
-
-    label = search_form.cleaned_data['label']
-    page_view = search_form.cleaned_data['page_view']
-
-
+    # Based on submitted GET/POST data, find the following:
+    # - Which view mode we're showing
+    # - Which images we're showing (if image/meta mode), or
+    #   filtering the patches by (if patch mode)
+    # - Other parameters
+    #
     # TODO: Ideally, we'd simply fill in the image specify form with the
     # request.POST (and/or request.GET) and that'll take care of all cases
     # where we can reach this page.
-    if request.POST and 'image_specify_form_from_upload' in request.POST:
-        # TODO: If coming from the upload page, we expect the upload page to
-        # properly fill in an ImageSpecifyForm with the image ids.
-        image_specify_form = ImageSpecifyForm(request.POST, source=source)
-    else:
-        # Use the search form.
-        image_specify_form = ImageSpecifyForm(
-            dict(
-                specify_method='search_keys',
-                specify_str=json.dumps(search_form.cleaned_data),
-            ),
-            source=source,
-        )
 
-    # TODO: Is it enough to set these forms as None by default?
-    image_batch_delete_form = None
-    image_batch_download_form = None
+    # Defaults
+
+    # Search form to show on the page
+    search_form = BrowseSearchForm(source_id)
+
+    # GET args in url format - for constructing prev page/next page links
+    urlArgsStr = ''
+
+    # View mode to show the Browse page in
+    page_view = 'images'
+    # (Patch mode only) the label we want to see patches of
+    label = ''
+    # (Patch mode only) show patches annotated by human, by machine, or by either one
+    annotated_by = 'human'
+
+    image_specify_form = ImageSpecifyForm(
+        dict(
+            specify_method='search_keys',
+            specify_str=json.dumps(dict()),  # No filters, just get all images
+        ),
+        source=source,
+    )
+
+    if request.POST and 'image_specify_form_from_upload' in request.POST:
+
+        # Coming from the upload page.
+
+        page_view = 'metadata'
+
+        # TODO: we expect the upload page to
+        # properly fill in an ImageSpecifyForm with the image ids. This MIGHT
+        # not be working yet.
+        image_specify_form = ImageSpecifyForm(request.POST, source=source)
+
+        # Defaults on everything else
+
+    elif request.GET:
+
+        # Search form submitted OR
+        # a URL with GET parameters was entered.
+
+        submitted_search_form = BrowseSearchForm(source_id, request.GET)
+
+        if submitted_search_form.is_valid():
+
+            # Have the search form on the page start with the values
+            # submitted in this search.
+            search_form = submitted_search_form
+
+            urlArgsStr = image_search_args_to_url_arg_str(search_form.cleaned_data)
+
+            page_view = search_form.cleaned_data.pop('page_view')
+            label = search_form.cleaned_data.pop('label')
+            annotated_by = search_form.cleaned_data.pop('annotated_by')
+
+            image_specify_form = ImageSpecifyForm(
+                dict(
+                    specify_method='search_keys',
+                    specify_str=json.dumps(search_form.cleaned_data),
+                ),
+                source=source,
+            )
+
+        else:
+
+            messages.error(request, 'Error: invalid search parameters.')
+
+            # Use the defaults
+
+    else:
+
+        # Just got to this page via a link, with no GET parameters in the URL.
+
+        # Use the defaults
+        pass
+
 
     if image_specify_form.is_valid():
         image_results = image_specify_form.get_images()
 
-        # Give the delete form the same stuff as the image
+        # Give the delete and download forms the same stuff as the image
         # specify form.
         image_batch_delete_form = ImageBatchDeleteForm(
             image_specify_form.data,
@@ -148,6 +175,11 @@ def visualize_source(request, source_id):
             image_specify_form.data,
             source=source,
         )
+    else:
+        errors.append("Error: something went wrong with this image search.")
+        image_batch_delete_form = None
+        image_batch_download_form = None
+        image_results = []
 
 
     # Get the search results (all of them, not just on this page).
@@ -160,27 +192,32 @@ def visualize_source(request, source_id):
 
     else:  # patches
 
-        patchArgs = dict([('image__'+k, imageArgs[k]) for k in imageArgs])
+        # Get the annotations in the source that:
+        # - contain the label
+        # - meet the "annotated_by" constraint
+        #
+        # And get the annotations in random order.
+        #
+        # Performance consideration: image__in=<queryset> might be slow in
+        # MySQL. If in doubt, test/benchmark it.
+        # https://docs.djangoproject.com/en/1.5/ref/models/querysets/#in
+        annotations = Annotation.objects.filter(source=source, label=label, image__in=image_results).order_by('?')
 
-        #get all annotations in the source that contain the label
-        try:
-            annotated_by = int(search_form.cleaned_data.pop('annotated_by'))
-        except ValueError:
-            annotated_by = 2
-        annotations = Annotation.objects.filter(source=source, label=label, **patchArgs).order_by('?')
-        if not annotated_by:
-            annotations.exclude(user=get_robot_user())
-        elif annotated_by == 1:
-            annotations.filter(user=get_robot_user())
+        if annotated_by == 'either':
+            # No further filtering needed
+            pass
+        elif annotated_by == 'machine':
+            annotations = annotations.filter(user=get_robot_user())
+        else:  # 'human'
+            annotations = annotations.exclude(user=get_robot_user())
 
-        # Placeholder the image patches with the annotation objects for now.
+        # Placeholder the image patches with the Annotation objects for now.
         # We'll actually get the patches when we know which page we're showing.
         all_items = annotations
 
-    num_of_total_results = 0
-    if all_items:
-        num_of_total_results = len(all_items)
-    if not all_items:
+    num_of_total_results = len(all_items)
+
+    if num_of_total_results == 0:
         # No image results in this search
         errors.append("No image results.")
 
@@ -256,6 +293,9 @@ def visualize_source(request, source_id):
         checkboxFormSet = formset_factory(CheckboxForm)
 
         if request.method == 'POST' and 'metadata_form' in request.POST and request.user.has_perm(Source.PermTypes.EDIT.code, source):
+
+            # Submitted the metadata form.
+
             metadataForm = metadataFormSet(request.POST)
             selectAllCheckbox = CheckboxForm(request.POST)
             checkboxForm = checkboxFormSet(request.POST)
@@ -294,8 +334,12 @@ def visualize_source(request, source_id):
                 # Display error message in addition to other error messages below.
                 messages.error(request, 'Please correct the errors below.')
         else:
+
+            # Just got to the metadata view.
+
             # This initializes the form set with default values; namely, the values
             # for the keys that already exist in our records.
+
             initValues = {'form-TOTAL_FORMS': '%s' % len(all_items), 'form-INITIAL_FORMS': '%s' % len(all_items)}
             initValuesMetadata = initValues
             for i, image in enumerate(all_items):
@@ -317,6 +361,14 @@ def visualize_source(request, source_id):
             checkboxForm = checkboxFormSet(initValues)
             metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, all_items, statuses)
             selectAllCheckbox = CheckboxForm()
+
+    else:
+
+        # Not showing the metadata view.
+
+        metadataForm = None
+        metadataFormWithExtra = None
+        selectAllCheckbox = None
 
 
     return render_to_response('visualization/visualize_source.html', {
