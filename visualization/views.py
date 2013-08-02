@@ -139,6 +139,14 @@ def visualize_source(request, source_id):
             page_view = search_form.cleaned_data.pop('page_view')
             label = search_form.cleaned_data.pop('label')
             annotated_by = search_form.cleaned_data.pop('annotated_by')
+            if page_view == 'patches':
+                # If in patch mode, the image_status filter doesn't apply.
+                search_form.cleaned_data.pop('image_status')
+
+            # TODO: In order to keep URLs compact, don't include 'all' values
+            # in the URL GET parameters. Then, create a dict here with 'all'
+            # values by default, and update it with the
+            # search_form.cleaned_data.
 
             image_specify_form = ImageSpecifyForm(
                 dict(

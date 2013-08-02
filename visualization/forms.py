@@ -29,7 +29,7 @@ class ImageLocationValueForm(forms.Form):
                     years.append(metadata.year)
 
         self.fields['year'] = ChoiceField(
-            choices=[('',"All")] + [(year,year) for year in years] + [(None, '(None)')],
+            choices=[('all',"All")] + [(year,year) for year in years] + [('none', '(None)')],
             required=False
         )
 
@@ -43,11 +43,11 @@ class ImageLocationValueForm(forms.Form):
             (source.key5, 'value5', Value5)
         ]:
             if key:
-                choices = [('', 'All')]
+                choices = [('all', 'All')]
                 valueObjs = valueClass.objects.filter(source=source).order_by('name')
                 for valueObj in valueObjs:
                     choices.append((valueObj.id, valueObj.name))
-                choices.append((None, '(None)'))
+                choices.append(('none', '(None)'))
 
                 self.fields[valueField] = forms.ChoiceField(
                     choices,
@@ -91,7 +91,7 @@ class BrowseSearchForm(ImageLocationValueForm):
 
         # image_status
 
-        status_choices = [('', 'All'), ('n','Needs annotation')]
+        status_choices = [('all', 'All'), ('n','Needs annotation')]
         if source.enable_robot_classifier:
             status_choices.extend([('m', 'Annotated by machine'),('h', 'Annotated by human')])
         else:
@@ -140,45 +140,48 @@ class ImageSpecifyForm(forms.Form):
 
             # Load the dict of search keys from the string input.
             search_keys_dict_raw = json.loads(self.cleaned_data['specify_str'])
-            patch_mode = ('page_view' in search_keys_dict_raw) and \
-                         (search_keys_dict_raw['page_view'] == 'patches')
 
-            # Get rid of empty-valued search keys.
-            search_keys_dict = dict(
-                [(k, search_keys_dict_raw[k])
-                 for k in search_keys_dict_raw
-                 if search_keys_dict_raw[k] != '']
-            )
-            filter_args = dict()
+            # Get rid of search keys with the value 'all', which indicates that
+            # we shouldn't filter by that key.
+            search_keys_dict = dict()
+            for k,v in search_keys_dict_raw.iteritems():
+                if v != 'all':
+                    search_keys_dict[k] = v
 
             # Go over each search key/value from the form input, and turn
             # those into image queryset filters.
+            filter_args = dict()
+
             for k,v in search_keys_dict.iteritems():
 
                 if k.startswith('value'):
 
                     # value1, value2, ..., value5
-                    if v == 'None':
+                    if v == 'none':
                         # Search for images with no ValueN object.
                         filter_args['metadata__'+k] = None
                     else:
-                        # Search for images with the ValueN object of this id.
+                        # Search for images with the ValueN object of
+                        # the given database id.
                         filter_args['metadata__'+k+'__id'] = v
 
                 elif k == 'year':
 
-                    if v == 'None':
+                    if v == 'none':
                         # Search for images with no photo date.
                         filter_args['metadata__photo_date'] = None
                     else:
-                        # Search for images with a photo date of the given year.
+                        # Search for images with a photo date of the
+                        # given year.
                         filter_args['metadata__photo_date__year'] = int(v)
 
 
-                elif k == 'image_status' and not patch_mode:
+                elif k == 'image_status':
 
                     # annotation status (by human, or by robot).
-                    # ONLY account for this if not searching in patch mode.
+                    #
+                    # This field should ONLY be here if not searching in
+                    # patch mode.
                     if self.source.enable_robot_classifier:
                         if v == 'n':
                             filter_args['status__annotatedByHuman'] = False

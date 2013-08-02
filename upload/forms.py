@@ -318,6 +318,8 @@ class CSVImportForm(Form):
         return self.cleaned_data['csv_file']
 
 
+# TODO: Remove the below form idea if not needed anymore
+
 #class ProceedToManageMetadataForm(Form):
 #    """
 #    This form is shown after an upload completes. When the form is
