@@ -1,0 +1,18 @@
+#id_search_form div.form_item_wrapper {
+    display: inline-block;
+    margin: 0 10px;
+    border: 0;
+}
+
+#id_search_form label {
+    width: auto;
+}
+
+/* Page-view radio button styling. Django 1.3 and below
+makes radio buttons use li elements. */
+#id_page_view_wrapper label {
+    margin: 0 5px;  /* top/bottom left/right */
+}
+#id_page_view_wrapper li {
+    display: inline;
+}

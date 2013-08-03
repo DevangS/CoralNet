@@ -13,31 +13,7 @@
     {% include "form_media_versioned.html" with form=searchForm %}
     {% include "static-local-include.html" with type="js" path="js/ImageBatchActionFormHelper.js" %}
     {% include "static-local-include.html" with type="js" path="js/ImageMetadataFormHelper.js" %}
-{% endblock %}
-
-{% block css-code %}
-<style type="text/css">
-
-{% comment %}
-fieldset.fieldset_visualization {
-    margin: 0;
-}
-{% endcomment %}
-
-#id_search_form div.form_item_wrapper {
-{#    float: left;#}
-    display: inline-block;
-    margin: 0 10px;
-    border: 0;
-}
-
-#id_search_form label {
-    width: auto;
-}
-
-
-
-</style>
+    {% include "static-local-include.html" with type="css" path="css/visualize_source.css" %}
 {% endblock %}
 
 {% block content %}
@@ -46,18 +22,6 @@ fieldset.fieldset_visualization {
     
     {# Search form #}
     <form action="" method="get" id="id_search_form">
-
-{#      <fieldset class="fieldset_visualization">#}
-
-{% comment %}          {% for field in searchForm %}
-            <div class="form_item_wrapper" id="id_{{ field.name }}_wrapper">
-                <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
-
-                <div class="field_wrapper">
-                    {{ field }}
-                </div>
-            </div>
-          {% endfor %}{% endcomment %}
 
       {% with form=searchForm %}
 

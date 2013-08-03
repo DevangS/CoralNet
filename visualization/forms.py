@@ -59,9 +59,9 @@ class ImageLocationValueForm(forms.Form):
 class BrowseSearchForm(ImageLocationValueForm):
 
     page_view = forms.ChoiceField(
-        choices=[('images','Images'), ('metadata','Metadata'), ('patches','Image Patches')],
-        # TODO: Make it a radio button widget?
-        #widget=forms.widgets.RadioSelect(),
+        choices=[('images','Images'), ('metadata','Metadata'), ('patches','Annotation Patches')],
+        initial='images',
+        widget=forms.widgets.RadioSelect(),
         required=False,
     )
 
