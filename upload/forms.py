@@ -239,9 +239,12 @@ class CheckboxForm(Form):
 
 class MetadataForm(Form):
     """
-    This form is used to edit the metadata of images within this source. This is commonly used within
-    a form set whenever it is used.
+    This form is used to edit the metadata of an image within a source.
+
+    This is commonly used within a form set, so that multiple images can
+    be edited at once.
     """
+    imageId = forms.IntegerField(widget=forms.HiddenInput())
     date = DateField(required=False, widget= TextInput(attrs={'size': 8,}))
     height = CharField(widget= TextInput(attrs={'size': 10,}))
     latitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
@@ -264,9 +267,10 @@ class MetadataForm(Form):
         # Using insert so that the fields appear in the right order on the
         # page. This field order should match the order of the table headers
         # in the page template.
+        date_field_index = 1
         for key_num in range(1, self.source.num_of_keys()+1):
             self.fields.insert(
-                key_num,
+                date_field_index + key_num,
                 'key%s' % key_num,
                 CharField(required=False, widget=TextInput(attrs={'size': 10,}))
             )

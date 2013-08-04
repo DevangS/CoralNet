@@ -39,19 +39,37 @@ This is a template that is used to render a form for editing metadata
             </tr>
             {% for form, checkbox_form, image, status in metadataFormWithExtra %}
                 <tr>
+                    {# Checkbox #}
                     {% for field in checkbox_form %}
                         <td>{{ field }}</td>
                     {% endfor %}
-                    <td><a href="{% url image_detail image.id %}">{{ image.metadata.name }}</a></td>
+
+                    <td>
+                        {# Name / filename #}
+                        <a href="{% url image_detail image.id %}">{{ image.metadata.name }}</a>
+
+                        {# Image id (hidden, and piggybacking in one of the #}
+                        {# td elements, because td/th are the only elements #}
+                        {# that should be immediate children of a tr) #}
+                        {{ form.imageId }}
+                    </td>
+
+                    {# Annotation status #}
                     <td id="status" style="padding: 0 10px 0 10px">{{ status }}</td>
+
+                    {# Editable metadata fields #}
                     {% for field in form %}
-                        <td>{{ field }}</td>
+                        {% if field.name != 'imageId' %}
+                            <td>{{ field }}</td>
+                        {% endif %}
                     {% endfor %}
                 </tr>
             {% endfor %}
         </table>
     </div>
-    <input type="submit" value="Submit" name="metadata_form" />
+    <button type="button" class="submit" id="id_metadata_form_save_button">
+        Save Edits
+    </button>
 </form>
 
 <!-- Script in the body will run on page load. ImageMetadataFormHelper.js needs to be included -->

@@ -48,8 +48,6 @@
         </div>
 
       {% endwith %}
-
-{#      </fieldset>#}
         
       <div class="submit_button_wrapper_center">
         <input type='submit' value="Search">
@@ -133,7 +131,7 @@
         {# Image action form, with functionality such as deleting images. #}
         {# Only available if we're looking at images, not patches. #}
         {# Only available for source members. #}
-        {% if page_view == 'images' or page_view == 'metadata' %}
+        {% if page_view == 'images' %}
 
           {% get_obj_perms user for source as "source_perms" %}
 

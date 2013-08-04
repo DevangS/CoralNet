@@ -10,9 +10,9 @@
 
 /* Page-view radio button styling. Django 1.3 and below
 makes radio buttons use li elements. */
-#id_page_view_wrapper label {
+#id_page_view_wrapper .field_wrapper label {
     margin: 0 5px;  /* top/bottom left/right */
 }
-#id_page_view_wrapper li {
+#id_page_view_wrapper .field_wrapper li {
     display: inline;
 }

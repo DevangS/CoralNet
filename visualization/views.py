@@ -11,6 +11,7 @@ from accounts.utils import get_robot_user
 from annotations.models import Annotation, Label, LabelSet, LabelGroup
 from decorators import source_visibility_required, source_permission_required
 from images.models import Source, Image
+from lib.utils import JsonResponse
 from visualization.forms import BrowseSearchForm, StatisticsSearchForm, ImageBatchDeleteForm, ImageSpecifyForm, ImageBatchDownloadForm
 from visualization.utils import generate_patch_if_doesnt_exist
 from GChartWrapper import *
@@ -75,6 +76,14 @@ def visualize_source(request, source_id):
     source = get_object_or_404(Source, id=source_id)
 
 
+    # This is used to create a formset out of the metadataForm. I need to do this
+    # in order to pass in the source id.
+    metadataFormSet = formset_factory(MetadataForm)
+    metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
+    # There is a separate form that controls the checkboxes.
+    checkboxFormSet = formset_factory(CheckboxForm)
+
+
     # Based on submitted GET/POST data, find the following:
     # - Which view mode we're showing
     # - Which images we're showing (if image/meta mode), or
@@ -84,6 +93,7 @@ def visualize_source(request, source_id):
     # TODO: Ideally, we'd simply fill in the image specify form with the
     # request.POST (and/or request.GET) and that'll take care of all cases
     # where we can reach this page.
+
 
     # Defaults
 
@@ -107,6 +117,7 @@ def visualize_source(request, source_id):
         ),
         source=source,
     )
+
 
     if request.POST and 'image_specify_form_from_upload' in request.POST:
 
@@ -287,88 +298,43 @@ def visualize_source(request, source_id):
 
     if page_view == 'metadata':
 
-        # Get image statuses
+        # Get image statuses (needs annotation, etc.)
+
         statuses = []
         for image in all_items:
             statuses.append(image.get_annotation_status_str)
 
-        # This is used to create a formset out of the metadataForm. I need to do this
-        # in order to pass in the source id.
-        metadataFormSet = formset_factory(MetadataForm)
-        metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
+        # Initialize the form set with the existing metadata values.
 
-        # There is a separate form that controls the checkboxes.
-        checkboxFormSet = formset_factory(CheckboxForm)
+        initValues = {
+            'form-TOTAL_FORMS': '%s' % len(all_items),
+            'form-INITIAL_FORMS': '%s' % len(all_items),
+        }
+        initValuesMetadata = initValues
 
-        if request.method == 'POST' and 'metadata_form' in request.POST and request.user.has_perm(Source.PermTypes.EDIT.code, source):
+        for i, image in enumerate(all_items):
 
-            # Submitted the metadata form.
+            keys = image.get_location_value_str_list()
+            for j, key in enumerate(keys):
+                initValuesMetadata['form-%s-key%s' % (i,j+1)] = key
 
-            metadataForm = metadataFormSet(request.POST)
-            selectAllCheckbox = CheckboxForm(request.POST)
-            checkboxForm = checkboxFormSet(request.POST)
-            metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, all_items, statuses)
-            if metadataForm.is_valid():
-                # Here we save the data to the database, since data is valid.
-                for image, formData in zip(all_items, metadataForm.cleaned_data):
-                    image.metadata.photo_date = formData['date']
-                    image.metadata.height_in_cm = formData['height']
-                    image.metadata.latitude = formData['latitude']
-                    image.metadata.longitude = formData['longitude']
-                    image.metadata.depth = formData['depth']
-                    image.metadata.camera = formData['camera']
-                    image.metadata.photographer = formData['photographer']
-                    image.metadata.water_quality = formData['waterQuality']
-                    image.metadata.strobes = formData['strobes']
-                    image.metadata.framing = formData['framingGear']
-                    image.metadata.balance = formData['whiteBalance']
+            initValuesMetadata['form-%s-imageId' % i] = image.id
+            initValuesMetadata['form-%s-date' % i] = image.metadata.photo_date
+            initValuesMetadata['form-%s-height' % i] = image.metadata.height_in_cm
+            initValuesMetadata['form-%s-latitude' % i] = image.metadata.latitude
+            initValuesMetadata['form-%s-longitude' % i] = image.metadata.longitude
+            initValuesMetadata['form-%s-depth' % i] = image.metadata.depth
+            initValuesMetadata['form-%s-camera' % i] = image.metadata.camera
+            initValuesMetadata['form-%s-photographer' % i] = image.metadata.photographer
+            initValuesMetadata['form-%s-waterQuality' % i] = image.metadata.water_quality
+            initValuesMetadata['form-%s-strobes' % i] = image.metadata.strobes
+            initValuesMetadata['form-%s-framingGear' % i] = image.metadata.framing
+            initValuesMetadata['form-%s-whiteBalance' % i] = image.metadata.balance
 
-                    if 'key1' in formData:
-                        image.metadata.value1 = formData['key1']
-                    if 'key2' in formData:
-                        image.metadata.value2 = formData['key2']
-                    if 'key3' in formData:
-                        image.metadata.value3 = formData['key3']
-                    if 'key4' in formData:
-                        image.metadata.value4 = formData['key4']
-                    if 'key5' in formData:
-                        image.metadata.value5 = formData['key5']
-                    image.metadata.save()
-
-                # After entering data, try to remove unused key values
-                source.remove_unused_key_values()
-                messages.success(request, 'Image metadata file has now been saved.')
-            else:
-                # Display error message in addition to other error messages below.
-                messages.error(request, 'Please correct the errors below.')
-        else:
-
-            # Just got to the metadata view.
-
-            # This initializes the form set with default values; namely, the values
-            # for the keys that already exist in our records.
-
-            initValues = {'form-TOTAL_FORMS': '%s' % len(all_items), 'form-INITIAL_FORMS': '%s' % len(all_items)}
-            initValuesMetadata = initValues
-            for i, image in enumerate(all_items):
-                keys = image.get_location_value_str_list()
-                for j, key in enumerate(keys):
-                    initValuesMetadata['form-%s-key%s' % (i,j+1)] = key
-                initValuesMetadata['form-%s-date' % i] = image.metadata.photo_date
-                initValuesMetadata['form-%s-height' % i] = image.metadata.height_in_cm
-                initValuesMetadata['form-%s-latitude' % i] = image.metadata.latitude
-                initValuesMetadata['form-%s-longitude' % i] = image.metadata.longitude
-                initValuesMetadata['form-%s-depth' % i] = image.metadata.depth
-                initValuesMetadata['form-%s-camera' % i] = image.metadata.camera
-                initValuesMetadata['form-%s-photographer' % i] = image.metadata.photographer
-                initValuesMetadata['form-%s-waterQuality' % i] = image.metadata.water_quality
-                initValuesMetadata['form-%s-strobes' % i] = image.metadata.strobes
-                initValuesMetadata['form-%s-framingGear' % i] = image.metadata.framing
-                initValuesMetadata['form-%s-whiteBalance' % i] = image.metadata.balance
-            metadataForm = metadataFormSet(initValuesMetadata)
-            checkboxForm = checkboxFormSet(initValues)
-            metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, all_items, statuses)
-            selectAllCheckbox = CheckboxForm()
+        metadataForm = metadataFormSet(initValuesMetadata)
+        checkboxForm = checkboxFormSet(initValues)
+        metadataFormWithExtra = zip(metadataForm.forms, checkboxForm.forms, all_items, statuses)
+        selectAllCheckbox = CheckboxForm()
 
     else:
 
@@ -396,6 +362,75 @@ def visualize_source(request, source_id):
         },
         context_instance=RequestContext(request)
     )
+
+
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
+def metadata_edit_ajax(request, source_id):
+    """
+    Submitting the metadata-edit form (an Ajax form).
+    """
+    source = get_object_or_404(Source, id=source_id)
+
+    # This is used to create a formset out of the metadataForm. I need to do this
+    # in order to pass in the source id.
+    metadataFormSet = formset_factory(MetadataForm)
+    metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
+
+    metadataForm = metadataFormSet(request.POST)
+
+    if metadataForm.is_valid():
+
+        # Data is valid. Save the data to the database.
+        for formData in metadataForm.cleaned_data:
+
+            try:
+                image = Image.objects.get(pk=formData['imageId'], source=source)
+            except Image.DoesNotExist:
+                # If the image doesn't exist in the source (because another
+                # source editor deleted the image / someone tampered with the
+                # form data / etc.), then just don't do anything for this
+                # form instance. Move on to the next one.
+                continue
+
+            image.metadata.photo_date = formData['date']
+            image.metadata.height_in_cm = formData['height']
+            image.metadata.latitude = formData['latitude']
+            image.metadata.longitude = formData['longitude']
+            image.metadata.depth = formData['depth']
+            image.metadata.camera = formData['camera']
+            image.metadata.photographer = formData['photographer']
+            image.metadata.water_quality = formData['waterQuality']
+            image.metadata.strobes = formData['strobes']
+            image.metadata.framing = formData['framingGear']
+            image.metadata.balance = formData['whiteBalance']
+
+            if 'key1' in formData:
+                image.metadata.value1 = formData['key1']
+            if 'key2' in formData:
+                image.metadata.value2 = formData['key2']
+            if 'key3' in formData:
+                image.metadata.value3 = formData['key3']
+            if 'key4' in formData:
+                image.metadata.value4 = formData['key4']
+            if 'key5' in formData:
+                image.metadata.value5 = formData['key5']
+            image.metadata.save()
+
+        # After entering data, try to remove unused key values
+        source.remove_unused_key_values()
+
+        return JsonResponse(dict(
+            status='success',
+        ))
+
+    else:
+
+        # There were form errors. Return the errors so they can be
+        # added to the on-page form via Javascript.
+        return JsonResponse(dict(
+            status='error',
+            errors=metadataForm.errors,
+        ))
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
