@@ -194,7 +194,7 @@
 
     {# Script in the body will run on page load. #}
     <script type="text/javascript">
-        VSH.init({{ source.enable_robot_classifier|jsonify }});
+        BrowseHelper.init({{ source.enable_robot_classifier|jsonify }});
     </script>
 
 {% endblock %}
