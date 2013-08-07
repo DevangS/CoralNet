@@ -58,16 +58,23 @@ function justTyped(row, column) {
 
 // This initializes the form with the correct bindings.
 function setUpBindings() {
-    var images = $("#metadataFormTable tr").length;
-    var fields = $("#metadataFormTable tr")[0].cells.length;
+    var rows = $("#metadataFormTable tr").length;
+    var columns = $("#metadataFormTable tr")[0].cells.length;
     var id;
-    for (var i = 1; i < images; i++)
+    for (var i = 1; i < rows; i++)
     {
-        for (var j = 3; j < fields; j++)
+        // This row should correspond to an image.
+
+        for (var j = 3; j < columns; j++)
         {
+            // This column should correspond to an editable field.
+
             id = '#' + $('#metadataFormTable')[0].rows[i].cells[j].childNodes[0].getAttribute('id');
+
             if (j == 3)
             {
+                // This is the date field.
+
                 $(id).datepicker({ dateFormat: 'yy-mm-dd' });
                 setRowColumnBindingsChange(id);
             }
@@ -76,7 +83,7 @@ function setUpBindings() {
     }
     id = "#id_selected";
     $(id).bind("change", function() {
-        selectall()
+        selectall();
     });
 /*  For later use (ajax)
     id = "#id_view";
