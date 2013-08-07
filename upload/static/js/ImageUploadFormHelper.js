@@ -696,25 +696,6 @@ var ImageUploadFormHelper = (function() {
         }
     }
 
-    function enablePageLeaveWarning() {
-        // When the user tries to leave the page by clicking a link,
-        // closing the tab, etc., a confirmation dialog will pop up, with
-        // the specified message and a generic message from the browser
-        // like "Are you sure you want to leave this page?".
-        window.onbeforeunload = function (e) {
-            var message = "The upload is still going.";
-
-            // Apparently some browsers take the message with e.returnValue,
-            // and other browsers take it with this function's return value.
-            // (Other browsers don't take any message...)
-            e.returnValue = message;
-            return message;
-        };
-    }
-    function disablePageLeaveWarning() {
-        window.onbeforeunload = null;
-    }
-
     function startAjaxImageUpload() {
 
         // Define the options for $.ajaxSubmit().
@@ -783,7 +764,7 @@ var ImageUploadFormHelper = (function() {
 
         // Warn the user if they're trying to
         // leave the page during the upload.
-        enablePageLeaveWarning();
+        util.pageLeaveWarningEnable("The upload is still going.");
 
         // Finally, upload the first file.
         currentFileIndex = 0;
@@ -920,7 +901,7 @@ var ImageUploadFormHelper = (function() {
         $uploadAbortButton.hide();
         $uploadAbortButton.prop('disabled', true);
 
-        disablePageLeaveWarning();
+        util.pageLeaveWarningDisable();
     }
 
     function updateMidUploadSummary() {
