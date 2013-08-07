@@ -46,7 +46,7 @@ function setCheckedRows(checked) {
 
 // This will handle updating all checked rows in the form. This is called whenever a user
 // types in one of the text fields.
-function justTyped(row, column) {
+function updateCheckedRowFields(row, column) {
     var checked = checkedRows();
     if (checked[row] == false) return;
     var input = getValueFromCell(row, column);
@@ -54,6 +54,15 @@ function justTyped(row, column) {
     {
         if(checked[i] == true) setValueFromCell(i, column, input);
     }
+}
+
+// Update indicators that a value in the form has changed.
+function updateMetadataChangeStatus(id) {
+    // TODO:
+    // Un-disable the Save Edits button
+    // Update relevant text next to the Save Edits button
+    // "You have unsaved changes" warning when trying to navigate away
+    // Outline the changed field in blue or something
 }
 
 // This initializes the form with the correct bindings.
@@ -74,11 +83,14 @@ function setUpBindings(params) {
             if (j == 3)
             {
                 // This is the date field.
-
                 $(id).datepicker({ dateFormat: 'yy-mm-dd' });
-                setRowColumnBindingsChange(id);
+                setRowColumnBindingsChange({id: id, isDate: true});
             }
-            else setRowColumnBindingsKeyUp(id);
+            else
+            {
+                setRowColumnBindingsChange({id: id, isDate: false});
+                setRowColumnBindingsKeyUp(id);
+            }
         }
     }
 
@@ -114,22 +126,37 @@ function setUpBindings(params) {
     });*/
 }
 
-// Given the id, this will set a key down key binding that calls justTyped with the
-// given row and column of the table form.
+// Given the id, this will set a key down key binding that calls
+// updateCheckedRowFields with the given row and column of the table form.
 function setRowColumnBindingsKeyUp(id) {
     $(id).bind("keyup", function() {
         var row_index = $(this).parent().parent().index('tr');
         var col_index = $(this).parent().index('tr:eq('+row_index+') td');
-        justTyped(row_index-1, col_index-1);
+        updateCheckedRowFields(row_index-1, col_index-1);
     });
 }
 
-function setRowColumnBindingsChange(id) {
-    $(id).bind("change", function() {
-        var row_index = $(this).parent().parent().index('tr');
-        var col_index = $(this).parent().index('tr:eq('+row_index+') td');
-        justTyped(row_index-1, col_index-1);
-    });
+function setRowColumnBindingsChange(params) {
+
+    if (params.isDate === true) {
+        $(params.id).bind("change", function() {
+            // Update indicators that a value in the form
+            // has changed.
+            updateMetadataChangeStatus(params.id);
+
+            // Update checked rows.
+            var row_index = $(this).parent().parent().index('tr');
+            var col_index = $(this).parent().index('tr:eq('+row_index+') td');
+            updateCheckedRowFields(row_index-1, col_index-1);
+        });
+    }
+    else {
+        $(params.id).bind("change", function() {
+            // Update indicators that a value in the form
+            // has changed.
+            updateMetadataChangeStatus(params.id);
+        });
+    }
 }
 
 function metadataSaveAjaxResponseHandler(response) {
