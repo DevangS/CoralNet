@@ -1,57 +1,82 @@
-var ImageBatchActionFormHelper = (function() {
+var BrowseActionHelper = (function() {
+
+    var hasDownloadForm;
+    var hasDeleteForm;
+
+    var $downloadForm;
+    var $deleteForm;
 
     var $radioDownloadField;
     var $radioDeleteField;
+
 
     function areYouSureDelete() {
         return window.confirm("Are you sure you want to delete these images? You won't be able to undo this.");
     }
 
     function changeActionForm() {
-//        var action = $("#id_action").val();
-        var $downloadForm = $("#id_download_form");
-        var $deleteForm = $("#id_delete_form");
 
-        // Hide all forms first
-        $downloadForm.hide();
-        $deleteForm.hide();
+        if (hasDownloadForm) {
 
-        // Then show only the relevant form (if any)
-        if ($radioDownloadField.prop('checked')) {
-            $downloadForm.show();
+            if ($radioDownloadField.prop('checked')) {
+                $downloadForm.show();
+            }
+            else {
+                $downloadForm.hide();
+            }
         }
-        else if ($radioDeleteField.prop('checked')) {
-            $deleteForm.show();
+
+        if (hasDeleteForm) {
+
+            if ($radioDeleteField.prop('checked')) {
+                $deleteForm.show();
+            }
+            else {
+                $deleteForm.hide();
+            }
         }
-//        if (action === 'download') {
-//            $downloadForm.show();
-//        }
-//        else if (action === 'delete') {
-//            $deleteForm.show();
-//        }
     }
 
+
     return {
-        init: function() {
 
-    //        var $actionField = $("#id_action");
-    //        $actionField.change(function() {
-    //            ImageBatchActionFormHelper.changeActionForm();
-    //        });
+        /*
+        hasDownloadForm - true if the download form is on the page, else false
+        hasDeleteForm - true if the delete form is on the page, else false
+         */
+        init: function(params) {
 
-            $radioDownloadField = $("#id_radio_download");
-            $radioDeleteField = $("#id_radio_delete");
-            $radioDownloadField.change(function() {
-                changeActionForm();
-            });
-            $radioDeleteField.change(function() {
-                changeActionForm();
-            });
+            // Each of the action forms may or may not be on the page.
+            //
+            // We have to account for the cases where each form may
+            // or may not be on the page.
+            hasDownloadForm = params.hasDownloadForm;
+            hasDeleteForm = params.hasDeleteForm;
 
-            var $deleteSubmit = $("#id_delete_submit");
-            $deleteSubmit.click(function() {
-                return areYouSureDelete();
-            });
+            if (hasDownloadForm) {
+
+                $downloadForm = $("#id_download_form");
+
+                $radioDownloadField = $("#id_radio_download");
+                $radioDownloadField.change(function() {
+                    changeActionForm();
+                });
+            }
+
+            if (hasDeleteForm) {
+
+                $deleteForm = $("#id_delete_form");
+
+                $radioDeleteField = $("#id_radio_delete");
+                $radioDeleteField.change(function() {
+                    changeActionForm();
+                });
+
+                var $deleteSubmit = $("#id_delete_submit");
+                $deleteSubmit.click(function() {
+                    return areYouSureDelete();
+                });
+            }
 
             changeActionForm();
         }

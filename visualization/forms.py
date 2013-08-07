@@ -69,12 +69,6 @@ class BrowseSearchForm(ImageLocationValueForm):
         choices=[('human','Human'), ('machine','Machine'), ('either','Human or Machine')],
         required=False,
     )
-
-    class Media:
-        js = (
-            # From app-specific static directory
-            "js/VisSearchFormHelper.js",
-            )
         
     def __init__(self,source_id,*args,**kwargs):
 

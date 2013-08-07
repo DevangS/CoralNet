@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block page-specific-includes %}
-    {% include "form_media_versioned.html" with form=searchForm %}
+    {% include "static-local-include.html" with type="js" path="js/VisSearchFormHelper.js" %}
     {% include "static-local-include.html" with type="js" path="js/ImageBatchActionFormHelper.js" %}
     {% include "static-local-include.html" with type="js" path="js/ImageMetadataFormHelper.js" %}
     {% include "static-local-include.html" with type="css" path="css/visualize_source.css" %}
@@ -128,14 +128,11 @@
         {% endif %}
 
 
-        {# Image action form, with functionality such as deleting images. #}
-        {# Only available if we're looking at images, not patches. #}
-        {# Only available for source members. #}
-        {% if page_view == 'images' %}
+        {% comment %} Image action forms, with functionality such as deleting
+        images. The view code checks whether these forms should be shown or
+        not. If not, the forms will be None in this template. {% endcomment %}
 
-          {% get_obj_perms user for source as "source_perms" %}
-
-          {% if 'source_view' in source_perms %}
+        {% if has_download_form or has_delete_form %}
 
             <hr />
 
@@ -144,9 +141,12 @@
             {# Action select #}
 
             Select action:
-            <input id="id_radio_download" type="radio" name="batch_action" value="download"/>
-            <label for="id_radio_download">Download</label>
-            {% if "source_edit" in source_perms %}
+
+            {% if has_download_form %}
+                <input id="id_radio_download" type="radio" name="batch_action" value="download"/>
+                <label for="id_radio_download">Download</label>
+            {% endif %}
+            {% if has_delete_form %}
                 <input id="id_radio_delete" type="radio" name="batch_action" value="delete"/>
                 <label for="id_radio_delete">Delete</label>
             {% endif %}
@@ -155,38 +155,35 @@
 
             {# Download #}
 
-            {% if "source_view" in source_perms %}
-            <form id="id_download_form" action="{% url browse_download source.id %}" method="post">{% csrf_token %}
-                {% for field in image_batch_download_form %}
-                    {# Should be all hidden fields #}
-                    {{ field }}
-                {% endfor %}
+            {% if has_download_form %}
+                <form id="id_download_form" action="{% url browse_download source.id %}" method="post">{% csrf_token %}
+                    {% for field in image_batch_download_form %}
+                        {# Should be all hidden fields #}
+                        {{ field }}
+                    {% endfor %}
 
-                <input id="id_download_submit"
-                       type="submit" value="Download these {{ num_of_total_results }} images"/>
-            </form>
+                    <input id="id_download_submit" type="submit"
+                           value="Download these {{ num_of_total_results }} images"/>
+                </form>
             {% endif %}
 
             {# Delete #}
 
-            {% if "source_edit" in source_perms %}
-            <form id="id_delete_form" action="{% url browse_delete source.id %}" method="post">{% csrf_token %}
-                {% for field in image_batch_delete_form %}
-                    {# Should be all hidden fields #}
-                    {{ field }}
-                {% endfor %}
+            {% if has_delete_form %}
+                <form id="id_delete_form" action="{% url browse_delete source.id %}" method="post">{% csrf_token %}
+                    {% for field in image_batch_delete_form %}
+                        {# Should be all hidden fields #}
+                        {{ field }}
+                    {% endfor %}
 
-                <input id="id_delete_submit"
-                       type="submit" value="Delete these {{ num_of_total_results }} images"/>
-            </form>
+                    <input id="id_delete_submit" type="submit"
+                           value="Delete these {{ num_of_total_results }} images"/>
+                </form>
             {% endif %}
 
             {# Script in the body will run on page load. #}
             <script type="text/javascript">
-                ImageBatchActionFormHelper.init();
             </script>
-
-          {% endif %}
 
         {% endif %}
 
@@ -194,7 +191,18 @@
 
     {# Script in the body will run on page load. #}
     <script type="text/javascript">
-        BrowseHelper.init({{ source.enable_robot_classifier|jsonify }});
+        BrowseSearchHelper.init({{ source.enable_robot_classifier|jsonify }});
+
+        {% if metadataForm %}
+            setUpBindings();
+        {% endif %}
+
+        {% if has_download_form or has_delete_form %}
+            BrowseActionHelper.init({
+                hasDownloadForm: {{ has_download_form|jsonify }},
+                hasDeleteForm: {{ has_delete_form|jsonify }}
+            });
+        {% endif %}
     </script>
 
 {% endblock %}

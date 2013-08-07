@@ -181,24 +181,38 @@ def visualize_source(request, source_id):
         pass
 
 
+    image_results = []
+    delete_form = None
+    download_form = None
+
     if image_specify_form.is_valid():
+
         image_results = image_specify_form.get_images()
 
-        # Give the delete and download forms the same stuff as the image
-        # specify form.
-        image_batch_delete_form = ImageBatchDeleteForm(
-            image_specify_form.data,
-            source=source,
-        )
-        image_batch_download_form = ImageBatchDownloadForm(
-            image_specify_form.data,
-            source=source,
-        )
+        # Create image delete and image download forms if they're supposed
+        # to be displayed on the page.
+        #
+        # Give the forms the same stuff as the image specify form, so they
+        # know which images to operate on.
+        if page_view == 'images':
+
+            if request.user.has_perm(Source.PermTypes.EDIT.code, source):
+
+                delete_form = ImageBatchDeleteForm(
+                    image_specify_form.data,
+                    source=source,
+                )
+
+            if request.user.has_perm(Source.PermTypes.VIEW.code, source):
+
+                download_form = ImageBatchDownloadForm(
+                    image_specify_form.data,
+                    source=source,
+                )
+
     else:
+
         errors.append("Error: something went wrong with this image search.")
-        image_batch_delete_form = None
-        image_batch_download_form = None
-        image_results = []
 
 
     # Get the search results (all of them, not just on this page).
@@ -346,18 +360,25 @@ def visualize_source(request, source_id):
 
 
     return render_to_response('visualization/visualize_source.html', {
-        'errors': errors,
-        'searchForm': search_form,
         'source': source,
+
+        'searchForm': search_form,
+        'searchParamsStr': urlArgsStr,
+
+        'errors': errors,
         'page_results': page_results,
         'num_of_total_results': num_of_total_results,
-        'searchParamsStr': urlArgsStr,
-        'image_batch_delete_form': image_batch_delete_form,
-        'image_batch_download_form': image_batch_download_form,
+
+        'delete_form': delete_form,
+        'download_form': download_form,
+        'has_delete_form': bool(delete_form),
+        'has_download_form': bool(download_form),
+
         'key_list': source.get_key_list(),
         'metadataForm': metadataForm,
         'selectAllForm': selectAllCheckbox,
         'metadataFormWithExtra': metadataFormWithExtra,
+
         'page_view': page_view,
         },
         context_instance=RequestContext(request)

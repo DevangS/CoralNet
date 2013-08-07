@@ -1,4 +1,4 @@
-var BrowseHelper = (function() {
+var BrowseSearchHelper = (function() {
 
     var $pageViewChoices;
     var $pageViewPatchesChoice;
