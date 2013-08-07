@@ -57,7 +57,7 @@ function justTyped(row, column) {
 }
 
 // This initializes the form with the correct bindings.
-function setUpBindings() {
+function setUpBindings(params) {
     var rows = $("#metadataFormTable tr").length;
     var columns = $("#metadataFormTable tr")[0].cells.length;
     var id;
@@ -81,10 +81,32 @@ function setUpBindings() {
             else setRowColumnBindingsKeyUp(id);
         }
     }
+
+    // When the top checkbox is checked/unchecked, check/uncheck
+    // all the checkboxes
     id = "#id_selected";
     $(id).bind("change", function() {
         selectall();
     });
+
+    // When the metadata save button is clicked, submit the metadata
+    // form with Ajax
+    id = '#id_metadata_form_save_button';
+    $(id).bind("click", function() {
+        $.ajax({
+            // Data to send in the request
+            data: $('#id_metadata_form').serialize(),
+
+            // Callback on successful response
+            success: metadataSaveAjaxResponseHandler,
+
+            type: 'POST',
+
+            // URL to make request to
+            url: params.metadataSaveAjaxUrl
+        });
+    });
+
 /*  For later use (ajax)
     id = "#id_view";
     $(id).bind("change", function() {
@@ -108,6 +130,10 @@ function setRowColumnBindingsChange(id) {
         var col_index = $(this).parent().index('tr:eq('+row_index+') td');
         justTyped(row_index-1, col_index-1);
     });
+}
+
+function metadataSaveAjaxResponseHandler(response) {
+    console.log(response.status);
 }
 
 /* For later use (ajax)

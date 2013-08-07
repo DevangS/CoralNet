@@ -2,7 +2,7 @@
 This is a template that is used to render a form for editing metadata
 {% endcomment %}
 
-<form method="post" id="form">{% csrf_token %}
+<form method="post" id="id_metadata_form">{% csrf_token %}
     {{ metadataForm.management_form }}
 
     {% for field in selectAllForm %}

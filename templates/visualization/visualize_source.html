@@ -194,7 +194,9 @@
         BrowseSearchHelper.init({{ source.enable_robot_classifier|jsonify }});
 
         {% if metadataForm %}
-            setUpBindings();
+            setUpBindings({
+                metadataSaveAjaxUrl: '{% url metadata_edit_ajax source.id %}'
+            });
         {% endif %}
 
         {% if has_download_form or has_delete_form %}
