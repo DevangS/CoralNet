@@ -16,3 +16,10 @@ makes radio buttons use li elements. */
 #id_page_view_wrapper .field_wrapper li {
     display: inline;
 }
+
+#id_metadata_form input[type="text"].changed {
+    border-color: blue;
+}
+#id_metadata_form input[type="text"].error {
+    border-color: red;
+}

@@ -4,7 +4,7 @@ from django.forms import FileInput, ImageField, Form, ChoiceField, FileField, Ch
 from django.utils.translation import ugettext_lazy as _
 from lib.forms import clean_comma_separated_image_ids_field
 from upload.utils import metadata_to_filename
-from images.models import Source, Value1, Value2, Value3, Value4, Value5, Image
+from images.models import Source, Value1, Value2, Value3, Value4, Value5, Image, ImageModelConstants
 from datetime import date
 
 class MultipleFileInput(FileInput):
@@ -245,17 +245,21 @@ class MetadataForm(Form):
     be edited at once.
     """
     imageId = forms.IntegerField(widget=forms.HiddenInput())
-    date = DateField(required=False, widget= TextInput(attrs={'size': 8,}))
-    height = CharField(widget= TextInput(attrs={'size': 10,}))
-    latitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
-    longitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
-    depth = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
-    camera = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
-    photographer = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
-    waterQuality = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
-    strobes = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
-    framingGear = CharField(required=False, widget= TextInput(attrs={'size': 16,}))
-    whiteBalance = CharField(required=False, widget= TextInput(attrs={'size': 16,}))
+    date = DateField(required=False, widget= TextInput(attrs={'size': 8,}), label="Date")
+    height = forms.IntegerField(
+        min_value=ImageModelConstants.MIN_IMAGE_CM_HEIGHT,
+        max_value=ImageModelConstants.MAX_IMAGE_CM_HEIGHT,
+        widget=TextInput(attrs={'size': 10,}), label="Height (cm)",
+    )
+    latitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Latitude")
+    longitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Longitude")
+    depth = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Depth")
+    camera = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Camera")
+    photographer = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Photographer")
+    waterQuality = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Water Quality")
+    strobes = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Strobes")
+    framingGear = CharField(required=False, widget= TextInput(attrs={'size': 16,}), label="Framing Gear Used")
+    whiteBalance = CharField(required=False, widget= TextInput(attrs={'size': 16,}), label="White Balance Card")
 
     def __init__(self, *args, **kwargs):
         self.source_id = kwargs.pop('source_id')
@@ -267,12 +271,17 @@ class MetadataForm(Form):
         # Using insert so that the fields appear in the right order on the
         # page. This field order should match the order of the table headers
         # in the page template.
+        key_list = self.source.get_key_list()
         date_field_index = 1
-        for key_num in range(1, self.source.num_of_keys()+1):
+        for key_num in range(1, len(key_list)+1):
             self.fields.insert(
                 date_field_index + key_num,
                 'key%s' % key_num,
-                CharField(required=False, widget=TextInput(attrs={'size': 10,}))
+                CharField(
+                    required=False,
+                    widget=TextInput(attrs={'size': 10,}),
+                    label=key_list[key_num-1],
+                )
             )
 
     def clean(self):

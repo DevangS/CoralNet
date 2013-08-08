@@ -181,10 +181,6 @@
                 </form>
             {% endif %}
 
-            {# Script in the body will run on page load. #}
-            <script type="text/javascript">
-            </script>
-
         {% endif %}
 
     {% endif %}
@@ -194,7 +190,7 @@
         BrowseSearchHelper.init({{ source.enable_robot_classifier|jsonify }});
 
         {% if metadataForm %}
-            setUpBindings({
+            initMetadataForm({
                 metadataSaveAjaxUrl: '{% url metadata_edit_ajax source.id %}'
             });
         {% endif %}

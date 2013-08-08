@@ -57,12 +57,20 @@ function updateCheckedRowFields(row, column) {
 }
 
 // Update indicators that a value in the form has changed.
-function updateMetadataChangeStatus(id) {
-    // TODO:
+function updateMetadataChangeStatus(fieldId) {
+
     // Un-disable the Save Edits button
-    // Update relevant text next to the Save Edits button
-    // "You have unsaved changes" warning when trying to navigate away
-    // Outline the changed field in blue or something
+    $('#id_metadata_form_save_button').prop('disabled', false);
+
+    // Update text next to the Save button
+    $('#id_metadata_save_status').text("There are unsaved changes");
+
+    // Add warning when trying to navigate away
+    util.pageLeaveWarningEnable("You have unsaved changes.");
+
+    // Style the changed field differently, so the user can keep track of
+    // what's changed
+    $(fieldId).addClass('changed').removeClass('error');
 }
 
 // This initializes the form with the correct bindings.
@@ -101,23 +109,9 @@ function setUpBindings(params) {
         selectall();
     });
 
-    // When the metadata save button is clicked, submit the metadata
-    // form with Ajax
+    // When the metadata save button is clicked...
     id = '#id_metadata_form_save_button';
-    $(id).bind("click", function() {
-        $.ajax({
-            // Data to send in the request
-            data: $('#id_metadata_form').serialize(),
-
-            // Callback on successful response
-            success: metadataSaveAjaxResponseHandler,
-
-            type: 'POST',
-
-            // URL to make request to
-            url: params.metadataSaveAjaxUrl
-        });
-    });
+    $(id).bind("click", submitMetadataForm.curry(params.metadataSaveAjaxUrl));
 
 /*  For later use (ajax)
     id = "#id_view";
@@ -126,7 +120,7 @@ function setUpBindings(params) {
     });*/
 }
 
-// Given the id, this will set a key down key binding that calls
+// Given the id, this will set a key-up binding that calls
 // updateCheckedRowFields with the given row and column of the table form.
 function setRowColumnBindingsKeyUp(id) {
     $(id).bind("keyup", function() {
@@ -137,7 +131,6 @@ function setRowColumnBindingsKeyUp(id) {
 }
 
 function setRowColumnBindingsChange(params) {
-
     if (params.isDate === true) {
         $(params.id).bind("change", function() {
             // Update indicators that a value in the form
@@ -159,8 +152,62 @@ function setRowColumnBindingsChange(params) {
     }
 }
 
+// Submit the metadata form (using Ajax).
+function submitMetadataForm(metadataSaveAjaxUrl) {
+    // Disable the save button
+    $('#id_metadata_form_save_button').prop('disabled', true);
+
+    // Remove any error messages from a previous edit attempt
+    $('ul#id_metadata_errors_list').empty();
+
+    // Update text next to the Save button
+    $('#id_metadata_save_status').text("Now saving...");
+
+    // Submit the metadata form with Ajax
+    $.ajax({
+        // Data to send in the request
+        data: $('#id_metadata_form').serialize(),
+
+        // Callback on successful response
+        success: metadataSaveAjaxResponseHandler,
+
+        type: 'POST',
+
+        // URL to make request to
+        url: metadataSaveAjaxUrl
+    });
+}
+
+// This function runs when the metadata-save-via-Ajax returns from
+// the server side.
 function metadataSaveAjaxResponseHandler(response) {
     console.log(response.status);
+
+    // Update text next to the Save button
+    if (response.status === 'success') {
+        $('#id_metadata_save_status').text("All changes saved");
+
+        // Disable "You have unsaved changes" warning when trying to navigate away
+        util.pageLeaveWarningDisable();
+
+        // Remove field stylings
+        $('#id_metadata_form input[type="text"]').removeClass('changed', 'error');
+    }
+    else {  // 'error'
+        $('#id_metadata_save_status').text("There were error(s); couldn't save");
+
+        var $errorsList = $('ul#id_metadata_errors_list');
+        var numOfErrors = response.errors.length;
+
+        for (var i = 0; i < numOfErrors; i++) {
+            // Display the error message(s) next to the Save button
+            $errorsList.append($('<li>').text(
+                response.errors[i].errorMessage
+            ));
+            // Style the field to indicate an error
+            $('#' + response.errors[i].fieldId).addClass('error').removeClass('changed');
+        }
+    }
 }
 
 /* For later use (ajax)
@@ -182,3 +229,12 @@ function ajax(url) {
     });
 }
 */
+
+function initMetadataForm(params) {
+    // Initialize save status
+    $('#id_metadata_save_status').text("All changes saved");
+    $('#id_metadata_form_save_button').prop('disabled', true);
+
+    // Set up event bindings
+    setUpBindings(params);
+}

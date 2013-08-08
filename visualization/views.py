@@ -394,15 +394,15 @@ def metadata_edit_ajax(request, source_id):
 
     # This is used to create a formset out of the metadataForm. I need to do this
     # in order to pass in the source id.
-    metadataFormSet = formset_factory(MetadataForm)
-    metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
+    MetadataFormSet = formset_factory(MetadataForm)
+    MetadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
 
-    metadataForm = metadataFormSet(request.POST)
+    formset = MetadataFormSet(request.POST)
 
-    if metadataForm.is_valid():
+    if formset.is_valid():
 
         # Data is valid. Save the data to the database.
-        for formData in metadataForm.cleaned_data:
+        for formData in formset.cleaned_data:
 
             try:
                 image = Image.objects.get(pk=formData['imageId'], source=source)
@@ -446,11 +446,45 @@ def metadata_edit_ajax(request, source_id):
 
     else:
 
+        error_list = []
+
+        for form in formset:
+
+            for field_name, error_messages in form.errors.iteritems():
+
+                # The form prefix looks something like form-2. The id of the
+                # form field element is expected to look like id_form-2-date.
+                field_id = 'id_' + form.prefix + '-' + field_name
+
+                # Get the human-readable name for this field.
+                field_label = MetadataForm.base_fields[field_name].label
+
+                # Get the image this field corresponds to, then get the
+                # name (usually is the filename) of that image.
+                image_id = form.data[form.prefix + '-imageId']
+                img = Image.objects.get(pk=image_id)
+                image_name = img.metadata.name
+                if image_name == '':
+                    image_name = "(Unnamed image)"
+
+                for raw_error_message in error_messages:
+
+                    error_message = '{image_name} | {field_label} | {raw_error_message}'.format(
+                        image_name=image_name,
+                        field_label=field_label,
+                        raw_error_message=raw_error_message,
+                    )
+
+                    error_list.append(dict(
+                        fieldId=field_id,
+                        errorMessage=error_message,
+                    ))
+
         # There were form errors. Return the errors so they can be
         # added to the on-page form via Javascript.
         return JsonResponse(dict(
             status='error',
-            errors=metadataForm.errors,
+            errors=error_list,
         ))
 
 
