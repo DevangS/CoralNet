@@ -16,7 +16,15 @@ function getValueFromCell(row, column)
 // Given the row/column, this sets the value in that cell to what value is.
 function setValueFromCell(row, column, value)
 {
-    $('#metadataFormTable')[0].rows[row+1].cells[column+1].childNodes[0].value = value;
+    var field = $('#metadataFormTable')[0].rows[row+1].cells[column+1].childNodes[0];
+
+    // Check if the old and new values are different; if so, mark the cell
+    // as changed.
+    if (field.value !== value) {
+        updateMetadataChangeStatus($(field));
+    }
+    // Set the new value.
+    field.value = value;
 }
 
 // This returns an bool array that represents what checkboxes are checked.
@@ -57,7 +65,7 @@ function updateCheckedRowFields(row, column) {
 }
 
 // Update indicators that a value in the form has changed.
-function updateMetadataChangeStatus(fieldId) {
+function updateMetadataChangeStatus($field) {
 
     // Un-disable the Save Edits button
     $('#id_metadata_form_save_button').prop('disabled', false);
@@ -70,7 +78,7 @@ function updateMetadataChangeStatus(fieldId) {
 
     // Style the changed field differently, so the user can keep track of
     // what's changed
-    $(fieldId).addClass('changed').removeClass('error');
+    $field.addClass('changed').removeClass('error');
 }
 
 // This initializes the form with the correct bindings.
@@ -131,11 +139,13 @@ function setRowColumnBindingsKeyUp(id) {
 }
 
 function setRowColumnBindingsChange(params) {
+    var $field = $(params.id);
+
     if (params.isDate === true) {
-        $(params.id).bind("change", function() {
+        $field.bind("change", function() {
             // Update indicators that a value in the form
             // has changed.
-            updateMetadataChangeStatus(params.id);
+            updateMetadataChangeStatus($(this));
 
             // Update checked rows.
             var row_index = $(this).parent().parent().index('tr');
@@ -144,10 +154,10 @@ function setRowColumnBindingsChange(params) {
         });
     }
     else {
-        $(params.id).bind("change", function() {
+        $field.bind("change", function() {
             // Update indicators that a value in the form
             // has changed.
-            updateMetadataChangeStatus(params.id);
+            updateMetadataChangeStatus($(this));
         });
     }
 }
