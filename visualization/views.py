@@ -123,11 +123,14 @@ def visualize_source(request, source_id):
 
         # Coming from the upload page.
 
+        # Let the user edit the metadata of the images they just uploaded.
         page_view = 'metadata'
 
-        # TODO: we expect the upload page to
-        # properly fill in an ImageSpecifyForm with the image ids. This MIGHT
-        # not be working yet.
+        # Make the search form's page_view field value accurate.
+        search_form = BrowseSearchForm(source_id, initial={'page_view': 'metadata'})
+
+        # We expect the upload page to properly fill in an ImageSpecifyForm
+        # with the image ids.
         image_specify_form = ImageSpecifyForm(request.POST, source=source)
 
         # Defaults on everything else
