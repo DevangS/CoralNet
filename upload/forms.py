@@ -1,11 +1,10 @@
 from django import forms
+from django.core import validators
 from django.core.exceptions import ValidationError
 from django.forms import FileInput, ImageField, Form, ChoiceField, FileField, CharField, BooleanField, TextInput, DateField, HiddenInput
 from django.utils.translation import ugettext_lazy as _
-from lib.forms import clean_comma_separated_image_ids_field
 from upload.utils import metadata_to_filename
-from images.models import Source, Value1, Value2, Value3, Value4, Value5, Image, ImageModelConstants
-from datetime import date
+from images.models import Source, Value1, Value2, Value3, Value4, Value5, Metadata, ImageModelConstants, LocationValue
 
 class MultipleFileInput(FileInput):
     """
@@ -244,22 +243,22 @@ class MetadataForm(Form):
     This is commonly used within a form set, so that multiple images can
     be edited at once.
     """
-    imageId = forms.IntegerField(widget=forms.HiddenInput())
-    date = DateField(required=False, widget= TextInput(attrs={'size': 8,}), label="Date")
-    height = forms.IntegerField(
+    image_id = forms.IntegerField(widget=forms.HiddenInput())
+    photo_date = DateField(required=False, widget= TextInput(attrs={'size': 8,}))
+    height_in_cm = forms.IntegerField(
         min_value=ImageModelConstants.MIN_IMAGE_CM_HEIGHT,
         max_value=ImageModelConstants.MAX_IMAGE_CM_HEIGHT,
-        widget=TextInput(attrs={'size': 10,}), label="Height (cm)",
+        widget=TextInput(attrs={'size': 10,}),
     )
-    latitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Latitude")
-    longitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Longitude")
-    depth = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Depth")
-    camera = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Camera")
-    photographer = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Photographer")
-    waterQuality = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Water Quality")
-    strobes = CharField(required=False, widget= TextInput(attrs={'size': 10,}), label="Strobes")
-    framingGear = CharField(required=False, widget= TextInput(attrs={'size': 16,}), label="Framing Gear Used")
-    whiteBalance = CharField(required=False, widget= TextInput(attrs={'size': 16,}), label="White Balance Card")
+    latitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    longitude = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    depth = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    camera = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    photographer = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    water_quality = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    strobes = CharField(required=False, widget= TextInput(attrs={'size': 10,}))
+    framing = CharField(required=False, widget= TextInput(attrs={'size': 16,}))
+    balance = CharField(required=False, widget= TextInput(attrs={'size': 16,}))
 
     def __init__(self, *args, **kwargs):
         self.source_id = kwargs.pop('source_id')
@@ -272,6 +271,7 @@ class MetadataForm(Form):
         # page. This field order should match the order of the table headers
         # in the page template.
         key_list = self.source.get_key_list()
+        location_value_max_length = LocationValue._meta.get_field('name').max_length
         date_field_index = 1
         for key_num in range(1, len(key_list)+1):
             self.fields.insert(
@@ -279,10 +279,55 @@ class MetadataForm(Form):
                 'key%s' % key_num,
                 CharField(
                     required=False,
-                    widget=TextInput(attrs={'size': 10,}),
+                    widget=TextInput(attrs={'size': 10, 'maxlength': location_value_max_length}),
                     label=key_list[key_num-1],
+                    max_length=location_value_max_length,
                 )
             )
+
+        # Apply labels and max-length attributes from the Metadata model to the
+        # form fields (besides the key fields, which we already did).
+        #
+        # This could be done automatically if this were a ModelForm instead of a
+        # regular Form. Whether a ModelForm makes things cleaner overall remains
+        # to be seen.
+        char_fields = ['latitude', 'longitude', 'depth', 'camera',
+                       'photographer', 'water_quality', 'strobes',
+                       'framing', 'balance']
+        editable_fields = ['photo_date', 'height_in_cm'] + char_fields
+
+        for field_name in editable_fields:
+            form_field = self.fields[field_name]
+            form_field.label = Metadata._meta.get_field(field_name).verbose_name
+
+        for field_name in char_fields:
+
+            form_field = self.fields[field_name]
+            max_length = Metadata._meta.get_field(field_name).max_length
+
+            # If we were setting the max length through the CharField's
+            # __init__(), we could probably just set field.max_length and be
+            # done.  But since we're past __init__(), we have to do a bit more
+            # manual work.
+
+            # Set a max-length validator.
+            #
+            # It seems that validators are shared among all instances of a
+            # form class, even if the validators are added dynamically. So to
+            # avoid adding duplicates of the same MaxLengthValidator, we'll
+            # first check if the field already has such a validator. If it
+            # does, we do nothing. If it doesn't, we add a MaxLengthValidator.
+            if not any([isinstance(v, validators.MaxLengthValidator)
+                        for v in form_field.validators]):
+                form_field.validators.append(
+                    validators.MaxLengthValidator(max_length)
+                )
+
+            # Make it impossible to type more than max_length characters in
+            # the HTML input element. (Impossible without something like
+            # Inspect Element HTML editing, that is)
+            form_field.widget.attrs.update({'maxlength': max_length})
+
 
     def clean(self):
         data = self.cleaned_data

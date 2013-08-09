@@ -21,6 +21,10 @@ This is a template that is used to render a form for editing metadata
                 <th></th> {# This is the checkbox column #}
                 <th>Filename</th>
                 <th>Status</th>
+
+                {# The below fields should be in the same order as the #}
+                {# fields in the MetadataForm class. #}
+
                 <th>Date</th>
                 {% for key in key_list %}
                     <th>{{ key }}</th>
@@ -51,7 +55,7 @@ This is a template that is used to render a form for editing metadata
                         {# Image id (hidden, and piggybacking in one of the #}
                         {# td elements, because td/th are the only elements #}
                         {# that should be immediate children of a tr) #}
-                        {{ form.imageId }}
+                        {{ form.image_id }}
                     </td>
 
                     {# Annotation status #}
@@ -59,7 +63,7 @@ This is a template that is used to render a form for editing metadata
 
                     {# Editable metadata fields #}
                     {% for field in form %}
-                        {% if field.name != 'imageId' %}
+                        {% if field.name != 'image_id' %}
                             <td>{{ field }}</td>
                         {% endif %}
                     {% endfor %}

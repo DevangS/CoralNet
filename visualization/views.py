@@ -328,22 +328,22 @@ def visualize_source(request, source_id):
 
         for i, image in enumerate(all_items):
 
+            # Location keys
             keys = image.get_location_value_str_list()
             for j, key in enumerate(keys):
                 initValuesMetadata['form-%s-key%s' % (i,j+1)] = key
 
-            initValuesMetadata['form-%s-imageId' % i] = image.id
-            initValuesMetadata['form-%s-date' % i] = image.metadata.photo_date
-            initValuesMetadata['form-%s-height' % i] = image.metadata.height_in_cm
-            initValuesMetadata['form-%s-latitude' % i] = image.metadata.latitude
-            initValuesMetadata['form-%s-longitude' % i] = image.metadata.longitude
-            initValuesMetadata['form-%s-depth' % i] = image.metadata.depth
-            initValuesMetadata['form-%s-camera' % i] = image.metadata.camera
-            initValuesMetadata['form-%s-photographer' % i] = image.metadata.photographer
-            initValuesMetadata['form-%s-waterQuality' % i] = image.metadata.water_quality
-            initValuesMetadata['form-%s-strobes' % i] = image.metadata.strobes
-            initValuesMetadata['form-%s-framingGear' % i] = image.metadata.framing
-            initValuesMetadata['form-%s-whiteBalance' % i] = image.metadata.balance
+            # Image id
+            initValuesMetadata['form-%s-image_id' % i] = image.id
+
+            # Other fields
+            metadata_field_names = ['photo_date', 'height_in_cm', 'latitude',
+                                    'longitude', 'depth', 'camera',
+                                    'photographer', 'water_quality',
+                                    'strobes', 'framing', 'balance']
+            for metadata_field in metadata_field_names:
+                formset_field_name = 'form-{num}-{field}'.format(num=i, field=metadata_field)
+                initValuesMetadata[formset_field_name] = getattr(image.metadata, metadata_field)
 
         metadataForm = metadataFormSet(initValuesMetadata)
         checkboxForm = checkboxFormSet(initValues)
@@ -405,7 +405,7 @@ def metadata_edit_ajax(request, source_id):
         for formData in formset.cleaned_data:
 
             try:
-                image = Image.objects.get(pk=formData['imageId'], source=source)
+                image = Image.objects.get(pk=formData['image_id'], source=source)
             except Image.DoesNotExist:
                 # If the image doesn't exist in the source (because another
                 # source editor deleted the image / someone tampered with the
@@ -413,18 +413,16 @@ def metadata_edit_ajax(request, source_id):
                 # form instance. Move on to the next one.
                 continue
 
-            image.metadata.photo_date = formData['date']
-            image.metadata.height_in_cm = formData['height']
-            image.metadata.latitude = formData['latitude']
-            image.metadata.longitude = formData['longitude']
-            image.metadata.depth = formData['depth']
-            image.metadata.camera = formData['camera']
-            image.metadata.photographer = formData['photographer']
-            image.metadata.water_quality = formData['waterQuality']
-            image.metadata.strobes = formData['strobes']
-            image.metadata.framing = formData['framingGear']
-            image.metadata.balance = formData['whiteBalance']
+            # Everything except location keys
+            metadata_field_names = ['photo_date', 'height_in_cm', 'latitude',
+                                    'longitude', 'depth', 'camera',
+                                    'photographer', 'water_quality',
+                                    'strobes', 'framing', 'balance']
 
+            for metadata_field in metadata_field_names:
+                setattr(image.metadata, metadata_field, formData[metadata_field])
+
+            # Location keys
             if 'key1' in formData:
                 image.metadata.value1 = formData['key1']
             if 'key2' in formData:
@@ -435,6 +433,7 @@ def metadata_edit_ajax(request, source_id):
                 image.metadata.value4 = formData['key4']
             if 'key5' in formData:
                 image.metadata.value5 = formData['key5']
+
             image.metadata.save()
 
         # After entering data, try to remove unused key values
@@ -457,11 +456,11 @@ def metadata_edit_ajax(request, source_id):
                 field_id = 'id_' + form.prefix + '-' + field_name
 
                 # Get the human-readable name for this field.
-                field_label = MetadataForm.base_fields[field_name].label
+                field_label = form[field_name].label
 
                 # Get the image this field corresponds to, then get the
                 # name (usually is the filename) of that image.
-                image_id = form.data[form.prefix + '-imageId']
+                image_id = form.data[form.prefix + '-image_id']
                 img = Image.objects.get(pk=image_id)
                 image_name = img.metadata.name
                 if image_name == '':

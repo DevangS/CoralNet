@@ -454,17 +454,17 @@ class Value5(LocationValue):
 class Metadata(models.Model):
     name = models.CharField(max_length=200, blank=True)
     photo_date = models.DateField(
-        'Photo date',
+        "Date",
         help_text='Format: YYYY-MM-DD',
         null=True, blank=True,
     )
 
-    latitude = models.CharField(max_length=20, blank=True)
-    longitude = models.CharField(max_length=20, blank=True)
-    depth = models.CharField(max_length=45, blank=True)
+    latitude = models.CharField("Latitude", max_length=20, blank=True)
+    longitude = models.CharField("Longitude", max_length=20, blank=True)
+    depth = models.CharField("Depth", max_length=45, blank=True)
 
     height_in_cm = models.IntegerField(
-        "Height covered (centimeters)",
+        "Height (cm)",
         help_text="What is the actual span between the top and bottom of this image?\n"
                   "(This information is used by the automatic annotator.)",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
@@ -480,13 +480,13 @@ class Metadata(models.Model):
         null=True, blank=True
     )
     
-    camera = models.CharField(max_length=200, blank=True)
-    photographer = models.CharField(max_length=45, blank=True)
-    water_quality = models.CharField(max_length=45, blank=True)
+    camera = models.CharField("Camera", max_length=200, blank=True)
+    photographer = models.CharField("Photographer", max_length=45, blank=True)
+    water_quality = models.CharField("Water quality", max_length=45, blank=True)
 
-    strobes = models.CharField(max_length=200, blank=True)
-    framing = models.CharField('Framing gear used', max_length=200, blank=True)
-    balance = models.CharField('White balance card', max_length=200, blank=True)
+    strobes = models.CharField("Strobes", max_length=200, blank=True)
+    framing = models.CharField("Framing gear used", max_length=200, blank=True)
+    balance = models.CharField("White balance card", max_length=200, blank=True)
     
     comments = models.TextField(max_length=1000, blank=True)
     
