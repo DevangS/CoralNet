@@ -59,7 +59,7 @@ class ImageLocationValueForm(forms.Form):
 class BrowseSearchForm(ImageLocationValueForm):
 
     page_view = forms.ChoiceField(
-        choices=[('images','Images'), ('metadata','Metadata'), ('patches','Annotation Patches')],
+        choices=[],  # Will be filled in by __init__()
         initial='images',
         widget=forms.widgets.RadioSelect(),
         required=False,
@@ -70,10 +70,20 @@ class BrowseSearchForm(ImageLocationValueForm):
         required=False,
     )
         
-    def __init__(self,source_id,*args,**kwargs):
+    def __init__(self, source_id, metadata_view_available, *args, **kwargs):
 
         ImageLocationValueForm.__init__(self, source_id,*args,**kwargs)
         source = Source.objects.get(id=source_id)
+
+        # page_view - add choices depending on whether the metadata view
+        # should be available
+
+        if metadata_view_available:
+            self.fields['page_view'].choices = \
+                ('images','Images'), ('metadata','Metadata'), ('patches','Annotation Patches')
+        else:
+            self.fields['page_view'].choices =\
+                ('images','Images'), ('patches','Annotation Patches')
 
         # labels
 

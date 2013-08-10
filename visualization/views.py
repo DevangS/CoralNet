@@ -74,10 +74,12 @@ def visualize_source(request, source_id):
 
     errors = []
     source = get_object_or_404(Source, id=source_id)
+    metadata_view_available = request.user.has_perm(Source.PermTypes.EDIT.code, source)
 
 
     # This is used to create a formset out of the metadataForm. I need to do this
     # in order to pass in the source id.
+    # From http://stackoverflow.com/a/624013
     metadataFormSet = formset_factory(MetadataForm)
     metadataFormSet.form = staticmethod(curry(MetadataForm, source_id=source_id))
     # There is a separate form that controls the checkboxes.
@@ -98,7 +100,7 @@ def visualize_source(request, source_id):
     # Defaults
 
     # Search form to show on the page
-    search_form = BrowseSearchForm(source_id)
+    search_form = BrowseSearchForm(source_id, metadata_view_available)
 
     # GET args in url format - for constructing prev page/next page links
     urlArgsStr = ''
@@ -127,7 +129,10 @@ def visualize_source(request, source_id):
         page_view = 'metadata'
 
         # Make the search form's page_view field value accurate.
-        search_form = BrowseSearchForm(source_id, initial={'page_view': 'metadata'})
+        search_form = BrowseSearchForm(
+            source_id, metadata_view_available,
+            initial={'page_view': 'metadata'}
+        )
 
         # We expect the upload page to properly fill in an ImageSpecifyForm
         # with the image ids.
@@ -140,7 +145,7 @@ def visualize_source(request, source_id):
         # Search form submitted OR
         # a URL with GET parameters was entered.
 
-        submitted_search_form = BrowseSearchForm(source_id, request.GET)
+        submitted_search_form = BrowseSearchForm(source_id, metadata_view_available, request.GET)
 
         if submitted_search_form.is_valid():
 
