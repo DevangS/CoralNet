@@ -569,38 +569,13 @@ class Image(models.Model):
     def __unicode__(self):
         return self.metadata.name
 
-    def get_metadata_string_list(self):
-        """
-        Get a list of the value1, ..., valueN, year
-        as strings.
-        """
-        metadata = self.metadata
-        data_strings = []
-
-        # TODO: If any value or the year is missing, perhaps put N/A or
-        # something? Missing values might be problematic.
-        # Then again, if one of the values the user is using is 'N/A',
-        # then that could be problematic too.
-        for v in [metadata.value1,
-                  metadata.value2,
-                  metadata.value3,
-                  metadata.value4,
-                  metadata.value5 ]:
-            if v:
-                data_strings.append(v.name)
-            else:
-                break
-        if metadata.photo_date:
-            data_strings.insert(0, str(metadata.photo_date.year))
-
-        return data_strings
-
     def get_image_element_title(self):
         """
         Use this as the "title" element of the image on an HTML page
         (hover the mouse over the image to see this).
         """
-        return ' '.join(self.get_metadata_string_list())
+        # Just use the image name (usually filename).
+        return self.metadata.name
 
     def get_annotation_status_code(self):
         """
