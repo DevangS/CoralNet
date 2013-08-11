@@ -31,3 +31,20 @@ form.box {
     border: 1px solid #000000;
     border-radius: 5px;
 }
+
+/* Customize the help dialog contents. This should really go in a site-global
+   CSS instead of in here (and in the Upload CSS), so do that at some point. */
+.ui-widget {
+    /* Override jQuery UI defaults */
+    font-family: inherit;
+    font-size: 0.9em;
+}
+.ui-widget ul li {
+    /* Make help-dialog lists bulleted */
+    list-style-type: disc;
+    list-style-position: outside;
+
+    line-height: 1.2em;
+
+    margin: 10px 0 10px 20px;   /* t r b l */
+}

@@ -628,7 +628,7 @@ ul.errorlist li {
     width: 800px;
 }
 
-.extra_help_text, .dialog_help_text {
+.extra_help_text, .dialog_help_text, .tutorial-message {
     /* Extra help text starts out hidden, and can be shown via Javascript
        when the user clicks a button or link. */
     display: none;
