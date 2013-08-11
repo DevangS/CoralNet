@@ -227,9 +227,9 @@ def visualize_source(request, source_id):
 
     if page_view == 'images' or page_view == 'metadata':
 
-        all_items = image_results
-
-        # TODO: Sort the images somehow?
+        # We'll display the images on the page. Sort them by image id
+        # (highest id first).
+        all_items = image_results.order_by('-pk')
 
     else:  # patches
 
