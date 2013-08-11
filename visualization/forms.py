@@ -66,6 +66,7 @@ class BrowseSearchForm(ImageLocationValueForm):
     )
 
     annotated_by = forms.ChoiceField(
+        label="Annotation made by",
         choices=[('human','Human'), ('machine','Machine'), ('either','Human or Machine')],
         required=False,
     )
@@ -102,6 +103,7 @@ class BrowseSearchForm(ImageLocationValueForm):
             status_choices.append(('a', 'Annotated'))
 
         self.fields['image_status'] = forms.ChoiceField(
+            label="Image's annotation status",
             choices=status_choices,
             required=False,
         )
