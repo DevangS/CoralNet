@@ -23,3 +23,11 @@ makes radio buttons use li elements. */
 #id_metadata_form input[type="text"].error {
     border-color: red;
 }
+
+/* Differentiate certain parts of the page from others with a colored box.
+   Maybe this could be used throughout the site, not just here. */
+form.box {
+    background-color: #e0e0e0;
+    border: 1px solid #000000;
+    border-radius: 5px;
+}
