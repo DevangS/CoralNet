@@ -127,7 +127,7 @@
 
         {% else %}  {# metadata view #}
 
-            {% include "upload/metadata_form.html" with metadataForm=metadataForm metadataFormWithExtra=metadataFormWithExtra selectAllForm=selectAllForm %}
+            {% include "upload/metadata_form.html" with metadataForm=metadataForm metadataFormWithExtra=metadataFormWithExtra selectAllForm=selectAllForm num_of_total_results=num_of_total_results %}
 
         {% endif %}
 

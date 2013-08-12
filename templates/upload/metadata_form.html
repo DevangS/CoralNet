@@ -72,10 +72,16 @@ This is a template that is used to render a form for editing metadata
         </table>
     </div>
 
+    {# TODO: Might want to re-use this style for separating text divs from #}
+    {# surrounding elements, in general #}
+    <div style="margin: 5px 0">
+        Showing {{ num_of_total_results }} image results
+    </div>
+
     <button type="button" class="submit" id="id_metadata_form_save_button">
         Save Edits
     </button>
     <span id="id_metadata_save_status"></span>
-    <ul id="id_metadata_errors_list"></ul>
+    <ul style="margin: 5px 0" id="id_metadata_errors_list"></ul>
 
 </form>
