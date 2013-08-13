@@ -83,7 +83,7 @@ class BrowseSearchForm(ImageLocationValueForm):
             self.fields['page_view'].choices = \
                 ('images','Images'), ('metadata','Metadata'), ('patches','Annotation Patches')
         else:
-            self.fields['page_view'].choices =\
+            self.fields['page_view'].choices = \
                 ('images','Images'), ('patches','Annotation Patches')
 
         # labels
@@ -147,12 +147,15 @@ class ImageSpecifyForm(forms.Form):
             # Load the dict of search keys from the string input.
             search_keys_dict_raw = json.loads(self.cleaned_data['specify_str'])
 
-            # Get rid of search keys with the value 'all', which indicates that
-            # we shouldn't filter by that key.
+            # Get rid of search keys with the values:
+            # - 'all', which indicates that we shouldn't filter by that key
+            # - u'', a missing argument, which we could get by e.g.
+            # landing on the Browse page and then clicking the page 2 link
             search_keys_dict = dict()
             for k,v in search_keys_dict_raw.iteritems():
-                if v != 'all':
-                    search_keys_dict[k] = v
+                if v == 'all' or v == u'':
+                    continue
+                search_keys_dict[k] = v
 
             # Go over each search key/value from the form input, and turn
             # those into image queryset filters.
@@ -207,8 +210,8 @@ class ImageSpecifyForm(forms.Form):
 
                 else:
 
-                    # if we let in any unknown args, raise an error to be safe
-                    raise ValueError("Unknown search key: {k}".format(k=k))
+                    # if there are any unknown args, ignore them
+                    pass
 
             self.cleaned_data['specify_str'] = filter_args
 

@@ -1,9 +1,9 @@
 import csv
 import json
+import urllib
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.core.urlresolvers import reverse
-from django.db import models
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
@@ -42,29 +42,6 @@ def image_search_args_to_queryset_args(searchDict, source):
 
     return querysetArgs
 
-# TODO: Move to utils
-def image_search_args_to_url_arg_str(searchDict):
-    """
-    Take: the image search arguments directly from the visualization search form's
-    form.cleaned_data.
-    Return: the search arguments in URL get-parameter format.  This is used for
-    the next/previous page links.
-    """
-    argsList = []
-
-    for paramName in searchDict:
-
-        # If a model object (probably coming from a ModelChoiceField in the
-        # search form), then set the URL arg to be the primary key
-        if isinstance(searchDict[paramName], models.Model):
-            argsList.append('%s=%s' % (paramName, searchDict[paramName].pk))
-
-        # Don't include the arg if we don't care about it here
-        elif searchDict[paramName] and paramName != 'page' and paramName != 'page_view':
-            argsList.append('%s=%s' % (paramName, searchDict[paramName]))
-
-    return '&'.join(argsList)
-
 @source_visibility_required('source_id')
 def visualize_source(request, source_id):
     """
@@ -91,10 +68,6 @@ def visualize_source(request, source_id):
     # - Which images we're showing (if image/meta mode), or
     #   filtering the patches by (if patch mode)
     # - Other parameters
-    #
-    # TODO: Ideally, we'd simply fill in the image specify form with the
-    # request.POST (and/or request.GET) and that'll take care of all cases
-    # where we can reach this page.
 
 
     # Defaults
@@ -131,7 +104,7 @@ def visualize_source(request, source_id):
         # Make the search form's page_view field value accurate.
         search_form = BrowseSearchForm(
             source_id, metadata_view_available,
-            initial={'page_view': 'metadata'}
+            initial=dict(page_view=page_view),
         )
 
         # We expect the upload page to properly fill in an ImageSpecifyForm
@@ -145,7 +118,11 @@ def visualize_source(request, source_id):
         # Search form submitted OR
         # a URL with GET parameters was entered.
 
-        submitted_search_form = BrowseSearchForm(source_id, metadata_view_available, request.GET)
+        submitted_search_form = BrowseSearchForm(
+            source_id,
+            metadata_view_available,
+            request.GET,
+        )
 
         if submitted_search_form.is_valid():
 
@@ -153,20 +130,34 @@ def visualize_source(request, source_id):
             # submitted in this search.
             search_form = submitted_search_form
 
-            urlArgsStr = image_search_args_to_url_arg_str(search_form.cleaned_data)
+            # Some search form parameters are used for things other than image
+            # filtering. Get these parameters.
+            #
+            # If any of these parameters are u'', then that parameter wasn't
+            # submitted. Don't let that '' override the default value.
+            if search_form.cleaned_data['page_view'] != u'':
+                page_view = search_form.cleaned_data['page_view']
+            if search_form.cleaned_data['label'] != u'':
+                label = search_form.cleaned_data['label']
+            if search_form.cleaned_data['annotated_by'] != u'':
+                annotated_by = search_form.cleaned_data['annotated_by']
 
-            page_view = search_form.cleaned_data.pop('page_view')
-            label = search_form.cleaned_data.pop('label')
-            annotated_by = search_form.cleaned_data.pop('annotated_by')
+            # We're going to serialize this cleaned_data and give it
+            # to an ImageSpecifyForm. A bit of cleanup to do first though.
+
+            # The Label object isn't serializable, so avoid an error by
+            # popping off this key first.
+            search_form.cleaned_data.pop('label')
+
             if page_view == 'patches':
                 # If in patch mode, the image_status filter doesn't apply.
+                # Pop off this filter to make sure the ImageSpecifyForm
+                # doesn't use it.
                 search_form.cleaned_data.pop('image_status')
 
-            # TODO: In order to keep URLs compact, don't include 'all' values
-            # in the URL GET parameters. Then, create a dict here with 'all'
-            # values by default, and update it with the
-            # search_form.cleaned_data.
-
+            # Give the search form data to the ImageSpecifyForm. Note that
+            # with the exception of the above parameters, any parameters
+            # not used for filtering images will just be ignored and won't cause problems.
             image_specify_form = ImageSpecifyForm(
                 dict(
                     specify_method='search_keys',
@@ -266,7 +257,9 @@ def visualize_source(request, source_id):
     # If we're in one of the paginated views, find out what the
     # results on this page are.
 
-    page_results = []
+    page_results = None
+    prev_page_link = None
+    next_page_link = None
 
     if page_view == 'images' or page_view == 'patches':
 
@@ -283,6 +276,19 @@ def visualize_source(request, source_id):
             page_results = paginator.page(page)
         except (EmptyPage, InvalidPage):
             page_results = paginator.page(paginator.num_pages)
+
+        # If there are previous or next pages, construct links to them.
+        # These links include GET parameters in the form of
+        # ?param1=value1&param2=value2 etc.
+
+        if page_results.has_previous():
+            prev_page_query_args = request.GET.copy()
+            prev_page_query_args.update(dict(page=page_results.previous_page_number()))
+            prev_page_link = '?' + urllib.urlencode(prev_page_query_args)
+        if page_results.has_next():
+            next_page_query_args = request.GET.copy()
+            next_page_query_args.update(dict(page=page_results.next_page_number()))
+            next_page_link = '?' + urllib.urlencode(next_page_query_args)
 
         # Finalize the data-structure that holds this page's results.
 
@@ -371,11 +377,12 @@ def visualize_source(request, source_id):
         'source': source,
 
         'searchForm': search_form,
-        'searchParamsStr': urlArgsStr,
 
         'errors': errors,
         'page_results': page_results,
         'num_of_total_results': num_of_total_results,
+        'prev_page_link': prev_page_link,
+        'next_page_link': next_page_link,
 
         'delete_form': delete_form,
         'download_form': download_form,
@@ -507,6 +514,7 @@ def browse_delete(request, source_id):
         # Get the images from the POST form.
         # Will either be in the form of a list of image ids, or in the form
         # of search args.
+        #
         # TODO: if search args, it should also come with the number of
         # images, so that we can do a sanity check (do the number of images
         # match?)
@@ -515,9 +523,6 @@ def browse_delete(request, source_id):
 
         if delete_form.is_valid():
             images_to_delete = delete_form.get_images()
-
-    #        actionFormImageArgs = simplejson.loads(searchKeys)
-    #        imagesToDelete = Image.objects.filter(source=source, **actionFormImageArgs)
 
             num_of_images = images_to_delete.count()
 
@@ -537,7 +542,9 @@ def browse_delete(request, source_id):
 
         messages.success(request, 'The delete form had an error. Nothing was deleted.')
 
-    # TODO: Include search args here too, if any.
+    # Redirect to the default search. Don't try and retrieve the search args
+    # that were used previously, because those search args might include
+    # location values that don't exist anymore.
     return HttpResponseRedirect(reverse('visualize_source', args=[source_id]))
 
 

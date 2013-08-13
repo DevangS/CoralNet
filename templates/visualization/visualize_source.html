@@ -111,16 +111,16 @@
                 </span>
                 <br /><br />
                 <span class="step-links">
-                    {% if page_results.has_previous %}
-                        <a href="?{{ searchParamsStr }}&page={{ page_results.previous_page_number }}">&lt;</a>
+                    {% if prev_page_link %}
+                        <a href="{{ prev_page_link }}">&lt;</a>
                     {% endif %}
 
                     <span class="current">
                         Page {{ page_results.number }} of {{ page_results.paginator.num_pages }}
                     </span>
 
-                    {% if page_results.has_next %}
-                        <a href="?{{ searchParamsStr }}&page={{ page_results.next_page_number }}">&gt;</a>
+                    {% if next_page_link %}
+                        <a href="{{ next_page_link }}">&gt;</a>
                     {% endif %}
                 </span>
             </div>
@@ -154,8 +154,6 @@
                 <input id="id_radio_delete" type="radio" name="batch_action" value="delete"/>
                 <label for="id_radio_delete">Delete</label>
             {% endif %}
-
-            {# TODO: Do these URLs need searchParamsStr in them? #}
 
             {# Download #}
 
