@@ -12,10 +12,9 @@
         <div class="helptext_small extra_help_text" id="id_{{ field.name }}_extra_help_text">{{ field.field.extra_help_text|linebreaksbr }}</div>
     {% endif %}
 
-    {# Dialog help text can be shown in a modal dialog by clicking "(More info)". #}
+    {# Dialog help text can be shown in a modal dialog by clicking a button. #}
     {% if field.field.dialog_help_text_template %}
-        <a class="dialog_help_text_link" id="id_{{ field.name }}_dialog_help_text_link">(More info)</a>
-        <div class="dialog_help_text" id="id_{{ field.name }}_dialog_help_text">
+        <div class="tutorial-message">
             {% include field.field.dialog_help_text_template with field=field %}
         </div>
     {% endif %}

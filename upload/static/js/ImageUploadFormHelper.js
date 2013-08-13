@@ -54,10 +54,6 @@ var ImageUploadFormHelper = (function() {
     var $annotationForm = null;
     var $annotationSection = null;
     var $pointGenText = null;
-    var $annoFileExtraHelpText = null;
-    var $annoFileExtraHelpTextLink = null;
-    var $filesExtraHelpText = null;
-    var $filesExtraHelpTextLink = null;
 
     var uploadPreviewUrl = null;
     var annotationFileProcessUrl = null;
@@ -1101,82 +1097,6 @@ var ImageUploadFormHelper = (function() {
             // Make sure the files table initially looks right
             updateFilesTable();
 
-
-            // Separate-dialog help text for some fields.
-            // Can show by clicking "(More info)".
-            $("#id_specify_metadata_dialog_help_text_link").click(function() {
-
-                // TODO: Make the width/height flexible?
-                $("#id_specify_metadata_dialog_help_text").dialog({
-                    modal: true,
-                    width: 800,
-                    height: 400,
-                    title: "Specifying metadata"
-                });
-            });
-
-            $("#id_annotations_file_dialog_help_text_link").click(function() {
-
-                // TODO: Make the width/height flexible?
-                $("#id_annotations_file_dialog_help_text").dialog({
-                    modal: true,
-                    width: 800,
-                    height: 400,
-                    title: "Annotation file"
-                });
-            });
-
-            $("#id_csv_file_dialog_help_text_link").click(function() {
-
-                // TODO: Make the width/height flexible?
-                $("#id_csv_file_dialog_help_text").dialog({
-                    modal: true,
-                    width: 800,
-                    height: 400,
-                    title: "CSV metadata file"
-                });
-            });
-
-            $("#id_files_dialog_help_text_link").click(function() {
-
-                // TODO: Make the width/height flexible?
-                $("#id_files_dialog_help_text").dialog({
-                    modal: true,
-                    width: 800,
-                    height: 300,
-                    title: "Image files"
-                });
-            });
-
-            // Extra help text for annotation file field.
-            $annoFileExtraHelpText = $("#id_annotations_file_extra_help_text");
-            $annoFileExtraHelpTextLink = $("#id_annotations_file_extra_help_text_link");
-
-            $annoFileExtraHelpTextLink.click(function() {
-                if ($annoFileExtraHelpText.is(':hidden')) {
-                    $annoFileExtraHelpText.show();
-                    $(this).text("(Less info)");
-                }
-                else {
-                    $annoFileExtraHelpText.hide();
-                    $(this).text("(More info)");
-                }
-            });
-
-            // Extra help text for image files field.
-            $filesExtraHelpText = $("#id_files_extra_help_text");
-            $filesExtraHelpTextLink = $("#id_files_extra_help_text_link");
-
-            $filesExtraHelpTextLink.click(function() {
-                if ($filesExtraHelpText.is(':hidden')) {
-                    $filesExtraHelpText.show();
-                    $(this).text("(Less info)");
-                }
-                else {
-                    $filesExtraHelpText.hide();
-                    $(this).text("(More info)");
-                }
-            });
 
             // csv field event handlers.
             $(metadataOptionField).change(function() {
