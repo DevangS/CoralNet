@@ -1,5 +1,6 @@
 {% extends "images/base_source.html" %}
 {% load thumbnail %}
+{% load common_tags %}
 
 {% block title %}Upload Images | CoralNet{% endblock %}
 
@@ -171,9 +172,10 @@
             uploadStartUrl: "{% url image_upload_ajax source.id %}",
             annotationFileProcessUrl: "{% url annotation_file_process_ajax source.id %}",
             csvFileProcessUrl: "{% url csv_file_process_ajax source.id %}",
-            uploadPreviewWithCsvUrl: "{% url image_upload_preview_with_csv_ajax source.id %}"
+            uploadPreviewWithCsvUrl: "{% url image_upload_preview_with_csv_ajax source.id %}",
             {# Remnants of an attempt at a progress bar... #}
             {#            uploadProgressUrl: {% url ajax_upload_progress source.id %}#}
+            locationKeyList: {{ source.get_key_list|jsonify }}
         });
 
     </script>

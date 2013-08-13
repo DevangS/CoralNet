@@ -11,7 +11,7 @@
  */
 var ImageUploadFormHelper = (function() {
 
-    var i;
+    var i, j;
 
     var $preUploadSummary = null;
     var $midUploadSummary = null;
@@ -61,6 +61,7 @@ var ImageUploadFormHelper = (function() {
     var csvFileProcessUrl = null;
     var uploadPreviewWithCsvUrl = null;
     //var uploadProgressUrl = null;
+    var locationKeyList = null;
 
     var $formToSubmit = null;
     var uploadOptions = null;
@@ -419,11 +420,9 @@ var ImageUploadFormHelper = (function() {
         //Before adding anything to the table, set the table headers first
         var $csvFileTableHeader = $("<tr>");
         $csvFileTableHeader.append($("<th>").text("Filename"));
-        // Loop through one of the vals in order to find out # of location key headers
-        for (i = 0; i < statusList[0].metadata_list.values.length; i++)
+        for (i = 0; i < locationKeyList.length; i++)
         {
-            var keyVal = i+1;
-            $csvFileTableHeader.append($("<th>").text("Value " + keyVal));
+            $csvFileTableHeader.append($("<th>").text(locationKeyList[i]));
         }
         $csvFileTableHeader.append($("<th>").text("Height"));
         $csvFileTableHeader.append($("<th>").text("Latitude"));
@@ -440,6 +439,12 @@ var ImageUploadFormHelper = (function() {
         $csvFileTable.append($csvFileTableHeader);
 
         for (i = 0; i < statusList.length; i++) {
+
+            if (statusList[i].status === 'error') {
+                // If there was an error trying to retrieve metadata
+                // for this filename, skip this filename.
+                continue;
+            }
 
             // Get the metadata list for a filename
             var metadata = statusList[i].metadata_list;
@@ -1007,6 +1012,7 @@ var ImageUploadFormHelper = (function() {
             csvFileProcessUrl = params.csvFileProcessUrl;
             uploadPreviewWithCsvUrl = params.uploadPreviewWithCsvUrl;
             //uploadProgressUrl = params.uploadProgressUrl;
+            locationKeyList = params.locationKeyList;
 
             // Upload status summary elements.
             $preUploadSummary = $('#pre_upload_summary');
