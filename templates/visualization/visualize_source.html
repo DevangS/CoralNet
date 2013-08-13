@@ -159,7 +159,7 @@
 
             {% if has_download_form %}
                 <form id="id_download_form" action="{% url browse_download source.id %}" method="post">{% csrf_token %}
-                    {% for field in image_batch_download_form %}
+                    {% for field in download_form %}
                         {# Should be all hidden fields #}
                         {{ field }}
                     {% endfor %}
@@ -173,7 +173,7 @@
 
             {% if has_delete_form %}
                 <form id="id_delete_form" action="{% url browse_delete source.id %}" method="post">{% csrf_token %}
-                    {% for field in image_batch_delete_form %}
+                    {% for field in delete_form %}
                         {# Should be all hidden fields #}
                         {{ field }}
                     {% endfor %}
