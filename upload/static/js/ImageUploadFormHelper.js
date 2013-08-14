@@ -950,7 +950,9 @@ var ImageUploadFormHelper = (function() {
             $csvFileUploadPreview.dialog({
                 resizable: false,
                 modal: true,
-                width:'auto',
+                // Don't let it stretch wider than the browser window;
+                // a horizontal scrollbar will appear if necessary
+                width: '100%',
                 buttons: {
                     "Upload": function() {
                         $ (this).dialog("close");
