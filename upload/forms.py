@@ -176,8 +176,19 @@ class AnnotationImportForm(Form):
     def clean_annotations_file(self):
         anno_file = self.cleaned_data['annotations_file']
 
-        general_content_type = anno_file.content_type.split('/')[0]
-        if general_content_type != 'text':
+        # Naively validate that the file is a text file through
+        # (1) given MIME type, or (2) file extension.  Either of them
+        # can be faked though.
+        #
+        # For the file extension check, would be more "correct" to use:
+        # mimetypes.guess_type(csv_file.name).startswith('text/')
+        # but the mimetypes module doesn't recognize csv for
+        # some reason.
+        if anno_file.content_type.startswith('text/'):
+            pass
+        elif anno_file.name.endswith('.txt'):
+            pass
+        else:
             raise ValidationError("This file is not a text file.")
 
         return self.cleaned_data['annotations_file']
@@ -366,12 +377,23 @@ class CSVImportForm(Form):
         self.fields['csv_file'].dialog_help_text_template =\
             'upload/help_csv_file.html'
 
-    def clean_annotations_file(self):
+    def clean_csv_file(self):
         csv_file = self.cleaned_data['csv_file']
 
-        general_content_type = csv_file.content_type.split('/')[0]
-        if general_content_type != 'csv':
-            raise ValidationError("This file is not a csv file.")
+        # Naively validate that the file is a CSV file through
+        # (1) given MIME type, or (2) file extension.  Either of them
+        # can be faked though.
+        #
+        # For the file extension check, would be more "correct" to use:
+        # mimetypes.guess_type(csv_file.name) == 'text/csv'
+        # but the mimetypes module doesn't recognize csv for
+        # some reason.
+        if csv_file.content_type == 'text/csv':
+            pass
+        elif csv_file.name.endswith('.csv'):
+            pass
+        else:
+            raise ValidationError("This file is not a CSV file.")
 
         return self.cleaned_data['csv_file']
 
