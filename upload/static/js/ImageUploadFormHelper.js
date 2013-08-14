@@ -417,6 +417,10 @@ var ImageUploadFormHelper = (function() {
 
     function updateMetadataPopupTable(statusList) {
 
+        // Clear the preview table, in case this isn't our first time
+        // filling it in
+        $csvFileTable.empty();
+
         //Before adding anything to the table, set the table headers first
         var $csvFileTableHeader = $("<tr>");
         $csvFileTableHeader.append($("<th>").text("Filename"));
