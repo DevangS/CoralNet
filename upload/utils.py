@@ -1,3 +1,4 @@
+import codecs
 import datetime
 import os
 import csv
@@ -6,7 +7,6 @@ import shelve
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
-#from BeautifulSoup import UnicodeDammit
 
 from accounts.utils import get_imported_user
 from annotations.model_utils import AnnotationAreaUtils
@@ -50,12 +50,6 @@ def store_csv_file(csv_file, source):
         ),
     ))
 
-    # TODO: Fix this so it works with various charsets
-
-#    csv_file_to_unicode_string = UnicodeDammit(csv_file.read()).unicode
-#    csv_file_converted = csv_file_to_unicode_string.splitlines()
-
-#    reader = csv.reader(csv_file_converted, dialect='excel')
     reader = csv.reader(csv_file, dialect='excel')
     num_keys = source.num_of_keys()
     filenames_processed = []
@@ -63,8 +57,9 @@ def store_csv_file(csv_file, source):
     for row in reader:
         metadata_for_file = {}
 
-        # Gets filename, checks if we already found data for this filename.
-        filename = row.pop(0)
+        # Gets filename, strips any UTF-8 BOM from the start of the CSV line.
+        filename = row.pop(0).lstrip(codecs.BOM_UTF8)
+        # Checks if we already found data for this filename.
         if filename in filenames_processed:
             csv_dict.close()
             raise FileContentError('metadata for file "{file}" found twice in CSV file.'.format(
@@ -259,7 +254,9 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
 
     for line_num, line in enumerate(annoFile, 1):
 
-        stripped_line = line.strip()
+        # Strip any leading UTF-8 BOM, then strip any
+        # leading/trailing whitespace.
+        stripped_line = line.lstrip(codecs.BOM_UTF8).strip()
 
         # Ignore empty lines.
         if stripped_line == '':

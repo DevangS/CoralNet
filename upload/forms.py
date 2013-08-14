@@ -189,7 +189,7 @@ class AnnotationImportForm(Form):
         elif anno_file.name.endswith('.txt'):
             pass
         else:
-            raise ValidationError("This file is not a text file.")
+            raise ValidationError("This file is not a plain text file.")
 
         return self.cleaned_data['annotations_file']
 
