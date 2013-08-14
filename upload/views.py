@@ -1,4 +1,3 @@
-from collections import defaultdict
 from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
@@ -6,10 +5,9 @@ from annotations.model_utils import AnnotationAreaUtils
 from decorators import source_permission_required
 from images.model_utils import PointGen
 from images.models import Source
-from lib import str_consts
 from lib.exceptions import FileContentError
 from lib.utils import JsonResponse
-from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm
+from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm, MetadataImportForm
 from upload.utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, check_image_filename, store_csv_file, filename_to_metadata_in_csv
 from visualization.forms import ImageSpecifyForm
 
@@ -206,6 +204,7 @@ def image_upload_ajax(request, source_id):
                     annotation_dict_id=annotation_dict_id,
                     annotation_options_form=annotation_options_form,
                     csv_dict_id=csv_dict_id,
+                    metadata_import_form_class=MetadataImportForm,
                     source=source,
                     currentUser=request.user,
                 )
@@ -252,12 +251,33 @@ def csv_file_process_ajax(request,source_id):
         csv_file = csv_import_form.cleaned_data['csv_file']
 
         try:
-            csv_dict, csv_dict_id = store_csv_file(csv_file, source);
+            csv_dict, csv_dict_id = store_csv_file(csv_file, source)
         except FileContentError as error:
             return JsonResponse(dict(
                 status='error',
                 message=error.message,
              ))
+
+        # Check if all the CSV metadata is valid.
+        for filename, data in csv_dict.iteritems():
+            metadata_import_form = MetadataImportForm(
+                source.id, False, data
+            )
+            if not metadata_import_form.is_valid():
+                # One of the filenames' metadata is not valid. Get one
+                # error message and return that.
+                for field_name, messages in metadata_import_form.errors.iteritems():
+                    field_label = metadata_import_form.fields[field_name].label
+                    if messages != []:
+                        error_message = messages[0]
+                        return JsonResponse(dict(
+                            status='error',
+                            message="({filename} - {field_label}) {message}".format(
+                                filename=filename,
+                                field_label=field_label,
+                                message=error_message,
+                            )
+                        ))
 
         # We're done with the shelved dict for now.
         csv_dict.close()
@@ -280,7 +300,7 @@ def image_upload_preview_with_csv_ajax(request,source_id):
     if request.method == 'POST':
 
         filenames = request.POST.getlist('filenames[]')
-        csv_dict_id = request.POST.get("csv_file_id");
+        csv_dict_id = request.POST.get("csv_file_id")
 
         # List of filename statuses.
         statusList = []
@@ -294,7 +314,6 @@ def image_upload_preview_with_csv_ajax(request,source_id):
                     message=u"{m}".format(m=result['message']),
                 ))
             else:
-                #metadata_list = metadata_dict_to_list(result['metadata_dict'])
                 statusList.append(dict(
                     status=status,
                     filename=filename,

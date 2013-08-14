@@ -428,7 +428,7 @@ var ImageUploadFormHelper = (function() {
         {
             $csvFileTableHeader.append($("<th>").text(locationKeyList[i]));
         }
-        $csvFileTableHeader.append($("<th>").text("Height"));
+        $csvFileTableHeader.append($("<th>").text("Height (cm)"));
         $csvFileTableHeader.append($("<th>").text("Latitude"));
         $csvFileTableHeader.append($("<th>").text("Longitude"));
         $csvFileTableHeader.append($("<th>").text("Depth"));
@@ -459,11 +459,11 @@ var ImageUploadFormHelper = (function() {
 
             // append data into a row
             $csvFileTableRow.append($("<td>").text(filename));
-            for (j = 0; j < metadata.values.length; j++)
+            for (j = 1; j <= locationKeyList.length; j++)
             {
-                $csvFileTableRow.append($("<td>").text(metadata.values[j]));
+                $csvFileTableRow.append($("<td>").text(metadata['value'+ j.toString()]));
             }
-            $csvFileTableRow.append($("<td>").text(metadata.height));
+            $csvFileTableRow.append($("<td>").text(metadata.height_in_cm));
             $csvFileTableRow.append($("<td>").text(metadata.latitude));
             $csvFileTableRow.append($("<td>").text(metadata.longitude));
             $csvFileTableRow.append($("<td>").text(metadata.depth));
@@ -471,8 +471,8 @@ var ImageUploadFormHelper = (function() {
             $csvFileTableRow.append($("<td>").text(metadata.photographer));
             $csvFileTableRow.append($("<td>").text(metadata.water_quality));
             $csvFileTableRow.append($("<td>").text(metadata.strobes));
-            $csvFileTableRow.append($("<td>").text(metadata.framing_gear));
-            $csvFileTableRow.append($("<td>").text(metadata.white_balance));
+            $csvFileTableRow.append($("<td>").text(metadata.framing));
+            $csvFileTableRow.append($("<td>").text(metadata.balance));
 
             // Add the row to the table
             $csvFileTable.append($csvFileTableRow);

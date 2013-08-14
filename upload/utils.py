@@ -54,6 +54,12 @@ def store_csv_file(csv_file, source):
     num_keys = source.num_of_keys()
     filenames_processed = []
 
+    fields = (['photo_date'] +
+              ['value1', 'value2', 'value3', 'value4', 'value5'][:num_keys] +
+              ['height_in_cm', 'latitude', 'longitude',
+               'depth', 'camera', 'photographer', 'water_quality',
+               'strobes', 'framing', 'balance'])
+
     for row in reader:
         metadata_for_file = {}
 
@@ -65,83 +71,21 @@ def store_csv_file(csv_file, source):
             raise FileContentError('metadata for file "{file}" found twice in CSV file.'.format(
                 file=filename,
             ))
-        else:
-            filenames_processed.append(filename)
 
-            valueList = []
-            date = ""
-            # Now loop through that row and gather metadata from the file.
-            for i, element in enumerate(row):
-                if (i == 0):
-                    date = element
-                elif (i == 1):
-                    valueList.append(element)
-                elif (i == 2):
-                    if (num_keys < 2):
-                        continue
-                    valueList.append(element)
-                elif (i == 3):
-                    if (num_keys < 3):
-                        continue
-                    valueList.append(element)
-                elif (i == 4):
-                    if (num_keys < 4):
-                        continue
-                    valueList.append(element)
-                elif (i == 5):
-                    if (num_keys < 5):
-                        continue
-                    valueList.append(element)
-                elif (i == 6):
-                    metadata_for_file['height'] = element
-                elif (i == 7):
-                    metadata_for_file['latitude'] = element
-                elif (i == 8):
-                    metadata_for_file['longitude'] = element
-                elif (i == 9):
-                    metadata_for_file['depth'] = element
-                elif (i == 10):
-                    metadata_for_file['camera'] = element
-                elif (i == 11):
-                    metadata_for_file['photographer'] = element
-                elif (i == 12):
-                    metadata_for_file['water_quality'] = element
-                elif (i == 13):
-                    metadata_for_file['strobes'] = element
-                elif (i == 14):
-                    metadata_for_file['framing_gear'] = element
-                elif (i == 15):
-                    metadata_for_file['white_balance'] = element
-                else:
-                    csv_dict.close()
-                    raise FileContentError('CSV file contains too many values for line specifying metadata for {file}.'.format(
-                        file=filename,
-                    ))
+        filenames_processed.append(filename)
 
-            try:
-                year, month, day = date.split("-")
-            except ValueError:
-                # Too few or too many dash-separated tokens.
-                # Note that this may or may not be something that the user intended
-                # as a date.  An appropriately flexible error message is needed.
-                csv_dict.close()
-                raise FileContentError(str_consts.DATE_PARSE_ERROR_FMTSTR.format(date_token=date))
-            # YYYYMMDD parsing:
-            #    if len(dateToken) != 8:
-            #        raise dateFormatError
-            #    year, month, day = dateToken[:4], dateToken[4:6], dateToken[6:8]
-            try:
-                datetime.date(int(year), int(month), int(day))
-            except ValueError:
-                # Either non-integer date params, or date params are
-                # out of valid range (e.g. month 13).
-                csv_dict.close()
-                raise FilenameError(str_consts.DATE_VALUE_ERROR_FMTSTR.format(date_token=date))
+        if len(row) > len(fields):
+            csv_dict.close()
+            raise FileContentError("{file}: Too many metadata values.".format(file=filename))
+        if len(row) < len(fields):
+            csv_dict.close()
+            raise FileContentError("{file}: Too few metadata values.".format(file=filename))
 
-            metadata_for_file['day'] = day
-            metadata_for_file['month'] = month
-            metadata_for_file['year'] = year
-            metadata_for_file['values'] = valueList
+        # Num of comma-separated values equals num of expected fields.
+        # Get the metadata from the CSV row.
+        for field_name, value in zip(fields, row):
+            metadata_for_file[field_name] = value
+
         csv_dict[filename] = metadata_for_file
 
     return (csv_dict, csv_dict_id)
@@ -409,7 +353,7 @@ def annotations_file_to_python(annoFile, source, expecting_labels):
 
 def image_upload_process(imageFile, imageOptionsForm,
                          annotation_dict_id,
-                         csv_dict_id,
+                         csv_dict_id, metadata_import_form_class,
                          annotation_options_form,
                          source, currentUser):
 
@@ -484,41 +428,42 @@ def image_upload_process(imageFile, imageOptionsForm,
         #the case where the filename is a unicode object instead of a str;
         #unicode objects can't index into dicts.
         metadata_dict = csv_dict[str(filename)]
-
         csv_dict.close()
 
-        value_dict = get_location_value_objs(source, metadata_dict['values'], createNewValues=True)
-        photo_date = datetime.date(
-            year = int(metadata_dict['year']),
-            month = int(metadata_dict['month']),
-            day = int(metadata_dict['day'])
+        # The reason this uses metadata_import_form_class instead of
+        # importing MetadataImportForm is that I'm too lazy to deal with the
+        # circular-import implications of the latter solution right now.
+        # -Stephen
+        metadata_import_form = metadata_import_form_class(
+            source.id, True, metadata_dict,
         )
 
+        if not metadata_import_form.is_valid():
+            return dict(
+                status='error',
+                message="Unknown error with the CSV metadata.",
+                link=None,
+                title=None,
+            )
+
         metadata_obj.name = filename
-        if photo_date:
-            metadata_obj.photo_date = photo_date
-        if 'latitude' in metadata_dict:
-            metadata_obj.latitude = metadata_dict['latitude']
-        if 'height' in metadata_dict:
-            metadata_obj.height_in_cm = metadata_dict['height']
-        if 'longitude' in metadata_dict:
-            metadata_obj.longitude = metadata_dict['longitude']
-        if 'depth' in metadata_dict:
-            metadata_obj.depth = metadata_dict['depth']
-        if 'camera' in metadata_dict:
-            metadata_obj.camera = metadata_dict['camera']
-        if 'photographer' in metadata_dict:
-            metadata_obj.photographer = metadata_dict['photographer']
-        if 'water_quality' in metadata_dict:
-            metadata_obj.water_quality = metadata_dict['water_quality']
-        if 'strobes' in metadata_dict:
-            metadata_obj.strobes = metadata_dict['strobes']
-        if 'framing_gear' in metadata_dict:
-            metadata_obj.framing = metadata_dict['framing_gear']
-        if 'white_balance' in metadata_dict:
-            metadata_obj.balance = metadata_dict['white_balance']
-        for key, value in value_dict.iteritems():
-            setattr(metadata_obj, key, value)
+        fields = ['photo_date', 'value1', 'value2', 'value3', 'value4',
+                  'value5', 'height_in_cm', 'latitude', 'longitude',
+                  'depth', 'camera', 'photographer', 'water_quality',
+                  'strobes', 'framing', 'balance']
+
+        for field in fields:
+
+            if not field in metadata_import_form.fields:
+                # A location value field that's not in this form
+                continue
+
+            value = metadata_import_form.cleaned_data[field]
+            # Check for a non-empty value; don't want empty values to
+            # override default values that we've already set on the
+            # metadata_obj
+            if value:
+                setattr(metadata_obj, field, value)
 
     else:
 

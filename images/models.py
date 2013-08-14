@@ -263,25 +263,6 @@ class Source(models.Model):
 
         return keyList
 
-    def get_value_field_list(self):
-        """
-        If the source has 3 keys, this returns
-        ['value1','value2','value3']
-        Could be useful for forms when determining
-        which metadata values apply to a given source.
-        """
-        valueFieldList = []
-        
-        for k,v in [('key1','value1'),
-                    ('key2','value2'),
-                    ('key3','value3'),
-                    ('key4','value4'),
-                    ('key5','value5'),]:
-            if getattr(self,k):
-                valueFieldList.append(v)
-
-        return valueFieldList
-
     def num_of_keys(self):
         """
         Return the number of location keys that this Source has.
@@ -490,11 +471,11 @@ class Metadata(models.Model):
     
     comments = models.TextField(max_length=1000, blank=True)
     
-    value1 = models.ForeignKey(Value1, null=True)
-    value2 = models.ForeignKey(Value2, null=True)
-    value3 = models.ForeignKey(Value3, null=True)
-    value4 = models.ForeignKey(Value4, null=True)
-    value5 = models.ForeignKey(Value5, null=True)
+    value1 = models.ForeignKey(Value1, null=True, blank=True)
+    value2 = models.ForeignKey(Value2, null=True, blank=True)
+    value3 = models.ForeignKey(Value3, null=True, blank=True)
+    value4 = models.ForeignKey(Value4, null=True, blank=True)
+    value5 = models.ForeignKey(Value5, null=True, blank=True)
 
     def __unicode__(self):
         return "Metadata of " + self.name

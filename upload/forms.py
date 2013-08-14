@@ -363,6 +363,82 @@ class MetadataForm(Form):
 
         return super(MetadataForm, self).clean()
 
+
+class MetadataImportForm(forms.ModelForm):
+    """
+    Form used to import metadata from CSV.
+
+    This need not be completely different from MetadataForm, which is used
+    to edit metadata in a formset. Perhaps there is enough overlap in these
+    forms' functionality that they can share fields/attributes in a
+    superclass.
+    """
+    class Meta:
+        model = Metadata
+        fields = ['photo_date', 'value1', 'value2', 'value3', 'value4',
+                  'value5', 'height_in_cm', 'latitude', 'longitude',
+                  'depth', 'camera', 'photographer', 'water_quality',
+                  'strobes', 'framing', 'balance']
+
+    def __init__(self, source_id, save_new_values, *args, **kwargs):
+
+        super(MetadataImportForm, self).__init__(*args, **kwargs)
+        self.source = Source.objects.get(pk=source_id)
+        self.save_new_values = save_new_values
+
+        # Replace location value fields to make them CharFields instead of
+        # ModelChoiceFields. Also, remove location value fields that
+        # the source doesn't need.
+        #
+        # The main reason we still specify the value fields in Meta.fields is
+        # to make it easy to specify the fields' ordering.
+        key_list = self.source.get_key_list()
+        location_value_max_length = LocationValue._meta.get_field('name').max_length
+
+        for value_num in [1,2,3,4,5]:
+
+            value_field = 'value'+str(value_num)
+
+            if len(key_list) >= value_num:
+                self.fields[value_field] = CharField(
+                    required=False,
+                    label=key_list[value_num-1],
+                    max_length=location_value_max_length,
+                )
+            else:
+                del self.fields[value_field]
+
+    def clean(self):
+        data = self.cleaned_data
+
+        # Parse key entries as Value objects.
+        value_fields = ['value1', 'value2', 'value3', 'value4', 'value5']
+        value_models = [Value1, Value2, Value3, Value4, Value5]
+        for value_field, value_model in zip(value_fields, value_models):
+            if value_field in data:
+                # This value field is in the form. (value5 won't be there
+                # if the source has only 4 keys)
+                if data[value_field] == '':
+                    # If the field value is empty, don't try to make an
+                    # empty-string Value object. Set it to None instead.
+                    data[value_field] = None
+                else:
+                    try:
+                        value_obj = value_model.objects.get(
+                            name=data[value_field],
+                            source=self.source
+                        )
+                    except value_model.DoesNotExist:
+                        # If the desired location value doesn't exist, then
+                        # make our own Value object.
+                        value_obj = value_model(name=data[value_field], source=self.source)
+                        if self.save_new_values:
+                            value_obj.save()
+                    data[value_field] = value_obj
+
+        return super(MetadataImportForm, self).clean()
+
+
 class CSVImportForm(Form):
     csv_file = FileField(
         label='CSV file',
