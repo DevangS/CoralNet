@@ -2,9 +2,9 @@
  * http://stackoverflow.com/a/1479341/859858
  *
  * Main update functions called in event handling code:
- * updateFormFields
- * updateFilesTable (calls updateFormFields)
+ * updateFilesTable
  * clearAnnotationFileStatus (calls updateFilesTable)
+ * clearCsvFileStatus (calls updateFilesTable)
  *
  * Typically, any event handling function will only need to call
  * one of these functions.
@@ -40,10 +40,12 @@ var ImageUploadFormHelper = (function() {
     var csvFileField = null;
     var csvFileStatus = null;
     var csvFileDictId = null;
+    var csvFileDict = null;
     var $csvFileTable = null;
     var $csvFileUploadPreview = null;
 
     var $annotationFileProcessButton = null;
+    var $csvFileProcessButton = null;
     var $uploadStartButton = null;
     var $uploadAbortButton = null;
     var $startAnotherUploadForm = null;
@@ -59,7 +61,6 @@ var ImageUploadFormHelper = (function() {
     var annotationFileProcessUrl = null;
     var uploadStartUrl = null;
     var csvFileProcessUrl = null;
-    var uploadPreviewWithCsvUrl = null;
     //var uploadProgressUrl = null;
     var locationKeyList = null;
 
@@ -197,6 +198,9 @@ var ImageUploadFormHelper = (function() {
     function updateFilesTable() {
         // Are the files uploadable or not?
         updateUploadability();
+
+        // Update any metadata gotten from CSV
+        updateMetadataPopupTable();
 
         // Update the point/annotation count for each file
         updateFilesTableAnnotationCounts();
@@ -366,60 +370,46 @@ var ImageUploadFormHelper = (function() {
 
         var metadataOption = $(metadataOptionField).val();
 
-        if (metadataOption === 'filenames'
-            || metadataOption === 'after') {
+        // Ask the server (via Ajax) about the filenames: are they in the
+        // right format (if applicable)? Are they duplicates of files on
+        // the server?
+        $.ajax({
+            // Data to send in the request
+            data: {
+                metadataOption: metadataOption,
+                filenames: filenameList
+            },
 
-            // Ask the server (via Ajax) about the filenames: are they in the
-            // right format (if applicable)? Are they duplicates of files on
-            // the server?
-            $.ajax({
-                // Data to send in the request
-                data: {
-                    metadataOption: metadataOption,
-                    filenames: filenameList
-                },
+            // Callback on successful response
+            success: filenameStatusAjaxResponseHandler,
 
-                // Callback on successful response
-                success: filenameStatusAjaxResponseHandler,
+            type: 'POST',
 
-                type: 'POST',
-
-                // URL to make request to
-                url: uploadPreviewUrl
-            });
-        }
-        else {  // 'csv'
-
-            // This is done if there is a CSV file present. This will do separate
-            // error checking.
-            $.ajax({
-                // Data to send in the request
-                data: {
-                    filenames: filenameList,
-                    csv_file_id: csvFileDictId
-                },
-
-                // Callback on successful response
-                success: filenameStatusWithCsvAjaxResponseHandler,
-
-                type: 'POST',
-
-                // URL to make request to
-                url: uploadPreviewWithCsvUrl
-            });
-        }
+            // URL to make request to
+            url: uploadPreviewUrl
+        });
     }
 
-    function filenameStatusWithCsvAjaxResponseHandler(response) {
-        updateFilenameStatuses(response.statusList);
-        updateMetadataPopupTable(response.statusList);
-    }
-
-    function updateMetadataPopupTable(statusList) {
+    function updateMetadataPopupTable() {
 
         // Clear the preview table, in case this isn't our first time
-        // filling it in
+        // filling it in.
         $csvFileTable.empty();
+
+        // Only bother with this if we're importing metadata via CSV.
+        if ($(metadataOptionField).val() !== 'csv') {
+            return;
+        }
+        // Can only build the metadata preview table if there is
+        // any metadata.
+        if (csvFileDict === null) {
+            return;
+        }
+        // If none of the files are uploadable, then the metadata table
+        // won't show anyway, so return.
+        if (numUploadables === 0) {
+            return;
+        }
 
         //Before adding anything to the table, set the table headers first
         var $csvFileTableHeader = $("<tr>");
@@ -442,23 +432,30 @@ var ImageUploadFormHelper = (function() {
         // Add header to the table
         $csvFileTable.append($csvFileTableHeader);
 
-        for (i = 0; i < statusList.length; i++) {
+        for (i = 0; i < files.length; i++) {
 
-            if (statusList[i].status === 'error') {
-                // If there was an error trying to retrieve metadata
-                // for this filename, skip this filename.
+            // Only add uploadable files to the metadata table.
+            if (!files[i].isUploadable) {
                 continue;
             }
 
-            // Get the metadata list for a filename
-            var metadata = statusList[i].metadata_list;
-            var filename = statusList[i].filename;
+            // Get the metadata for a filename
+            var filename = files[i].file.name;
 
-            // Create a table row containing file details
+            // Create a table row for this filename
             var $csvFileTableRow = $("<tr>");
-
-            // append data into a row
             $csvFileTableRow.append($("<td>").text(filename));
+            $csvFileTable.append($csvFileTableRow);
+
+            // See if the CSV file had any metadata for this filename.
+            // If not, we'll leave this as a blank row.
+            // If so, we'll proceed to add that metadata to the row.
+            if (!csvFileDict.hasOwnProperty(filename)) {
+                continue;
+            }
+
+            var metadata = csvFileDict[filename];
+
             for (j = 1; j <= locationKeyList.length; j++)
             {
                 $csvFileTableRow.append($("<td>").text(metadata['value'+ j.toString()]));
@@ -473,9 +470,6 @@ var ImageUploadFormHelper = (function() {
             $csvFileTableRow.append($("<td>").text(metadata.strobes));
             $csvFileTableRow.append($("<td>").text(metadata.framing));
             $csvFileTableRow.append($("<td>").text(metadata.balance));
-
-            // Add the row to the table
-            $csvFileTable.append($csvFileTableRow);
         }
     }
 
@@ -522,10 +516,22 @@ var ImageUploadFormHelper = (function() {
         updateFilesTable();
     }
 
+    /* Clear any previous results of CSV file processing. */
+    function clearCsvFileStatus() {
+        csvFileStatus = null;
+        $csvFileStatusDisplay.empty();
+        $csvFileStatusDisplay.removeClass('ok error');
+
+        csvFileDict = null;
+        csvFileDictId = null;
+        // Update the files table's CSV statuses.
+        updateFilesTable();
+    }
+
     // This calls an ajax view to process the CSV file just uploaded.
     function processCsvFile() {
         if (csvFileField.files.length === 0) {
-            // No file, return.
+            // No CSV file; return.
             return;
         }
 
@@ -538,8 +544,8 @@ var ImageUploadFormHelper = (function() {
             // Callback
             success: processCsvFileAjaxResponseHandler
         };
-        $csvForm.ajaxSubmit(options);
         $csvFileStatusDisplay.text("Processing...");
+        $csvForm.ajaxSubmit(options);
     }
 
     function processCsvFileAjaxResponseHandler(response) {
@@ -552,6 +558,7 @@ var ImageUploadFormHelper = (function() {
             $csvFileStatusDisplay.removeClass('ok error');
             $csvFileStatusDisplay.addClass('ok');
 
+            csvFileDict = response.csv_dict;
             csvFileDictId = response.csv_dict_id;
         }
         else if (csvFileStatus === 'error') {
@@ -603,8 +610,8 @@ var ImageUploadFormHelper = (function() {
             // Callback
             success: annotationFileAjaxResponseHandler
         };
-        $('#annotations_form').ajaxSubmit(options);
         $annotationFileStatusDisplay.text("Processing...");
+        $('#annotations_form').ajaxSubmit(options);
     }
 
     function annotationFileAjaxResponseHandler(response) {
@@ -1016,7 +1023,6 @@ var ImageUploadFormHelper = (function() {
             annotationFileProcessUrl = params.annotationFileProcessUrl;
             uploadStartUrl = params.uploadStartUrl;
             csvFileProcessUrl = params.csvFileProcessUrl;
-            uploadPreviewWithCsvUrl = params.uploadPreviewWithCsvUrl;
             //uploadProgressUrl = params.uploadProgressUrl;
             locationKeyList = params.locationKeyList;
 
@@ -1059,6 +1065,7 @@ var ImageUploadFormHelper = (function() {
 
             // Button elements.
             $annotationFileProcessButton = $('#annotation_file_process_button');
+            $csvFileProcessButton = $('#csv_file_process_button');
             $uploadStartButton = $('#id_upload_submit');
             $uploadAbortButton = $('#id_upload_abort_button');
             $startAnotherUploadForm = $('#id_start_another_upload_form');
@@ -1117,6 +1124,11 @@ var ImageUploadFormHelper = (function() {
             });
 
             $(csvFileField).change(function() {
+                clearCsvFileStatus();
+                processCsvFile();
+            });
+            $csvFileProcessButton.click(function() {
+                clearCsvFileStatus();
                 processCsvFile();
             });
 
@@ -1132,12 +1144,13 @@ var ImageUploadFormHelper = (function() {
                 clearAnnotationFileStatus();
                 processAnnotationFile();
             });
-
-            // Button event handlers.
             $annotationFileProcessButton.click(function() {
                 clearAnnotationFileStatus();
                 processAnnotationFile();
             });
+
+            // Upload button event handlers.
+
             // This one begins file upload. But if CSV files are made use of, do
             // an extra check with the user to see if the data is correct.
             $uploadStartButton.click(function() {

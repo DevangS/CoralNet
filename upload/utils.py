@@ -32,9 +32,10 @@ def store_csv_file(csv_file, source):
     if there are duplicate filenames present in the file, etc.
     """
 
-    # The annotation dict needs to be kept on disk temporarily until all the
-    # Ajax upload requests are done. Thus, we'll use Python's shelve module
-    # to make a persistent dict.
+    # TODO: If we return the whole CSV dict to the Javascript side anyway,
+    # then we don't really need to keep a shelved version of the dict
+    # on the server side. That's redundant.
+
     if not os.access(settings.SHELVED_ANNOTATIONS_DIR, os.R_OK | os.W_OK):
         # Don't catch this error and display it to the user.
         # Just let it become a server error to be e-mailed to the admins.
@@ -42,13 +43,7 @@ def store_csv_file(csv_file, source):
             "The SHELVED_ANNOTATIONS_DIR either does not exist, is not readable, or is not writable. Please rectify this."
         )
     csv_dict_id = rand_string(10)
-    csv_dict = shelve.open(os.path.join(
-        settings.SHELVED_ANNOTATIONS_DIR,
-        'csv_source{source_id}_{dict_id}.db'.format(
-            source_id=source.id,
-            dict_id=csv_dict_id,
-        ),
-    ))
+    csv_dict = dict()
 
     reader = csv.reader(csv_file, dialect='excel')
     num_keys = source.num_of_keys()
@@ -67,7 +62,6 @@ def store_csv_file(csv_file, source):
         filename = row.pop(0).lstrip(codecs.BOM_UTF8)
         # Checks if we already found data for this filename.
         if filename in filenames_processed:
-            csv_dict.close()
             raise FileContentError('metadata for file "{file}" found twice in CSV file.'.format(
                 file=filename,
             ))
@@ -75,10 +69,8 @@ def store_csv_file(csv_file, source):
         filenames_processed.append(filename)
 
         if len(row) > len(fields):
-            csv_dict.close()
             raise FileContentError("{file}: Too many metadata values.".format(file=filename))
         if len(row) < len(fields):
-            csv_dict.close()
             raise FileContentError("{file}: Too few metadata values.".format(file=filename))
 
         # Num of comma-separated values equals num of expected fields.
@@ -88,60 +80,19 @@ def store_csv_file(csv_file, source):
 
         csv_dict[filename] = metadata_for_file
 
-    return (csv_dict, csv_dict_id)
-
-def filename_to_metadata_in_csv(filename, source, csv_dict_id):
-    """
-    This will take the csv_dict_id, the source, and a filename, and attempt to match the filename with metadata.
-    If it does find a match, a dictionary of the file will be returned. If not, an error will be thrown.
-    """
-
-    # these errors should not happen, but good to check anyway
-    if not csv_dict_id:
-        return dict(
-            status='error',
-            message=u"{m}".format(m="CSV file was not uploaded."),
-            link=None,
-            title=None,
-        )
-
-    csv_dict_filename = os.path.join(
+    csv_shelf_dict = shelve.open(os.path.join(
         settings.SHELVED_ANNOTATIONS_DIR,
         'csv_source{source_id}_{dict_id}.db'.format(
             source_id=source.id,
             dict_id=csv_dict_id,
         ),
-    )
+    ))
+    for k,v in csv_dict.iteritems():
+        csv_shelf_dict[k] = v
+    csv_shelf_dict.close()
 
-    if not os.path.isfile(csv_dict_filename):
-        return dict(
-            status='error',
-            message="CSV file could not be found.",
-            link=None,
-            title=None,
-        )
+    return (csv_dict, csv_dict_id)
 
-    csv_dict = shelve.open(csv_dict_filename)
-
-
-    try:
-        #index into the csv_dict with the filename. the str() is to handle
-        #the case where the filename is a unicode object instead of a str;
-        #unicode objects can't index into dicts.
-        metadata = csv_dict[str(filename)]
-        #if filename in the dict, then return the dict containing metadata
-        return dict(
-            status="ok",
-            metadata_dict=metadata
-        )
-    except KeyError:
-        #if filename is not in the dict, we return an error message.
-        return dict(
-            status='error',
-            message="Does not have any metadata specified in CSV file.",
-            link=None,
-            title=None,
-        )
 
 def annotations_file_to_python(annoFile, source, expecting_labels):
     """
@@ -427,43 +378,56 @@ def image_upload_process(imageFile, imageOptionsForm,
         #index into the csv_dict with the filename. the str() is to handle
         #the case where the filename is a unicode object instead of a str;
         #unicode objects can't index into dicts.
-        metadata_dict = csv_dict[str(filename)]
-        csv_dict.close()
+        filename_str = str(filename)
 
-        # The reason this uses metadata_import_form_class instead of
-        # importing MetadataImportForm is that I'm too lazy to deal with the
-        # circular-import implications of the latter solution right now.
-        # -Stephen
-        metadata_import_form = metadata_import_form_class(
-            source.id, True, metadata_dict,
-        )
+        if filename_str in csv_dict:
 
-        if not metadata_import_form.is_valid():
-            return dict(
-                status='error',
-                message="Unknown error with the CSV metadata.",
-                link=None,
-                title=None,
+            # There is CSV metadata for this file.
+
+            metadata_dict = csv_dict[str(filename)]
+            csv_dict.close()
+
+            # The reason this uses metadata_import_form_class instead of
+            # importing MetadataImportForm is that I'm too lazy to deal with the
+            # circular-import implications of the latter solution right now.
+            # -Stephen
+            metadata_import_form = metadata_import_form_class(
+                source.id, True, metadata_dict,
             )
 
+            if not metadata_import_form.is_valid():
+                return dict(
+                    status='error',
+                    message="Unknown error with the CSV metadata.",
+                    link=None,
+                    title=None,
+                )
+
+            fields = ['photo_date', 'value1', 'value2', 'value3', 'value4',
+                      'value5', 'height_in_cm', 'latitude', 'longitude',
+                      'depth', 'camera', 'photographer', 'water_quality',
+                      'strobes', 'framing', 'balance']
+
+            for field in fields:
+
+                if not field in metadata_import_form.fields:
+                    # A location value field that's not in this form
+                    continue
+
+                value = metadata_import_form.cleaned_data[field]
+                # Check for a non-empty value; don't want empty values to
+                # override default values that we've already set on the
+                # metadata_obj
+                if value:
+                    setattr(metadata_obj, field, value)
+
+        else:
+
+            # No CSV metadata for this file.
+
+            csv_dict.close()
+
         metadata_obj.name = filename
-        fields = ['photo_date', 'value1', 'value2', 'value3', 'value4',
-                  'value5', 'height_in_cm', 'latitude', 'longitude',
-                  'depth', 'camera', 'photographer', 'water_quality',
-                  'strobes', 'framing', 'balance']
-
-        for field in fields:
-
-            if not field in metadata_import_form.fields:
-                # A location value field that's not in this form
-                continue
-
-            value = metadata_import_form.cleaned_data[field]
-            # Check for a non-empty value; don't want empty values to
-            # override default values that we've already set on the
-            # metadata_obj
-            if value:
-                setattr(metadata_obj, field, value)
 
     else:
 

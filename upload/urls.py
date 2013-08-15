@@ -6,6 +6,5 @@ urlpatterns = patterns('',
     url(r'^source/(?P<source_id>\d+)/annotation_file_process_ajax/$', 'upload.views.annotation_file_process_ajax', name="annotation_file_process_ajax"),
     url(r'^source/(?P<source_id>\d+)/upload_ajax/$', 'upload.views.image_upload_ajax', name="image_upload_ajax"),
     url(r'^source/(?P<source_id>\d+)/csv_file_process_ajax/$', 'upload.views.csv_file_process_ajax', name="csv_file_process_ajax"),
-    url(r'^source/(?P<source_id>\d+)/upload_preview_with_csv_ajax/$', 'upload.views.image_upload_preview_with_csv_ajax', name="image_upload_preview_with_csv_ajax"),
     #url(r'^source/(?P<source_id>\d+)/ajax_upload_progress/$', 'upload.views.ajax_upload_progress', name="ajax_upload_progress"),
 )
