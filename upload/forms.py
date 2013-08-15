@@ -472,33 +472,3 @@ class CSVImportForm(Form):
             raise ValidationError("This file is not a CSV file.")
 
         return self.cleaned_data['csv_file']
-
-
-# TODO: Remove the below form idea if not needed anymore
-
-#class ProceedToManageMetadataForm(Form):
-#    """
-#    This form is shown after an upload completes. When the form is
-#    submitted, the user proceeds to the metadata-edit page, where
-#    the grid is populated with the images that were just uploaded.
-#
-#    To do this, this form has a hidden field that contains the ids
-#    of all the images that were just uploaded. The metadata grid view
-#    then uses this field to determine which images to show.
-#    """
-#
-#    # The ids of the images in this upload, as a
-#    # comma-separated string.
-#    uploaded_image_ids = CharField(widget=HiddenInput())
-#
-#    def __init__(self, *args, **kwargs):
-#        self.source = kwargs.pop('source')
-#        super(ProceedToManageMetadataForm,self).__init__(*args, **kwargs)
-#
-#    def clean_uploaded_image_ids(self):
-#        self.cleaned_data['uploaded_image_ids'] = \
-#            clean_comma_separated_image_ids_field(
-#                self.cleaned_data['uploaded_image_ids'],
-#                self.source,
-#            )
-#        return self.cleaned_data['uploaded_image_ids']
