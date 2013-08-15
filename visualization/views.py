@@ -387,7 +387,9 @@ def visualize_source(request, source_id):
         'delete_form': delete_form,
         'download_form': download_form,
         'has_delete_form': bool(delete_form),
-        'has_download_form': bool(download_form),
+        'has_download_form': False,
+        # TODO: Uncomment this once downloading is implemented
+        #'has_download_form': bool(download_form),
 
         'key_list': source.get_key_list(),
         'metadataForm': metadataForm,
