@@ -33,6 +33,7 @@
                 <a href="{% url image_detail image.id %}">
                     <img class="thumb_small"
                          style="margin: 0 auto; vertical-align: middle"
+                         title="From: {{ image.source.name }}"
                          src="{% thumbnail image.original_file 450x450 %}"
                          title="{{ image.get_image_element_title }}"/>
                 </a>
