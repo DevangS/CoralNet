@@ -76,7 +76,7 @@ class Source(models.Model):
 
     image_height_in_cm = models.IntegerField(
         "Default image height coverage (centimeters)",
-        help_text="The automatic annotation system needs to know how much space is covered by each image.\n"
+        help_text="This is the number of centimeters of substrate the image cover from the top of the image to the bottom. For example, if you use a framer that is 50cm wide and 35cm tall, this value should be set to 35 (or slightly larger if you image covers areas outside the framer). If use you an AUV, you will need to calculate this based on the field of view and distance from the bottom. This information is needed for the automatic annotation system to normalize the pixel to centimeter ratio.\n"
                   "You can also set this on a per-image basis; for images that don't have a specific value set, this default value will be used.",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
