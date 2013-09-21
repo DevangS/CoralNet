@@ -45,7 +45,9 @@ def store_csv_file(csv_file, source):
     csv_dict_id = rand_string(10)
     csv_dict = dict()
 
-    reader = csv.reader(csv_file, dialect='excel')
+    # splitlines() is to do system-agnostic handling of newline characters.
+    # The csv module can't do that by default (fails on CR only).
+    reader = csv.reader(csv_file.read().splitlines(), dialect='excel')
     num_keys = source.num_of_keys()
     filenames_processed = []
 
