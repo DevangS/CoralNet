@@ -16,7 +16,7 @@ La Jolla, CA 92093-0910
 (858) 534-5815
 invent@ucsd.edu
 
-Should this software by used by any part, the CoralNet logo, along with the following text: "CoralNet was developed by researchers at UCSC/SIO (coralnet.ucsd.edu/about)" should be made clearly visible near the top of the screen. 
+Should this software by used in whole or in part, the CoralNet logo, along with the following text: "CoralNet was developed by researchers at UCSD/SIO (coralnet.ucsd.edu/about)" should be clearly visible within 200 pixels of the top of any web page or within any frame embedding this capability.
 
 This software program and documentation are copyrighted by The Regents of the
 University of California. The software program and documentation are supplied "as
