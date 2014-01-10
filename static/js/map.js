@@ -83,6 +83,7 @@ var CNMap = (function() {
 
                 zoom: 2,
                 minZoom: 2,
+				maxZoom: 15,
 
                 mapTypeId: google.maps.MapTypeId.SATELLITE
             };
