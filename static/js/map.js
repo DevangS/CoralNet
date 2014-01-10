@@ -171,7 +171,7 @@ var CNMap = (function() {
                 sources.push(source);
                 markers.push(marker);
             }
-            var markerCluster = new MarkerClusterer(map, markers,{maxZoom : 18});
+            var markerCluster = new MarkerClusterer(map, markers,{maxZoom : 14});
 
         }
     }
