@@ -140,6 +140,7 @@ def PreprocessImages(image_id):
     thisPixelCmRatio = image.original_height / float(image.height_cm())
     subSampleRate = thisPixelCmRatio / TARGET_PIXEL_CM_RATIO
     if(subSampleRate < 1):
+        print 'Changed ssrate from {ssold} to 1 for id {id}'.format(ssold = subSampleRate, id = image_id)
         subSampleRate = 1
 
     #creates ssRate file
