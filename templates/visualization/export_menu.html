@@ -25,10 +25,13 @@
 {% block content %}
     <legend>Export Tool</legend>
     <br/>
-     <p>Welcome to the export tool. You can export data related to your source in two ways, by exporting statistics
-    generated on a per image basis, and by export annotations directly. By choosing either export method, all the
+     <p>Welcome to the export tool. You can export data related to your source in two ways, by statistics or annotations. By choosing either export method, all the
     data for the source will be collected and put into a .csv file for you to download. Please note that if your source
     contains a large amount of data, then this export process will be very time consuming, so you may want to leave the
-    window open and go have a cup of coffee and a snack. </p><br/>
+    window open and go have a cup of coffee and a snack. </p>
+    <p> Statistics will export the aggregated annotations as fraction of coverage of each labeltype for each image. Annotations will export each individual annotation including row and column information (one annotation per line). Each of these can be exported with our without the "Robots". If you include "Robots", the annotations automatically provided by the system will be also be exported. Else, only human-supplied annotations will be exported.
+    </p>
+
+<br/>
 
 {% endblock %}
