@@ -20,7 +20,7 @@ def request_invite(request):
             username = form.cleaned_data.pop('username')
             firstname = form.cleaned_data.pop('first_name')
             lastname = form.cleaned_data.pop('last_name')
-            reason = form.cleaned_data.pop('reason')
+            reason = form.cleaned_data.pop('reason_for_requesting_an_account')
             affiliation = form.cleaned_data.pop('affiliation')
             project_description = form.cleaned_data.pop('project_description')
             how_did_you_hear_about_us = form.cleaned_data.pop('how_did_you_hear_about_us')
