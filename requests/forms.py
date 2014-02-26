@@ -1,6 +1,8 @@
 from django import forms
 
 class RequestInviteForm(forms.Form):
+    first_name = forms.CharField()
+    last_name = forms.CharField()
     email = forms.EmailField()
     username = forms.CharField()
     affiliation = forms.CharField()

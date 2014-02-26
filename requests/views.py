@@ -18,6 +18,8 @@ def request_invite(request):
         if form.is_valid():
             email = form.cleaned_data.pop('email')
             username = form.cleaned_data.pop('username')
+            firstname = form.cleaned_data.pop('first_name')
+            lastname = form.cleaned_data.pop('last_name')
             reason = form.cleaned_data.pop('reason')
             affiliation = form.cleaned_data.pop('affiliation')
             project_description = form.cleaned_data.pop('project_description')
@@ -33,6 +35,8 @@ def request_invite(request):
 
             message = 'Email: ' + email + '\n' + \
                       'Username: ' + username + '\n' + \
+                      'First name: ' + firstname + '\n' + \
+                      'Last name: ' + lastname + '\n' + \
                       'Reason: ' + reason + '\n' + \
                       'affiliation: ' + affiliation + '\n' + \
                       'project_description: ' + project_description +'\n'+\
