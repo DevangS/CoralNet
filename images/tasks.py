@@ -139,6 +139,8 @@ def PreprocessImages(image_id):
 
     thisPixelCmRatio = image.original_height / float(image.height_cm())
     subSampleRate = thisPixelCmRatio / TARGET_PIXEL_CM_RATIO
+    if(subSampleRate < 1):
+        subSampleRate = 1
 
     #creates ssRate file
     ssFile = os.path.join(PREPROCESS_DIR, str(image_id) + "_ssRate.txt")
