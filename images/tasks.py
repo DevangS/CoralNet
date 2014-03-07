@@ -480,8 +480,7 @@ def export_images(source_id, outDir):
         m = i.metadata
         fname = str(m.value1) + '_' + str(m.value2) + '_' + \
         str(m.value3) + '_' + str(m.value4) + '_' + str(m.value5) + \
-        '_' + str(m.photo_date.year) + '-' + str(m.photo_date.month) + \
-        '-' + str(m.photo_date.day) + '.jpg'
+        '_' + m.photo_date.isoformat() + '.jpg'
         copyfile(os.path.join(ORIGINALIMAGES_DIR, str(i.original_file)), 
         os.path.join(outDir, fname))
 
