@@ -481,7 +481,7 @@ def export_images(source_id, outDir):
         fname = str(m.value1) + '_' + str(m.value2) + '_' + \
         str(m.value3) + '_' + str(m.value4) + '_' + str(m.value5) + \
         '_' + str(m.photo_date.year) + '-' + str(m.photo_date.month) + \
-        str(m.photo_date.day) + '.jpg'
+        '-' + str(m.photo_date.day) + '.jpg'
         copyfile(os.path.join(ORIGINALIMAGES_DIR, str(i.original_file)), 
         os.path.join(outDir, fname))
 
