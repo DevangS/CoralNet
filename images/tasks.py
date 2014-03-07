@@ -473,6 +473,18 @@ def trainRobot(source_id):
             #os.remove(oldModelPath) # remove old model, but keep the meta data files.
         print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
 
+def export_images(source_id, outDir):
+    mysource = Source.objects.filter(id = source_id)
+    images = Image.objects.filter(source = mysource[0])
+    for i in images:
+        m = i.metadata
+        fname = str(m.value1) + '_' + str(m.value2) + '_' + \
+        str(m.value3) + '_' + str(m.value4) + '_' + str(m.value5) + \
+        '_' + str(m.photo_date.year) + '-' + str(m.photo_date.month) + \
+        str(m.photo_date.day) + '.jpg'
+        copyfile(os.path.join(ORIGINALIMAGES_DIR, str(i.original_file)), 
+        os.path.join(outDir, fname))
+
 
 def custom_listdir(path):
     """
