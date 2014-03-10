@@ -5,6 +5,7 @@ images/task_helpers.py
 images/task_helpers.pyc
 templates/maintenance_notice.html
 *.pyc
+*.py~
 #Ignore apache configs
 apache/django.wsgi
 
