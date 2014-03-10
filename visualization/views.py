@@ -804,6 +804,7 @@ def export_statistics(request, source_id):
     header = []
     header.extend(source.get_key_list())
     header.append('date_taken')
+    header.extend(images[0].get_metadata_fields_for_export()) #these are the same for all images. Use first one..
     for label in labels:
         header.append(str(label.name))
     writer.writerow(header)
@@ -837,6 +838,7 @@ def export_statistics(request, source_id):
         row = []
         row.extend(locKeys)
         row.append(photo_date)
+        row.extend(image.get_metadata_values_for_export())
         row.extend(image_labels_data)
         writer.writerow(row)
 

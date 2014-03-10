@@ -246,7 +246,7 @@ class Source(models.Model):
 
     def get_all_images(self):
         return Image.objects.filter(source=self)
-    
+
     def get_key_list(self):
         """
         Get a list of this Source's location keys.
@@ -588,6 +588,24 @@ class Image(models.Model):
             return "Needs annotation"
         elif code == "annotated":
             return "Annotated"
+
+    def get_metadata_values_for_export(self):
+
+        exportfields = ['annotation_area', 'balance', 'camera', 'comments', \
+        'depth', 'framing', 'height_in_cm', 'latitude', 'longitude', \
+        'name', 'photographer', 'strobes', 'water_quality'];
+        out = [];
+        for e in exportfields:
+            out.append(getattr(self.metadata,e))
+        return out
+
+    def get_metadata_fields_for_export(self):
+
+        exportfields = ['Annotation area', 'White Balance', 'Camera', 'Comments', \
+        'Depth', 'Framing gear', 'Image Height (cm)', 'Latitude', 'Longitude', \
+        'Original File Name', 'Photographer', 'Strobes', 'Water quality'];
+        return exportfields
+
 
     def get_location_value_str_list(self):
         """
