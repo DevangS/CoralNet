@@ -31,7 +31,9 @@
     window open and go have a cup of coffee and a snack. </p>
     <p> Statistics will export the aggregated annotations as fraction of coverage of each labeltype for each image. Annotations will export each individual annotation including row and column information (one annotation per line). Each of these can be exported with our without the "Robots". If you include "Robots", the annotations automatically provided by the system will be also be exported. Else, only human-supplied annotations will be exported.
     </p>
-
+    <p>
+    The statistics file will also contain all metadata for each image. The fields should be self-explanatory bar perhaps one, namely "Annotation area". This field specifies the area of the image where the random points are scattered. It can be set globally in the source details ("edit source details" under the Admin tab), OR on an individual image basis (in the image details view). This field will say "imported" if the image uses the global setting. Else, it will contain four integers [min column, max column, min row, max row].
+    </p>
 <br/>
 
 {% endblock %}

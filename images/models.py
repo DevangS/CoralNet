@@ -77,7 +77,7 @@ class Source(models.Model):
     image_height_in_cm = models.IntegerField(
         "Default image height coverage (centimeters)",
         help_text="This is the number of centimeters of substrate the image cover from the top of the image to the bottom. For example, if you use a framer that is 50cm wide and 35cm tall, this value should be set to 35 (or slightly larger if you image covers areas outside the framer). If use you an AUV, you will need to calculate this based on the field of view and distance from the bottom. This information is needed for the automatic annotation system to normalize the pixel to centimeter ratio.\n"
-                  "You can also set this on a per-image basis; for images that don't have a specific value set, this default value will be used.",
+                  "You can also set this on a per-image basis; for images that don't have a specific value set, this default value will be used. Note that all images gets assigned this global default ON UPLOAD. If you change this default, and want this to apply to images that you have already upladed, you must first delete them (under the Browse tab) and then re-upload them.",
         validators=[MinValueValidator(ImageModelConstants.MIN_IMAGE_CM_HEIGHT),
                     MaxValueValidator(ImageModelConstants.MAX_IMAGE_CM_HEIGHT)],
         null=True
@@ -246,7 +246,7 @@ class Source(models.Model):
 
     def get_all_images(self):
         return Image.objects.filter(source=self)
-
+    
     def get_key_list(self):
         """
         Get a list of this Source's location keys.
@@ -588,24 +588,6 @@ class Image(models.Model):
             return "Needs annotation"
         elif code == "annotated":
             return "Annotated"
-
-    def get_metadata_values_for_export(self):
-
-        exportfields = ['annotation_area', 'balance', 'camera', 'comments', \
-        'depth', 'framing', 'height_in_cm', 'latitude', 'longitude', \
-        'name', 'photographer', 'strobes', 'water_quality'];
-        out = [];
-        for e in exportfields:
-            out.append(getattr(self.metadata,e))
-        return out
-
-    def get_metadata_fields_for_export(self):
-
-        exportfields = ['Annotation area', 'White Balance', 'Camera', 'Comments', \
-        'Depth', 'Framing gear', 'Image Height (cm)', 'Latitude', 'Longitude', \
-        'Original File Name', 'Photographer', 'Strobes', 'Water quality'];
-        return exportfields
-
 
     def get_location_value_str_list(self):
         """
