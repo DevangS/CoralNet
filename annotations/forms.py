@@ -211,9 +211,6 @@ class AnnotationToolSettingsForm(ModelForm):
         for field in color_fields:
             field.widget.attrs.update({'class': 'color'})
 
-        self.fields['show_machine_annotations'].dialog_help_text_template = \
-            'annotations/help_show_machine_annotations.html'
-
 
 class AnnotationImageOptionsForm(Form):
 

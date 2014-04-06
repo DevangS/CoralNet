@@ -193,12 +193,6 @@ td.annotationFormLabelCell {
     line-height: 2.0em;
 }
 
-/* jQuery-UI sliders. */
-.ui-slider {
-    margin: 3px 0 3px 254px;  /* top right bottom left */
-    width: 250px;
-}
-
 /* Place for "Applying..." text for image options/tools form */
 #applyingText {
     margin-left: 254px;
@@ -209,4 +203,28 @@ td.annotationFormLabelCell {
     height: 1em;
 
     padding: 5px;
+}
+
+
+
+/* jQuery-UI stuff like help dialogs */
+.ui-widget {
+    /* Override jQuery UI defaults */
+    font-family: inherit;
+    font-size: 0.9em;
+}
+.ui-widget ul li {
+    /* Make help-dialog lists bulleted */
+    list-style-type: disc;
+    list-style-position: outside;
+
+    line-height: 1.2em;
+
+    margin: 10px 0 10px 20px;   /* t r b l */
+}
+
+/* jQuery-UI sliders. */
+.ui-slider {
+    margin: 3px 0 3px 254px;  /* top right bottom left */
+    width: 250px;
 }
