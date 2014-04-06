@@ -62,11 +62,6 @@ var ATI = {
 
         ATI.imageCanvas = $("#imageCanvas")[0];
 
-        // When the show image tools button is clicked, show image tools;
-        // when the hide image tools button is clicked, hide image tools.
-        $('#id_button_show_image_tools').click(ATI.showImageTools);
-        $('#id_button_hide_image_tools').click(ATI.hideImageTools);
-
         // Initialize fields.
         for (var fieldName in ATI.fields) {
             if (!ATI.fields.hasOwnProperty(fieldName)){ continue; }
@@ -103,15 +98,6 @@ var ATI = {
             }
             ATI.redrawImage();
         });
-    },
-
-    showImageTools: function() {
-        $('#id_image_tools_wrapper').show();
-        $('#id_button_show_image_tools').hide();
-    },
-    hideImageTools: function() {
-        $('#id_image_tools_wrapper').hide();
-        $('#id_button_show_image_tools').show();
     },
 
     /* Preload a source image; once it's loaded, swap it in as the image
