@@ -18,30 +18,19 @@
     {% include "form_media_versioned.html" with form=image_options_form %}
 {% endblock %}
 
+
 {% block content %}
 
-<button id="id_button_show_instructions">Help/Controls</button>
+<button id="settings-button" title="Annotation tool settings">Settings</button>
+<button id="help-button" title="Help, controls, and compatibility info">Help</button>
 
-<div id="id_instructions_wrapper" style="display:none">
-    <button id="id_button_hide_instructions">Hide Help</button>
-
-    <hr/>
-
-    {% include "annotations/annotation_tool_help.html" %}
-
-    <hr/>
-</div>
-
-<button id="id_button_show_settings">Settings</button>
-
-<div id="id_settings_wrapper" style="display:none">
-    <button id="id_button_hide_settings">Hide Settings</button>
-
-    <hr/>
-
-    {% include "annotations/annotation_tool_settings.html" with settings_form=settings_form %}
-
-    <hr/>
+<div id="dialog-items">
+    <div id="settings">
+        {% include "annotations/annotation_tool_settings.html" with settings_form=settings_form %}
+    </div>
+    <div id="help">
+        {% include "annotations/annotation_tool_help.html" %}
+    </div>
 </div>
 
 <button id="id_button_show_image_tools">Image Tools</button>

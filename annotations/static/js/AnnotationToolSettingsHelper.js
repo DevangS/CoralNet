@@ -53,11 +53,6 @@ var ATS = {
         // Initialize settings
         ATS.updateSettingsObj();
 
-        // When the show settings button is clicked, show settings;
-        // when the hide settings button is clicked, hide settings.
-        $('#id_button_show_settings').click(ATS.showSettings);
-        $('#id_button_hide_settings').click(ATS.hideSettings);
-
         // When a settings field is changed:
         // - enable the save button.
         // - update the settings object, which the annotation tool code
@@ -89,15 +84,6 @@ var ATS = {
 
         // When the save button is clicked, save.
         ATS.$saveButton.click(ATS.saveSettings);
-    },
-
-    showSettings: function() {
-        $('#id_settings_wrapper').show();
-        $('#id_button_show_settings').hide();
-    },
-    hideSettings: function() {
-        $('#id_settings_wrapper').hide();
-        $('#id_button_show_settings').show();
     },
 
     /* Update: $fields -> settings.

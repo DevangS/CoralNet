@@ -82,6 +82,14 @@ var AnnotationToolHelper = (function() {
     var imageLeftOffset = null;
     var imageTopOffset = null;
 
+    // Size of sub-windows.
+    var SUB_WINDOW_MIN_WIDTH = 350;
+    var SUB_WINDOW_MIN_HEIGHT = 400;
+    var SUB_WINDOW_PCT_WIDTH = 30;
+    var SUB_WINDOW_PCT_HEIGHT = 70;
+    var subWindowWidth = null;
+    var subWindowHeight = null;
+
 
     /*
      * Based on the current zoom level and focus of the zoom, position and
@@ -900,20 +908,6 @@ var AnnotationToolHelper = (function() {
     }
 
 
-    /*
-     Hiding/showing the annotation tool instructions.
-     */
-    function hideInstructions() {
-        $("#id_instructions_wrapper").hide();
-        $("#id_button_show_instructions").show();
-    }
-
-    function showInstructions() {
-        $("#id_instructions_wrapper").show();
-        $("#id_button_show_instructions").hide();
-    }
-
-
     /* Public methods.
      * These are the only methods that need to be referred to as
      * AnnotationToolHelper.methodname. */
@@ -1075,10 +1069,14 @@ var AnnotationToolHelper = (function() {
                 labelCodesToNames[label.code] = label.name;
             }
 
+
             /*
              * Set initial image scaling so the whole image is shown.
              * Also set the allowable zoom factors.
              */
+
+            var windowWidth = $(window).width();
+            var windowHeight = $(window).height();
 
             var widthScaleRatio = IMAGE_FULL_WIDTH / IMAGE_AREA_WIDTH;
             var heightScaleRatio = IMAGE_FULL_HEIGHT / IMAGE_AREA_HEIGHT;
@@ -1108,6 +1106,17 @@ var AnnotationToolHelper = (function() {
                 "top": 0,
                 "z-index": 1
             });
+
+            // Set the sub-window size.
+            subWindowWidth = Math.max(
+                SUB_WINDOW_MIN_WIDTH,
+                windowWidth*SUB_WINDOW_PCT_WIDTH/100
+            );
+            subWindowHeight = Math.max(
+                SUB_WINDOW_MIN_HEIGHT,
+                windowHeight*SUB_WINDOW_PCT_HEIGHT/100
+            );
+
 
             /*
              * Initialize and draw annotation points,
@@ -1173,10 +1182,6 @@ var AnnotationToolHelper = (function() {
             /*
              * Set event handlers
              */
-
-            // Instructions show/hide buttons
-            $('#id_button_show_instructions').click(showInstructions);
-            $('#id_button_hide_instructions').click(hideInstructions);
 
             // Mouse button is pressed and un-pressed on the canvas
             $(listenerElmt).mouseup( function(e) {
@@ -1351,6 +1356,23 @@ var AnnotationToolHelper = (function() {
                 for (var i = 0; i < unselectedPoints.length; i++) {
                     select(unselectedPoints[i])
                 }
+            });
+
+            $("#settings-button").click(function() {
+                $("#settings").dialog({
+                    width: subWindowWidth,
+                    height: subWindowHeight,
+                    modal: false,
+                    title: "Settings"
+                });
+            });
+            $("#help-button").click(function() {
+                $("#help").dialog({
+                    width: subWindowWidth,
+                    height: subWindowHeight,
+                    modal: false,
+                    title: "Help/Controls"
+                });
             });
 
             // Keymap.
