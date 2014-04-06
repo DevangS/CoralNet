@@ -83,8 +83,8 @@ var AnnotationToolHelper = (function() {
     var imageTopOffset = null;
 
     // Size of sub-windows.
-    var SUB_WINDOW_MIN_WIDTH = 350;
-    var SUB_WINDOW_MIN_HEIGHT = 400;
+    var SUB_WINDOW_MIN_WIDTH = 500;
+    var SUB_WINDOW_MIN_HEIGHT = 500;
     var SUB_WINDOW_PCT_WIDTH = 30;
     var SUB_WINDOW_PCT_HEIGHT = 70;
     var subWindowWidth = null;
