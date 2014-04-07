@@ -992,14 +992,15 @@ var AnnotationToolHelper = (function() {
 
             imageArea = $("#imageArea")[0];
 
-            $('#mainColumn').css({
-                "width": ANNOTATION_AREA_WIDTH + "px"
-            });
-
-            // The annotation list's max height should be limited to make the
-            // entire right sidebar shorter than the entire main column.
+            // Hackish computation to make the right sidebar's
+            // horizontal rule line up (roughly) with the bottom of
+            // the annotation area.
             var annotationListMaxHeight =
-                ANNOTATION_AREA_HEIGHT - parseFloat($("#toolButtonArea").outerHeight(true)) - 100;
+                ANNOTATION_AREA_HEIGHT
+                - $("#toolButtonArea").outerHeight(true)
+                - $(saveButton).outerHeight(true)
+                - $("#allDone").outerHeight(true)
+                - parseFloat($("#rightSidebar hr").css('margin-top'));
 
             $(annotationList).css({
                 "max-height": annotationListMaxHeight + "px"
@@ -1018,19 +1019,25 @@ var AnnotationToolHelper = (function() {
                 "top": CANVAS_GUTTER + "px"
             });
 
-            // Set the height for the element containing the two main columns.
-            // This ensures that the info below the annotation tool doesn't overlap with
-            // the annotation tool.  Overlap is possible because the main column floats,
-            // so the main column doesn't contribute to its container element's height.
+            // Computations for a multi-column layout. Based on
+            // http://alistapart.com/article/holygrail
             //
-            // The container element's height will be set to the max of the
-            // columns' DOM (computed) heights.
-            $('#columnContainer').css({
-                "height": Math.max(
-                    parseFloat($('#mainColumn').height()),
-                    parseFloat($('#rightSidebar').height())
-                ).toString() + "px"
+            // Note: something that's weird (and not readily apparent) is that
+            // the whole annotation tool is left-aligned on the page. There is
+            var $mainColumn = $('#mainColumn');
+            var $rightSidebar = $('#rightSidebar');
+            $mainColumn.css({
+                "width": $(annotationArea).width().toString() + "px"
             });
+            $rightSidebar.css({
+                "width": $rightSidebar.width().toString() + "px",
+                "margin-right": (-1 * $rightSidebar.width()).toString() + "px"
+            });
+            $('#columnContainer').css({
+                "width": $mainColumn.width().toString() + "px",
+                "padding-right": $rightSidebar.width().toString() + "px"
+            });
+
 
             /* Initialization - Labels and label buttons */
 

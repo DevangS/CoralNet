@@ -21,6 +21,8 @@
 
 {% block content %}
 
+<hr/>
+
 <button id="settings-button" title="Annotation tool settings">Settings</button>
 <button id="help-button" title="Help, controls, and compatibility info">Help/Controls</button>
 
@@ -40,7 +42,9 @@
 </div>
 
 <div id="columnContainer">
-    <div id="mainColumn">
+
+    <div id="mainColumn" class="column">
+
       <div id="annotationArea">
 
         <!-- HTML5 canvas element for drawing points -->
@@ -63,11 +67,12 @@
             <button>{{ label.code }}</button>
         {% endfor %}
       </div>
+
     </div>
 
-    <div id="rightSidebar">
+    <div id="rightSidebar" class="column">
 
-     <div id="toolButtonArea">
+      <div id="toolButtonArea">
          <input class="zoomButton" type="image"
                 id="zoomInButton" src="/static/img/Icon_zoom-in.png" title="Zoom in"/>
          <input class="zoomButton" type="image"
@@ -90,44 +95,43 @@
                 id="quickSelectButtonUnannotated" src="/static/img/Icon_select-unannotated.png" title="Select all unannotated points"/>
          <input class="quickSelectButton" type="image"
                 id="quickSelectButtonInvert" src="/static/img/Icon_select-inversion.png" title="Invert current selections"/>
-     </div>
-
-     <form id="annotationForm"
-          action="" method="post">{% csrf_token %}
-
-      {% for field in form.hidden_fields %}
-          {{ field }}
-      {% endfor %}
-
-      <div id="annotationList">
-
-        <table>
-
-        {% for field in form.visible_fields %}
-          <tr>
-            <td class="annotationFormLabelCell">
-                <span class="annotationFormLabel">{{ field.label }}</span>
-            </td>
-            <td>
-                {{ field }}
-            </td>
-          </tr>
-        {% endfor %}
-        
-        </table>
-
       </div>
 
-      {# type="button" ensures that the button doesn't do a non-Ajax form submit #}
-      <button id="saveButton" type="button">Save progress</button>
+      <form id="annotationForm" action="" method="post">{% csrf_token %}
 
-     </form>
+        {% for field in form.hidden_fields %}
+            {{ field }}
+        {% endfor %}
 
-     <div id="allDone"></div>
+        <div id="annotationList">
 
-     <hr/>
+          <table>
 
-     <div id="image-navigation">
+          {% for field in form.visible_fields %}
+            <tr>
+              <td class="annotationFormLabelCell">
+                  <span class="annotationFormLabel">{{ field.label }}</span>
+              </td>
+              <td>
+                  {{ field }}
+              </td>
+            </tr>
+          {% endfor %}
+        
+          </table>
+
+        </div>
+
+        {# type="button" ensures that the button doesn't do a non-Ajax form submit #}
+        <button id="saveButton" type="button">Save progress</button>
+
+      </form>
+
+      <div id="allDone"></div>
+
+      <hr/>
+
+      <div id="image-navigation">
          {% if prev_image or next_image %}
              <div><a href="{% url annotation_tool prev_image.id %}"
                      title="{{ prev_image.get_image_element_title }}">
@@ -155,13 +159,13 @@
                  Forward
              {% endif %}
          </div>
-     </div>
+      </div>
 
     </div>
 
 </div>
 
-<br/>
+<br style="clear: both;"/>
 
 <hr/>
 

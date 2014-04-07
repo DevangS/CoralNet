@@ -76,19 +76,40 @@
 #labelButtons button.group7{ background-color: #888888; }
 #labelButtons button.group8{ background-color: #4499dd; }
 
-#mainColumn {
-    float: left;
 
-    /* width is set dynamically. */
+/* TODO: See if we can change the container and content-container CSS
+   like this for the rest of the site, as well. */
+
+/* TODO: Uncomment this to make the page width fluid. Requires various
+   changes in the JS layout code, though. */
+/*#container {
+    width: inherit;
+}*/
+/* Simplify the padding. */
+#content-container {
+    width: inherit;
+    padding: 0;
 }
 
-#rightSidebar {
-    /* width is set dynamically. */
-}
 
+/* 2-column layout. Based on
+   http://alistapart.com/article/holygrail */
 #columnContainer {
-    /* height is set dynamically. */
+    /* TODO: Centering the column container only applies for a static-width
+       layout (where the columns have static width).
+       When it becomes a fluid layout, get rid of this. */
+    margin: 0 auto;
 }
+#columnContainer .column {
+    position: relative;
+    float: left;
+}
+#mainColumn {
+    width: 100%;
+}
+#rightSidebar {
+}
+
 
 #toolButtonArea {
     margin-bottom: 5px;
