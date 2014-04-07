@@ -113,6 +113,8 @@
     /* height is set dynamically. */
 }
 
+
+/* Column of label text fields; don't use the default form styling */
 #annotationForm {
     width: auto;
     margin: auto;
@@ -170,6 +172,10 @@ td.annotationFormLabelCell {
     height: 1em;
 
     padding: 5px;
+}
+
+#image-navigation {
+    text-align: center;
 }
 
 /* Content for modal dialogs */

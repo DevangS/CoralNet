@@ -996,8 +996,10 @@ var AnnotationToolHelper = (function() {
                 "width": ANNOTATION_AREA_WIDTH + "px"
             });
 
+            // The annotation list's max height should be limited to make the
+            // entire right sidebar shorter than the entire main column.
             var annotationListMaxHeight =
-                ANNOTATION_AREA_HEIGHT - parseFloat($("#toolButtonArea").outerHeight(true));
+                ANNOTATION_AREA_HEIGHT - parseFloat($("#toolButtonArea").outerHeight(true)) - 100;
 
             $(annotationList).css({
                 "max-height": annotationListMaxHeight + "px"

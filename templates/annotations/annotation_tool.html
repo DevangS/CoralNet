@@ -121,9 +121,41 @@
       {# type="button" ensures that the button doesn't do a non-Ajax form submit #}
       <button id="saveButton" type="button">Save progress</button>
 
-      <div id="allDone"></div>
-
      </form>
+
+     <div id="allDone"></div>
+
+     <hr/>
+
+     <div id="image-navigation">
+         {% if prev_image or next_image %}
+             <div><a href="{% url annotation_tool prev_image.id %}"
+                     title="{{ prev_image.get_image_element_title }}">
+                      Go to another image</a></div>
+         {% else %}
+             <div>No more images need annotation</div>
+         {% endif %}
+         <br/>
+
+         <div>History</div>
+         <div>
+             {% if prev_image %}
+                 <a href="{% url annotation_tool prev_image.id %}"
+                    title="{{ prev_image.get_image_element_title }}">
+                     Back</a>
+             {% else %}
+                 Back
+             {% endif %}
+             |
+             {% if next_image %}
+                 <a href="{% url annotation_tool next_image.id %}"
+                    title="{{ next_image.get_image_element_title }}">
+                     Forward</a>
+             {% else %}
+                 Forward
+             {% endif %}
+         </div>
+     </div>
 
     </div>
 
@@ -135,29 +167,6 @@
 
 <div style="display:inline-block;">
     {% include "images/location_values_table.html" with image=image %}
-</div>
-
-<div style="display:inline-block; margin-left:50px;">
-    <ul class="detail_list">
-        {% if prev_image or next_image %}
-            <li>Annotate another image</li>
-        {% else %}
-            <li>All other images have been annotated</li>
-        {% endif %}
-        <li>
-            {% if prev_image %}
-                <a href="{% url annotation_tool prev_image.id %}"
-                   title="{{ prev_image.get_image_element_title }}">
-                    &lt; Previous</a>
-            {% endif %}
-
-            {% if next_image %}
-                <a href="{% url annotation_tool next_image.id %}"
-                   title="{{ next_image.get_image_element_title }}">
-                    Next &gt;</a>
-            {% endif %}
-        </li>
-    </ul>
 </div>
 
 <hr class="light">
