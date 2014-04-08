@@ -212,6 +212,19 @@ class AnnotationToolSettingsForm(ModelForm):
             field.widget.attrs.update({'class': 'color'})
 
 
+class AnnotationToolNavHistoryForm(Form):
+
+    back = forms.fields.CharField(
+        widget=forms.HiddenInput(),
+    )
+    forward = forms.fields.CharField(
+        widget=forms.HiddenInput(),
+    )
+    from_image_id = forms.fields.IntegerField(
+        widget=forms.HiddenInput()
+    )
+
+
 class AnnotationImageOptionsForm(Form):
 
     class Media:

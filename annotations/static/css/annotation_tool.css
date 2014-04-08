@@ -195,8 +195,39 @@ td.annotationFormLabelCell {
     padding: 5px;
 }
 
+
+/* Image navigation */
 #image-navigation {
     text-align: center;
+}
+#image-navigation form {
+    /* Don't use the default form styling */
+    display: inline;
+    width: auto;
+    margin: auto;
+    padding: 0;
+}
+#image-navigation input[type=submit] {
+    /* Make these input elements look like links. */
+    /* TODO: Instead of doing THIS much style resetting, perhaps the
+       'standard' submit button should have its own class, instead
+       of just taking over input type=submit in general. */
+    background: none;
+    color: #880E00;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    text-shadow: none;
+
+    min-width: inherit;
+    height: inherit;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    text-decoration: underline;
 }
 
 /* Content for modal dialogs */

@@ -1,3 +1,4 @@
+import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
@@ -8,13 +9,14 @@ from django.utils import simplejson
 from easy_thumbnails.files import get_thumbnailer
 from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
+import annotations.forms as annotations_forms
 from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm, AnnotationToolSettingsForm, AnnotationImageOptionsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess, AnnotationToolSettings
 from annotations.utils import get_annotation_version_user_display
 from decorators import source_permission_required, source_visibility_required, image_permission_required, image_annotation_area_must_be_editable, image_labelset_required
 from images.models import Source, Image, Point
-from images.utils import generate_points, get_next_image, get_prev_image
+from images.utils import generate_points, get_first_image, get_next_image, get_prev_image
 from visualization.utils import generate_patch_if_doesnt_exist
 
 @login_required
@@ -414,10 +416,80 @@ def annotation_tool(request, image_id):
     source = image.source
     metadata = image.metadata
 
+
+    # Image navigation history.
+    # Establish default values for the history, first.
+    nav_history_form =\
+        annotations_forms.AnnotationToolNavHistoryForm(
+            initial=dict(back="[]", forward="[]", from_image_id=image_id)
+        )
+    nav_history = dict(
+        form=nav_history_form,
+        back=None,
+        forward=None,
+    )
+    # We made a POST request if the user is going to another image,
+    # going back, or going forward.
+    # (It's non-POST if they came from a non annotation tool page, or
+    # came via URL typing.)
+    if request.method == 'POST':
+        nav_history_form_submitted =\
+            annotations_forms.AnnotationToolNavHistoryForm(request.POST)
+
+        if nav_history_form_submitted.is_valid():
+            # Nav history is a serialized list of image ids.
+            # For example: "[258,259,268,109]"
+            form_data = nav_history_form_submitted.cleaned_data
+            back_submitted_list = json.loads(form_data['back'])
+            forward_submitted_list = json.loads(form_data['forward'])
+            from_image_id = form_data['from_image_id']
+
+            # Construct new back and forward lists based on
+            # where we're navigating.
+            if request.POST.get('nav_another', None):
+                back_list = back_submitted_list + [from_image_id]
+                forward_list = []
+            elif request.POST.get('nav_back', None):
+                back_list = back_submitted_list[:-1]
+                forward_list = [from_image_id] + forward_submitted_list
+            else:  # 'nav_forward'
+                back_list = back_submitted_list + [from_image_id]
+                forward_list = forward_submitted_list[1:]
+
+            limit = 10
+            nav_history_form = \
+                annotations_forms.AnnotationToolNavHistoryForm(
+                    initial=dict(
+                        back=json.dumps(back_list[-limit:]),
+                        forward=json.dumps(forward_list[:limit]),
+                        from_image_id=image_id,
+                    )
+                )
+
+            if len(back_list) > 0:
+                back = Image.objects.get(pk=back_list[-1])
+            else:
+                back = None
+            if len(forward_list) > 0:
+                forward = Image.objects.get(pk=forward_list[0])
+            else:
+                forward = None
+            nav_history = dict(
+                form=nav_history_form,
+                back=back,
+                forward=forward,
+            )
+        else:
+            # Invalid form for some reason.
+            # Fail silently, I guess? That is, use an empty history.
+            pass
+
+
     # Get the settings object for this user.
     # If there is no such settings object, then create it.
     settings_obj, created = AnnotationToolSettings.objects.get_or_create(user=request.user)
     settings_form = AnnotationToolSettingsForm(instance=settings_obj)
+
 
     # Get all labels, ordered first by functional group, then by short code.
     labels = source.labelset.labels.all().order_by('group', 'code')
@@ -425,6 +497,8 @@ def annotation_tool(request, image_id):
     # Convert from a ValuesQuerySet to a list to make the structure JSON-serializable.
     labelValues = list(labels.values('code', 'group', 'name'))
 
+
+    # Get points and annotations.
     form = AnnotationForm(
         image=image,
         user=request.user,
@@ -458,12 +532,12 @@ def annotation_tool(request, image_id):
     #  ...]
     # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
 
-    need_human_anno_next = get_next_image(image, dict(status__annotatedByHuman=False))
-    need_human_anno_prev = get_prev_image(image, dict(status__annotatedByHuman=False))
 
     # Image tools form (brightness, contrast, etc.)
     image_options_form = AnnotationImageOptionsForm()
 
+
+    # Image dimensions.
     IMAGE_AREA_WIDTH = 800
     IMAGE_AREA_HEIGHT = 600
 
@@ -485,14 +559,24 @@ def annotation_tool(request, image_id):
             height=thumb.height,
         )))
 
+
+    # Get another image to annotate.
+    # This'll be the next image that needs annotation;
+    # or if we're at the last image, wrap around to the first image.
+    another_image = get_next_image(image, dict(status__annotatedByHuman=False))
+    if another_image is None:
+        another_image = get_first_image(image.source, dict(status__annotatedByHuman=False))
+
+
+    # Record this access of the annotation tool page.
     access = AnnotationToolAccess(image=image, source=source, user=request.user)
     access.save()
 
     return render_to_response('annotations/annotation_tool.html', {
         'source': source,
         'image': image,
-        'next_image': need_human_anno_next,
-        'prev_image': need_human_anno_prev,
+        'another_image': another_image,
+        'nav_history': nav_history,
         'metadata': metadata,
         'labels': labelValues,
         'form': form,
