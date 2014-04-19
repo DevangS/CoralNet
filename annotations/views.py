@@ -446,7 +446,7 @@ def annotation_tool(request, image_id):
 
             # Construct new back and forward lists based on
             # where we're navigating.
-            if request.POST.get('nav_another', None):
+            if request.POST.get('nav_next', None):
                 back_list = back_submitted_list + [from_image_id]
                 forward_list = []
             elif request.POST.get('nav_back', None):
@@ -560,12 +560,18 @@ def annotation_tool(request, image_id):
         )))
 
 
-    # Get another image to annotate.
+    # Get the next image to annotate.
     # This'll be the next image that needs annotation;
     # or if we're at the last image, wrap around to the first image.
-    another_image = get_next_image(image, dict(status__annotatedByHuman=False))
-    if another_image is None:
-        another_image = get_first_image(image.source, dict(status__annotatedByHuman=False))
+    next_image_to_annotate = get_next_image(image, dict(status__annotatedByHuman=False))
+
+    if next_image_to_annotate is None:
+        next_image_to_annotate = get_first_image(
+            image.source, dict(status__annotatedByHuman=False)
+        )
+        # Don't allow getting the current image as the next image to annotate.
+        if next_image_to_annotate is not None and next_image_to_annotate.id == image.id:
+            next_image_to_annotate = None
 
 
     # Record this access of the annotation tool page.
@@ -575,7 +581,7 @@ def annotation_tool(request, image_id):
     return render_to_response('annotations/annotation_tool.html', {
         'source': source,
         'image': image,
-        'another_image': another_image,
+        'next_image_to_annotate': next_image_to_annotate,
         'nav_history': nav_history,
         'metadata': metadata,
         'labels': labelValues,

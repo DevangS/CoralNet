@@ -133,11 +133,12 @@
 
       <div id="image-navigation">
 
-          {% if another_image %}
-              <form action="{% url annotation_tool another_image.id %}" method="post">{% csrf_token %}
+          {% if next_image_to_annotate %}
+              <form action="{% url annotation_tool next_image_to_annotate.id %}"
+                    method="post" id="nav-next-form">{% csrf_token %}
                   {% for field in nav_history.form.hidden_fields %}{{ field }}{% endfor %}
-                  <input type="submit" name="nav_another" value="Go to another image"
-                         title="{{ another_image.get_image_element_title }}" />
+                  <input type="submit" name="nav_next" value="Go to next image"
+                         title="Go to next image needing annotation ({{ next_image_to_annotate.get_image_element_title }})" />
               </form>
           {% else %}
               <div>No more images need annotation</div>
@@ -149,7 +150,8 @@
           <div><i>History</i></div>
           <div>
               {% if nav_history.back %}
-                  <form action="{% url annotation_tool nav_history.back.id %}" method="post">{% csrf_token %}
+                  <form action="{% url annotation_tool nav_history.back.id %}"
+                        method="post" id="nav-back-form">{% csrf_token %}
                       {% for field in nav_history.form.hidden_fields %}{{ field }}{% endfor %}
                       <input type="submit" name="nav_back" value="Back"
                              title="{{ nav_history.back.get_image_element_title }}" />
@@ -159,7 +161,8 @@
               {% endif %}
               |
               {% if nav_history.forward %}
-                  <form action="{% url annotation_tool nav_history.forward.id %}" method="post">{% csrf_token %}
+                  <form action="{% url annotation_tool nav_history.forward.id %}"
+                        method="post" id="nav-forward-form">{% csrf_token %}
                       {% for field in nav_history.form.hidden_fields %}{{ field }}{% endfor %}
                       <input type="submit" name="nav_forward" value="Forward"
                              title="{{ nav_history.forward.get_image_element_title }}" />

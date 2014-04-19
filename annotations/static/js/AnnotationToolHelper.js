@@ -564,6 +564,18 @@ var AnnotationToolHelper = (function() {
         }
     }
 
+    /* Navigate to another image. */
+    function navNext() {
+        $('#nav-next-form').submit();
+    }
+    function navBack() {
+        $('#nav-back-form').submit();
+    }
+    function navForward() {
+        $('#nav-forward-form').submit();
+    }
+
+
     /* Get the mouse position in the canvas element:
        (mouse's position in the HTML document) minus
        (canvas element's position in the HTML document). */
@@ -1023,15 +1035,24 @@ var AnnotationToolHelper = (function() {
             // http://alistapart.com/article/holygrail
             //
             // Note: something that's weird (and not readily apparent) is that
-            // the whole annotation tool is left-aligned on the page. There is
+            // the whole annotation tool is left-aligned on the page. It just so
+            // happens that there is not much room for the position to change
+            // from alignment. But if that room expands, then the left
+            // align may look weird.
             var $mainColumn = $('#mainColumn');
             var $rightSidebar = $('#rightSidebar');
+
+            // Maybe there is a way to compute the right sidebar width dynamically
+            // and guarantee that the layout is correct, but I don't know what
+            // that way is.
+            var rightSidebarWidth = 150;
+
             $mainColumn.css({
                 "width": $(annotationArea).width().toString() + "px"
             });
             $rightSidebar.css({
-                "width": $rightSidebar.width().toString() + "px",
-                "margin-right": (-1 * $rightSidebar.width()).toString() + "px"
+                "width": rightSidebarWidth.toString() + "px",
+                "margin-right": (-1 * rightSidebarWidth).toString() + "px"
             });
             $('#columnContainer').css({
                 "width": $mainColumn.width().toString() + "px",
@@ -1385,9 +1406,25 @@ var AnnotationToolHelper = (function() {
             });
 
             // Keymap.
+            //
+            // jQuery hotkeys notes:
+            //
+            // If you want to use more than one modifier (e.g. alt+ctrl+z) you should
+            // define them in alphabetical order, e.g. alt+ctrl+shift
+            //
+            // Bind to the keydown event for the meta and hyper keys, since keyup
+            // and keypress for these keys don't work for most browsers.
+            // Also, the meta key does not work at all in Opera as of 19.0.
+            //
+            // Clashes with jQuery UI's autocomplete:
+            // https://github.com/tzuryby/jquery.hotkeys/issues/16
             var keymap = [
                 ['shift+up', zoomIn, 'all'],
                 ['shift+down', zoomOut, 'all'],
+
+//                ['ctrl+shift+;', navNext, 'all'],  // TODO: Doesn't work in Chrome
+//                ['ctrl+shift+,', navBack, 'all'],  // TODO: Doesn't work in Firefox/Chrome
+//                ['ctrl+shift+.', navForward, 'all'],  // TODO: Doesn't work in Firefox/Chrome
 
                 ['return', confirmFieldAndFocusNext, 'field'],
                 ['up', focusPrevField, 'field'],
