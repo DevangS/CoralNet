@@ -5,7 +5,7 @@
             <th>Windows</th><th>Mac</th><th>Linux</th>
         </tr>
         <tr>
-            <td>OK</td><td>OK</td><td>Ctrl key problems</td>
+            <td>OK</td><td>Needs testing</td><td>Needs testing</td>
         </tr>
     </table>
     <br/>
@@ -14,7 +14,7 @@
             <th>Firefox</th><th>Chrome</th><th>Safari</th><th>IE</th><th>Opera</th>
         </tr>
         <tr>
-            <td>OK</td><td>OK</td><td>Ctrl key problems</td><td>May not work</td><td>Unknown</td>
+            <td>OK</td><td>OK</td><td>Needs testing</td><td>Unknown</td><td>Possible keyboard issues</td>
         </tr>
     </table>
 </div>
@@ -51,6 +51,9 @@
         <li>Below the image is a grid of label buttons - there's one button for each label in your Source's labelset.
             Click the button corresponding to the label you want to use.</li>
         <li>You may also type the label code directly into the text field.</li>
+        <li>You may hold <kbd>Ctrl</kbd> and use the arrow keys
+            <kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd>
+            to choose a label by navigating the button grid.</li>
     </ul>
 </div>
 
@@ -58,14 +61,15 @@
     <span class="help_header">Confirming or changing a label</span>
     <ul>
         <li>Press <span class='key_non_mac'><kbd>Enter</kbd></span><span class='key_mac'><kbd>Return</kbd></span> to confirm a robot-annotated label and move onto the next point.</li>
-        <li>Hold <kbd>Ctrl</kbd> and use the arrow keys <kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> to quickly choose a different label from the button grid.</li>
     </ul>
 </div>
 
 <div class="help_section">
     <span class="help_header">Saving your work</span>
     <ul>
-        <li>Click the "Save Progress" button on the lower right to save your work.
+        <li>To save your work, click the "Save Progress" button on the lower right, or hit
+            <span class='key_non_mac'><kbd>Ctrl</kbd>+<kbd>S</kbd></span>
+            <span class='key_mac'><kbd>Cmd</kbd>+<kbd>S</kbd></span>.
             There are two cases where you won't be able to save:
             <ul>
                 <li>When no changes have been made.  In this case, the button text will be "Saved".</li>
@@ -78,7 +82,10 @@
 <div class="help_section">
     <span class="help_header">Selecting and labeling multiple points</span>
     <ul>
-        <li>Select multiple points by <span class='key_non_mac'><kbd>Ctrl</kbd>-clicking</span><span class='key_mac'><kbd>Cmd</kbd>-clicking</span> the points on the image.</li>
+        <li>Select multiple points by
+            <span class='key_non_mac'><kbd>Ctrl</kbd>-clicking</span>
+            <span class='key_mac'><kbd>Cmd</kbd>-clicking</span>
+            the points on the image.</li>
         <li>You may also click the numbers next to the text fields.</li>
         <li>For more multi-select options, use these buttons on the upper right:
             <img src="/static/img/Icon_select-none.png"/>,
@@ -105,6 +112,22 @@
             use the sliders, or type a value in the text field.
             Click Apply to apply the new values.
             Click Reset Parameters to reset both to 0.</li>
+    </ul>
+</div>
+
+<div class="help_section">
+    <span class="help_header">Navigate to another image</span>
+    <ul>
+        <li>The bottom-right part of the annotation tool has links to
+            navigate between images.</li>
+        <li>To navigate to the next image needing annotation, click "Go to next image",
+            or press <kbd>g</kbd> and then <kbd>n</kbd>.</li>
+        <li>The annotation tool tracks your navigation history as you go between images,
+            similar to an internet browser.
+        <li>To navigate back in this history, click "Back",
+            or press <kbd>g</kbd> and then <kbd>b</kbd>.</li>
+        <li>To navigate forward, click "Forward",
+            or press <kbd>g</kbd> and then <kbd>f</kbd>.</li>
     </ul>
 </div>
 
