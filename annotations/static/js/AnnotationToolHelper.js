@@ -555,6 +555,13 @@ var AnnotationToolHelper = (function() {
         }
     }
 
+    /* Event listener callback: 'this' is an annotation field
+     * Unfocus from the annotation field. */
+    function unfocusField() {
+        $(this).blur();
+    }
+
+
     /* Navigate to another image. */
     function navNext() {
         // Need to click the button, not just submit the form with submit().
@@ -1407,13 +1414,14 @@ var AnnotationToolHelper = (function() {
                 ['shift+up', zoomIn, 'all'],
                 ['shift+down', zoomOut, 'all'],
 
-                ['mod+shift+;', navNext, 'all'],
-                ['mod+shift+,', navBack, 'all'],
-                ['mod+shift+.', navForward, 'all'],
+                ['g n', navNext, 'top'],
+                ['g b', navBack, 'top'],
+                ['g f', navForward, 'top'],
 
                 ['return', confirmFieldAndFocusNext, 'field'],
                 ['up', focusPrevField, 'field'],
                 ['down', focusNextField, 'field'],
+                ['esc', unfocusField, 'field'],
 
                 // TODO: Should these Ctrl things become Cmd for Mac?
                 ['ctrl+left', moveCurrentLabelLeft, 'field'],
@@ -1453,15 +1461,36 @@ var AnnotationToolHelper = (function() {
 
                         // An annotation field is an input element
                         // within #annotationList.
-                        //
+                        var aElmtIsAnnotationField =
+                            aElmt.tagName.equalsIgnoreCase('input')
+                            && $('#annotationList')[0].contains(aElmt);
+
                         // Use apply() to ensure that in the called function,
                         // "this" is the annotation field.
-                        if (aElmt.tagName.equalsIgnoreCase('input')
-                           && $('#annotationList')[0].contains(aElmt)) {
+                        if (aElmtIsAnnotationField) {
                             f.apply(aElmt);
                         }
                     };
                     func = applyFuncToField.curry(func);
+                }
+                else if (scope === 'top') {
+
+                    // Modify the handler function to only trigger
+                    // when an annotation field is NOT focused.
+                    var applyFuncToTop = function(f) {
+                        var aElmt = document.activeElement;
+
+                        // An annotation field is an input element
+                        // within #annotationList.
+                        var aElmtIsAnnotationField =
+                            aElmt.tagName.equalsIgnoreCase('input')
+                            && $('#annotationList')[0].contains(aElmt);
+
+                        if (!aElmtIsAnnotationField) {
+                            f();
+                        }
+                    };
+                    func = applyFuncToTop.curry(func);
                 }
 
                 // Modify the handler function to prevent the event's
