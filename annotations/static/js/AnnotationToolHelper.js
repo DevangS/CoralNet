@@ -298,15 +298,6 @@ var AnnotationToolHelper = (function() {
         }
     }
 
-    /* Wrapper for event handler functions.
-     * Call e.preventDefault() and then call the event handler function.
-     * TODO: Once there's a use for this, actually make sure this function works. */
-    function preventDefaultWrapper(fn) {
-        return function(e) {
-            e.preventDefault();
-            fn.call(this, e);
-        };
-    }
 
     function zoomIn(e) {
         zoom('in', e);
@@ -566,13 +557,16 @@ var AnnotationToolHelper = (function() {
 
     /* Navigate to another image. */
     function navNext() {
-        $('#nav-next-form').submit();
+        // Need to click the button, not just submit the form with submit().
+        // The name associated with the button is part of the form
+        // data we want to submit.
+        $('#nav-next-submit').click();
     }
     function navBack() {
-        $('#nav-back-form').submit();
+        $('#nav-back-submit').click();
     }
     function navForward() {
-        $('#nav-forward-form').submit();
+        $('#nav-forward-submit').click();
     }
 
 
@@ -1407,34 +1401,35 @@ var AnnotationToolHelper = (function() {
 
             // Keymap.
             //
-            // jQuery hotkeys notes:
-            //
-            // If you want to use more than one modifier (e.g. alt+ctrl+z) you should
-            // define them in alphabetical order, e.g. alt+ctrl+shift
-            //
-            // Bind to the keydown event for the meta and hyper keys, since keyup
-            // and keypress for these keys don't work for most browsers.
-            // Also, the meta key does not work at all in Opera as of 19.0.
-            //
-            // Clashes with jQuery UI's autocomplete:
-            // https://github.com/tzuryby/jquery.hotkeys/issues/16
+            // Mousetrap (keyboard shortcut plugin) notes:
+            // "mod" means Ctrl in Windows/Linux, Cmd in Mac.
             var keymap = [
                 ['shift+up', zoomIn, 'all'],
                 ['shift+down', zoomOut, 'all'],
 
-//                ['ctrl+shift+;', navNext, 'all'],  // TODO: Doesn't work in Chrome
-//                ['ctrl+shift+,', navBack, 'all'],  // TODO: Doesn't work in Firefox/Chrome
-//                ['ctrl+shift+.', navForward, 'all'],  // TODO: Doesn't work in Firefox/Chrome
+                ['mod+shift+;', navNext, 'all'],
+                ['mod+shift+,', navBack, 'all'],
+                ['mod+shift+.', navForward, 'all'],
 
                 ['return', confirmFieldAndFocusNext, 'field'],
                 ['up', focusPrevField, 'field'],
                 ['down', focusNextField, 'field'],
+
+                // TODO: Should these Ctrl things become Cmd for Mac?
                 ['ctrl+left', moveCurrentLabelLeft, 'field'],
                 ['ctrl+right', moveCurrentLabelRight, 'field'],
                 ['ctrl+up', moveCurrentLabelUp, 'field'],
                 ['ctrl+down', moveCurrentLabelDown, 'field'],
                 ['ctrl', beginKeyboardLabelling, 'field', 'keydown']
             ];
+
+            // By default, mousetrap doesn't activate when focused in an
+            // input field. But we want some shortcut keys for our
+            // annotation input fields, so add the class 'mousetrap' to
+            // indicate that.
+            $annotationFields.each( function() {
+                $(this).addClass('mousetrap');
+            });
 
             // Bind event listeners according to the keymap.
             for (i = 0; i < keymap.length; i++) {
@@ -1443,22 +1438,47 @@ var AnnotationToolHelper = (function() {
                 var key = keymapping[0];
                 var func = keymapping[1];
                 var scope = keymapping[2];
-                var elementsToBind;
 
-                // Event is keyup unless otherwise specified
-                var keyEvent = 'keyup';
+                // May optionally specify the kind of key event
+                var keyEvent = null;
                 if (keymapping.length >= 4)
                     keyEvent = keymapping[3];
 
-                // Bind the event listeners to the documents, the annotation fields, or both.
-                if (scope === 'all')
-                    elementsToBind = [$(document), $annotationFields];
-                else if (scope === 'field')
-                    elementsToBind = [$annotationFields];
+                if (scope === 'field') {
 
-                // Add the event listener.
-                for (j = 0; j < elementsToBind.length; j++) {
-                    elementsToBind[j].bind(keyEvent, key, func);
+                    // Modify the handler function to only trigger
+                    // when an annotation field is focused.
+                    var applyFuncToField = function(f) {
+                        var aElmt = document.activeElement;
+
+                        // An annotation field is an input element
+                        // within #annotationList.
+                        //
+                        // Use apply() to ensure that in the called function,
+                        // "this" is the annotation field.
+                        if (aElmt.tagName.equalsIgnoreCase('input')
+                           && $('#annotationList')[0].contains(aElmt)) {
+                            f.apply(aElmt);
+                        }
+                    };
+                    func = applyFuncToField.curry(func);
+                }
+
+                // Modify the handler function to prevent the event's
+                // default behavior, and prevent the event from
+                // bubbling up.
+                var modifyToPreventDefault = function(f) {
+                    f();
+                    return false;
+                };
+                func = modifyToPreventDefault.curry(func);
+
+                // Bind the key combo to the handler.
+                if (keyEvent) {
+                    Mousetrap.bind(key, func, keyEvent);
+                }
+                else {
+                    Mousetrap.bind(key, func);
                 }
             }
 
@@ -1473,6 +1493,7 @@ var AnnotationToolHelper = (function() {
             }
         },
 
+        // Public version of this function...
         redrawAllPoints: function() {
             redrawAllPoints();
         }
