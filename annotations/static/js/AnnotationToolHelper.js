@@ -820,6 +820,13 @@ var AnnotationToolHelper = (function() {
         $(saveButton).text(buttonText);
     }
 
+    function clickSaveButton() {
+        if ($(saveButton).prop('disabled') === false) {
+            $(saveButton).click();
+        }
+    }
+
+
     function getPointNumOfAnnoField(annoField) {
         // Assuming the annotation field's name attribute is "label_<pointnumber>".
         // "label_" is 6 characters.
@@ -1413,6 +1420,8 @@ var AnnotationToolHelper = (function() {
             var keymap = [
                 ['shift+up', zoomIn, 'all'],
                 ['shift+down', zoomOut, 'all'],
+
+                ['mod+s', clickSaveButton, 'all'],
 
                 ['g n', navNext, 'top'],
                 ['g b', navBack, 'top'],
