@@ -1071,6 +1071,11 @@ var AnnotationToolHelper = (function() {
                 "padding-right": $rightSidebar.width().toString() + "px"
             });
 
+            // Auto-adjust the vertical scroll position to fit the
+            // annotation tool better.
+            var contentContainerY = $('#content-container').offset().top;
+            $(window).scrollTop(contentContainerY);
+
 
             /* Initialization - Labels and label buttons */
 
