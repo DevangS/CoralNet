@@ -373,6 +373,13 @@ def visualize_source(request, source_id):
         selectAllCheckbox = None
 
 
+    # The destination page when you click on an image/patch thumbnail.
+    if request.user.has_perm(Source.PermTypes.EDIT.code, source):
+        thumbnail_dest_page = 'annotation_tool'
+    else:
+        thumbnail_dest_page = 'image_detail'
+
+
     return render_to_response('visualization/visualize_source.html', {
         'source': source,
 
@@ -381,6 +388,7 @@ def visualize_source(request, source_id):
         'errors': errors,
         'page_results': page_results,
         'num_of_total_results': num_of_total_results,
+        'thumbnail_dest_page': thumbnail_dest_page,
         'prev_page_link': prev_page_link,
         'next_page_link': next_page_link,
 
