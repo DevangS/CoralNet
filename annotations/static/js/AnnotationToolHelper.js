@@ -287,6 +287,8 @@ var AnnotationToolHelper = (function() {
             $(saveButton).attr('disabled', 'disabled');
             setSaveButtonText("Error");
         }
+
+        util.pageLeaveWarningEnable("You have unsaved changes.");
     }
 
     function setAllDoneIndicator(allDone) {
@@ -813,6 +815,8 @@ var AnnotationToolHelper = (function() {
 
             // Add or remove ALL DONE indicator
             setAllDoneIndicator(returnDict.hasOwnProperty('all_done'));
+
+            util.pageLeaveWarningDisable();
         }
     }
 
