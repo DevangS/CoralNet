@@ -91,6 +91,11 @@ var AnnotationToolHelper = (function() {
     var subWindowHeight = null;
 
 
+
+    //
+    // CANVAS methods
+    //
+
     /*
      * Based on the current zoom level and focus of the zoom, position and
      * set up the image and on-image listener elements.
@@ -183,124 +188,6 @@ var AnnotationToolHelper = (function() {
         context.translate(CANVAS_GUTTER, CANVAS_GUTTER);
     }
 
-    /* Look at a label field, and based on the label, mark the point
-     * as (human) annotated, robot annotated, unannotated, or errored.
-     *
-     * Return true if something changed (label code or robot status).
-     * Return false otherwise.
-     */
-    function updatePointState(pointNum, robotStatusAction) {
-        var field = annotationFields[pointNum];
-        var row = annotationFieldRows[pointNum];
-        var robotField = annotationRobotFields[pointNum];
-        var labelCode = field.value;
-
-        // Has the label text changed?
-        var oldState = pointContentStates[pointNum];
-        var labelChanged = (oldState['label'] !== labelCode);
-
-        /*
-         * Update style elements and robot statuses accordingly
-         */
-
-        if (labelCode === '') {
-            // Empty string; if the label field was non-empty before, fill the field back in.
-            // (Or if it was empty before, then leave it empty.)
-            if (oldState.label !== undefined && oldState.label !== '')
-                field.value = oldState.label;
-            return false;
-        }
-        else if (labelCodes.indexOf(labelCode) === -1) {
-            // Error: label is not in the labelset
-            $(field).attr('title', 'Label not in labelset');
-            $(row).addClass('error');
-            $(row).removeClass('annotated');
-            unrobot(pointNum);
-        }
-        else {
-            // No error
-
-            if (robotField.value === 'true') {
-                if (robotStatusAction === 'initialize') {
-                    // Initializing the page, need to add robot styles as appropriate.
-                    $(row).addClass('robot');
-                }
-                else if (robotStatusAction === 'unrobotOnlyIfChanged') {
-                    // We're told to only unrobot the annotation if the label changed.
-                    if (labelChanged)
-                        unrobot(pointNum);
-                }
-                else {
-                    // Any other update results in this annotation being un-roboted.
-                    unrobot(pointNum);
-                }
-            }
-
-            // Set as (human) annotated or not
-            if (isRobot(pointNum)) {
-                // Robot annotated
-                $(row).removeClass('annotated');
-            }
-            else {
-                $(row).addClass('annotated');
-            }
-
-            // Remove error styling, if any
-            $(row).removeClass('error');
-
-            // Field's mouseover text = label name
-            $(field).attr('title', labelCodesToNames[labelCode]);
-        }
-
-        var robotStatusChanged = (oldState['robot'] !== robotField.value);
-        var contentChanged = ((labelChanged || robotStatusChanged) && (robotStatusAction !== 'initialize'));
-
-        // Done assessing change of state, so set the new state.
-        pointContentStates[pointNum] = {'label': labelCode, 'robot': robotField.value};
-        return contentChanged;
-    }
-
-    function onPointUpdate(annoField, robotStatusAction) {
-        var pointNum = getPointNumOfAnnoField(annoField);
-        var contentChanged = updatePointState(pointNum, robotStatusAction);
-
-        updatePointGraphic(pointNum);
-
-        if (contentChanged)
-            updateSaveButton();
-    }
-
-    function onLabelFieldTyping(field) {
-        onPointUpdate(field);
-    }
-
-    function updateSaveButton() {
-        // No errors in annotation form
-        if ($(annotationList).find('tr.error').length === 0) {
-            // Enable save button
-            $(saveButton).removeAttr('disabled');
-            setSaveButtonText("Save progress");
-        }
-        // Errors
-        else {
-            // Disable save button
-            $(saveButton).attr('disabled', 'disabled');
-            setSaveButtonText("Error");
-        }
-
-        util.pageLeaveWarningEnable("You have unsaved changes.");
-    }
-
-    function setAllDoneIndicator(allDone) {
-        if (allDone) {
-            $('#allDone').append('<span>').text("ALL DONE");
-        }
-        else {
-            $('#allDone').empty();
-        }
-    }
-
-
     function zoomIn(e) {
         zoom('in', e);
     }
@@ -354,15 +241,191 @@ var AnnotationToolHelper = (function() {
         redrawAllPoints();
     }
 
-    /* Event listener callback: 'this' is an annotation field */
-    function confirmFieldAndFocusNext() {
-        // Unrobot/update the field
-        onPointUpdate(this);
+    /* Get the mouse position in the canvas element:
+     (mouse's position in the HTML document) minus
+     (canvas element's position in the HTML document). */
+    function getImageElmtPosition(e) {
+        var x;
+        var y;
 
-        // Switch focus to next point's field.
-        // Call focusNextField() such that the current field becomes the object 'this'
-        focusNextField.call(this);
+        /* The method for getting the mouse position in the HTML document
+         varies depending on the browser: can be based on pageX/Y or clientX/Y. */
+        if (e.pageX !== undefined && e.pageY !== undefined) {
+            x = e.pageX;
+            y = e.pageY;
+        }
+        else {
+            x = e.clientX + document.body.scrollLeft +
+                document.documentElement.scrollLeft;
+            y = e.clientY + document.body.scrollTop +
+                document.documentElement.scrollTop;
+        }
+
+        // Get the x,y relative to the upper-left corner of the image
+        var elmt = ATI.imageCanvas;
+        while (elmt !== null) {
+            x -= elmt.offsetLeft;
+            y -= elmt.offsetTop;
+            elmt = elmt.offsetParent;
+        }
+
+        return [x,y];
     }
+
+    function getImagePosition(e) {
+        var imageElmtPosition = getImageElmtPosition(e);
+        var imageElmtX = imageElmtPosition[0];
+        var imageElmtY = imageElmtPosition[1];
+
+        var x = imageElmtX / zoomFactor;
+        var y = imageElmtY / zoomFactor;
+
+        return [x,y];
+    }
+
+    function getNearestPoint(e) {
+        // Mouse's position in the canvas element
+        var imagePosition = getImagePosition(e);
+        var x = imagePosition[0];
+        var y = imagePosition[1];
+
+        var minDistance = Infinity;
+        var closestPoint = null;
+
+        for (var i = 0; i < imagePoints.length; i++) {
+            var currPoint = imagePoints[i];
+
+            // Don't count points that are offscreen.
+            if (pointIsOffscreen(currPoint.point_number))
+                continue;
+
+            var xDiff = x - currPoint.column;
+            var yDiff = y - currPoint.row;
+            var distance = Math.sqrt((xDiff*xDiff) + (yDiff*yDiff));
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestPoint = currPoint.point_number;
+            }
+        }
+
+        return closestPoint;
+    }
+
+    function onCanvasClick(e) {
+
+        var mouseButton = util.identifyMouseButton(e);
+        var clickType;
+        var nearestPoint;
+
+        // Get the click type (in Windows terms)...
+
+        if ((!isMac && e.ctrlKey && mouseButton === "LEFT")
+            || isMac && e.metaKey && mouseButton === "LEFT") {
+            // Ctrl-click non-Mac OR Cmd-click Mac
+            clickType = "ctrlClick";
+        }
+        else if (mouseButton === "RIGHT"
+            || (isMac && e.ctrlKey && mouseButton === "LEFT")) {
+            // Right-click OR Ctrl-click Mac
+            clickType = "rightClick";
+        }
+        else if (e.shiftKey && mouseButton === "LEFT") {
+            // Shift-click
+            clickType = "shiftClick";
+        }
+        else if (mouseButton === "LEFT") {
+            // Other left click
+            clickType = "leftClick";
+        }
+        else {
+            // Middle or other click
+            clickType = "unknown";
+        }
+
+        // Carry out the click action.
+
+        // Toggle the nearest point.
+        if (clickType === "ctrlClick") {
+
+            // This only works if we're displaying all points.
+            if (pointViewMode !== POINTMODE_ALL)
+                return;
+
+            nearestPoint = getNearestPoint(e);
+            toggle(nearestPoint);
+        }
+        // Select the nearest point and unselect all others.
+        else if (clickType === "shiftClick") {
+            nearestPoint = getNearestPoint(e);
+            unselectAll();
+            select(nearestPoint);
+        }
+        // Increase zoom on the image display.
+        else if (clickType === "leftClick") {
+            zoomIn(e);
+        }
+        // Decrease zoom on the image display.
+        else if (clickType === "rightClick") {
+            zoomOut(e);
+        }
+    }
+
+    /*
+     Raw image coordinates -> Canvas coordinates:
+     (1) Scale the raw image coordinates by the image zoom factor.
+     (2) Account for image position offset.
+     (3) Don't account for gutter offset (translating the canvas context already takes care of this).
+     */
+    function getCanvasPoints() {
+        for (var i = 0; i < imagePoints.length; i++) {
+
+            // imagePoints[num].row: which image pixel it is, from 1 to height
+            // canvasPoints[num].row: offset on the canvas, starting from 0 if the point is visible.
+            // Subtract 0.5 so the canvasPoint is in the middle of the point's pixel instead of the bottom-right edge.  Typically won't make much of a difference, but still.
+            canvasPoints[imagePoints[i].point_number] = {
+                num: imagePoints[i].point_number,
+                row: ((imagePoints[i].row - 0.5) * zoomFactor) + imageTopOffset,
+                col: ((imagePoints[i].column - 0.5) * zoomFactor) + imageLeftOffset
+            };
+        }
+    }
+
+    /*
+     * Return true if the given point's coordinates
+     * are not within the image area
+     */
+    function pointIsOffscreen(pointNum) {
+        return (canvasPoints[pointNum].row < 0
+            || canvasPoints[pointNum].row > IMAGE_AREA_HEIGHT
+            || canvasPoints[pointNum].col < 0
+            || canvasPoints[pointNum].col > IMAGE_AREA_WIDTH
+            )
+    }
+
+    function changePointMode(pointMode) {
+        // Outline this point mode button in red (and de-outline the other buttons).
+        $(".pointModeButton").removeClass("selected");
+
+        if (pointMode == POINTMODE_ALL)
+            $("#pointModeButtonAll").addClass("selected");
+        else if (pointMode == POINTMODE_SELECTED)
+            $("#pointModeButtonSelected").addClass("selected");
+        else if (pointMode == POINTMODE_NONE)
+            $("#pointModeButtonNone").addClass("selected");
+
+        // Set the new point display mode.
+        pointViewMode = pointMode;
+
+        // Redraw all points.
+        redrawAllPoints();
+    }
+
+
+
+    //
+    // POINT methods
+    //
 
     function select(pointNum) {
         $(annotationFieldRows[pointNum]).addClass('selected');
@@ -423,6 +486,12 @@ var AnnotationToolHelper = (function() {
         });
         unselectMultiple(selectedPointList);
     }
+
+
+
+    //
+    // LABEL methods
+    //
 
     // Label button is clicked
     function labelSelected(labelButtonCode) {
@@ -524,6 +593,12 @@ var AnnotationToolHelper = (function() {
         moveCurrentLabel.call(this, 0, 1);
     }
 
+
+
+    //
+    // FIELD methods
+    //
+
     /* Event listener callback: 'this' is an annotation field */
     function focusPrevField() {
         var pointNum = getPointNumOfAnnoField(this);
@@ -563,6 +638,35 @@ var AnnotationToolHelper = (function() {
         $(this).blur();
     }
 
+    function onLabelFieldTyping(field) {
+        onPointUpdate(field);
+    }
+
+    /* Event listener callback: 'this' is an annotation field */
+    function confirmFieldAndFocusNext() {
+        // Unrobot/update the field
+        onPointUpdate(this);
+
+        // Switch focus to next point's field.
+        // Call focusNextField() such that the current field becomes the object 'this'
+        focusNextField.call(this);
+    }
+
+    function getPointNumOfAnnoField(annoField) {
+        // Assuming the annotation field's name attribute is "label_<pointnumber>".
+        // "label_" is 6 characters.
+        return parseInt(annoField.name.substring(6));
+    }
+
+    function get$selectedFields() {
+        return $(annotationList).find('tr.selected').find('input');
+    }
+
+
+
+    //
+    // NAV methods
+    //
 
     /* Navigate to another image. */
     function navNext() {
@@ -579,277 +683,10 @@ var AnnotationToolHelper = (function() {
     }
 
 
-    /* Get the mouse position in the canvas element:
-       (mouse's position in the HTML document) minus
-       (canvas element's position in the HTML document). */
-    function getImageElmtPosition(e) {
-        var x;
-        var y;
 
-        /* The method for getting the mouse position in the HTML document
-         varies depending on the browser: can be based on pageX/Y or clientX/Y. */
-        if (e.pageX !== undefined && e.pageY !== undefined) {
-            x = e.pageX;
-            y = e.pageY;
-        }
-        else {
-            x = e.clientX + document.body.scrollLeft +
-                document.documentElement.scrollLeft;
-            y = e.clientY + document.body.scrollTop +
-                document.documentElement.scrollTop;
-        }
-
-        // Get the x,y relative to the upper-left corner of the image
-        var elmt = ATI.imageCanvas;
-        while (elmt !== null) {
-            x -= elmt.offsetLeft;
-            y -= elmt.offsetTop;
-            elmt = elmt.offsetParent;
-        }
-
-        return [x,y];
-    }
-
-    function getImagePosition(e) {
-        var imageElmtPosition = getImageElmtPosition(e);
-        var imageElmtX = imageElmtPosition[0];
-        var imageElmtY = imageElmtPosition[1];
-
-        var x = imageElmtX / zoomFactor;
-        var y = imageElmtY / zoomFactor;
-
-        return [x,y];
-    }
-
-    function getNearestPoint(e) {
-        // Mouse's position in the canvas element
-        var imagePosition = getImagePosition(e);
-        var x = imagePosition[0];
-        var y = imagePosition[1];
-
-        var minDistance = Infinity;
-        var closestPoint = null;
-
-        for (var i = 0; i < imagePoints.length; i++) {
-            var currPoint = imagePoints[i];
-
-            // Don't count points that are offscreen.
-            if (pointIsOffscreen(currPoint.point_number))
-                continue;
-
-            var xDiff = x - currPoint.column;
-            var yDiff = y - currPoint.row;
-            var distance = Math.sqrt((xDiff*xDiff) + (yDiff*yDiff));
-
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestPoint = currPoint.point_number;
-            }
-        }
-
-        return closestPoint;
-    }
-
-
-    function onCanvasClick(e) {
-
-        var mouseButton = util.identifyMouseButton(e);
-        var clickType;
-        var nearestPoint;
-
-        // Get the click type (in Windows terms)...
-
-        if ((!isMac && e.ctrlKey && mouseButton === "LEFT")
-            || isMac && e.metaKey && mouseButton === "LEFT") {
-            // Ctrl-click non-Mac OR Cmd-click Mac
-            clickType = "ctrlClick";
-        }
-        else if (mouseButton === "RIGHT"
-            || (isMac && e.ctrlKey && mouseButton === "LEFT")) {
-            // Right-click OR Ctrl-click Mac
-            clickType = "rightClick";
-        }
-        else if (e.shiftKey && mouseButton === "LEFT") {
-            // Shift-click
-            clickType = "shiftClick";
-        }
-        else if (mouseButton === "LEFT") {
-            // Other left click
-            clickType = "leftClick";
-        }
-        else {
-            // Middle or other click
-            clickType = "unknown";
-        }
-
-        // Carry out the click action.
-
-        // Toggle the nearest point.
-        if (clickType === "ctrlClick") {
-
-            // This only works if we're displaying all points.
-            if (pointViewMode !== POINTMODE_ALL)
-                return;
-
-            nearestPoint = getNearestPoint(e);
-            toggle(nearestPoint);
-        }
-        // Select the nearest point and unselect all others.
-        else if (clickType === "shiftClick") {
-            nearestPoint = getNearestPoint(e);
-            unselectAll();
-            select(nearestPoint);
-        }
-        // Increase zoom on the image display.
-        else if (clickType === "leftClick") {
-            zoomIn(e);
-        }
-        // Decrease zoom on the image display.
-        else if (clickType === "rightClick") {
-            zoomOut(e);
-        }
-    }
-
-
-    /*
-     Raw image coordinates -> Canvas coordinates:
-     (1) Scale the raw image coordinates by the image zoom factor.
-     (2) Account for image position offset.
-     (3) Don't account for gutter offset (translating the canvas context already takes care of this).
-     */
-    function getCanvasPoints() {
-        for (var i = 0; i < imagePoints.length; i++) {
-
-            // imagePoints[num].row: which image pixel it is, from 1 to height
-            // canvasPoints[num].row: offset on the canvas, starting from 0 if the point is visible.
-            // Subtract 0.5 so the canvasPoint is in the middle of the point's pixel instead of the bottom-right edge.  Typically won't make much of a difference, but still.
-            canvasPoints[imagePoints[i].point_number] = {
-                num: imagePoints[i].point_number,
-                row: ((imagePoints[i].row - 0.5) * zoomFactor) + imageTopOffset,
-                col: ((imagePoints[i].column - 0.5) * zoomFactor) + imageLeftOffset
-            };
-        }
-    }
-
-    function drawPointHelper(pointNum, color, outlineColor) {
-        var canvasPoint = canvasPoints[pointNum];
-
-        drawPointMarker(canvasPoint.col, canvasPoint.row,
-            color);
-        drawPointNumber(canvasPoint.num.toString(), canvasPoint.col, canvasPoint.row,
-            color, outlineColor);
-    }
-
-    function drawPointUnannotated(pointNum) {
-        drawPointHelper(pointNum, ATS.settings.unannotatedColor, OUTLINE_COLOR);
-    }
-    function drawPointRobotAnnotated(pointNum) {
-        drawPointHelper(pointNum, ATS.settings.robotAnnotatedColor, OUTLINE_COLOR);
-    }
-    function drawPointHumanAnnotated(pointNum) {
-        drawPointHelper(pointNum, ATS.settings.humanAnnotatedColor, OUTLINE_COLOR);
-    }
-    function drawPointSelected(pointNum) {
-        drawPointHelper(pointNum, ATS.settings.selectedColor, OUTLINE_COLOR);
-    }
-
-    /* Update a point's graphics on the canvas in the correct color.
-     * Don't redraw a point unless necessary.
-     */
-    function updatePointGraphic(pointNum) {
-        // If the point is offscreen, then don't draw
-        if (pointIsOffscreen(pointNum))
-            return;
-
-        // Get the current (graphical) state of this point
-        var row = annotationFieldRows[pointNum];
-        var newState;
-
-        if ($(row).hasClass('selected'))
-            newState = STATE_SELECTED;
-        else if ($(row).hasClass('annotated'))
-            newState = STATE_ANNOTATED;
-        else if ($(row).hasClass('robot'))
-            newState = STATE_ROBOT;
-        else
-            newState = STATE_UNANNOTATED;
-
-        // Account for point view modes
-        if (pointViewMode === POINTMODE_SELECTED && newState !== STATE_SELECTED)
-            newState = STATE_NOTSHOWN;
-        if (pointViewMode === POINTMODE_NONE)
-            newState = STATE_NOTSHOWN;
-
-        // Redraw if the (graphical) state has changed
-        var oldState = pointGraphicStates[pointNum];
-
-        if (oldState !== newState) {
-            pointGraphicStates[pointNum] = newState;
-
-            if (newState === STATE_SELECTED)
-                drawPointSelected(pointNum);
-            else if (newState === STATE_ANNOTATED)
-                drawPointHumanAnnotated(pointNum);
-            else if (newState === STATE_ROBOT)
-                drawPointRobotAnnotated(pointNum);
-            else if (newState === STATE_UNANNOTATED)
-                drawPointUnannotated(pointNum);
-            else if (newState === STATE_NOTSHOWN)
-                // "Erase" this point.
-                // To do this, redraw the canvas with this point marked as not shown.
-                // For performance reasons, you'll want to avoid reaching this code whenever
-                // possible/reasonable.  One tip: remember to mark all points as NOTSHOWN
-                // whenever you clear the canvas of all points.
-                redrawAllPoints();
-        }
-    }
-
-    /*
-     * Return true if the given point's coordinates
-     * are not within the image area
-     */
-    function pointIsOffscreen(pointNum) {
-        return (canvasPoints[pointNum].row < 0
-            || canvasPoints[pointNum].row > IMAGE_AREA_HEIGHT
-            || canvasPoints[pointNum].col < 0
-            || canvasPoints[pointNum].col > IMAGE_AREA_WIDTH
-            )
-    }
-
-    function redrawAllPoints() {
-        // Reset the canvas and re-translate the context
-        // to compensate for the gutters.
-        resetCanvas();
-
-        // Clear the pointGraphicStates.
-        for (var n = 1; n <= numOfPoints; n++) {
-            pointGraphicStates[n] = STATE_NOTSHOWN;
-        }
-
-        // Draw all points.
-        $annotationFields.each( function() {
-            var pointNum = getPointNumOfAnnoField(this);
-            updatePointGraphic(pointNum);
-        });
-    }
-
-    function changePointMode(pointMode) {
-        // Outline this point mode button in red (and de-outline the other buttons).
-        $(".pointModeButton").removeClass("selected");
-
-        if (pointMode == POINTMODE_ALL)
-            $("#pointModeButtonAll").addClass("selected");
-        else if (pointMode == POINTMODE_SELECTED)
-            $("#pointModeButtonSelected").addClass("selected");
-        else if (pointMode == POINTMODE_NONE)
-            $("#pointModeButtonNone").addClass("selected");
-
-        // Set the new point display mode.
-        pointViewMode = pointMode;
-
-        // Redraw all points.
-        redrawAllPoints();
-    }
+    //
+    // SAVE methods
+    //
 
     function saveAnnotations() {
         $(saveButton).attr('disabled', 'disabled');
@@ -891,15 +728,58 @@ var AnnotationToolHelper = (function() {
         }
     }
 
+    function updateSaveButton() {
+        // No errors in annotation form
+        if ($(annotationList).find('tr.error').length === 0) {
+            // Enable save button
+            $(saveButton).removeAttr('disabled');
+            setSaveButtonText("Save progress");
+        }
+        // Errors
+        else {
+            // Disable save button
+            $(saveButton).attr('disabled', 'disabled');
+            setSaveButtonText("Error");
+        }
 
-    function getPointNumOfAnnoField(annoField) {
-        // Assuming the annotation field's name attribute is "label_<pointnumber>".
-        // "label_" is 6 characters.
-        return parseInt(annoField.name.substring(6));
+        util.pageLeaveWarningEnable("You have unsaved changes.");
     }
 
-    function get$selectedFields() {
-        return $(annotationList).find('tr.selected').find('input');
+    function setAllDoneIndicator(allDone) {
+        if (allDone) {
+            $('#allDone').append('<span>').text("ALL DONE");
+        }
+        else {
+            $('#allDone').empty();
+        }
+    }
+
+
+
+    //
+    // DRAW methods
+    //
+
+    function drawPointHelper(pointNum, color, outlineColor) {
+        var canvasPoint = canvasPoints[pointNum];
+
+        drawPointMarker(canvasPoint.col, canvasPoint.row,
+            color);
+        drawPointNumber(canvasPoint.num.toString(), canvasPoint.col, canvasPoint.row,
+            color, outlineColor);
+    }
+
+    function drawPointUnannotated(pointNum) {
+        drawPointHelper(pointNum, ATS.settings.unannotatedColor, OUTLINE_COLOR);
+    }
+    function drawPointRobotAnnotated(pointNum) {
+        drawPointHelper(pointNum, ATS.settings.robotAnnotatedColor, OUTLINE_COLOR);
+    }
+    function drawPointHumanAnnotated(pointNum) {
+        drawPointHelper(pointNum, ATS.settings.humanAnnotatedColor, OUTLINE_COLOR);
+    }
+    function drawPointSelected(pointNum) {
+        drawPointHelper(pointNum, ATS.settings.selectedColor, OUTLINE_COLOR);
     }
 
     /*
@@ -993,8 +873,174 @@ var AnnotationToolHelper = (function() {
     }
 
 
-    /* Public methods.
-     * These are the only methods that need to be referred to as
+
+    //
+    // UPDATE methods
+    //
+
+    /* Update a point's graphics on the canvas in the correct color.
+     * Don't redraw a point unless necessary.
+     */
+    function updatePointGraphic(pointNum) {
+        // If the point is offscreen, then don't draw
+        if (pointIsOffscreen(pointNum))
+            return;
+
+        // Get the current (graphical) state of this point
+        var row = annotationFieldRows[pointNum];
+        var newState;
+
+        if ($(row).hasClass('selected'))
+            newState = STATE_SELECTED;
+        else if ($(row).hasClass('annotated'))
+            newState = STATE_ANNOTATED;
+        else if ($(row).hasClass('robot'))
+            newState = STATE_ROBOT;
+        else
+            newState = STATE_UNANNOTATED;
+
+        // Account for point view modes
+        if (pointViewMode === POINTMODE_SELECTED && newState !== STATE_SELECTED)
+            newState = STATE_NOTSHOWN;
+        if (pointViewMode === POINTMODE_NONE)
+            newState = STATE_NOTSHOWN;
+
+        // Redraw if the (graphical) state has changed
+        var oldState = pointGraphicStates[pointNum];
+
+        if (oldState !== newState) {
+            pointGraphicStates[pointNum] = newState;
+
+            if (newState === STATE_SELECTED)
+                drawPointSelected(pointNum);
+            else if (newState === STATE_ANNOTATED)
+                drawPointHumanAnnotated(pointNum);
+            else if (newState === STATE_ROBOT)
+                drawPointRobotAnnotated(pointNum);
+            else if (newState === STATE_UNANNOTATED)
+                drawPointUnannotated(pointNum);
+            else if (newState === STATE_NOTSHOWN) {
+                // "Erase" this point.
+                // To do this, redraw the canvas with this point marked as not shown.
+                // For performance reasons, you'll want to avoid reaching this code whenever
+                // possible/reasonable.  One tip: remember to mark all points as NOTSHOWN
+                // whenever you clear the canvas of all points.
+                redrawAllPoints();
+            }
+        }
+    }
+
+    /* Look at a label field, and based on the label, mark the point
+     * as (human) annotated, robot annotated, unannotated, or errored.
+     *
+     * Return true if something changed (label code or robot status).
+     * Return false otherwise.
+     */
+    function updatePointState(pointNum, robotStatusAction) {
+        var field = annotationFields[pointNum];
+        var row = annotationFieldRows[pointNum];
+        var robotField = annotationRobotFields[pointNum];
+        var labelCode = field.value;
+
+        // Has the label text changed?
+        var oldState = pointContentStates[pointNum];
+        var labelChanged = (oldState['label'] !== labelCode);
+
+        /*
+         * Update style elements and robot statuses accordingly
+         */
+
+        if (labelCode === '') {
+            // Empty string; if the label field was non-empty before, fill the field back in.
+            // (Or if it was empty before, then leave it empty.)
+            if (oldState.label !== undefined && oldState.label !== '')
+                field.value = oldState.label;
+            return false;
+        }
+        else if (labelCodes.indexOf(labelCode) === -1) {
+            // Error: label is not in the labelset
+            $(field).attr('title', 'Label not in labelset');
+            $(row).addClass('error');
+            $(row).removeClass('annotated');
+            unrobot(pointNum);
+        }
+        else {
+            // No error
+
+            if (robotField.value === 'true') {
+                if (robotStatusAction === 'initialize') {
+                    // Initializing the page, need to add robot styles as appropriate.
+                    $(row).addClass('robot');
+                }
+                else if (robotStatusAction === 'unrobotOnlyIfChanged') {
+                    // We're told to only unrobot the annotation if the label changed.
+                    if (labelChanged)
+                        unrobot(pointNum);
+                }
+                else {
+                    // Any other update results in this annotation being un-roboted.
+                    unrobot(pointNum);
+                }
+            }
+
+            // Set as (human) annotated or not
+            if (isRobot(pointNum)) {
+                // Robot annotated
+                $(row).removeClass('annotated');
+            }
+            else {
+                $(row).addClass('annotated');
+            }
+
+            // Remove error styling, if any
+            $(row).removeClass('error');
+
+            // Field's mouseover text = label name
+            $(field).attr('title', labelCodesToNames[labelCode]);
+        }
+
+        var robotStatusChanged = (oldState['robot'] !== robotField.value);
+        var contentChanged = ((labelChanged || robotStatusChanged) && (robotStatusAction !== 'initialize'));
+
+        // Done assessing change of state, so set the new state.
+        pointContentStates[pointNum] = {'label': labelCode, 'robot': robotField.value};
+        return contentChanged;
+    }
+
+    function onPointUpdate(annoField, robotStatusAction) {
+        var pointNum = getPointNumOfAnnoField(annoField);
+        var contentChanged = updatePointState(pointNum, robotStatusAction);
+
+        updatePointGraphic(pointNum);
+
+        if (contentChanged)
+            updateSaveButton();
+    }
+
+    function redrawAllPoints() {
+        // Reset the canvas and re-translate the context
+        // to compensate for the gutters.
+        resetCanvas();
+
+        // Clear the pointGraphicStates.
+        for (var n = 1; n <= numOfPoints; n++) {
+            pointGraphicStates[n] = STATE_NOTSHOWN;
+        }
+
+        // Draw all points.
+        $annotationFields.each( function() {
+            var pointNum = getPointNumOfAnnoField(this);
+            updatePointGraphic(pointNum);
+        });
+    }
+
+
+
+    //
+    // PUBLIC methods
+    //
+
+    /* These are the only methods that need to be referred to as
      * AnnotationToolHelper.methodname. */
     return {
 
