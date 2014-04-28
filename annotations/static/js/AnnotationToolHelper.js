@@ -963,6 +963,21 @@ var AnnotationToolHelper = (function() {
         var oldState = pointContentStates[pointNum];
         var labelChanged = (oldState['label'] !== labelCode);
 
+        // Is the label text a valid label code?
+        var i;
+        var isValidLabelCode = false;
+        for (i = 0; i < labelCodes.length; i++) {
+            // Case-insensitive compare (this is valid because label codes
+            // are case-insensitive unique)
+            if (labelCode.equalsIgnoreCase(labelCodes[i])) {
+                isValidLabelCode = true;
+                // Fix the casing
+                labelCode = labelCodes[i];
+                field.value = labelCode;
+                break;
+            }
+        }
+
         /*
          * Update style elements and robot statuses accordingly
          */
@@ -974,7 +989,7 @@ var AnnotationToolHelper = (function() {
                 field.value = oldState.label;
             return false;
         }
-        else if (labelCodes.indexOf(labelCode) === -1) {
+        else if (!isValidLabelCode) {
             // Error: label is not in the labelset
             $(field).attr('title', 'Label not in labelset');
             $(row).addClass('error');
