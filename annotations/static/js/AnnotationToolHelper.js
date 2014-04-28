@@ -312,6 +312,23 @@ var AnnotationToolHelper = (function() {
         return closestPoint;
     }
 
+    function centerOnPoint(pointNum) {
+        // Shift the center of zoom to this point.
+        centerOfZoomX = imagePoints[pointNum-1].column;
+        centerOfZoomY = imagePoints[pointNum-1].row;
+
+        // If we're zoomed in at all, complete the center-of-zoom-shift process.
+        if (zoomLevel > 0) {
+
+            // Adjust the image and point coordinates.
+            setupImageArea();
+            getCanvasPoints();
+
+            // Redraw all points.
+            redrawAllPoints();
+        }
+    }
+
     function onCanvasClick(e) {
 
         var mouseButton = util.identifyMouseButton(e);
@@ -1372,24 +1389,20 @@ var AnnotationToolHelper = (function() {
 
             // Label field gains focus
             $annotationFields.focus(function() {
+
+                // Highlight all the text in the label field.
+                //
+                // http://stackoverflow.com/questions/4067469/
+                // TODO: Apparently may not work in mobile Safari?
+                this.select();
+
+                // Select only this point.
                 var pointNum = getPointNumOfAnnoField(this);
                 unselectAll();
                 select(pointNum);
 
-                // Shift the center of zoom to the focused point.
-                centerOfZoomX = imagePoints[pointNum-1].column;
-                centerOfZoomY = imagePoints[pointNum-1].row;
-
-                // If we're zoomed in at all, complete the center-of-zoom-shift process.
-                if (zoomLevel > 0) {
-
-                    // Adjust the image and point coordinates.
-                    setupImageArea();
-                    getCanvasPoints();
-
-                    // Redraw all points.
-                    redrawAllPoints();
-                }
+                // Shift the center of zoom to this point.
+                centerOnPoint(pointNum);
             });
 
             // Label field is typed into and changed, and then unfocused.
