@@ -650,6 +650,67 @@ var AnnotationToolHelper = (function() {
         return closestPoint;
     }
 
+
+    function onCanvasClick(e) {
+
+        var mouseButton = util.identifyMouseButton(e);
+        var clickType;
+        var nearestPoint;
+
+        // Get the click type (in Windows terms)...
+
+        if ((!isMac && e.ctrlKey && mouseButton === "LEFT")
+            || isMac && e.metaKey && mouseButton === "LEFT") {
+            // Ctrl-click non-Mac OR Cmd-click Mac
+            clickType = "ctrlClick";
+        }
+        else if (mouseButton === "RIGHT"
+            || (isMac && e.ctrlKey && mouseButton === "LEFT")) {
+            // Right-click OR Ctrl-click Mac
+            clickType = "rightClick";
+        }
+        else if (e.shiftKey && mouseButton === "LEFT") {
+            // Shift-click
+            clickType = "shiftClick";
+        }
+        else if (mouseButton === "LEFT") {
+            // Other left click
+            clickType = "leftClick";
+        }
+        else {
+            // Middle or other click
+            clickType = "unknown";
+        }
+
+        // Carry out the click action.
+
+        // Toggle the nearest point.
+        if (clickType === "ctrlClick") {
+
+            // This only works if we're displaying all points.
+            if (pointViewMode !== POINTMODE_ALL)
+                return;
+
+            nearestPoint = getNearestPoint(e);
+            toggle(nearestPoint);
+        }
+        // Select the nearest point and unselect all others.
+        else if (clickType === "shiftClick") {
+            nearestPoint = getNearestPoint(e);
+            unselectAll();
+            select(nearestPoint);
+        }
+        // Increase zoom on the image display.
+        else if (clickType === "leftClick") {
+            zoomIn(e);
+        }
+        // Decrease zoom on the image display.
+        else if (clickType === "rightClick") {
+            zoomOut(e);
+        }
+    }
+
+
     /*
      Raw image coordinates -> Canvas coordinates:
      (1) Scale the raw image coordinates by the image zoom factor.
@@ -1232,51 +1293,7 @@ var AnnotationToolHelper = (function() {
 
             // Mouse button is pressed and un-pressed on the canvas
             $(listenerElmt).mouseup( function(e) {
-
-                var mouseButton = util.identifyMouseButton(e);
-                var clickType;
-
-                // Get the click type (in Windows terms)...
-
-                if ((!isMac && e.ctrlKey && mouseButton === "LEFT")
-                    || isMac && e.metaKey && mouseButton === "LEFT")
-                // Ctrl-click non-Mac OR Cmd-click Mac
-                    clickType = "ctrlClick";
-                else if (mouseButton === "RIGHT"
-                    || (isMac && e.ctrlKey && mouseButton === "LEFT"))
-                // Right-click OR Ctrl-click Mac
-                    clickType = "rightClick";
-                else if (mouseButton === "LEFT")
-                // Other left click
-                    clickType = "leftClick";
-                else
-                // Middle or other click
-                    clickType = "unknown";
-
-
-                // Select the nearest point.
-                if (clickType === "ctrlClick") {
-
-                    // This only works if we're displaying all points.
-                    if (pointViewMode !== POINTMODE_ALL)
-                        return;
-
-                    var nearestPoint = getNearestPoint(e);
-                    toggle(nearestPoint);
-                }
-
-                // Zoom in or out on the image display.
-                else if (clickType === "leftClick" || clickType === "rightClick") {
-
-                    // Zoom in.
-                    if (clickType === "leftClick") {
-                        zoomIn(e);
-                    }
-                    // Zoom out.
-                    else if (clickType === "rightClick") {
-                        zoomOut(e);
-                    }
-                }
+                onCanvasClick(e);
             });
 
             // Disable the context menu on the listener element.
