@@ -1526,7 +1526,16 @@ var AnnotationToolHelper = (function() {
                     width: subWindowWidth,
                     height: subWindowHeight,
                     modal: false,
-                    title: "Help/Controls"
+                    title: "Help"
+                });
+            });
+            var $controlsButton = $("#controls-button");
+            $controlsButton.click(function() {
+                $("#controls").dialog({
+                    width: subWindowWidth,
+                    height: subWindowHeight,
+                    modal: false,
+                    title: "Controls"
                 });
             });
 
@@ -1547,6 +1556,7 @@ var AnnotationToolHelper = (function() {
                 ['mod+s', clickSaveButton, 'all'],
 
                 ['.', focusUnannotatedField, 'top'],
+                ['?', function() {$controlsButton.click();}, 'top'],
 
                 ['g n', navNext, 'top'],
                 ['g b', navBack, 'top'],

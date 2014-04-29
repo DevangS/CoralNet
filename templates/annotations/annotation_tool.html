@@ -27,7 +27,8 @@
 <hr/>
 
 <button id="settings-button" title="Annotation tool settings">Settings</button>
-<button id="help-button" title="Help, controls, and compatibility info">Help/Controls</button>
+<button id="help-button" title="Help, basic controls, and compatibility info">Help</button>
+<button id="controls-button" title="Summary of controls and keyboard shortcuts">Controls</button>
 
 <div id="dialog-items">
     <div id="settings">
@@ -35,6 +36,9 @@
     </div>
     <div id="help">
         {% include "annotations/annotation_tool_help.html" %}
+    </div>
+    <div id="controls">
+        {% include "annotations/annotation_tool_controls.html" %}
     </div>
 </div>
 
