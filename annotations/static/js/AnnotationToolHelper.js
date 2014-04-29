@@ -86,7 +86,7 @@ var AnnotationToolHelper = (function() {
     var SUB_WINDOW_MIN_WIDTH = 500;
     var SUB_WINDOW_MIN_HEIGHT = 500;
     var SUB_WINDOW_PCT_WIDTH = 30;
-    var SUB_WINDOW_PCT_HEIGHT = 70;
+    var SUB_WINDOW_PCT_HEIGHT = 90;
     var subWindowWidth = null;
     var subWindowHeight = null;
 
