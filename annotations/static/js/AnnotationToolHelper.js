@@ -649,6 +649,23 @@ var AnnotationToolHelper = (function() {
         }
     }
 
+    /* Focus on the first unannotated field */
+    function focusUnannotatedField() {
+        var pointNum = null;
+
+        for (var n = 1; n <= numOfPoints; n++) {
+            var row = annotationFieldRows[n];
+            if (!$(row).hasClass('annotated')) {
+                pointNum = n;
+                break;
+            }
+        }
+
+        if (pointNum !== null) {
+            $(annotationFields[pointNum]).focus();
+        }
+    }
+
     /* Event listener callback: 'this' is an annotation field
      * Unfocus from the annotation field. */
     function unfocusField() {
@@ -1517,11 +1534,19 @@ var AnnotationToolHelper = (function() {
             //
             // Mousetrap (keyboard shortcut plugin) notes:
             // "mod" means Ctrl in Windows/Linux, Cmd in Mac.
+            //
+            // Shortcut rules:
+            // 1. 'field' is when focused in an annotation field. 'top' is when focused
+            // on anything else. 'all' applies when either field or top is true.
+            // 2. For 'field' or 'all', don't use anything that could clash with typing
+            // a label code.
             var keymap = [
                 ['shift+up', zoomIn, 'all'],
                 ['shift+down', zoomOut, 'all'],
 
                 ['mod+s', clickSaveButton, 'all'],
+
+                ['.', focusUnannotatedField, 'top'],
 
                 ['g n', navNext, 'top'],
                 ['g b', navBack, 'top'],
@@ -1532,7 +1557,12 @@ var AnnotationToolHelper = (function() {
                 ['down', focusNextField, 'field'],
                 ['esc', unfocusField, 'field'],
 
-                // TODO: Should these Ctrl things become Cmd for Mac?
+                // Ctrl for both Windows and Mac; it seems Cmd may have more
+                // potential for clashes in Mac.
+                //
+                // Actually, this is a candidate shortcut to ditch altogether
+                // at some later date. Especially if we have a fluid layout
+                // with a reshapeable label button grid.
                 ['ctrl+left', moveCurrentLabelLeft, 'field'],
                 ['ctrl+right', moveCurrentLabelRight, 'field'],
                 ['ctrl+up', moveCurrentLabelUp, 'field'],
@@ -1548,7 +1578,63 @@ var AnnotationToolHelper = (function() {
                 $(this).addClass('mousetrap');
             });
 
-            // Bind event listeners according to the keymap.
+            // Define a few possible handler modifiers.
+
+            // Handler modifier: only trigger
+            // when an annotation field is focused.
+            var applyOnlyInAnnoField = function(f) {
+                var aElmt = document.activeElement;
+
+                // An annotation field is an input element
+                // within #annotationList.
+                var aElmtIsAnnotationField =
+                    aElmt.tagName.equalsIgnoreCase('input')
+                        && $('#annotationList')[0].contains(aElmt);
+
+                // We're in an annotation field.
+                if (aElmtIsAnnotationField) {
+                    // Use apply() to ensure that in the called function,
+                    // "this" is the annotation field.
+                    f.apply(aElmt);
+                    // Prevent default behavior.
+                    return false;
+                }
+                // We're not in an annotation field.
+                // Don't prevent default behavior.
+                return true;
+            };
+
+            // Handler modifier: only trigger
+            // when an annotation field is NOT focused.
+            var applyOnlyAtTop = function(f) {
+                var aElmt = document.activeElement;
+
+                // An annotation field is an input element
+                // within #annotationList.
+                var aElmtIsAnnotationField =
+                    aElmt.tagName.equalsIgnoreCase('input')
+                        && $('#annotationList')[0].contains(aElmt);
+
+                // We're not in an annotation field.
+                if (!aElmtIsAnnotationField) {
+                    f();
+                    // Prevent default behavior.
+                    return false;
+                }
+                // We're in an annotation field.
+                // Don't prevent default behavior.
+                return true;
+            };
+
+            // Handler modifier: prevent the event's
+            // default behavior, and prevent the event from
+            // bubbling up.
+            var modifyToPreventDefault = function(f) {
+                f();
+                return false;
+            };
+
+            // Bind event handlers according to the keymap.
             for (i = 0; i < keymap.length; i++) {
                 var keymapping = keymap[i];
 
@@ -1561,55 +1647,16 @@ var AnnotationToolHelper = (function() {
                 if (keymapping.length >= 4)
                     keyEvent = keymapping[3];
 
+                // Modify the handler
                 if (scope === 'field') {
-
-                    // Modify the handler function to only trigger
-                    // when an annotation field is focused.
-                    var applyFuncToField = function(f) {
-                        var aElmt = document.activeElement;
-
-                        // An annotation field is an input element
-                        // within #annotationList.
-                        var aElmtIsAnnotationField =
-                            aElmt.tagName.equalsIgnoreCase('input')
-                            && $('#annotationList')[0].contains(aElmt);
-
-                        // Use apply() to ensure that in the called function,
-                        // "this" is the annotation field.
-                        if (aElmtIsAnnotationField) {
-                            f.apply(aElmt);
-                        }
-                    };
-                    func = applyFuncToField.curry(func);
+                    func = applyOnlyInAnnoField.curry(func);
                 }
                 else if (scope === 'top') {
-
-                    // Modify the handler function to only trigger
-                    // when an annotation field is NOT focused.
-                    var applyFuncToTop = function(f) {
-                        var aElmt = document.activeElement;
-
-                        // An annotation field is an input element
-                        // within #annotationList.
-                        var aElmtIsAnnotationField =
-                            aElmt.tagName.equalsIgnoreCase('input')
-                            && $('#annotationList')[0].contains(aElmt);
-
-                        if (!aElmtIsAnnotationField) {
-                            f();
-                        }
-                    };
-                    func = applyFuncToTop.curry(func);
+                    func = applyOnlyAtTop.curry(func);
                 }
-
-                // Modify the handler function to prevent the event's
-                // default behavior, and prevent the event from
-                // bubbling up.
-                var modifyToPreventDefault = function(f) {
-                    f();
-                    return false;
-                };
-                func = modifyToPreventDefault.curry(func);
+                else {  // 'all'
+                    func = modifyToPreventDefault.curry(func);
+                }
 
                 // Bind the key combo to the handler.
                 if (keyEvent) {
