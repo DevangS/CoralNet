@@ -20,18 +20,29 @@ def contact(request):
     purpose email to the site admins.
     """
     if request.method == 'POST':
-        contact_form = ContactForm(request.POST)
+        contact_form = ContactForm(request.user, request.POST)
 
         if contact_form.is_valid():
             # Set up the subject and message.
+            if request.user.is_authenticated():
+                username = request.user.username,
+                base_subject=contact_form.cleaned_data['subject']
+                user_email=request.user.email
+                base_message=contact_form.cleaned_data['message']
+            else:
+                username = "[A guest]"
+                base_subject = contact_form.cleaned_data['subject']
+                user_email = contact_form.cleaned_data['email']
+                base_message = contact_form.cleaned_data['message']
+
             subject = str_consts.CONTACT_EMAIL_SUBJECT_FMTSTR.format(
-                username=request.user.username,
-                base_subject=contact_form.cleaned_data['subject'],
+                username=username,
+                base_subject=base_subject,
             )
             message = str_consts.CONTACT_EMAIL_MESSAGE_FMTSTR.format(
-                username=request.user.username,
-                user_email=request.user.email,
-                base_message=contact_form.cleaned_data['message'],
+                username=username,
+                user_email=user_email,
+                base_message=base_message,
             )
 
             # Send the mail.
@@ -41,14 +52,18 @@ def contact(request):
                     message=message,
                 )
             except BadHeaderError:
-                messages.error(request, "Sorry, the email could not be sent. An invalid header was found.")
+                messages.error(
+                    request,
+                    "Sorry, the email could not be sent. It didn't pass a security check."
+                )
             else:
                 messages.success(request, msg_consts.CONTACT_EMAIL_SENT)
+                return HttpResponseRedirect(reverse('index'))
         else:
             messages.error(request, msg_consts.FORM_ERRORS)
 
     else: # GET
-        contact_form = ContactForm()
+        contact_form = ContactForm(request.user)
 
     return render_to_response('lib/contact.html', {
         'contact_form': contact_form,

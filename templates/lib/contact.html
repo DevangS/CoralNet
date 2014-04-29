@@ -14,21 +14,24 @@
     <fieldset>
         <legend>Contact Us</legend>
 
-        <p>Use this form to send an email to the CoralNet team. You may use
-           this form for questions or requests related to your use of
-           CoralNet, such as a request to enable the machine annotator for
-           your source.</p>
+        <p>You may use this form to send an email to the CoralNet team. Use
+           this form for questions or requests about your use of the
+           site: your sources, your account, etc.</p>
 
-        <p>For comments related to the site as a whole, such as feedback, bug
+        <p>For comments related to the site in general, such as feedback, bug
            reports, and feature suggestions, please use the
            <a href="{% url feedback_form %}">feedback form</a>
            instead.</p>
+
+        {% if user.is_authenticated %}
+            <p>We'll send any replies to your email: {{ user.email }}</p>
+        {% endif %}
 
         {% include "form_generic.html" with form=contact_form %}
     </fieldset>
 
     <div class="submit_button_wrapper_column_form">
-        <input type="submit" value="Send" />
+        <input type="submit" value="Send Email" />
     </div>
 </form>
 
