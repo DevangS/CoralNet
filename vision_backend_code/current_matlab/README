@@ -1,1 +1,11 @@
 This contain the current code. This is severely outdated, and not compatible with the coralLib and beijbomToolbox repos.
+
+For this to run, there are two external things that need to be setup.
+1) The liblinear libraray needs to be installed. In particular these two files needs to be compiled and located in these hard-coded locations:
+/home/beijbom/e/Code/apps/libsvm/svm-predict
+/home/beijbom/e/Code/apps/libsvm/svm-train
+I'm using version 2.9-1, but I suspect newer version will work fine.
+
+2) This file also needs to exist:
+/home/beijbom/e/Code/beijbom/projects/featureCat/featureCat
+It's a custom written script by Oscar, that is only tested on LINUX. So, contact oscar at oscar.beijbom@gmail.com if you need it.

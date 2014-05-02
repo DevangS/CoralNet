@@ -112,6 +112,29 @@ def processSourceCompleate(source_id):
         time.sleep(5)
     print "==== Source: " + source.name + " done ===="
 
+
+# this function do NOT use the task management system.
+def processSourceDebug(source_id):
+    source = Source.objects.get(pk = source_id)
+    
+    if not source.get_all_images():
+        return 1
+
+    print "==== Processing source in debug mode: " + source.name + " ===="
+    # == For each image, do all preprocessing ==
+    for image in source.get_all_images():
+        prepareImage(image.id)
+
+    # == Train robot for this source ==
+    trainRobot(source.id)
+
+
+    # == Classify all images with the new robot ==
+    for image in source.get_all_images():
+        Classify(image.id)
+    print "==== Source: " + source.name + " done ===="
+
+
 @task()
 def prepareImage(image_id):
     PreprocessImages(image_id)
@@ -460,7 +483,7 @@ def trainRobot(source_id):
     )
 
     # clean up
-    # rmtree(workingDir)
+    shutil.rmtree(workingDir)
     if os.path.isfile(TRAIN_ERROR_LOG):
         for image in allImages: # roll back changes.
             if image.status.featureFileHasHumanLabels:

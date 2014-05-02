@@ -79,6 +79,7 @@ try
     
     %%% TRAIN MODEL %%%
     logger('Training final model');
+    solverOptions.libsvm.prob = 1; % this one uses probability outputs.
     solverOptions = setSolverCommonOptions(solverOptions, hp.optValues);
     final.optStr = makeSolverOptionString(solverOptions, final.trainData.ssfactor, labelMap);
     tic; system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-train %s %s %s;\n', final.optStr, finalTrainPath, modelPath));

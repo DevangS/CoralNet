@@ -3,6 +3,7 @@ function coralnet_classify(featureFile, modelFile, labelFile, logFile, errorLogf
 try
     
     system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-predict %s %s %s', featureFile,  modelFile,  labelFile));
+    system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-predict -b 1 %s %s %s', featureFile,  modelFile,  strcat(labelFile, '.prob')));
     
 catch me
     
