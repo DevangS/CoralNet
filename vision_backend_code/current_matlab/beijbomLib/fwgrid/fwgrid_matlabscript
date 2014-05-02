@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# rm temp/*
+
+executePath='~/t'
+matlabPath='/apps/matlab/bin/matlab -nosplash -nodesktop -nojvm'
+matlabCommand='firstml'
+
+# find ~/ -name 's-*.o*' | xargs rm
+# find ~/ -name 's-*.e*' | xargs rm
+
+# For each script
+
+
+for dset in 1 2 3 4 5
+do
+for tr in 1 
+do
+for k in 1
+do
+
+    echo "dataset=${dset} k=${k} trial=${tr}"
+    # Create the script
+    name=~/temp//s-$dset-$k-$tr.sh
+    echo "cd ${executePath}; ${matlabPath} -r \"addpath(genpath('~')),${matlabCommand}(${dset},${tr},${k},500),exit\" " > $name
+    chmod 755 $name
+
+    # If no possible allocation, wait and resubmit
+    while true
+    do
+        # Check the number of running MATLAB licenses
+        nLicense=$(/apps/matlab/etc/lmstat -f MATLAB | grep -o "Total of [0-9]* licenses in use" | grep -o "[0-9][0-9]*")
+
+        if [ $nLicense -gt 740 ]
+        then
+            sleep 1
+            continue
+        fi
+
+        qstat -u obeijbom > bbb
+        nProc=$(find "bbb" -print0 | xargs -0 wc -l | awk '{ print $1}')
+        ((nProc=nProc-2))
+        echo "number of proc=${nProc}"
+        if [ $nProc -gt 50 ]
+        then
+            sleep 300
+            continue
+        fi
+
+        # Check if the script can be submitted properly
+        test=`qsub -l matlab=1 -l arch=lx26-x86 -cwd $name 2>&1 | grep -c submitted`
+        if [ $test -gt 0 ]
+        then
+            break
+        fi
+
+        sleep 1
+    done
+done
+done
+done
+
