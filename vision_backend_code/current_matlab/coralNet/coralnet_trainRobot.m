@@ -4,8 +4,8 @@ global logfid
 
 %%% HARD CODED PARAMS, KIND OF BUGGY, BUT COULDNT BOTHER WITH YET ANOTHER
 %%% PARAM FILE
-targetNbrSamplesPerClass.final = 7500;
-targetNbrSamplesPerClass.HP = 5000;
+targetNbrSamplesPerClass.final = 10000;
+targetNbrSamplesPerClass.HP = 75000;
 labelRatio = 0.005;
 maxNbrTestImages = 500;
 gridParams.start = [-2 -1];
