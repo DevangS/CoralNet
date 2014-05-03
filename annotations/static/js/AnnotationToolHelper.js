@@ -19,6 +19,7 @@ var AnnotationToolHelper = (function() {
     var labelCodes = [];
     var labelCodesToNames = {};
     var currentLabelButton = null;
+    var autocompleteActive = false;
 
     // Canvas related
     var context = null;
@@ -1539,6 +1540,7 @@ var AnnotationToolHelper = (function() {
                 });
             });
 
+
             // Keymap.
             //
             // Mousetrap (keyboard shortcut plugin) notes:
@@ -1549,6 +1551,9 @@ var AnnotationToolHelper = (function() {
             // on anything else. 'all' applies when either field or top is true.
             // 2. For 'field' or 'all', don't use anything that could clash with typing
             // a label code.
+            // 3. You can't have more than one handler for a given shortcut, even if
+            // they are for different contexts (like top and field). This is due to
+            // how Mousetrap works.
             var keymap = [
                 ['shift+up', zoomIn, 'all'],
                 ['shift+down', zoomOut, 'all'],
@@ -1592,7 +1597,7 @@ var AnnotationToolHelper = (function() {
 
             // Handler modifier: only trigger
             // when an annotation field is focused.
-            var applyOnlyInAnnoField = function(f) {
+            var applyOnlyInAnnoField = function(f, event) {
                 var aElmt = document.activeElement;
 
                 // An annotation field is an input element
@@ -1605,8 +1610,10 @@ var AnnotationToolHelper = (function() {
                 if (aElmtIsAnnotationField) {
                     // Use apply() to ensure that in the called function,
                     // "this" is the annotation field.
-                    f.apply(aElmt);
+                    f.apply(aElmt, [event]);
                     // Prevent default behavior.
+                    // TODO: Use event.preventDefault and stopPropagation
+                    // instead of return false?
                     return false;
                 }
                 // We're not in an annotation field.
@@ -1616,7 +1623,7 @@ var AnnotationToolHelper = (function() {
 
             // Handler modifier: only trigger
             // when an annotation field is NOT focused.
-            var applyOnlyAtTop = function(f) {
+            var applyOnlyAtTop = function(f, event) {
                 var aElmt = document.activeElement;
 
                 // An annotation field is an input element
@@ -1627,7 +1634,7 @@ var AnnotationToolHelper = (function() {
 
                 // We're not in an annotation field.
                 if (!aElmtIsAnnotationField) {
-                    f();
+                    f(event);
                     // Prevent default behavior.
                     return false;
                 }
@@ -1639,10 +1646,109 @@ var AnnotationToolHelper = (function() {
             // Handler modifier: prevent the event's
             // default behavior, and prevent the event from
             // bubbling up.
-            var modifyToPreventDefault = function(f) {
-                f();
+            var modifyToPreventDefault = function(f, event) {
+                f(event);
                 return false;
             };
+
+            // Directly-bound handler for 'field'/'all' shortcuts that use the
+            // up and down arrow keys.
+            //
+            // This direct-binding strategy is needed to prevent autocomplete
+            // hotkeys from triggering at undesired times, because Mousetrap
+            // handlers always run later than autocomplete handlers.
+            var upDownKeyHandler = function(upDownKeymap, event) {
+
+                // If the autocomplete dropdown is active, don't
+                // do anything.
+                if (autocompleteActive) {
+                    return;
+                }
+
+                // If inactive, do our thing, and also
+                // stopImmediatePropagation and preventDefault.
+
+                // Check what keys we are pressing.
+                //
+                // This imitates some of Mousetrap's source code to go
+                // between event fields and Mousetrap keycodes.
+                // https://github.com/ccampbell/mousetrap/blob/master/mousetrap.js
+
+                var eventKey = null;
+                if (event.keyCode === $.ui.keyCode.UP) {
+                    eventKey = 'up';
+                }
+                else if (event.keyCode === $.ui.keyCode.DOWN) {
+                    eventKey = 'down';
+                }
+                else {
+                    return;
+                }
+
+                var eventModifiers = [];
+                if (event.shiftKey) {
+                    eventModifiers.push('shift');
+                }
+                if (event.altKey) {
+                    eventModifiers.push('alt');
+                }
+                if (event.ctrlKey) {
+                    eventModifiers.push('ctrl');
+                }
+                if (event.metaKey) {
+                    eventModifiers.push('meta');
+                }
+
+                // See if there's a keymap entry (in our keymap of only
+                // shortcuts involving up/down) that matches the keys
+                // we're pressing.
+                //
+                // If so, run the handler function specified in the keymap.
+
+                for (var keymapItemCombo in upDownKeymap) {
+                    if (!upDownKeymap.hasOwnProperty(keymapItemCombo)) {continue;}
+
+                    var keymapItemKey = keymapItemCombo.substring(
+                        keymapItemCombo.lastIndexOf('+')+1
+                    );
+                    var keymapItemFunc = upDownKeymap[keymapItemCombo];
+
+                    var keymapItemModifiers = [];
+                    if (keymapItemCombo.indexOf('shift') !== -1) {
+                        keymapItemModifiers.push('shift');
+                    }
+                    if (keymapItemCombo.indexOf('alt') !== -1) {
+                        keymapItemModifiers.push('alt');
+                    }
+                    if (keymapItemCombo.indexOf('ctrl') !== -1) {
+                        keymapItemModifiers.push('ctrl');
+                    }
+                    if (keymapItemCombo.indexOf('meta') !== -1) {
+                        keymapItemModifiers.push('meta');
+                    }
+
+                    var keyMatch = eventKey === keymapItemKey;
+                    var modifiersMatch =
+                        eventModifiers.sort().join(',') === keymapItemModifiers.sort().join(',');
+
+                    // We have a match.
+
+                    if (keyMatch && modifiersMatch) {
+
+                        // Prevent other same-element handlers such as autocomplete.
+                        event.stopImmediatePropagation();
+                        // Prevent the default behavior of going to the
+                        // start/end of the text. This allows the text
+                        // auto-highlighting to work.
+                        event.preventDefault();
+
+                        // Run the function.
+                        keymapItemFunc.apply(this);
+                    }
+                }
+            };
+
+            var fieldUpDownKeymap = {};
 
             // Bind event handlers according to the keymap.
             for (i = 0; i < keymap.length; i++) {
@@ -1656,6 +1762,24 @@ var AnnotationToolHelper = (function() {
                 var keyEvent = null;
                 if (keymapping.length >= 4)
                     keyEvent = keymapping[3];
+
+                // Factor out up/down shortcuts for fields, putting
+                // these shortcuts in a separate keymap that we'll
+                // deal with separately. (This is needed because of
+                // autocomplete hotkeys getting in the way.)
+                if (key.endsWith('up') || key.endsWith('down')) {
+
+                    if (scope === 'field') {
+
+                        fieldUpDownKeymap[key] = func;
+                        continue;
+                    }
+                    else if (scope === 'all') {
+
+                        fieldUpDownKeymap[key] = func;
+                        scope = 'top';
+                    }
+                }
 
                 // Modify the handler
                 if (scope === 'field') {
@@ -1677,6 +1801,13 @@ var AnnotationToolHelper = (function() {
                 }
             }
 
+            // Key handler that binds up/down for fields.
+            // TODO: keydown, keypress, or keyup?
+            $annotationFields.keydown(
+                upDownKeyHandler.curry(fieldUpDownKeymap)
+            );
+
+
             // Show/hide certain key instructions depending on whether Mac is the OS.
             if (isMac) {
                 $('span.key_mac').show();
@@ -1686,6 +1817,35 @@ var AnnotationToolHelper = (function() {
                 $('span.key_non_mac').show();
                 $('span.key_mac').hide();
             }
+
+
+            // Autocomplete.
+            // Note that the autocomplete bindings come AFTER our
+            // hotkey bindings. This way, our hotkey bindings can
+            // prevent autocomplete hotkeys from executing if they
+            // want.
+            //
+            // TODO: Let autocomplete be an option.
+            $annotationFields.autocomplete({
+                // Auto-focus first option when menu is shown
+                autoFocus: true,
+                close: function(event, ui) {
+                    autocompleteActive = false;
+                },
+                // delay in milliseconds between when a
+                // keystroke occurs and when a search is performed
+                delay: 0,
+                // Get the label choices that start with what's typed so far
+                open: function(event, ui) {
+                    autocompleteActive = true;
+                },
+                source: function(request, response) {
+                    var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
+                    response( $.grep( labelCodes, function( item ){
+                        return matcher.test( item );
+                    }) );
+                }
+            });
         },
 
         // Public version of this function...
