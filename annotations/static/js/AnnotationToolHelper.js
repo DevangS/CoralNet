@@ -1651,105 +1651,6 @@ var AnnotationToolHelper = (function() {
                 return false;
             };
 
-            // Directly-bound handler for 'field'/'all' shortcuts that use the
-            // up and down arrow keys.
-            //
-            // This direct-binding strategy is needed to prevent autocomplete
-            // hotkeys from triggering at undesired times, because Mousetrap
-            // handlers always run later than autocomplete handlers.
-            var upDownKeyHandler = function(upDownKeymap, event) {
-
-                // If the autocomplete dropdown is active, don't
-                // do anything.
-                if (autocompleteActive) {
-                    return;
-                }
-
-                // If inactive, do our thing, and also
-                // stopImmediatePropagation and preventDefault.
-
-                // Check what keys we are pressing.
-                //
-                // This imitates some of Mousetrap's source code to go
-                // between event fields and Mousetrap keycodes.
-                // https://github.com/ccampbell/mousetrap/blob/master/mousetrap.js
-
-                var eventKey = null;
-                if (event.keyCode === $.ui.keyCode.UP) {
-                    eventKey = 'up';
-                }
-                else if (event.keyCode === $.ui.keyCode.DOWN) {
-                    eventKey = 'down';
-                }
-                else {
-                    return;
-                }
-
-                var eventModifiers = [];
-                if (event.shiftKey) {
-                    eventModifiers.push('shift');
-                }
-                if (event.altKey) {
-                    eventModifiers.push('alt');
-                }
-                if (event.ctrlKey) {
-                    eventModifiers.push('ctrl');
-                }
-                if (event.metaKey) {
-                    eventModifiers.push('meta');
-                }
-
-                // See if there's a keymap entry (in our keymap of only
-                // shortcuts involving up/down) that matches the keys
-                // we're pressing.
-                //
-                // If so, run the handler function specified in the keymap.
-
-                for (var keymapItemCombo in upDownKeymap) {
-                    if (!upDownKeymap.hasOwnProperty(keymapItemCombo)) {continue;}
-
-                    var keymapItemKey = keymapItemCombo.substring(
-                        keymapItemCombo.lastIndexOf('+')+1
-                    );
-                    var keymapItemFunc = upDownKeymap[keymapItemCombo];
-
-                    var keymapItemModifiers = [];
-                    if (keymapItemCombo.indexOf('shift') !== -1) {
-                        keymapItemModifiers.push('shift');
-                    }
-                    if (keymapItemCombo.indexOf('alt') !== -1) {
-                        keymapItemModifiers.push('alt');
-                    }
-                    if (keymapItemCombo.indexOf('ctrl') !== -1) {
-                        keymapItemModifiers.push('ctrl');
-                    }
-                    if (keymapItemCombo.indexOf('meta') !== -1) {
-                        keymapItemModifiers.push('meta');
-                    }
-
-                    var keyMatch = eventKey === keymapItemKey;
-                    var modifiersMatch =
-                        eventModifiers.sort().join(',') === keymapItemModifiers.sort().join(',');
-
-                    // We have a match.
-
-                    if (keyMatch && modifiersMatch) {
-
-                        // Prevent other same-element handlers such as autocomplete.
-                        event.stopImmediatePropagation();
-                        // Prevent the default behavior of going to the
-                        // start/end of the text. This allows the text
-                        // auto-highlighting to work.
-                        event.preventDefault();
-
-                        // Run the function.
-                        keymapItemFunc.apply(this);
-                    }
-                }
-            };
-
-            var fieldUpDownKeymap = {};
-
             // Bind event handlers according to the keymap.
             for (i = 0; i < keymap.length; i++) {
                 var keymapping = keymap[i];
@@ -1762,24 +1663,6 @@ var AnnotationToolHelper = (function() {
                 var keyEvent = null;
                 if (keymapping.length >= 4)
                     keyEvent = keymapping[3];
-
-                // Factor out up/down shortcuts for fields, putting
-                // these shortcuts in a separate keymap that we'll
-                // deal with separately. (This is needed because of
-                // autocomplete hotkeys getting in the way.)
-                if (key.endsWith('up') || key.endsWith('down')) {
-
-                    if (scope === 'field') {
-
-                        fieldUpDownKeymap[key] = func;
-                        continue;
-                    }
-                    else if (scope === 'all') {
-
-                        fieldUpDownKeymap[key] = func;
-                        scope = 'top';
-                    }
-                }
 
                 // Modify the handler
                 if (scope === 'field') {
@@ -1801,22 +1684,65 @@ var AnnotationToolHelper = (function() {
                 }
             }
 
-            // Key handler that binds up/down for fields.
-            // TODO: keydown, keypress, or keyup?
-            $annotationFields.keydown(
-                upDownKeyHandler.curry(fieldUpDownKeymap)
-            );
+            // Key handler that manually activates autocomplete (since we
+            // disable it by default).
+            //
+            // Details:
+            //
+            // - jQuery UI autocomplete has undesirable hotkeys. In
+            // particular, Up/Down in a text field will bring up
+            // autocomplete.
+            // - jQuery UI's autocomplete handlers will always activate
+            // after Mousetrap's handlers, due to the way Mousetrap works.
+            // Therefore, we can't have Mousetrap's handlers block
+            // autocomplete hotkeys with stopImmediatePropagation().
+            // - Our solution is to manually activate / deactivate
+            // autocomplete as we see fit. When deactivated, autocomplete's
+            // hotkeys cannot take effect.
+            // - We enable autocomplete when we get a key event indicating
+            // that the user is trying to type a label code in the field.
+            // We check what the typed key was to determine this.
+            // - We disable autocomplete from the start, and whenever the
+            // autocomplete dropdown is closed.
+            // - Whenever the autocomplete dropdown is open, we disable
+            // Mousetrap's hotkeys so that Up/Down will properly choose
+            // between autocomplete options.
+            // - This key binding must come before the autocomplete binding,
+            // in order for the timing of everything to work out.
+            $annotationFields.keydown( function(event) {
+                if (autocompleteActive) {return;}
 
+                var KC = $.ui.keyCode;
 
-            // Show/hide certain key instructions depending on whether Mac is the OS.
-            if (isMac) {
-                $('span.key_mac').show();
-                $('span.key_non_mac').hide();
-            }
-            else {
-                $('span.key_non_mac').show();
-                $('span.key_mac').hide();
-            }
+                // This isn't comprehensive, but it consists of the most
+                // common keys a user might press in the annotation field.
+                //
+                // The worst thing that can happen if we miss a key:
+                // autocomplete pops up unexpectedly when pressing Up/Down
+                // in a field sometime later.
+                var nonActivatingKeys = [
+                    18,  // Alt
+                    17,  // Ctrl
+                    KC.DOWN,
+                    KC.END,
+                    KC.ENTER,
+                    KC.ESCAPE,
+                    KC.HOME,
+                    KC.LEFT,
+                    KC.PAGE_DOWN,
+                    KC.PAGE_UP,
+                    KC.RIGHT,
+                    16,  // Shift
+                    KC.TAB,
+                    KC.UP
+                ];
+                if (nonActivatingKeys.indexOf(event.keyCode) === -1) {
+                    // We have a key that activates autocomplete.
+                    // This is basically any key where the user seems to
+                    // be trying to type the label code.
+                    $annotationFields.autocomplete("enable");
+                }
+            });
 
 
             // Autocomplete.
@@ -1831,13 +1757,20 @@ var AnnotationToolHelper = (function() {
                 autoFocus: true,
                 close: function(event, ui) {
                     autocompleteActive = false;
+                    $annotationFields.autocomplete("disable");
+                    Mousetrap.unpause();
                 },
                 // delay in milliseconds between when a
                 // keystroke occurs and when a search is performed
                 delay: 0,
+                // Disable autocomplete by default. We'll enable it with
+                // our own key handler, to ensure that it only comes up
+                // when we want it to.
+                disabled: true,
                 // Get the label choices that start with what's typed so far
                 open: function(event, ui) {
                     autocompleteActive = true;
+                    Mousetrap.pause();
                 },
                 source: function(request, response) {
                     var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
@@ -1846,6 +1779,17 @@ var AnnotationToolHelper = (function() {
                     }) );
                 }
             });
+
+
+            // Show/hide certain key instructions depending on whether Mac is the OS.
+            if (isMac) {
+                $('span.key_mac').show();
+                $('span.key_non_mac').hide();
+            }
+            else {
+                $('span.key_non_mac').show();
+                $('span.key_mac').hide();
+            }
         },
 
         // Public version of this function...
