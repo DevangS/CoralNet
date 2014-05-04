@@ -1439,7 +1439,11 @@ var AnnotationToolHelper = (function() {
             });
 
             // Label field is typed into and changed, and then unfocused.
-            // (This does NOT run when a label button changes the label field.)
+            // (This does NOT run when a label button changes the label field,
+            // although it could be convenient if that were the case.)
+            //
+            // TODO: Also run this if an autocomplete option is selected
+            // with the mouse.
             $annotationFields.change(function() {
                 onLabelFieldTyping(this);
             });
@@ -1684,6 +1688,15 @@ var AnnotationToolHelper = (function() {
                 }
             }
 
+
+            // Custom autocomplete widget.
+            $.widget( 'ui.annotool_autocomplete', $.ui.autocomplete, {
+                // TODO
+                //_create: function() {
+                //}
+            });
+
+
             // Key handler that manually activates autocomplete (since we
             // disable it by default).
             //
@@ -1740,7 +1753,7 @@ var AnnotationToolHelper = (function() {
                     // We have a key that activates autocomplete.
                     // This is basically any key where the user seems to
                     // be trying to type the label code.
-                    $annotationFields.autocomplete("enable");
+                    $annotationFields.annotool_autocomplete("enable");
                 }
             });
 
@@ -1752,12 +1765,18 @@ var AnnotationToolHelper = (function() {
             // want.
             //
             // TODO: Let autocomplete be an option.
-            $annotationFields.autocomplete({
+            $annotationFields.annotool_autocomplete({
                 // Auto-focus first option when menu is shown
                 autoFocus: true,
+                // Handler when an autocomplete item is selected
+                // TODO: Remove or fix; doesn't work
+                change: function(event, ui) {
+                    onPointUpdate(this);
+                },
+                // Handler when the autocomplete dropdown is hidden
                 close: function(event, ui) {
                     autocompleteActive = false;
-                    $annotationFields.autocomplete("disable");
+                    $annotationFields.annotool_autocomplete("disable");
                     Mousetrap.unpause();
                 },
                 // delay in milliseconds between when a
@@ -1767,16 +1786,24 @@ var AnnotationToolHelper = (function() {
                 // our own key handler, to ensure that it only comes up
                 // when we want it to.
                 disabled: true,
-                // Get the label choices that start with what's typed so far
+                // Handler when the autocomplete dropdown is shown
                 open: function(event, ui) {
                     autocompleteActive = true;
                     Mousetrap.pause();
                 },
+                // Get the label choices that start with what's typed so far
                 source: function(request, response) {
-                    var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
-                    response( $.grep( labelCodes, function( item ){
-                        return matcher.test( item );
-                    }) );
+                    var matches = [];
+                    var i;
+                    for (i = 0; i < labelCodes.length; i++) {
+                        var codeLC = labelCodes[i].toLowerCase();
+                        var termLC = request.term.toLowerCase();
+                        if (codeLC.startsWith(termLC)) {
+                            matches.push(labelCodes[i]);
+                        }
+                    }
+                    matches.sort();
+                    response(matches);
                 }
             });
 
