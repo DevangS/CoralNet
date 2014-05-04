@@ -19,7 +19,6 @@ var AnnotationToolHelper = (function() {
     var labelCodes = [];
     var labelCodesToNames = {};
     var currentLabelButton = null;
-    var autocompleteActive = false;
 
     // Canvas related
     var context = null;
@@ -1689,122 +1688,10 @@ var AnnotationToolHelper = (function() {
             }
 
 
-            // Custom autocomplete widget.
-            $.widget( 'ui.annotool_autocomplete', $.ui.autocomplete, {
-                // TODO
-                //_create: function() {
-                //}
-            });
-
-
-            // Key handler that manually activates autocomplete (since we
-            // disable it by default).
-            //
-            // Details:
-            //
-            // - jQuery UI autocomplete has undesirable hotkeys. In
-            // particular, Up/Down in a text field will bring up
-            // autocomplete.
-            // - jQuery UI's autocomplete handlers will always activate
-            // after Mousetrap's handlers, due to the way Mousetrap works.
-            // Therefore, we can't have Mousetrap's handlers block
-            // autocomplete hotkeys with stopImmediatePropagation().
-            // - Our solution is to manually activate / deactivate
-            // autocomplete as we see fit. When deactivated, autocomplete's
-            // hotkeys cannot take effect.
-            // - We enable autocomplete when we get a key event indicating
-            // that the user is trying to type a label code in the field.
-            // We check what the typed key was to determine this.
-            // - We disable autocomplete from the start, and whenever the
-            // autocomplete dropdown is closed.
-            // - Whenever the autocomplete dropdown is open, we disable
-            // Mousetrap's hotkeys so that Up/Down will properly choose
-            // between autocomplete options.
-            // - This key binding must come before the autocomplete binding,
-            // in order for the timing of everything to work out.
-            $annotationFields.keydown( function(event) {
-                if (autocompleteActive) {return;}
-
-                var KC = $.ui.keyCode;
-
-                // This isn't comprehensive, but it consists of the most
-                // common keys a user might press in the annotation field.
-                //
-                // The worst thing that can happen if we miss a key:
-                // autocomplete pops up unexpectedly when pressing Up/Down
-                // in a field sometime later.
-                var nonActivatingKeys = [
-                    18,  // Alt
-                    17,  // Ctrl
-                    KC.DOWN,
-                    KC.END,
-                    KC.ENTER,
-                    KC.ESCAPE,
-                    KC.HOME,
-                    KC.LEFT,
-                    KC.PAGE_DOWN,
-                    KC.PAGE_UP,
-                    KC.RIGHT,
-                    16,  // Shift
-                    KC.TAB,
-                    KC.UP
-                ];
-                if (nonActivatingKeys.indexOf(event.keyCode) === -1) {
-                    // We have a key that activates autocomplete.
-                    // This is basically any key where the user seems to
-                    // be trying to type the label code.
-                    $annotationFields.annotool_autocomplete("enable");
-                }
-            });
-
-
-            // Autocomplete.
-            // Note that the autocomplete bindings come AFTER our
-            // hotkey bindings. This way, our hotkey bindings can
-            // prevent autocomplete hotkeys from executing if they
-            // want.
-            //
-            // TODO: Let autocomplete be an option.
-            $annotationFields.annotool_autocomplete({
-                // Auto-focus first option when menu is shown
-                autoFocus: true,
-                // Handler when an autocomplete item is selected
-                // TODO: Remove or fix; doesn't work
-                change: function(event, ui) {
-                    onPointUpdate(this);
-                },
-                // Handler when the autocomplete dropdown is hidden
-                close: function(event, ui) {
-                    autocompleteActive = false;
-                    $annotationFields.annotool_autocomplete("disable");
-                    Mousetrap.unpause();
-                },
-                // delay in milliseconds between when a
-                // keystroke occurs and when a search is performed
-                delay: 0,
-                // Disable autocomplete by default. We'll enable it with
-                // our own key handler, to ensure that it only comes up
-                // when we want it to.
-                disabled: true,
-                // Handler when the autocomplete dropdown is shown
-                open: function(event, ui) {
-                    autocompleteActive = true;
-                    Mousetrap.pause();
-                },
-                // Get the label choices that start with what's typed so far
-                source: function(request, response) {
-                    var matches = [];
-                    var i;
-                    for (i = 0; i < labelCodes.length; i++) {
-                        var codeLC = labelCodes[i].toLowerCase();
-                        var termLC = request.term.toLowerCase();
-                        if (codeLC.startsWith(termLC)) {
-                            matches.push(labelCodes[i]);
-                        }
-                    }
-                    matches.sort();
-                    response(matches);
-                }
+            // Initialize AnnotationToolAutocomplete object.
+            AnnotationToolAutocomplete.init({
+                $annotationFields: $annotationFields,
+                labelCodes: labelCodes
             });
 
 
@@ -1819,7 +1706,10 @@ var AnnotationToolHelper = (function() {
             }
         },
 
-        // Public version of this function...
+        // Public version of these functions...
+        onPointUpdate: function(field) {
+            onPointUpdate(field);
+        },
         redrawAllPoints: function() {
             redrawAllPoints();
         }
