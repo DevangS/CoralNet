@@ -61,6 +61,7 @@ var AnnotationToolAutocomplete = (function() {
                             suppressInput = false;
                             suppressKeyPressRepeat = false;
                             var keyCode = $.ui.keyCode;
+                            // ANNO-TOOL CHANGE
                             var noKeyModifiers = !event.shiftKey && !event.ctrlKey
                                 && !event.altKey && !event.metaKey;
 
@@ -75,6 +76,7 @@ var AnnotationToolAutocomplete = (function() {
                                     break;
                                 case keyCode.UP:
                                     suppressKeyPress = true;
+                                    // ANNO-TOOL CHANGE
                                     // Changed to:
                                     // - only fire when the menu's visible
                                     // - only fire when no modifiers are pressed
@@ -95,6 +97,7 @@ var AnnotationToolAutocomplete = (function() {
                                     break;
                                 case keyCode.DOWN:
                                     suppressKeyPress = true;
+                                    // ANNO-TOOL CHANGE
                                     // Same changes as keyCode.UP.
                                     if ( this.menu.element.is( ":visible" )
                                        && noKeyModifiers ) {
@@ -151,6 +154,7 @@ var AnnotationToolAutocomplete = (function() {
 
                             // replicate some key handlers to allow them to repeat in Firefox and Opera
                             var keyCode = $.ui.keyCode;
+                            // ANNO-TOOL CHANGE
                             var noKeyModifiers = !event.shiftKey && !event.ctrlKey
                                 && !event.altKey && !event.metaKey;
 
@@ -162,6 +166,7 @@ var AnnotationToolAutocomplete = (function() {
                                     this._move( "nextPage", event );
                                     break;
                                 case keyCode.UP:
+                                    // ANNO-TOOL CHANGE
                                     // Same changes as keydown.
                                     if ( this.menu.element.is( ":visible" )
                                        && noKeyModifiers ) {
@@ -170,6 +175,7 @@ var AnnotationToolAutocomplete = (function() {
                                     }
                                     break;
                                 case keyCode.DOWN:
+                                    // ANNO-TOOL CHANGE
                                     // Same changes as keydown.
                                     if ( this.menu.element.is( ":visible" )
                                        && noKeyModifiers ) {
@@ -205,6 +211,7 @@ var AnnotationToolAutocomplete = (function() {
 
                     this._initSource();
 
+                    // ANNO-TOOL CHANGE
                     // Changed .menu( "instance" ); to .data( "ui-menu" );
                     // To prevent an error, as suggested here:
                     // http://forum.jquery.com/topic/issue-with-jquery-ui-selectmenu-no-such-method-instance
@@ -306,6 +313,12 @@ var AnnotationToolAutocomplete = (function() {
 
                             this.close( event );
                             this.selectedItem = item;
+
+                            // ANNO-TOOL CHANGE
+                            // This ensures that the annotation point status
+                            // is updated, even if labeling is done by
+                            // mouse-clicking the autocomplete choice.
+                            AnnotationToolHelper.onPointUpdate(this.element[0]);
                         }
                     });
 
