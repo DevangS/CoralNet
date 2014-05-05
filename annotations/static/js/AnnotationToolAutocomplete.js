@@ -108,6 +108,23 @@ var AnnotationToolAutocomplete = (function() {
                                         this._searchTimeout( event );
                                     }
                                     break;
+                                // ANNO-TOOL W/MACHINE SUGGESTIONS CHANGE
+                                case keyCode.RIGHT:
+                                    suppressKeyPress = true;
+                                    // If the field value is empty, and we're
+                                    // not pressing Ctrl or anything, show
+                                    // autocomplete (the choices should be the
+                                    // machine's top suggestions, but that's
+                                    // handled in the "source" function).
+                                    if ( this.element[0].value === ''
+                                       && noKeyModifiers ) {
+                                        this._keyEvent( "next", event );
+                                        event.stopPropagation();
+                                    }
+                                    else {
+                                        this._searchTimeout( event );
+                                    }
+                                    break;
                                 case keyCode.ENTER:
                                     // when menu is open and has focus
                                     if ( this.menu.active ) {
@@ -350,25 +367,41 @@ var AnnotationToolAutocomplete = (function() {
             // want.
             //
             // TODO: Let autocomplete be an option.
+            // TODO: Let machine suggestions be part of the
+            // machine suggestions option. This includes the
+            // modified source function, and the right arrow key
+            // handler.
             $annotationFields.autocomplete({
                 // Auto-focus first option when menu is shown
                 autoFocus: true,
                 // delay in milliseconds between when a
                 // keystroke occurs and when a search is performed
                 delay: 0,
+                // Minimum length of field value before suggestions appear
+                minLength: 0,
                 // Get the label choices that start with what's typed so far
                 source: function(request, response) {
-                    var matches = [];
-                    var i;
-                    for (i = 0; i < labelCodes.length; i++) {
-                        var codeLC = labelCodes[i].toLowerCase();
-                        var termLC = request.term.toLowerCase();
-                        if (codeLC.startsWith(termLC)) {
-                            matches.push(labelCodes[i]);
-                        }
+
+                    var suggestions = [];
+
+                    if (request.term === '') {
+                        // Machine suggestions.
+                        // TODO: Get actual machine suggestions.
+                        suggestions = ["Porit", "CCA_bare", "Monta"];
                     }
-                    matches.sort();
-                    response(matches);
+                    else {
+                        // "Labels that start with this" suggestions.
+                        var i;
+                        for (i = 0; i < labelCodes.length; i++) {
+                            var codeLC = labelCodes[i].toLowerCase();
+                            var termLC = request.term.toLowerCase();
+                            if (codeLC.startsWith(termLC)) {
+                                suggestions.push(labelCodes[i]);
+                            }
+                        }
+                        suggestions.sort();
+                    }
+                    response(suggestions);
                 }
             });
         }
