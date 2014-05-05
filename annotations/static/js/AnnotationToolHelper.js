@@ -1394,12 +1394,12 @@ var AnnotationToolHelper = (function() {
             // Disable the context menu on the listener element.
             // The menu just gets in the way while trying to zoom out, etc.
             $(listenerElmt).bind('contextmenu', function(e){
-                return false;
+                e.preventDefault();
             });
             // Same goes for the canvas element, which is sometimes what we end up
             // right clicking on if the image is no longer over that part of the canvas.
             $(pointsCanvas).bind('contextmenu', function(e){
-                return false;
+                e.preventDefault();
             });
             // Also note that the listener element uses CSS to disable
             // double-click-to-select (it makes the image turn blue, which is annoying).
@@ -1440,9 +1440,6 @@ var AnnotationToolHelper = (function() {
             // Label field is typed into and changed, and then unfocused.
             // (This does NOT run when a label button changes the label field,
             // although it could be convenient if that were the case.)
-            //
-            // TODO: Also run this if an autocomplete option is selected
-            // with the mouse.
             $annotationFields.change(function() {
                 onLabelFieldTyping(this);
             });
@@ -1614,14 +1611,11 @@ var AnnotationToolHelper = (function() {
                     // Use apply() to ensure that in the called function,
                     // "this" is the annotation field.
                     f.apply(aElmt, [event]);
-                    // Prevent default behavior.
-                    // TODO: Use event.preventDefault and stopPropagation
-                    // instead of return false?
-                    return false;
+                    // Prevent browser's default behavior.
+                    event.preventDefault();
                 }
                 // We're not in an annotation field.
                 // Don't prevent default behavior.
-                return true;
             };
 
             // Handler modifier: only trigger
@@ -1638,20 +1632,18 @@ var AnnotationToolHelper = (function() {
                 // We're not in an annotation field.
                 if (!aElmtIsAnnotationField) {
                     f(event);
-                    // Prevent default behavior.
-                    return false;
+                    // Prevent browser's default behavior.
+                    event.preventDefault();
                 }
                 // We're in an annotation field.
                 // Don't prevent default behavior.
-                return true;
             };
 
-            // Handler modifier: prevent the event's
-            // default behavior, and prevent the event from
-            // bubbling up.
+            // Handler modifier: just prevent the event's
+            // default behavior in all cases.
             var modifyToPreventDefault = function(f, event) {
                 f(event);
-                return false;
+                event.preventDefault();
             };
 
             // Bind event handlers according to the keymap.
