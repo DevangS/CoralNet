@@ -1178,6 +1178,7 @@ var AnnotationToolHelper = (function() {
             var annotationListMaxHeight =
                 ANNOTATION_AREA_HEIGHT
                 - $("#toolButtonArea").outerHeight(true)
+                - $("#omnifield").outerHeight(true)
                 - $(saveButton).outerHeight(true)
                 - $("#allDone").outerHeight(true)
                 - parseFloat($("#rightSidebar hr").css('margin-top'));
