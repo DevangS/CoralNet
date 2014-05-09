@@ -90,6 +90,13 @@ var AnnotationToolHelper = (function() {
     var subWindowWidth = null;
     var subWindowHeight = null;
 
+    // Z-indices.
+    var ZINDEX_IMAGE_CANVAS = 0;
+    var ZINDEX_POINTS_CANVAS = 1;
+    var ZINDEX_IMAGE_LISTENER = 2;
+    // (See the CSS file for jQuery UI dialogs' z-index. Should be higher than
+    // all of these.)
+
 
 
     //
@@ -154,7 +161,7 @@ var AnnotationToolHelper = (function() {
             "height": imageDisplayHeight,
             "left": imageLeftOffset,
             "top": imageTopOffset,
-            "z-index": 0
+            "z-index": ZINDEX_IMAGE_CANVAS
         });
 
         // Set styling properties for the listener element:
@@ -167,7 +174,7 @@ var AnnotationToolHelper = (function() {
             "height": imageDisplayHeight,
             "left": imageLeftOffset,
             "top": imageTopOffset,
-            "z-index": 100
+            "z-index": ZINDEX_IMAGE_LISTENER
         });
     }
 
@@ -1313,7 +1320,7 @@ var AnnotationToolHelper = (function() {
             $(pointsCanvas).css({
                 "left": 0,
                 "top": 0,
-                "z-index": 1
+                "z-index": ZINDEX_POINTS_CANVAS
             });
 
             // Set the sub-window size.
