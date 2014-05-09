@@ -12,10 +12,15 @@ try
     % load image
     Iorg = imread(imageFile);
     
+    % make sure the image has three channels
+    if (size(Iorg, 3) == 1)
+        Iorg = repmat(Iorg, [1 1 3]);
+    end
+    
     subsampleRate = dlmread(ssFile);
     
     imageNbrStr = ssFile(regexp(ssFile, '\d*_ssRate') : regexp(ssFile, '_ssRate') -1 );
-   
+    
     logger('Preprocessing image %s with SSrate %.3f', imageNbrStr, subsampleRate);
     
     % process image
@@ -29,8 +34,8 @@ try
 catch me
     
     fid = fopen(errorLogfile, 'a');
-    fprintf(fid, '[%s] Error executing coralnet_trainRobot: %s, %s, %s, %d \n', datestr(clock, 31), me.identifier, me.message, me.stack(1).file, me.stack(1).line);
-    logger('[%s] Error executing coralnet_trainRobot: %s, %s, %s, %d \n', datestr(clock, 31), me.identifier, me.message, me.stack(1).file, me.stack(1).line);
+    fprintf(fid, '[%s] Error executing coralnet_preprocessImage: %s, %s, %s, %d \n', datestr(clock, 31), me.identifier, me.message, me.stack(1).file, me.stack(1).line);
+    logger('[%s] Error executing coralnet_preprocessImage: %s, %s, %s, %d \n', datestr(clock, 31), me.identifier, me.message, me.stack(1).file, me.stack(1).line);
     fclose(fid);
     fclose(logfid);
     
