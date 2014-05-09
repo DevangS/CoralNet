@@ -218,7 +218,8 @@
         IMAGE_AREA_WIDTH: {{ IMAGE_AREA_WIDTH }},
         IMAGE_AREA_HEIGHT: {{ IMAGE_AREA_HEIGHT }},
         imagePoints: {{ annotationsJSON|safe }},
-        labels: {{ labels|jsonify }}
+        labels: {{ labels|jsonify }},
+        machineSuggestions: {{ machine_suggestions|jsonify }}
     });
 </script>
 

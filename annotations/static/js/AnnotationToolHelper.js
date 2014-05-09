@@ -479,6 +479,7 @@ var AnnotationToolHelper = (function() {
     function unselectMultiple(pointList) {
         var pointNum, i;
 
+        // TODO: This if-else needs an explanation comment...
         if (pointViewMode === POINTMODE_SELECTED) {
 
             for (i = 0; i < pointList.length; i++) {
@@ -496,12 +497,7 @@ var AnnotationToolHelper = (function() {
     }
 
     function unselectAll() {
-        var selectedPointList = [];
-        get$selectedFields().each( function() {
-            var pointNum = getPointNumOfAnnoField(this);
-            selectedPointList.push(pointNum);
-        });
-        unselectMultiple(selectedPointList);
+        unselectMultiple(getSelectedNumbers());
     }
 
 
@@ -694,6 +690,15 @@ var AnnotationToolHelper = (function() {
 
     function get$selectedFields() {
         return $(annotationList).find('tr.selected').find('input');
+    }
+
+    function getSelectedNumbers() {
+        var selectedNumbers = [];
+        get$selectedFields().each( function() {
+            var pointNum = getPointNumOfAnnoField(this);
+            selectedNumbers.push(pointNum);
+        });
+        return selectedNumbers;
     }
 
 
@@ -1685,7 +1690,8 @@ var AnnotationToolHelper = (function() {
             // Initialize AnnotationToolAutocomplete object.
             AnnotationToolAutocomplete.init({
                 $annotationFields: $annotationFields,
-                labelCodes: labelCodes
+                labelCodes: labelCodes,
+                machineSuggestions: params.machineSuggestions
             });
 
 
@@ -1701,6 +1707,9 @@ var AnnotationToolHelper = (function() {
         },
 
         // Public version of these functions...
+        getSelectedNumbers: function() {
+            return getSelectedNumbers();
+        },
         onPointUpdate: function(field) {
             onPointUpdate(field);
         },

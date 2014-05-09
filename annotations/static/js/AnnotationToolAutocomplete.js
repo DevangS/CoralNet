@@ -2,6 +2,91 @@ var AnnotationToolAutocomplete = (function() {
 
     var $annotationFields = null;
     var labelCodes = null;
+    var machineSuggestions = null;
+
+
+    function getMachineSuggestions(pointList) {
+
+        var i,j;
+        var labelsToScores = {};
+        var label, item;
+
+        for (i = 0; i < pointList.length; i++) {
+            var pointNumber = pointList[i];
+            var pointSuggestions = machineSuggestions[pointNumber];
+
+            for (j = 0; j < pointSuggestions.length; j++) {
+                item = pointSuggestions[j];
+                label = item['label'];
+                var score = item['score'];
+                if (labelsToScores.hasOwnProperty(label)) {
+                    labelsToScores[label] = labelsToScores[label] + score;
+                }
+                else {
+                    labelsToScores[label] = score;
+                }
+            }
+        }
+        // Normalize the scores by the number of points
+        // we're making suggestions on
+        for (label in labelsToScores) {
+            if (!labelsToScores.hasOwnProperty(label)) {continue;}
+
+            labelsToScores[label] = labelsToScores[label] / pointList.length;
+        }
+
+        // Filter out any suggestions that are too far from the highest score
+        var highestScore = 0;
+        for (label in labelsToScores) {
+            if (!labelsToScores.hasOwnProperty(label)) {continue;}
+
+            if (labelsToScores[label] > highestScore) {
+                highestScore = labelsToScores[label];
+            }
+        }
+        for (label in labelsToScores) {
+            if (!labelsToScores.hasOwnProperty(label)) {continue;}
+
+            if (labelsToScores[label] < highestScore/3.0) {
+                delete labelsToScores[label];
+            }
+        }
+
+        // Make an array of the remaining suggestions,
+        // sorted from highest to lowest score
+        var suggestionArray = [];
+        for (label in labelsToScores) {
+            if (!labelsToScores.hasOwnProperty(label)) {continue;}
+
+            suggestionArray.push({
+                label: label,
+                score: labelsToScores[label]
+            });
+        }
+        suggestionArray.sort(function(a,b){
+            if (a['score'] > b['score']) {
+                return -1;
+            }
+            if (a['score'] < b['score']) {
+                return 1;
+            }
+            return 0;
+        });
+
+        // Format the suggestions for autocomplete
+        var suggestionsForWidget = [];
+        for (i = 0; i < suggestionArray.length; i++) {
+            item = suggestionArray[i];
+            // Get an integer percentage score (0.36852 -> 37%)
+            var scoreStr = (item['score']*100.0).toFixed(0);
+            suggestionsForWidget.push({
+                label: '{0} [{1}%]'.format(item['label'], scoreStr),
+                value: item['label']
+            });
+        }
+
+        return suggestionsForWidget;
+    }
 
 
     return {
@@ -10,6 +95,7 @@ var AnnotationToolAutocomplete = (function() {
 
             $annotationFields = params.$annotationFields;
             labelCodes = params.labelCodes;
+            machineSuggestions = params.machineSuggestions;
 
             // Define a custom autocomplete widget.
             $.widget( 'ui.autocomplete', $.ui.autocomplete, {
@@ -379,19 +465,24 @@ var AnnotationToolAutocomplete = (function() {
                 delay: 0,
                 // Minimum length of field value before suggestions appear
                 minLength: 0,
-                // Get the label choices that start with what's typed so far
+                // Function that gets the suggestions to show
                 source: function(request, response) {
 
                     var suggestions = [];
+                    var i;
 
                     if (request.term === '') {
-                        // Machine suggestions.
-                        // TODO: Get actual machine suggestions.
-                        suggestions = ["Porit", "CCA_bare", "Monta"];
+                        // Machine suggestions for the selected points.
+                        if (machineSuggestions !== null) {
+                            var selectedNumbers = AnnotationToolHelper.getSelectedNumbers();
+                            suggestions = getMachineSuggestions(selectedNumbers);
+                        }
+                        else {
+                            suggestions = [];
+                        }
                     }
                     else {
                         // "Labels that start with this" suggestions.
-                        var i;
                         for (i = 0; i < labelCodes.length; i++) {
                             var codeLC = labelCodes[i].toLowerCase();
                             var termLC = request.term.toLowerCase();
