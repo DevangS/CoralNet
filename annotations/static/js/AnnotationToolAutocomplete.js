@@ -35,24 +35,7 @@ var AnnotationToolAutocomplete = (function() {
             labelsToScores[label] = labelsToScores[label] / pointList.length;
         }
 
-        // Filter out any suggestions that are too far from the highest score
-        var highestScore = 0;
-        for (label in labelsToScores) {
-            if (!labelsToScores.hasOwnProperty(label)) {continue;}
-
-            if (labelsToScores[label] > highestScore) {
-                highestScore = labelsToScores[label];
-            }
-        }
-        for (label in labelsToScores) {
-            if (!labelsToScores.hasOwnProperty(label)) {continue;}
-
-            if (labelsToScores[label] < highestScore/3.0) {
-                delete labelsToScores[label];
-            }
-        }
-
-        // Make an array of the remaining suggestions,
+        // Make an array of the suggestions,
         // sorted from highest to lowest score
         var suggestionArray = [];
         for (label in labelsToScores) {
@@ -72,6 +55,9 @@ var AnnotationToolAutocomplete = (function() {
             }
             return 0;
         });
+        // Just take the top few scores
+        var NUM_OF_SCORES = 5;
+        suggestionArray = suggestionArray.slice(0,NUM_OF_SCORES);
 
         // Format the suggestions for autocomplete
         var suggestionsForWidget = [];
