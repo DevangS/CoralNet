@@ -675,10 +675,6 @@ var AnnotationToolHelper = (function() {
         $(this).blur();
     }
 
-    function onLabelFieldTyping(field) {
-        onPointUpdate(field);
-    }
-
     /* Event listener callback: 'this' is an annotation field */
     function confirmFieldAndFocusNext() {
         // Unrobot/update the field
@@ -687,6 +683,52 @@ var AnnotationToolHelper = (function() {
         // Switch focus to next point's field.
         // Call focusNextField() such that the current field becomes the object 'this'
         focusNextField.call(this);
+    }
+
+    /* Event listener callback: 'this' is an annotation field */
+    function onFieldFocus() {
+
+        var pointNum = getPointNumOfAnnoField(this);
+
+        if (isRobot(pointNum)) {
+            // Clear the value in the label field, so
+            // (1) the user can start typing their own value, and
+            // (2) the list of machine suggestions appears.
+            this.value = '';
+        }
+        else {
+            // Select (highlight) all the text in the label field,
+            // so the user can start typing over it.
+            //
+            // Must set a timeout so that the selection sticks when you
+            // focus with a mouseclick. Otherwise, in some browsers, you
+            // will select and then immediately place your cursor to
+            // unselect.
+            // http://stackoverflow.com/a/19498477
+            // Also, a timeout of 50 ms seems enough for Chrome, but not
+            // for Firefox. 100 is enough for Firefox...
+            //
+            // TODO: Apparently may not work in mobile Safari?
+            // http://stackoverflow.com/a/4067488
+            var selectTextFunction = function(elmt) {elmt.select();};
+            setTimeout(selectTextFunction.curry(this), 100);
+        }
+
+        // Select only this point.
+        // (Here, "select" means selecting for annotation.)
+        unselectAll();
+        select(pointNum);
+
+        // Shift the center of zoom to this point.
+        centerOnPoint(pointNum);
+
+        // Show the autocomplete dropdown
+        $(this).autocomplete("search", this.value);
+    }
+
+    /* Event listener callback: 'this' is an annotation field */
+    function onFieldBlur() {
+        onPointUpdate(this, 'unrobotOnlyIfChanged');
     }
 
     function getPointNumOfAnnoField(annoField) {
@@ -1074,8 +1116,9 @@ var AnnotationToolHelper = (function() {
 
         updatePointGraphic(pointNum);
 
-        if (contentChanged)
+        if (contentChanged) {
             updateSaveButton();
+        }
     }
 
     function redrawAllPoints() {
@@ -1434,27 +1477,14 @@ var AnnotationToolHelper = (function() {
 
             // Label field gains focus
             $annotationFields.focus(function() {
-
-                // Highlight all the text in the label field.
-                //
-                // http://stackoverflow.com/questions/4067469/
-                // TODO: Apparently may not work in mobile Safari?
-                this.select();
-
-                // Select only this point.
-                var pointNum = getPointNumOfAnnoField(this);
-                unselectAll();
-                select(pointNum);
-
-                // Shift the center of zoom to this point.
-                centerOnPoint(pointNum);
+                onFieldFocus.apply(this);
             });
 
-            // Label field is typed into and changed, and then unfocused.
-            // (This does NOT run when a label button changes the label field,
-            // although it could be convenient if that were the case.)
-            $annotationFields.change(function() {
-                onLabelFieldTyping(this);
+            // Label field is unfocused.
+            // (This should cover all cases where the field could be
+            // updated, except for clicking label buttons.)
+            $annotationFields.blur(function() {
+                onFieldBlur.apply(this);
             });
 
             // Number next to a label field is clicked.
