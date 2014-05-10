@@ -1581,10 +1581,9 @@ var AnnotationToolHelper = (function() {
                 ['g f', navForward, 'top'],
 
                 ['return', confirmFieldAndFocusNext, 'field'],
-                ['up', focusPrevField, 'field'],
-                ['down', focusNextField, 'field'],
+                ['shift+tab', focusPrevField, 'field'],
+                ['tab', focusNextField, 'field'],
                 ['esc', unfocusField, 'field'],
-//                ['right', showLabelSuggestionsIfFieldEmpty, 'field'],
 
                 // Ctrl for both Windows and Mac; it seems Cmd may have more
                 // potential for clashes in Mac.

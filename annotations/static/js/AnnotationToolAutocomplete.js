@@ -89,6 +89,9 @@ var AnnotationToolAutocomplete = (function() {
                 // Redefine _create(), copying 90% of it and just changing
                 // a couple of handler initializations for our purposes.
                 //
+                // Base code:
+                // https://github.com/jquery/jquery-ui/blob/master/ui/autocomplete.js
+                //
                 // Yes, this massive code copying is far from ideal, but no
                 // better solutions have come to mind.
                 _create: function() {
@@ -150,14 +153,9 @@ var AnnotationToolAutocomplete = (function() {
                                     suppressKeyPress = true;
                                     // ANNO-TOOL CHANGE
                                     // Changed to:
-                                    // - only fire when the menu's visible
                                     // - only fire when no modifiers are pressed
-                                    // - call stopPropagation() to prevent
-                                    //   Mousetrap handler
-                                    if ( this.menu.element.is( ":visible" )
-                                       && noKeyModifiers ) {
+                                    if ( noKeyModifiers ) {
                                         this._keyEvent( "previous", event );
-                                        event.stopPropagation();
                                     }
                                     else {
                                         // This ensures that the autocomplete
@@ -171,27 +169,8 @@ var AnnotationToolAutocomplete = (function() {
                                     suppressKeyPress = true;
                                     // ANNO-TOOL CHANGE
                                     // Same changes as keyCode.UP.
-                                    if ( this.menu.element.is( ":visible" )
-                                       && noKeyModifiers ) {
+                                    if ( noKeyModifiers ) {
                                         this._keyEvent( "next", event );
-                                        event.stopPropagation();
-                                    }
-                                    else {
-                                        this._searchTimeout( event );
-                                    }
-                                    break;
-                                // ANNO-TOOL W/MACHINE SUGGESTIONS CHANGE
-                                case keyCode.RIGHT:
-                                    suppressKeyPress = true;
-                                    // If the field value is empty, and we're
-                                    // not pressing Ctrl or anything, show
-                                    // autocomplete (the choices should be the
-                                    // machine's top suggestions, but that's
-                                    // handled in the "source" function).
-                                    if ( this.element[0].value === ''
-                                       && noKeyModifiers ) {
-                                        this._keyEvent( "next", event );
-                                        event.stopPropagation();
                                     }
                                     else {
                                         this._searchTimeout( event );
@@ -204,11 +183,6 @@ var AnnotationToolAutocomplete = (function() {
                                         // which causes forms to submit
                                         suppressKeyPress = true;
                                         event.preventDefault();
-                                        this.menu.select( event );
-                                    }
-                                    break;
-                                case keyCode.TAB:
-                                    if ( this.menu.active ) {
                                         this.menu.select( event );
                                     }
                                     break;
@@ -257,19 +231,15 @@ var AnnotationToolAutocomplete = (function() {
                                 case keyCode.UP:
                                     // ANNO-TOOL CHANGE
                                     // Same changes as keydown.
-                                    if ( this.menu.element.is( ":visible" )
-                                       && noKeyModifiers ) {
+                                    if ( noKeyModifiers ) {
                                         this._keyEvent( "previous", event );
-                                        event.stopPropagation();
                                     }
                                     break;
                                 case keyCode.DOWN:
                                     // ANNO-TOOL CHANGE
                                     // Same changes as keydown.
-                                    if ( this.menu.element.is( ":visible" )
-                                       && noKeyModifiers ) {
+                                    if ( noKeyModifiers ) {
                                         this._keyEvent( "next", event );
-                                        event.stopPropagation();
                                     }
                                     break;
                             }
@@ -402,12 +372,6 @@ var AnnotationToolAutocomplete = (function() {
 
                             this.close( event );
                             this.selectedItem = item;
-
-                            // ANNO-TOOL CHANGE
-                            // This ensures that the annotation point status
-                            // is updated, even if labeling is done by
-                            // mouse-clicking the autocomplete choice.
-                            AnnotationToolHelper.onPointUpdate(this.element[0]);
                         }
                     });
 
@@ -449,8 +413,33 @@ var AnnotationToolAutocomplete = (function() {
                 // delay in milliseconds between when a
                 // keystroke occurs and when a search is performed
                 delay: 0,
+                // Function called when a menu item is focused
+                focus: function(event, ui) {
+                    // Clobber jQuery UI's default behavior of
+                    // auto-filling the field with the menu item's value.
+                    //
+                    // (By the way, return false really is jQuery UI's
+                    // only provided way to clobber its default behavior.
+                    // In other contexts, event.stopPropagation() and
+                    // event.preventDefault() are better due to being
+                    // more explicit.)
+                    return false;
+                },
                 // Minimum length of field value before suggestions appear
                 minLength: 0,
+                // Function called when a menu item is selected
+                select: function(event, ui) {
+                    // Fill the field with the menu item's value.
+                    // This is the default behavior, but we must ensure
+                    // that it happens BEFORE our point-update handler.
+                    this.value = ui.item.value;
+                    // point-update handler.
+                    AnnotationToolHelper.onPointUpdate(this);
+                    // No need for the default behavior anymore.
+                    // jQuery UI's only provided way to clobber its
+                    // default behavior is to return false.
+                    return false;
+                },
                 // Function that gets the suggestions to show
                 source: function(request, response) {
 
