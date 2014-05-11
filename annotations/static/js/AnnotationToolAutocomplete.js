@@ -371,6 +371,27 @@ var AnnotationToolAutocomplete = (function() {
 
                             this.close( event );
                             this.selectedItem = item;
+
+                            // ANNO-TOOL
+                            //
+                            // The API's provided select() callback isn't
+                            // called at the right time for what we need to do.
+                            //
+                            // Putting our handler right here is the only way
+                            // to ensure that autocomplete pops up again
+                            // after focusing the next point.
+                            AnnotationToolHelper.labelSelected(item.value);
+
+                            // Only focus the next point when clicking the item
+                            // (not on hitting Enter to select the item,
+                            // because that already goes to the next point).
+                            var origEvent = event;
+                            while (origEvent.originalEvent !== undefined){
+                                origEvent = origEvent.originalEvent;
+                            }
+                            if (origEvent.type === 'click') {
+                                AnnotationToolHelper.selectNextPoint();
+                            }
                         }
                     });
 
@@ -426,22 +447,6 @@ var AnnotationToolAutocomplete = (function() {
                 },
                 // Minimum length of field value before suggestions appear
                 minLength: 0,
-                // Function called when a menu item is selected
-                select: function(event, ui) {
-                    // Fill the field with the menu item's value.
-                    // This is the default behavior, but we must ensure
-                    // that it happens BEFORE our point-update handler.
-                    // TODO: Is this the case anymore? Maybe we can simplify
-                    // the code now.
-                    this.value = ui.item.value;
-
-                    AnnotationToolHelper.labelSelected(this.value);
-
-                    // No need for the default behavior anymore.
-                    // jQuery UI's only provided way to clobber its
-                    // default behavior is to return false.
-                    return false;
-                },
                 // Function that gets the suggestions to show
                 source: function(request, response) {
 

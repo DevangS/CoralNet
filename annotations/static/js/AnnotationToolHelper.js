@@ -1662,6 +1662,9 @@ var AnnotationToolHelper = (function() {
         },
         redrawAllPoints: function() {
             redrawAllPoints();
+        },
+        selectNextPoint: function() {
+            selectNextPoint();
         }
     }
 })();
