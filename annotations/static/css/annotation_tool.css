@@ -130,17 +130,19 @@
 }
 
 
-/* Column of label text fields; don't use the default form styling */
+/* Column of point fields; don't use the default form styling */
 #annotationForm {
     width: auto;
     margin: auto;
     padding: 0;
 }
 
-/* Label fields */
+/* Point fields */
 #annotationForm input {
     margin: 1px 0;
     padding: 1px 1px;
+
+    cursor: pointer;
 }
 
 /* Currently selected points */
@@ -164,8 +166,8 @@
     margin: 0 2px;
     border: 1px solid #D7D7D7;
 
-    /* Use the regular arrow cursor, not the text highlight cursor */
-    cursor: default;
+    /* Use the pointer cursor, not the text highlight cursor */
+    cursor: pointer;
 
     /* Make the number's clickable box take up the whole table cell */
     display: block;

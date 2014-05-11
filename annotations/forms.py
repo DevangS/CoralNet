@@ -167,6 +167,7 @@ class AnnotationForm(forms.Form):
             self.fields[labelFieldName] = CharField(
                 widget=TextInput(attrs=dict(
                     size=6,
+                    readonly='',
                 )),
                 max_length=labelFieldMaxLength,
                 label=str(pointNum),

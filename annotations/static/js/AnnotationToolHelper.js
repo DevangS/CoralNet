@@ -1365,6 +1365,9 @@ var AnnotationToolHelper = (function() {
                 onPointUpdate(n, 'initialize');
             }
 
+            // Initialize stuff based on point selections.
+            updateElementsAfterSelections();
+
             // Set the initial point view mode.  This'll trigger a redraw of the points, but that's okay;
             // initialization slowness is a relatively minor worry.
             changePointMode(POINTMODE_ALL);
@@ -1378,6 +1381,7 @@ var AnnotationToolHelper = (function() {
                 setAllDoneIndicator,
                 {'image_id': $('#id_image_id')[0].value}
             );
+
 
             /*
              * Set event handlers
@@ -1426,10 +1430,14 @@ var AnnotationToolHelper = (function() {
                 onFieldBlur();
             });
 
-            // Initialize stuff based on point selections.
-            updateElementsAfterSelections();
+            // Point fields (which are read-only) are clicked
+            $pointFields.click(function() {
+                var pointNum = getPointNumOfAnnoField(this);
+                selectOnly([pointNum]);
+                $annotationField.focus();
+            });
 
-            // Number next to the point list is clicked.
+            // Number next to a point field is clicked
             $(".annotationFormLabel").click(function() {
                 var pointNum = parseInt($(this).text());
                 toggle(pointNum);
