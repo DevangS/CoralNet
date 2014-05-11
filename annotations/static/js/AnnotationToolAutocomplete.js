@@ -1,6 +1,5 @@
 var AnnotationToolAutocomplete = (function() {
 
-    var $annotationFields = null;
     var labelCodes = null;
     var machineSuggestions = null;
 
@@ -79,7 +78,7 @@ var AnnotationToolAutocomplete = (function() {
 
         init: function(params) {
 
-            $annotationFields = params.$annotationFields;
+            var $annotationField = params.$annotationField;
             labelCodes = params.labelCodes;
             machineSuggestions = params.machineSuggestions;
 
@@ -407,7 +406,7 @@ var AnnotationToolAutocomplete = (function() {
             // machine suggestions option. This includes the
             // modified source function, and the right arrow key
             // handler.
-            $annotationFields.autocomplete({
+            $annotationField.autocomplete({
                 // Auto-focus first option when menu is shown
                 autoFocus: true,
                 // delay in milliseconds between when a
@@ -432,9 +431,17 @@ var AnnotationToolAutocomplete = (function() {
                     // Fill the field with the menu item's value.
                     // This is the default behavior, but we must ensure
                     // that it happens BEFORE our point-update handler.
+                    // TODO: Is this the case anymore?
                     this.value = ui.item.value;
-                    // point-update handler.
-                    AnnotationToolHelper.onPointUpdate(this);
+
+                    var allSelectedNumbers = AnnotationToolHelper.getSelectedNumbers();
+                    var i;
+                    for (i = 0; i < allSelectedNumbers.length; i++) {
+                        var n = allSelectedNumbers[i];
+                        // Update the point's value and status.
+                        AnnotationToolHelper.labelPointWithValue(n, this.value);
+                        AnnotationToolHelper.onPointUpdate(n);
+                    }
                     // No need for the default behavior anymore.
                     // jQuery UI's only provided way to clobber its
                     // default behavior is to return false.

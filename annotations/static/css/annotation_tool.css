@@ -44,9 +44,7 @@
     /* Width will be set dynamically; that way we can check for
     text overflow, and make the text smaller if there is overflow. */
 
-    /* Set a transparent border that is the same size as the "current button"
-    border.  That way, the border size doesn't change (and thus elements
-    don't shift) when the button becomes the "current" button. */
+    /* Set a transparent border. */
     border: 3px solid transparent;
 
     /* Make left/right padding small to reduce chances of having to shrink the text.
@@ -59,9 +57,6 @@
     margin: 2px;
 
     cursor: pointer;
-}
-#labelButtons button.current {
-    border-color: #000000;
 }
 
 /* TODO: Probably want to consider assigning a certain color for each functional group
