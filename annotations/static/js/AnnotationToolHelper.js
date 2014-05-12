@@ -231,14 +231,15 @@ var AnnotationToolHelper = (function() {
             zoomLevelChange = -zoomLevel;
         }
 
-        // (1) Zoom on click: zoom into the part that was clicked.
-        // (Make sure to use the old zoom factor for calculating the click position)
-        // (2) Zoom with hotkey: don't change the center of zoom, just the zoom level.
-        if (e !== undefined && e.type === 'mouseup') {
+        if (e !== undefined && e.type.indexOf('mouse') !== -1) {
+            // Zoom on click: zoom into the part that was clicked. (Make sure
+            // to use the old zoom factor for calculating the click position)
             var imagePos = getImagePosition(e);
             centerOfZoomX = imagePos[0];
             centerOfZoomY = imagePos[1];
         }
+        // Else, zoom with hotkey: don't change the center of zoom, just the
+        // zoom level.
 
         zoomLevel += zoomLevelChange;
         zoomFactor = ZOOM_FACTORS[zoomLevel];
@@ -249,6 +250,9 @@ var AnnotationToolHelper = (function() {
 
         // Redraw all points.
         redrawAllPoints();
+
+        // Move the annotation field to get alongside the current point again.
+        moveAnnotationFieldImageContainer();
     }
 
     /* Get the mouse position in the canvas element:
@@ -734,9 +738,7 @@ var AnnotationToolHelper = (function() {
             $annotationField.show();
 
             // Set position
-            var xMax = ANNOTATION_AREA_WIDTH - $annotationField.width();
-            var yMax = ANNOTATION_AREA_HEIGHT - $annotationField.height();
-            console.log(xMax.toString() + ', ' + yMax.toString());
+
             var x,y;
 
             if (selectedNumbers.length === 1) {
@@ -753,6 +755,12 @@ var AnnotationToolHelper = (function() {
                 y = ANNOTATION_AREA_HEIGHT*(2/3);
             }
 
+            var xMin = 0;
+            var yMin = 0;
+            var xMax = ANNOTATION_AREA_WIDTH - $annotationField.width();
+            var yMax = ANNOTATION_AREA_HEIGHT - $annotationField.height();
+            if (x < xMin) {x = xMin;}
+            if (y < yMin) {y = yMin;}
             if (x > xMax) {x = xMax;}
             if (y > yMax) {y = yMax;}
 
@@ -1479,7 +1487,7 @@ var AnnotationToolHelper = (function() {
              */
 
             // Mouse button is pressed and un-pressed on the canvas
-            $(listenerElmt).mouseup( function(e) {
+            $(listenerElmt).mousedown( function(e) {
                 onCanvasClick(e);
             });
 
