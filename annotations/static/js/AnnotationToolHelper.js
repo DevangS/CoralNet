@@ -732,7 +732,34 @@ var AnnotationToolHelper = (function() {
         }
         else {
             $annotationField.show();
-            // Set position properties
+
+            // Set position
+            var xMax = ANNOTATION_AREA_WIDTH - $annotationField.width();
+            var yMax = ANNOTATION_AREA_HEIGHT - $annotationField.height();
+            console.log(xMax.toString() + ', ' + yMax.toString());
+            var x,y;
+
+            if (selectedNumbers.length === 1) {
+                // Single point selected.
+                // Position the field a little right and below the point.
+                var canvasCoords = canvasPoints[selectedNumbers[0]];
+                x = canvasCoords.col + 100;
+                y = canvasCoords.row + 100;
+            }
+            else {
+                // Multiple points selected.
+                // Just put the field at a fixed location.
+                x = ANNOTATION_AREA_WIDTH*(2/3);
+                y = ANNOTATION_AREA_HEIGHT*(2/3);
+            }
+
+            if (x > xMax) {x = xMax;}
+            if (y > yMax) {y = yMax;}
+
+            $annotationFieldImageContainer.css({
+                top: y+'px',
+                left: x+'px'
+            });
         }
     }
 
