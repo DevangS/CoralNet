@@ -178,6 +178,25 @@ td.annotationFormLabelCell {
     text-align: center;
 }
 
+
+
+/* Annotation field */
+#annotation-field {
+    width: 90px;
+
+    padding: 1px 1px;
+
+    background-color: rgba(255,255,255,0.3);
+}
+#annotation-field-fixed-container {
+    margin: 5px 0 10px 6px;
+}
+#annotation-field-image-container {
+    position: absolute;
+}
+
+
+
 /* Place for ALL DONE text */
 #allDone {
     color: blue;
@@ -191,6 +210,7 @@ td.annotationFormLabelCell {
 
     padding: 5px;
 }
+
 
 
 /* Image navigation */
@@ -273,6 +293,22 @@ div.help_section span.help_header {
     line-height: 1.2em;
 
     margin: 10px 0 10px 20px;   /* t r b l */
+}
+
+/* jQuery-UI autocomplete menu */
+.ui-menu {
+    background: rgba(255,255,255,0.5);
+}
+.ui-menu .ui-menu-item {
+    background: transparent;
+}
+.ui-state-hover,
+.ui-widget-content .ui-state-hover,
+.ui-widget-header .ui-state-hover,
+.ui-state-focus,
+.ui-widget-content .ui-state-focus,
+.ui-widget-header .ui-state-focus {
+    background: rgba(255,255,255,0.8);
 }
 
 /* jQuery-UI sliders. */
