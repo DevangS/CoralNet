@@ -68,6 +68,9 @@
           <div id="listenerElmt"></div>
 
         </div>
+
+        <div id="annotation-field-image-container"
+             style="position:absolute;"></div>
           
       </div>
 
@@ -106,8 +109,10 @@
                 id="quickSelectButtonInvert" src="/static/img/Icon_select-inversion.png" title="Invert current selections"/>
       </div>
 
-      <input id="annotation-field" type="text"
-             style="width:120px; margin-top:5px; margin-bottom:10px; padding:1px 1px;"/>
+      <div id="annotation-field-fixed-container" style="margin:5px 0 10px 6px;">
+        <input id="annotation-field" type="text"
+               style="width:90px; padding:1px 1px;"/>
+      </div>
 
       <form id="annotationForm" action="" method="post">{% csrf_token %}
 

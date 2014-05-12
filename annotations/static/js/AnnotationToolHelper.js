@@ -10,7 +10,11 @@ var AnnotationToolHelper = (function() {
     var pointFields = [];
     var pointRobotFields = [];
     var $pointFields = null;
+
     var $annotationField = null;
+    var $annotationFieldFixedContainer = null;
+    var $annotationFieldImageContainer = null;
+
     var imageArea = null;
     var pointsCanvas = null;
     var listenerElmt = null;
@@ -93,8 +97,8 @@ var AnnotationToolHelper = (function() {
     var ZINDEX_IMAGE_CANVAS = 0;
     var ZINDEX_POINTS_CANVAS = 1;
     var ZINDEX_IMAGE_LISTENER = 2;
-    // (See the CSS file for jQuery UI dialogs' z-index. Should be higher than
-    // all of these.)
+    var ZINDEX_ANNOTATION_FIELD = 3;
+    var ZINDEX_SUBWINDOW = 4;
 
 
 
@@ -167,7 +171,7 @@ var AnnotationToolHelper = (function() {
         // An invisible element that sits on top of the image
         // and listens for mouse events.
         // Since it has to be on top to listen for mouse events,
-        // the z-index should be above every other element's z-index.
+        // the z-index should be set accordingly.
         $(listenerElmt).css({
             "width": imageDisplayWidth,
             "height": imageDisplayHeight,
@@ -486,57 +490,6 @@ var AnnotationToolHelper = (function() {
         updateElementsAfterSelections();
     }
 
-    function updateElementsAfterSelections() {
-
-        var selectedNumbers = getSelectedNumbers();
-
-        if (selectedNumbers.length === 0) {
-            $annotationField.prop('disabled', true);
-
-            $annotationField.attr('value', '');
-        }
-        else if (selectedNumbers.length === 1) {
-            $annotationField.prop('disabled', false);
-
-            var pointNum = selectedNumbers[0];
-            var $ptField = $(pointFields[pointNum]);
-            $annotationField.attr('value', $ptField.attr('value'));
-
-            // Shift the center of zoom to this point.
-            centerOnPoint(pointNum);
-
-            if (isRobot(pointNum)) {
-                $annotationField.attr('value', '');
-            }
-        }
-        else {  // 2+ selected
-            $annotationField.prop('disabled', false);
-
-            $annotationField.attr('value', '');
-        }
-    }
-
-    function prepareFieldForUse() {
-        // Select (highlight) all the text in the label field,
-        // so the user can start typing over it.
-        //
-        // Must set a timeout so that the selection sticks when you
-        // focus with a mouseclick. Otherwise, in some browsers, you
-        // will select and then immediately place your cursor to
-        // unselect.
-        // http://stackoverflow.com/a/19498477
-        // Also, a timeout of 50 ms seems enough for Chrome, but not
-        // for Firefox. 100 is enough for Firefox...
-        //
-        // TODO: Apparently may not work in mobile Safari?
-        // http://stackoverflow.com/a/4067488
-        var selectTextFunction = function(elmt) {elmt.select();};
-        setTimeout(selectTextFunction.curry($annotationField[0]), 100);
-
-        // Show the autocomplete dropdown
-        $annotationField.autocomplete("search", $annotationField[0].value);
-    }
-
     function isPointSelected(pointNum) {
         var row = pointFieldRows[pointNum];
         return $(row).hasClass('selected');
@@ -558,6 +511,23 @@ var AnnotationToolHelper = (function() {
     function isPointHumanAnnotated(pointNum) {
         var row = pointFieldRows[pointNum];
         return $(row).hasClass('annotated');
+    }
+
+    function getPointNumOfAnnoField(annoField) {
+        // Assuming the annotation field's name attribute is "label_<pointnumber>".
+        // "label_" is 6 characters.
+        return parseInt(annoField.name.substring(6));
+    }
+
+    function getSelectedNumbers() {
+        var selectedNumbers = [];
+        var n;
+        for (n = 1; n <= numOfPoints; n++) {
+            if (isPointSelected(n)) {
+                selectedNumbers.push(n);
+            }
+        }
+        return selectedNumbers;
     }
 
 
@@ -691,21 +661,92 @@ var AnnotationToolHelper = (function() {
         updateElementsAfterSelections();
     }
 
-    function getPointNumOfAnnoField(annoField) {
-        // Assuming the annotation field's name attribute is "label_<pointnumber>".
-        // "label_" is 6 characters.
-        return parseInt(annoField.name.substring(6));
-    }
+    function updateElementsAfterSelections() {
 
-    function getSelectedNumbers() {
-        var selectedNumbers = [];
-        var n;
-        for (n = 1; n <= numOfPoints; n++) {
-            if (isPointSelected(n)) {
-                selectedNumbers.push(n);
+        var selectedNumbers = getSelectedNumbers();
+
+        if (selectedNumbers.length === 0) {
+            $annotationField.prop('disabled', true);
+
+            $annotationField.attr('value', '');
+        }
+        else if (selectedNumbers.length === 1) {
+            $annotationField.prop('disabled', false);
+
+            var pointNum = selectedNumbers[0];
+            var $ptField = $(pointFields[pointNum]);
+            $annotationField.attr('value', $ptField.attr('value'));
+
+            // Shift the center of zoom to this point.
+            centerOnPoint(pointNum);
+
+            if (isRobot(pointNum)) {
+                $annotationField.attr('value', '');
             }
         }
-        return selectedNumbers;
+        else {  // 2+ selected
+            $annotationField.prop('disabled', false);
+
+            $annotationField.attr('value', '');
+        }
+
+        moveAnnotationFieldImageContainer();
+    }
+
+    function prepareFieldForUse() {
+        // Select (highlight) all the text in the label field,
+        // so the user can start typing over it.
+        //
+        // Must set a timeout so that the selection sticks when you
+        // focus with a mouseclick. Otherwise, in some browsers, you
+        // will select and then immediately place your cursor to
+        // unselect.
+        // http://stackoverflow.com/a/19498477
+        // Also, a timeout of 50 ms seems enough for Chrome, but not
+        // for Firefox. 100 is enough for Firefox...
+        //
+        // TODO: Apparently may not work in mobile Safari?
+        // http://stackoverflow.com/a/4067488
+        var selectTextFunction = function(elmt) {elmt.select();};
+        setTimeout(selectTextFunction.curry($annotationField[0]), 100);
+
+        // Show the autocomplete dropdown
+        $annotationField.autocomplete("search", $annotationField[0].value);
+    }
+
+    function getAnnotationFieldContainer() {
+        if ($annotationField.parent().is($annotationFieldFixedContainer)) {
+            return 'fixed';
+        }
+        return 'image';
+    }
+
+    function moveAnnotationFieldImageContainer() {
+        if (getAnnotationFieldContainer() !== 'image') {
+            return;
+        }
+
+        var selectedNumbers = getSelectedNumbers();
+        if (selectedNumbers.length === 0) {
+            $annotationField.hide();
+        }
+        else {
+            $annotationField.show();
+            // Set position properties
+        }
+    }
+
+    function toggleAnnotationFieldContainer() {
+        if (getAnnotationFieldContainer() === 'image') {
+            // Move the field to the fixed container
+            $annotationField.detach().prependTo($annotationFieldFixedContainer);
+            $annotationField.show();
+        }
+        else {
+            // Move the field to the on-image container
+            $annotationField.detach().prependTo($annotationFieldImageContainer);
+            moveAnnotationFieldImageContainer();
+        }
     }
 
 
@@ -1086,6 +1127,22 @@ var AnnotationToolHelper = (function() {
 
 
     //
+    // MISC methods
+    //
+
+    function openSubwindow($elmt, title) {
+        $elmt.dialog({
+            width: subWindowWidth,
+            height: subWindowHeight,
+            modal: false,
+            title: title
+        });
+        $('.ui-dialog').css('z-index', ZINDEX_SUBWINDOW);
+    }
+
+
+
+    //
     // PUBLIC methods
     //
 
@@ -1338,9 +1395,16 @@ var AnnotationToolHelper = (function() {
             numOfPoints = imagePoints.length;
             getCanvasPoints();
 
-            $annotationField = $('#annotation-field');
             $pointFields = $(annotationList).find('input');
             var $pointFieldRows = $(annotationList).find('tr');
+
+            $annotationField = $('#annotation-field');
+            $annotationFieldFixedContainer = $('#annotation-field-fixed-container');
+            $annotationFieldImageContainer = $('#annotation-field-image-container');
+
+            $annotationFieldImageContainer.css({
+                'z-index': ZINDEX_ANNOTATION_FIELD
+            });
 
             // Create arrays that map point numbers to HTML elements.
             // For example, for point 1:
@@ -1502,29 +1566,14 @@ var AnnotationToolHelper = (function() {
             });
 
             $("#settings-button").click(function() {
-                $("#settings").dialog({
-                    width: subWindowWidth,
-                    height: subWindowHeight,
-                    modal: false,
-                    title: "Settings"
-                });
+                openSubwindow($("#settings"), "Settings");
             });
             $("#help-button").click(function() {
-                $("#help").dialog({
-                    width: subWindowWidth,
-                    height: subWindowHeight,
-                    modal: false,
-                    title: "Help"
-                });
+                openSubwindow($("#help"), "Help");
             });
             var $controlsButton = $("#controls-button");
             $controlsButton.click(function() {
-                $("#controls").dialog({
-                    width: subWindowWidth,
-                    height: subWindowHeight,
-                    modal: false,
-                    title: "Controls"
-                });
+                openSubwindow($("#controls"), "Controls");
             });
 
 
@@ -1544,6 +1593,7 @@ var AnnotationToolHelper = (function() {
             var keymap = [
                 ['shift+up', zoomIn, 'all'],
                 ['shift+down', zoomOut, 'all'],
+                ['shift+right', toggleAnnotationFieldContainer, 'all'],
 
                 ['mod+s', clickSaveButton, 'all'],
 
@@ -1647,6 +1697,9 @@ var AnnotationToolHelper = (function() {
                 $annotationField: $annotationField,
                 labelCodes: labelCodes,
                 machineSuggestions: params.machineSuggestions
+            });
+            $('.ui-autocomplete.ui-menu').css({
+                'z-index': ZINDEX_ANNOTATION_FIELD
             });
 
 
