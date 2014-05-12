@@ -430,13 +430,14 @@ var AnnotationToolAutocomplete = (function() {
             $annotationField.autocomplete({
                 // Auto-focus first option when menu is shown
                 autoFocus: true,
-                // delay in milliseconds between when a
-                // keystroke occurs and when a search is performed
+                // delay in milliseconds between when a dropdown-triggering
+                // event occurs and when the dropdown is actually shown.
                 delay: 0,
                 // Function called when a menu item is focused
                 focus: function(event, ui) {
                     // Clobber jQuery UI's default behavior of
-                    // auto-filling the field with the menu item's value.
+                    // auto-filling the field with the focused
+                    // menu item's value.
                     //
                     // (By the way, return false really is jQuery UI's
                     // only provided way to clobber its default behavior.
