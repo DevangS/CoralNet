@@ -8,6 +8,7 @@ import shutil
 from celery.task import task
 import os
 from django.conf import settings
+from django.core.mail import send_mail
 
 try:
     from PIL import Image as PILImage
@@ -67,25 +68,29 @@ def dummyTaskLong(s):
     print("This is a dummy task that can sleep")
     time.sleep(s)
 
-@task()
-# this function is depleated. Not in use anymore.
-def schedulerInfLoop():
-    time.sleep(10) # sleep 10 secs to allow the scheduler to start
-    while True:
-        for source in Source.objects.filter(enable_robot_classifier=True): # grab all sources, on at the time
-            processSourceCompleate(source.id)
-        time.sleep(settings.SLEEP_TIME_BETWEEN_IMAGE_PROCESSING) #sleep
-
+# this task is depleated!!!
 def processAllSources():
 	keyfilepath = join_processing_root("images/robot_running_flag")
 	if os.path.exists(keyfilepath):
 		return 1
 	open(keyfilepath, 'w')
 	for source in Source.objects.filter(enable_robot_classifier=True):
-			processSourceCompleate(source.id)
+		processSourceCompleate(source.id)
 	os.remove(keyfilepath)
 
+# this is the new MAIN TASK called by the CRONJOB once per day. It parallellize on the source level. This allows for two calls to svmtrain concurrently. Which might hog a ton of memory, but it will be faster.
+def processAllSourcesConcurrent():
+    keyfilepath = join_processing_root("images/robot_running_flag")
+    if os.path.exists(keyfilepath):
+        return 1
+    open(keyfilepath, 'w')
+    for source in Source.objects.filter(enable_robot_classifier=True):
+        result = processSingleSource.delay(source.id)
+    while not result.ready(): #NOTE, implement with callback
+        time.sleep(5)
+    os.remove(keyfilepath)
 
+# this task is depleated!!!
 @task()
 def processSourceCompleate(source_id):
     source = Source.objects.get(pk = source_id)
@@ -113,14 +118,15 @@ def processSourceCompleate(source_id):
     print "==== Source: " + source.name + " done ===="
 
 
-# this function do NOT use the task management system.
-def processSourceDebug(source_id):
+# this function is used by the main CRONJOB task. But is can also be called from the command line. 
+@task()
+def processSingleSource(source_id):
     source = Source.objects.get(pk = source_id)
     
     if not source.get_all_images():
         return 1
 
-    print "==== Processing source in debug mode: " + source.name + " ===="
+    print "==== Processing source: " + source.name + " ===="
     # == For each image, do all preprocessing ==
     for image in source.get_all_images():
         prepareImage(image.id)
@@ -128,11 +134,11 @@ def processSourceDebug(source_id):
     # == Train robot for this source ==
     trainRobot(source.id)
 
-
     # == Classify all images with the new robot ==
     for image in source.get_all_images():
         Classify(image.id)
     print "==== Source: " + source.name + " done ===="
+    return 1
 
 
 @task()
@@ -140,6 +146,7 @@ def prepareImage(image_id):
     PreprocessImages(image_id)
     MakeFeatures(image_id)
     addLabelsToFeatures(image_id)
+    return 1
 
 @task()
 @transaction.commit_on_success()
@@ -193,9 +200,11 @@ def PreprocessImages(image_id):
         image.status.preprocessed = False # roll back data base changes
         image.status.save()
         print("Sorry error detected in preprocessing this image, halting!")
+        send_mail('CoralNet Backend Error', 'in PreprocessImages', 'noreply@coralnet.ucsd.edu', ['oscar.beijbom@gmail.com'])
     #everything went okay with matlab
     else:
         print 'Finished pre-processing image id {id}'.format(id = image_id)
+    return 1
 
 @task()
 def MakeFeatures(image_id):
@@ -247,6 +256,7 @@ def MakeFeatures(image_id):
         image.status.featuresExtracted = False;
         image.status.save()
         print("Sorry error detected in feature extraction!")
+        send_mail('CoralNet Backend Error', 'in MakeFeatures', 'noreply@coralnet.ucsd.edu', ['oscar.beijbom@gmail.com'])
     else:
         print 'Finished feature extraction for image id {id}'.format(id = image_id)
 
@@ -281,12 +291,6 @@ def Classify(image_id):
             return
 
     ####### EVERYTHING OK: START THE CLASSIFICATION ##########
-    #update image status
-    image.status.annotatedByRobot = True
-    image.status.save()
-    image.latest_robot_annotator = latestRobot
-    image.save()
-
     print 'Start classify image id {id}'.format(id = image_id)
     #builds args for matlab script
     featureFile = os.path.join(FEATURES_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".dat")
@@ -300,6 +304,18 @@ def Classify(image_id):
         logFile=CV_LOG,
         errorLogfile=CLASSIFY_ERROR_LOG,
     )
+
+    if os.path.isfile(CLASSIFY_ERROR_LOG):
+        print("Error detected in image classification.")
+        send_mail('CoralNet Backend Error', 'in Classify', 'noreply@coralnet.ucsd.edu', ['oscar.beijbom@gmail.com'])
+        return 0
+    else:
+        #update image status
+        image.status.annotatedByRobot = True
+        image.status.save()
+        image.latest_robot_annotator = latestRobot
+        image.save()
+
 
     #get algorithm user object
     user = get_robot_user()
@@ -490,6 +506,7 @@ def trainRobot(source_id):
                 image.status.usedInCurrentModel = False
                 image.status.save()
         print("Sorry error detected in robot training!")
+        send_mail('CoralNet Backend Error', 'in trainRobot', 'noreply@coralnet.ucsd.edu', ['oscar.beijbom@gmail.com'])
         newRobot.delete()
     else:
         #if not (previousRobot == None):
