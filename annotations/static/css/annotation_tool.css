@@ -185,8 +185,9 @@ td.annotationFormLabelCell {
     width: 90px;
 
     padding: 1px 1px;
-
-    background-color: rgba(255,255,255,0.3);
+}
+#annotation-field.semi-transparent {
+    background-color: rgba(255,255,255,0.7);
 }
 #annotation-field-fixed-container {
     margin: 5px 0 10px 6px;
@@ -301,19 +302,19 @@ div.help_section span.help_header {
 }
 
 /* jQuery-UI autocomplete menu */
-.ui-menu {
-    background: rgba(255,255,255,0.5);
+.ui-menu.semi-transparent {
+    background: rgba(255,255,255,0.7);
 }
-.ui-menu .ui-menu-item {
+.ui-menu.semi-transparent .ui-menu-item {
     background: transparent;
 }
-.ui-state-hover,
-.ui-widget-content .ui-state-hover,
-.ui-widget-header .ui-state-hover,
-.ui-state-focus,
-.ui-widget-content .ui-state-focus,
-.ui-widget-header .ui-state-focus {
-    background: rgba(255,255,255,0.8);
+.ui-menu.semi-transparent .ui-menu-item .ui-state-hover,
+.ui-menu.semi-transparent .ui-menu-item .ui-widget-content .ui-state-hover,
+.ui-menu.semi-transparent .ui-menu-item .ui-widget-header .ui-state-hover,
+.ui-menu.semi-transparent .ui-menu-item .ui-state-focus,
+.ui-menu.semi-transparent .ui-menu-item .ui-widget-content .ui-state-focus,
+.ui-menu.semi-transparent .ui-menu-item .ui-widget-header .ui-state-focus {
+    background: rgba(255,255,255,1.0);
 }
 
 /* jQuery-UI sliders. */

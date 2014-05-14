@@ -775,11 +775,23 @@ var AnnotationToolHelper = (function() {
         if (getAnnotationFieldContainer() === 'image') {
             // Move the field to the fixed container
             $annotationField.detach().prependTo($annotationFieldFixedContainer);
+
+            $annotationField.removeClass('semi-transparent');
+            $('.ui-autocomplete.ui-menu').removeClass('semi-transparent');
+
+            // The field should always be shown when in this location, so make
+            // sure of that
             $annotationField.show();
         }
         else {
             // Move the field to the on-image container
             $annotationField.detach().prependTo($annotationFieldImageContainer);
+
+            $annotationField.addClass('semi-transparent');
+            $('.ui-autocomplete.ui-menu').addClass('semi-transparent');
+
+            // The field needs to move to the right spot and show/hide
+            // depending on the current selected points
             moveAnnotationFieldImageContainer();
         }
     }
@@ -1736,6 +1748,10 @@ var AnnotationToolHelper = (function() {
             $('.ui-autocomplete.ui-menu').css({
                 'z-index': ZINDEX_ANNOTATION_FIELD
             });
+            // The annotation field starts is on the image by default, so
+            // make it and autocomplete semi-transparent by default.
+            $annotationField.addClass('semi-transparent');
+            $('.ui-autocomplete.ui-menu').addClass('semi-transparent');
 
 
             // Show/hide certain key instructions depending on whether Mac is the OS.
