@@ -30,7 +30,7 @@ to any value (except the empty string) to not include it.
     {# If can't connect to Google APIs (offline development, etc.), can fall back to a copy of jQuery from within our project. Source: http://community.mybb.com/thread-83861-post-611152.html#pid611152 #}
     <script>
     if (!window.jQuery)
-        document.write('<script src="{{ STATIC_URL }}js/jquery-1.6.2.min.js"><\/script>');
+        document.write('<script src="{{ STATIC_URL }}js/jquery.min.js"><\/script>');
     </script>
 {% endif %}
 
@@ -39,8 +39,8 @@ to any value (except the empty string) to not include it.
 {# Must be included after: jQuery #}
 {% if jquery_ui %}
     {# jQuery UI from Google APIs.  #}
-    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js" type="text/javascript"></script>
-    <link rel="stylesheet" type="text/css" media="screen" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js" type="text/javascript"></script>
+    <link rel="stylesheet" type="text/css" media="screen" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/themes/smoothness/jquery-ui.css" />
 
     {# If can't connect to Google APIs (offline development, etc.), can fall back to our own copy of jQuery UI. #}
     <script>

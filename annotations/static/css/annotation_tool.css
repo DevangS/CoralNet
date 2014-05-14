@@ -295,6 +295,11 @@ div.help_section span.help_header {
     margin: 10px 0 10px 20px;   /* t r b l */
 }
 
+/* jQuery-UI dialogs */
+.ui-dialog.ui-widget-content{
+    background: rgba(255,255,255,0.9);
+}
+
 /* jQuery-UI autocomplete menu */
 .ui-menu {
     background: rgba(255,255,255,0.5);
