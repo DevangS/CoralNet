@@ -209,7 +209,7 @@ var ATI = {
         }
 
         ATI.nowApplyingProcessing = true;
-        ATI.$applyingText.append('<span>').text("Applying...");
+        ATI.$applyingText.css({'visibility': 'visible'});
 
         ATI.applyBrightnessAndContrastToRects(
             ATI.fields.brightness.value,
@@ -222,7 +222,7 @@ var ATI = {
         if (ATI.redrawSignal === true) {
             ATI.nowApplyingProcessing = false;
             ATI.redrawSignal = false;
-            ATI.$applyingText.empty();
+            ATI.$applyingText.css({'visibility': 'hidden'});
 
             ATI.redrawImage();
             return;
@@ -275,7 +275,7 @@ var ATI = {
         }
         else {
             ATI.nowApplyingProcessing = false;
-            ATI.$applyingText.empty();
+            ATI.$applyingText.css({'visibility': 'hidden'});
         }
     }
 };

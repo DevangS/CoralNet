@@ -1458,21 +1458,6 @@ var AnnotationToolHelper = (function() {
 
             imageArea = $("#imageArea")[0];
 
-            // Hackish computation to make the right sidebar's
-            // horizontal rule line up (roughly) with the bottom of
-            // the annotation area.
-            var annotationListMaxHeight =
-                ANNOTATION_AREA_HEIGHT
-                - $("#toolButtonArea").outerHeight(true)
-                - $("#omnifield").outerHeight(true)
-                - $(saveButton).outerHeight(true)
-                - $("#allDone").outerHeight(true)
-                - parseFloat($("#rightSidebar hr").css('margin-top'));
-
-            $(annotationList).css({
-                "max-height": annotationListMaxHeight + "px"
-            });
-
             $(annotationArea).css({
                 "width": ANNOTATION_AREA_WIDTH + "px",
                 "height": ANNOTATION_AREA_HEIGHT + "px",
@@ -1498,7 +1483,7 @@ var AnnotationToolHelper = (function() {
             // Maybe there is a way to compute the right sidebar width dynamically
             // and guarantee that the layout is correct, but I don't know what
             // that way is.
-            var rightSidebarWidth = 150;
+            var rightSidebarWidth = 180;
 
             $mainColumn.css({
                 "width": $(annotationArea).width().toString() + "px"
@@ -1510,6 +1495,21 @@ var AnnotationToolHelper = (function() {
             $('#columnContainer').css({
                 "width": $mainColumn.width().toString() + "px",
                 "padding-right": $rightSidebar.width().toString() + "px"
+            });
+
+            // Hackish computation to make the right sidebar's
+            // horizontal rule line up (roughly) with the bottom of
+            // the annotation area.
+            var annotationListMaxHeight =
+                ANNOTATION_AREA_HEIGHT
+                    - $("#toolButtonArea").outerHeight(true)
+                    - $("#image-tools-wrapper").outerHeight(true)
+                    - $(saveButton).outerHeight(true)
+                    - $("#allDone").outerHeight(true)
+                    - 2*$("hr.narrow").outerHeight(true);
+
+            $(annotationList).css({
+                "max-height": annotationListMaxHeight + "px"
             });
 
             // Auto-adjust the vertical scroll position to fit the

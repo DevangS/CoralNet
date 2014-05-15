@@ -26,7 +26,7 @@
 
 {% block content %}
 
-<hr/>
+<hr class="narrow"/>
 
 <button id="settings-button" title="Annotation tool settings">Settings</button>
 <button id="help-button" title="Help, basic controls, and compatibility info">Help</button>
@@ -44,11 +44,7 @@
     </div>
 </div>
 
-<div id="id_image_tools_wrapper">
-    <hr/>
-    {% include "annotations/annotation_image_options.html" with image_options_form=image_options_form %}
-    <hr/>
-</div>
+<hr class="narrow"/>
 
 <div id="columnContainer">
 
@@ -111,6 +107,14 @@
          <input type="image"
                 id="rectangleSelectButton" src="/static/img/Icon_rectangle-select.png" title="Rectangle select"/>
       </div>
+
+      <hr class="narrow"/>
+
+      <div id="image-tools-wrapper">
+          {% include "annotations/annotation_image_options.html" with image_options_form=image_options_form %}
+      </div>
+
+      <hr class="narrow"/>
 
       <div id="annotation-field-fixed-container"></div>
 

@@ -10,13 +10,11 @@ icons instead of "brightness" and "contrast".
             {{ field.label }}:
         </label>
         {{ field }}
-
+        <br/>
         <div id="{{ field.name }}_slider"></div>
     </div>
 {% endfor %}
 
-<div class="submit_button_wrapper_column_form">
-    <button id="applyImageOptionsButton" type="button">Apply</button>
-    <button id="resetImageOptionsButton" type="button">Reset Parameters</button>
-    <span id="applyingText"></span>
-</div>
+<button id="applyImageOptionsButton" type="button">Apply</button>
+<button id="resetImageOptionsButton" type="button">Reset</button>
+<span id="applyingText">Applying...</span>

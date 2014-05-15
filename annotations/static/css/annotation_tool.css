@@ -149,6 +149,8 @@
 
 /* Point fields */
 #annotationForm input {
+    width: 85px;
+
     margin: 1px 0;
     padding: 1px 1px;
 
@@ -286,8 +288,30 @@ div.help_section span.help_header {
     line-height: 2.0em;
 }
 
+
+
+#image-tools-wrapper {
+    text-align: center;
+}
+#image-tools-wrapper label {
+    width: auto;
+}
+#image-tools-wrapper input {
+    margin: 1px 0;
+    padding: 1px 1px;
+
+    width: 40px;
+}
+
 /* Place for "Applying..." text for image options/tools form */
 #applyingText {
+    display: inline-block;
+
+    /* Hide the element from view, but let it take up its
+       normal amount of space. */
+    visibility: hidden;
+
+    font-size: 0.8em;
 }
 
 
@@ -345,6 +369,6 @@ div.help_section span.help_header {
 
 /* jQuery-UI sliders. */
 .ui-slider {
-    width: 250px;
+    width: 150px;
     display: inline-block;
 }
