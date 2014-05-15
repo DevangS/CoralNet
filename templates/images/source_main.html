@@ -116,31 +116,15 @@
                 </table>
             </div>
         </div>
-        {% if latest_images %}
-            <div style="padding:10px;float:right">
-                {% if source.enable_robot_classifier %}
-                    <h2>Not annotated: <a href="{% url visualize_source source.id %}?image_status=1">{{ image_stats.need_comp_anno }}</a></h2>
-                    <h2>Needs review:
-                        {% if image_stats.need_human_anno_first %}
-                            <a href="{% url visualize_source source.id %}?image_status=2">{{ image_stats.need_human_anno }}</a>
-                        {% else %}
-                            {{ image_stats.need_human_anno }}
-                        {% endif %}
-                    </h2>
-                    <h2>Completed: <a href="{% url visualize_source source.id %}?image_status=3">{{ image_stats.anno_completed }}</a></h2>
-                {% else %}
-                    <h2>Not annotated:
-                        {% if image_stats.need_anno_first %}
-                            <a href="{% url visualize_source source.id %}?image_status=1">{{ image_stats.need_anno }}</a>
-                        {% else %}
-                            {{ image_stats.need_anno }}
-                        {% endif %}
-                    </h2>
-                    <h2>Completed: <a href="{% url visualize_source source.id %}?image_status=2">{{ image_stats.anno_completed }}</a></h2>
-                {% endif %}
-                <h2>Total images: <a href="{% url visualize_source source.id %}?image_status=0">{{ image_stats.total }}</a></h2>
-            </div>
-        {% endif %}
+
+        <div style="padding:10px;float:right">
+            <h2>Not annotated: <a href="{{ image_stats.not_annotated_link }}">{{ image_stats.not_annotated }}</a></h2>
+            {% if source.enable_robot_classifier %}
+                <h2>Needs review: <a href="{{ image_stats.not_human_annotated_link }}">{{ image_stats.not_human_annotated }}</a></h2>
+            {% endif %}
+            <h2>Completed: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
+            <h2>Total images: <a href="{{ image_stats.total_link }}">{{ image_stats.total }}</a></h2>
+        </div>
     </div>
 
     <div style="clear:left"></div>
