@@ -32,8 +32,8 @@ var AnnotationToolHelper = (function() {
 
     // Border where the canvas is drawn, but the image is not.
     // This is used to fully show the points that are located near the edge of the image.
-    var CANVAS_GUTTER = 25;
-    var CANVAS_GUTTER_COLOR = "#BBBBBB";
+    var IMAGE_GUTTER = 25;
+    var IMAGE_GUTTER_COLOR = "#BBBBBB";
 
     // Related to possible states of each annotation point
     var pointContentStates = [];
@@ -121,8 +121,14 @@ var AnnotationToolHelper = (function() {
 
         // Position the image within the image area.
         // Negative offsets means the top-left corner is offscreen.
-        // Positive offsets means there's extra space around the image
-        // (should prevent this unless the image display is smaller than the image area).
+        // Positive offsets means there's extra space around the image.
+        //
+        // Allow a certain maximum amount of extra space around the image
+        // so the user can get a sense that they are near the edge of
+        // the image.
+        //
+        // Allow more extra space only if the image display is smaller than
+        // the image area.
 
         if (imageDisplayWidth <= IMAGE_AREA_WIDTH)
             imageLeftOffset = (IMAGE_AREA_WIDTH - imageDisplayWidth) / 2;
@@ -131,10 +137,11 @@ var AnnotationToolHelper = (function() {
             var leftEdgeInDisplayX = centerOfZoomInDisplayX - (IMAGE_AREA_WIDTH / 2);
             var rightEdgeInDisplayX = centerOfZoomInDisplayX + (IMAGE_AREA_WIDTH / 2);
 
-            if (leftEdgeInDisplayX < 0)
-                imageLeftOffset = 0;
-            else if (rightEdgeInDisplayX > imageDisplayWidth)
-                imageLeftOffset = -(imageDisplayWidth - IMAGE_AREA_WIDTH);
+            // Enforce max gutter space on left, and max gutter space on right,
+            if (leftEdgeInDisplayX < -IMAGE_GUTTER)
+                imageLeftOffset = IMAGE_GUTTER;
+            else if (rightEdgeInDisplayX > imageDisplayWidth+IMAGE_GUTTER)
+                imageLeftOffset = -(imageDisplayWidth+IMAGE_GUTTER - IMAGE_AREA_WIDTH);
             else
                 imageLeftOffset = -leftEdgeInDisplayX;
         }
@@ -146,10 +153,11 @@ var AnnotationToolHelper = (function() {
             var topEdgeInDisplayY = centerOfZoomInDisplayY - (IMAGE_AREA_HEIGHT / 2);
             var bottomEdgeInDisplayY = centerOfZoomInDisplayY + (IMAGE_AREA_HEIGHT / 2);
 
-            if (topEdgeInDisplayY < 0)
-                imageTopOffset = 0;
-            else if (bottomEdgeInDisplayY > imageDisplayHeight)
-                imageTopOffset = -(imageDisplayHeight - IMAGE_AREA_HEIGHT);
+            // Enforce max gutter space on top, and max gutter space on bottom.
+            if (topEdgeInDisplayY < -IMAGE_GUTTER)
+                imageTopOffset = IMAGE_GUTTER;
+            else if (bottomEdgeInDisplayY > imageDisplayHeight+IMAGE_GUTTER)
+                imageTopOffset = -(imageDisplayHeight+IMAGE_GUTTER - IMAGE_AREA_HEIGHT);
             else
                 imageTopOffset = -topEdgeInDisplayY;
         }
@@ -193,9 +201,10 @@ var AnnotationToolHelper = (function() {
         // Clear the entire canvas.
         context.clearRect(0, 0, pointsCanvas.width, pointsCanvas.height);
 
-        // Translate the canvas context to compensate for the gutter.
-        // This'll allow us to pretend that canvas coordinates = image area coordinates.
-        context.translate(CANVAS_GUTTER, CANVAS_GUTTER);
+        // If you designed the canvas and image area such that they don't
+        // line up exactly, then translate the context.
+        // That'll allow you to pretend that canvas coordinates = image area coordinates.
+        context.translate(0,0);
     }
 
     function zoomIn(e) {
@@ -1264,8 +1273,8 @@ var AnnotationToolHelper = (function() {
             IMAGE_AREA_WIDTH = params.IMAGE_AREA_WIDTH;
             IMAGE_AREA_HEIGHT = params.IMAGE_AREA_HEIGHT;
 
-            ANNOTATION_AREA_WIDTH = IMAGE_AREA_WIDTH + (CANVAS_GUTTER * 2);
-            ANNOTATION_AREA_HEIGHT = IMAGE_AREA_HEIGHT + (CANVAS_GUTTER * 2);
+            ANNOTATION_AREA_WIDTH = IMAGE_AREA_WIDTH;
+            ANNOTATION_AREA_HEIGHT = IMAGE_AREA_HEIGHT;
 
             var horizontalSpacePerButton = ANNOTATION_AREA_WIDTH / BUTTONS_PER_ROW;
 
@@ -1343,14 +1352,12 @@ var AnnotationToolHelper = (function() {
             $(annotationArea).css({
                 "width": ANNOTATION_AREA_WIDTH + "px",
                 "height": ANNOTATION_AREA_HEIGHT + "px",
-                "background-color": CANVAS_GUTTER_COLOR
+                "background-color": IMAGE_GUTTER_COLOR
             });
 
             $(imageArea).css({
                 "width": IMAGE_AREA_WIDTH + "px",
-                "height": IMAGE_AREA_HEIGHT + "px",
-                "left": CANVAS_GUTTER + "px",
-                "top": CANVAS_GUTTER + "px"
+                "height": IMAGE_AREA_HEIGHT + "px"
             });
 
             // Computations for a multi-column layout. Based on
