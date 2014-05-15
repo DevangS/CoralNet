@@ -508,14 +508,28 @@ var AnnotationToolHelper = (function() {
     function selectOnly(pointNumList) {
         // Once this function is done, only the points
         // in the given list will be selected.
+        //
+        // This function is optimized to try and limit the
+        // number of select and unselect calls.
         var i, n;
+        var isToBeSelected = {};
         for (n = 1; n <= numOfPoints; n++) {
-            unselect(n);
+            isToBeSelected[n] = false;
         }
         for (i = 0; i < pointNumList.length; i++) {
             n = pointNumList[i];
-            select(n);
+            isToBeSelected[n] = true;
         }
+
+        for (n = 1; n <= numOfPoints; n++) {
+            if (isPointSelected(n) && !isToBeSelected[n]) {
+                unselect(n);
+            }
+            else if (!isPointSelected(n) && isToBeSelected[n]) {
+                select(n);
+            }
+        }
+
         updateElementsAfterSelections();
     }
 
@@ -948,7 +962,7 @@ var AnnotationToolHelper = (function() {
 
             if (inXRange && inYRange) {
                 // This point is in the rectangle.
-                if (numbersToSelect.indexOf(currPoint.point_number) === -1) {
+                if (!isPointSelected(currPoint.point_number)) {
                     // This point was not previously selected. Select it.
                     numbersToSelect.push(currPoint.point_number)
                 }
