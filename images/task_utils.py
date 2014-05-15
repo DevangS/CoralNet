@@ -35,12 +35,16 @@ def read_label_score_file(image_id):
 
     :param image_id: id of the image to get label probabilities for.
     :return: list of list of dicts. [[{label: <label id>, score: <score>}, ...], ...]
+      OR, None if the file can't be found.
     """
     img = Image.objects.get(pk=image_id)
     filename = os.path.join(
         CLASSIFY_DIR, str(image_id) + "_" + img.get_process_date_short_str() + ".txt.prob"
     )
-    f = open(filename, 'r')
+    try:
+        f = open(filename, 'r')
+    except IOError:
+        return None
 
     # Labels line example: labels 2 3 4 1 5 13 6 7 8
     # Where the numbers are the ids of the labels that can be chosen from.

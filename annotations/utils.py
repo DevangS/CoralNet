@@ -89,11 +89,9 @@ def get_machine_suggestions_for_image(image_id):
     :return: suggestions as a list of {label: <label code>,
         score: <score as an integer string>} dicts,
         ordered by confidence.
+        OR, None if there was a problem getting the suggestions.
     """
     img = Image.objects.get(pk=image_id)
-
-    if not img.status.annotatedByRobot:
-        return None
 
     points = Point.objects.filter(image=img).values()
     labels = img.source.labelset.labels.all()
@@ -102,6 +100,12 @@ def get_machine_suggestions_for_image(image_id):
 
     row_col_dicts = task_utils.read_row_col_file(image_id)
     all_points_label_ids_and_scores = task_utils.read_label_score_file(image_id)
+
+    # Check for problems reading the files.
+    # TODO: It would be good to have some form of logging that happens
+    # in this case (without just throwing an error at the user).
+    if all_points_label_ids_and_scores is None:
+        return None
 
     # Convert label ids to label codes
     all_points_label_scores = []

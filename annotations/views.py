@@ -534,10 +534,14 @@ def annotation_tool(request, image_id):
     # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
 
 
-    # Get machine suggestions.
-    # TODO: Set as None if the machine suggestions setting is off,
-    # or if the image has no machine annotations yet.
-    machine_suggestions = annotations_utils.get_machine_suggestions_for_image(image_id)
+    # Get machine suggestions, if applicable.
+    if not settings_obj.show_machine_annotations:
+        machine_suggestions = None
+    elif not image.status.annotatedByRobot:
+        machine_suggestions = None
+    else:
+        # This can also be None if something goes wrong.
+        machine_suggestions = annotations_utils.get_machine_suggestions_for_image(image_id)
 
 
     # Image tools form (brightness, contrast, etc.)

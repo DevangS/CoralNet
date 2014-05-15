@@ -1199,7 +1199,7 @@ var AnnotationToolHelper = (function() {
 
         /* Params:
          * fullHeight, fullWidth, IMAGE_AREA_WIDTH, IMAGE_AREA_HEIGHT,
-         * imagePoints, labels */
+         * imagePoints, labels, machineSuggestions */
         init: function(params) {
             var i, j, n;    // Loop variables...
 
