@@ -31,34 +31,36 @@
         {% endif %}
 
         <div class="detail_box">
-            <div style="float:left">
-            <ul>
-                <li>Date Created: {{ source.create_date }}</li>
-            {% if not source.enable_robot_classifier %}
-                <li>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</li>
-            {% else %}
-                {% if  robotStats.hasRobot %}
-                    <li>{{robotStats.edit}}</li>
+            <div>
+                <div style="float:left; width: 50%">
+                <ul>
+                    <li>Date Created: {{ source.create_date }}</li>
+                {% if not source.enable_robot_classifier %}
+                    <li>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</li>
+                {% else %}
+                    {% if  robotStats.hasRobot %}
+                        <li>{{robotStats.edit}}</li>
+                    {% endif %}
                 {% endif %}
-            {% endif %}
-            </ul>
+                </ul>
+                </div>
+                <div style="float:left; width: 50%">
+                <ul>
+                    {% if source.image_height_in_cm %}
+                        <li>Default image height coverage(cm): {{ source.image_height_in_cm }}</li>
+                    {% endif %}
+                    {% if source.image_annotation_area %}
+                        <li>Default image annotation area: {{ source.image_annotation_area_display }}</li>
+                    {% endif %}
+                    <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
+                </ul>
+                </div>
             </div>
-            <div style="float:right">
-            <ul>
-                {% if source.image_height_in_cm %}
-                    <li>Default image height coverage(cm): {{ source.image_height_in_cm }}</li>
-                {% endif %}
-                {% if source.image_annotation_area %}
-                    <li>Default image annotation area: {{ source.image_annotation_area_display }}</li>
-                {% endif %}
-                <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
-            </ul>
-            </div>
-            <div style="clear:left">
+            <div style="clear:both">
                 <br>
                 {% if source.description %}
                     <br>
-                    {{ source.description }}
+                    {{ source.description|linebreaksbr }}
                 {% endif %}
             </div>
         </div>
