@@ -15,6 +15,9 @@ var AnnotationToolHelper = (function() {
     var $annotationFieldFixedContainer = null;
     var $annotationFieldImageContainer = null;
 
+    var $rectangleSelectListener = null;
+    var $rectangleSelectArea = null;
+
     var imageArea = null;
     var pointsCanvas = null;
     var listenerElmt = null;
@@ -85,6 +88,9 @@ var AnnotationToolHelper = (function() {
     var imageLeftOffset = null;
     var imageTopOffset = null;
 
+    var rectangleStartX = null;
+    var rectangleStartY = null;
+
     // Size of sub-windows.
     var SUB_WINDOW_MIN_WIDTH = 500;
     var SUB_WINDOW_MIN_HEIGHT = 500;
@@ -98,7 +104,9 @@ var AnnotationToolHelper = (function() {
     var ZINDEX_POINTS_CANVAS = 1;
     var ZINDEX_IMAGE_LISTENER = 2;
     var ZINDEX_ANNOTATION_FIELD = 3;
-    var ZINDEX_SUBWINDOW = 4;
+    var ZINDEX_RECTANGLE_SELECT_AREA = 4;
+    var ZINDEX_RECTANGLE_SELECT_LISTENER = 5;
+    var ZINDEX_SUBWINDOW = 6;
 
 
 
@@ -186,6 +194,14 @@ var AnnotationToolHelper = (function() {
             "left": imageLeftOffset,
             "top": imageTopOffset,
             "z-index": ZINDEX_IMAGE_LISTENER
+        });
+
+        // Set styling properties for the rectangle select listener, too.
+        $rectangleSelectListener.css({
+            "width": imageDisplayWidth,
+            "height": imageDisplayHeight,
+            "left": imageLeftOffset,
+            "top": imageTopOffset
         });
     }
 
@@ -857,6 +873,98 @@ var AnnotationToolHelper = (function() {
         }
     }
 
+    function enableRectangleSelect() {
+        $rectangleSelectListener.appendTo($(imageArea));
+    }
+    function disableRectangleSelect() {
+        $rectangleSelectListener.detach();
+    }
+
+    function startRectangleSelect(e) {
+        // TODO: There has got to be a simpler way to calculate this.
+        var imageElmtPos = getImageElmtPosition(e);
+        var imageElmtX = imageElmtPos[0];
+        var imageElmtY = imageElmtPos[1];
+        var imageLeftOffset = parseFloat($(ATI.imageCanvas).css('left'));
+        var imageTopOffset = parseFloat($(ATI.imageCanvas).css('top'));
+        rectangleStartX = imageElmtX + imageLeftOffset;
+        rectangleStartY = imageElmtY + imageTopOffset;
+
+        $rectangleSelectArea.css({
+            'left': rectangleStartX.toString() + 'px',
+            'top': rectangleStartY.toString() + 'px',
+            'width': '0px',
+            'height': '0px'
+        });
+        $rectangleSelectArea.appendTo($(imageArea));
+
+        $(document).bind('mouseup', finishRectangleSelect);
+        $(document).bind('mousemove', moveRectangleSelect);
+    }
+    function moveRectangleSelect(e) {
+        var imageElmtPos = getImageElmtPosition(e);
+        var imageElmtX = imageElmtPos[0];
+        var imageElmtY = imageElmtPos[1];
+        var imageLeftOffset = parseFloat($(ATI.imageCanvas).css('left'));
+        var imageTopOffset = parseFloat($(ATI.imageCanvas).css('top'));
+        var currentX = imageElmtX + imageLeftOffset;
+        var currentY = imageElmtY + imageTopOffset;
+
+        $rectangleSelectArea.css({
+            'left': Math.min(currentX, rectangleStartX).toString() + 'px',
+            'top': Math.min(currentY, rectangleStartY).toString() + 'px',
+            'width': Math.abs(currentX - rectangleStartX).toString() + 'px',
+            'height': Math.abs(currentY - rectangleStartY).toString() + 'px'
+        });
+    }
+    function finishRectangleSelect(e) {
+        $rectangleSelectArea.detach();
+
+        // Select points based on the rectangle area.
+
+        // Mouse's position in the canvas element
+        var imageElmtPos = getImageElmtPosition(e);
+        var imageLeftOffset = parseFloat($(ATI.imageCanvas).css('left'));
+        var imageTopOffset = parseFloat($(ATI.imageCanvas).css('top'));
+        var displayX1 = imageElmtPos[0] + imageLeftOffset;
+        var displayY1 = imageElmtPos[1] + imageTopOffset;
+        var displayX2 = rectangleStartX;
+        var displayY2 = rectangleStartY;
+
+        var imageXMin = (Math.min(displayX1,displayX2) - imageLeftOffset)/zoomFactor;
+        var imageYMin = (Math.min(displayY1,displayY2) - imageTopOffset)/zoomFactor;
+        var imageXMax = (Math.max(displayX1,displayX2) - imageLeftOffset)/zoomFactor;
+        var imageYMax = (Math.max(displayY1,displayY2) - imageTopOffset)/zoomFactor;
+
+        var numbersToSelect = getSelectedNumbers();
+
+        for (var i = 0; i < imagePoints.length; i++) {
+            var currPoint = imagePoints[i];
+
+            var inXRange = imageXMin <= currPoint.column
+                           && currPoint.column <= imageXMax;
+            var inYRange = imageYMin <= currPoint.row
+                           && currPoint.row <= imageYMax;
+
+            if (inXRange && inYRange) {
+                // This point is in the rectangle.
+                if (numbersToSelect.indexOf(currPoint.point_number) === -1) {
+                    // This point was not previously selected. Select it.
+                    numbersToSelect.push(currPoint.point_number)
+                }
+            }
+        }
+
+        selectOnly(numbersToSelect);
+
+        // Clean up.
+        rectangleStartX = null;
+        rectangleStartY = null;
+        $(document).unbind('mouseup', finishRectangleSelect);
+        $(document).unbind('mousemove', moveRectangleSelect);
+        disableRectangleSelect();
+    }
+
 
 
     //
@@ -1273,6 +1381,8 @@ var AnnotationToolHelper = (function() {
             IMAGE_AREA_WIDTH = params.IMAGE_AREA_WIDTH;
             IMAGE_AREA_HEIGHT = params.IMAGE_AREA_HEIGHT;
 
+            // TODO: Now that the annotation area is the same size as the image area,
+            // maybe some of the element hierarchy can be collapsed a bit.
             ANNOTATION_AREA_WIDTH = IMAGE_AREA_WIDTH;
             ANNOTATION_AREA_HEIGHT = IMAGE_AREA_HEIGHT;
 
@@ -1392,6 +1502,18 @@ var AnnotationToolHelper = (function() {
             // annotation tool better.
             var contentContainerY = $('#content-container').offset().top;
             $(window).scrollTop(contentContainerY);
+
+            $rectangleSelectListener = $('<div>');
+            $rectangleSelectListener.attr('id', 'rectangle-select-listener');
+            $rectangleSelectListener.css({
+                "z-index": ZINDEX_RECTANGLE_SELECT_LISTENER
+            });
+
+            $rectangleSelectArea = $('<div>');
+            $rectangleSelectArea.attr('id', 'rectangle-select-area');
+            $rectangleSelectArea.css({
+                "z-index": ZINDEX_RECTANGLE_SELECT_AREA
+            });
 
 
             /* Initialization - Labels and label buttons */
@@ -1575,6 +1697,10 @@ var AnnotationToolHelper = (function() {
             // Also note that the listener element uses CSS to disable
             // double-click-to-select (it makes the image turn blue, which is annoying).
 
+            $rectangleSelectListener.mousedown(function(e){
+                startRectangleSelect(e);
+            });
+
             // Save button is clicked
             $(saveButton).click(function() {
                 saveAnnotations();
@@ -1672,6 +1798,12 @@ var AnnotationToolHelper = (function() {
                 selectOnly(unselectedPoints);
             });
 
+            // Other tool buttons.
+            $("#rectangleSelectButton").click(function() {
+                enableRectangleSelect();
+            });
+
+            // Buttons that bring up dialogs.
             $("#settings-button").click(function() {
                 openSubwindow($("#settings"), "Settings");
             });

@@ -34,6 +34,14 @@
     -o-user-select: none;
     user-select: none;
 }
+#rectangle-select-listener {
+    position: absolute;
+}
+#rectangle-select-area {
+    background-color: rgba(255, 255, 255, 0.6);
+    border: 1px solid black;
+    position: absolute;
+}
 
 #labelButtons button {
     /* Don't let HTML whitespace create extra horizontal space between button elements.
