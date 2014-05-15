@@ -185,6 +185,8 @@ td.annotationFormLabelCell {
     width: 90px;
 
     padding: 1px 1px;
+
+    font-size: 1.2em;
 }
 #annotation-field.semi-transparent {
     background-color: rgba(255,255,255,0.7);
@@ -302,18 +304,23 @@ div.help_section span.help_header {
 }
 
 /* jQuery-UI autocomplete menu */
-.ui-menu.semi-transparent {
+.ui-autocomplete .ui-menu-item a {
+    font-size: 1.2em;
+    line-height: 1.2em;
+}
+
+.ui-autocomplete.semi-transparent {
     background: rgba(255,255,255,0.7);
 }
-.ui-menu.semi-transparent .ui-menu-item {
+.ui-autocomplete.semi-transparent .ui-menu-item {
     background: transparent;
 }
-.ui-menu.semi-transparent .ui-menu-item .ui-state-hover,
-.ui-menu.semi-transparent .ui-menu-item .ui-widget-content .ui-state-hover,
-.ui-menu.semi-transparent .ui-menu-item .ui-widget-header .ui-state-hover,
-.ui-menu.semi-transparent .ui-menu-item .ui-state-focus,
-.ui-menu.semi-transparent .ui-menu-item .ui-widget-content .ui-state-focus,
-.ui-menu.semi-transparent .ui-menu-item .ui-widget-header .ui-state-focus {
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-state-hover,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-widget-content .ui-state-hover,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-widget-header .ui-state-hover,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-state-focus,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-widget-content .ui-state-focus,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-widget-header .ui-state-focus {
     background: rgba(255,255,255,1.0);
 }
 
