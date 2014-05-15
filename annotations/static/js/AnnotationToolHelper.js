@@ -720,9 +720,19 @@ var AnnotationToolHelper = (function() {
             // Shift the center of zoom to this point.
             centerOnPoint(pointNum);
 
+            // If we have a machine annotated point, clear the field
+            // so it will display the list of machine suggestions.
             if (isRobot(pointNum)) {
                 $annotationField.attr('value', '');
             }
+
+            // Scroll the points list to the current point.
+            var pointAtTopScrollPosition = pointFieldRows[pointNum].offsetTop;
+            var pointsListHalfMaxHeight =
+                parseFloat($(annotationList).css('max-height')) / 2;
+            var pointAtMiddleScrollPosition =
+                Math.max(pointAtTopScrollPosition - pointsListHalfMaxHeight, 0);
+            $(annotationList).scrollTop(pointAtMiddleScrollPosition);
         }
         else {  // 2+ selected
             $annotationField.prop('disabled', false);
@@ -730,6 +740,7 @@ var AnnotationToolHelper = (function() {
             $annotationField.attr('value', '');
         }
 
+        // Move the annotation field if it's on the image.
         moveAnnotationFieldImageContainer();
     }
 
