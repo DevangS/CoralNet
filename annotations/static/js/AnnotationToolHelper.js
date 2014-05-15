@@ -622,6 +622,42 @@ var AnnotationToolHelper = (function() {
         }
     }
 
+    // Select the next unannotated point; or if everything is
+    // annotated, select the next point.
+    function selectNextUnannotatedPoint() {
+        var allSelectedNumbers = getSelectedNumbers();
+
+        if (allSelectedNumbers.length !== 1) {
+            // We've selected 0 or 2+ points, so abort
+            return;
+        }
+
+        var selectedNumber = allSelectedNumbers[0];
+        var n;
+
+        // Search from here to the last point
+        // for something unannotated
+        for (n = selectedNumber+1; n <= numOfPoints; n++) {
+            if (!isPointHumanAnnotated(n)) {
+                selectOnly([n]);
+                prepareFieldForUse();
+                return;
+            }
+        }
+        // Search from the first point to here
+        // for something unannotated
+        for (n = 1; n < selectedNumber; n++) {
+            if (!isPointHumanAnnotated(n)) {
+                selectOnly([n]);
+                prepareFieldForUse();
+                return;
+            }
+        }
+
+        // Nothing unannotated; just select the next point
+        selectNextPoint();
+    }
+
     function selectFirstUnannotatedPoint() {
         var pointNum = null;
 
@@ -654,7 +690,7 @@ var AnnotationToolHelper = (function() {
         }
 
         labelSelected(annoField.value);
-        selectNextPoint();
+        selectNextUnannotatedPoint();
     }
 
     function onFieldFocus() {
@@ -1526,8 +1562,9 @@ var AnnotationToolHelper = (function() {
                 $(this).click( function() {
                     // Label the selected points with this button's label code
                     labelSelected($(this).text());
-                    // Select the next point (if we only have one selected)
-                    selectNextPoint();
+                    // Select the next unannotated point
+                    // (if we only have one selected)
+                    selectNextUnannotatedPoint();
                 });
             });
 
@@ -1775,8 +1812,8 @@ var AnnotationToolHelper = (function() {
         redrawAllPoints: function() {
             redrawAllPoints();
         },
-        selectNextPoint: function() {
-            selectNextPoint();
+        selectNextUnannotatedPoint: function() {
+            selectNextUnannotatedPoint();
         }
     }
 })();

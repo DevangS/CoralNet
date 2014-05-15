@@ -390,7 +390,7 @@ var AnnotationToolAutocomplete = (function() {
                                 origEvent = origEvent.originalEvent;
                             }
                             if (origEvent.type === 'click') {
-                                AnnotationToolHelper.selectNextPoint();
+                                AnnotationToolHelper.selectNextUnannotatedPoint();
                             }
                         }
                     });
