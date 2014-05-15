@@ -79,7 +79,7 @@ var CNMap = (function() {
             // https://developers.google.com/maps/documentation/javascript/tutorial#MapOptions
             var mapOptions = {
 
-                center: new google.maps.LatLng(-17.533333, -149.833333),
+                center: new google.maps.LatLng(-10.5, -127.5),
 
                 zoom: 2,
                 minZoom: 2,
