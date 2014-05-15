@@ -1483,7 +1483,7 @@ var AnnotationToolHelper = (function() {
             // Maybe there is a way to compute the right sidebar width dynamically
             // and guarantee that the layout is correct, but I don't know what
             // that way is.
-            var rightSidebarWidth = 180;
+            var rightSidebarWidth = 200;
 
             $mainColumn.css({
                 "width": $(annotationArea).width().toString() + "px"
