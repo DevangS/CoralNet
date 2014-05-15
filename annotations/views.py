@@ -549,8 +549,8 @@ def annotation_tool(request, image_id):
 
 
     # Image dimensions.
-    IMAGE_AREA_WIDTH = 800
-    IMAGE_AREA_HEIGHT = 600
+    IMAGE_AREA_WIDTH = 850
+    IMAGE_AREA_HEIGHT = 650
 
     source_images = dict(full=dict(
         url=image.original_file.url,

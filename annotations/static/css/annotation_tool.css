@@ -149,7 +149,7 @@
 
 /* Point fields */
 #annotationForm input {
-    width: 90px;
+    width: 75px;
 
     margin: 1px 0;
     padding: 1px 1px;
@@ -369,6 +369,6 @@ div.help_section span.help_header {
 
 /* jQuery-UI sliders. */
 .ui-slider {
-    width: 150px;
+    width: 130px;
     display: inline-block;
 }
