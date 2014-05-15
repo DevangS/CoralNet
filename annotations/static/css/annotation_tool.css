@@ -182,7 +182,7 @@ td.annotationFormLabelCell {
 
 /* Annotation field */
 #annotation-field {
-    width: 90px;
+    width: 110px;
 
     padding: 1px 1px;
 
@@ -304,6 +304,15 @@ div.help_section span.help_header {
 }
 
 /* jQuery-UI autocomplete menu */
+.ui-autocomplete {
+    /* have a vertical scrollbar if the list is long enough
+       (more than 6 lines) */
+    max-height: 11.0em;
+    overflow-y: auto;
+    /* prevent horizontal scrollbar */
+    overflow-x: hidden;
+}
+
 .ui-autocomplete .ui-menu-item a {
     font-size: 1.2em;
     line-height: 1.2em;

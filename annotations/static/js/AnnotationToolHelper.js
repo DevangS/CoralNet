@@ -804,8 +804,13 @@ var AnnotationToolHelper = (function() {
 
             var xMin = 0;
             var yMin = 0;
+
+            // Don't allow the field to stick out past the image edge.
             var xMax = ANNOTATION_AREA_WIDTH - $annotationField.width();
-            var yMax = ANNOTATION_AREA_HEIGHT - $annotationField.height();
+            // Don't allow the field to stick out past the image edge, and
+            // don't allow the autocomplete to stick out too much.
+            var yMax = ANNOTATION_AREA_HEIGHT - $annotationField.height() - 100;
+
             if (x < xMin) {x = xMin;}
             if (y < yMin) {y = yMin;}
             if (x > xMax) {x = xMax;}
