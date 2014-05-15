@@ -58,6 +58,11 @@ class ImageLocationValueForm(forms.Form):
 
 class BrowseSearchForm(ImageLocationValueForm):
 
+    STATUS_NEEDS_ANNOTATION = 'n'
+    STATUS_MACHINE_ANNOTATED = 'm'
+    STATUS_HUMAN_ANNOTATED = 'h'
+    STATUS_ANNOTATED = 'a'
+
     page_view = forms.ChoiceField(
         choices=[],  # Will be filled in by __init__()
         initial='images',
@@ -96,11 +101,17 @@ class BrowseSearchForm(ImageLocationValueForm):
 
         # image_status
 
-        status_choices = [('all', 'All'), ('n','Needs annotation')]
+        status_choices = [
+            ('all', 'All'),
+            (BrowseSearchForm.STATUS_NEEDS_ANNOTATION,'Needs annotation')
+        ]
         if source.enable_robot_classifier:
-            status_choices.extend([('m', 'Annotated by machine'),('h', 'Annotated by human')])
+            status_choices.extend([
+                (BrowseSearchForm.STATUS_MACHINE_ANNOTATED, 'Annotated by machine'),
+                (BrowseSearchForm.STATUS_HUMAN_ANNOTATED, 'Annotated by human'),
+            ])
         else:
-            status_choices.append(('a', 'Annotated'))
+            status_choices.append((BrowseSearchForm.STATUS_ANNOTATED, 'Annotated'))
 
         self.fields['image_status'] = forms.ChoiceField(
             label="Image's annotation status",
@@ -192,19 +203,19 @@ class ImageSpecifyForm(forms.Form):
                     # This field should ONLY be here if not searching in
                     # patch mode.
                     if self.source.enable_robot_classifier:
-                        if v == 'n':
+                        if v == BrowseSearchForm.STATUS_NEEDS_ANNOTATION:
                             filter_args['status__annotatedByHuman'] = False
                             filter_args['status__annotatedByRobot'] = False
-                        elif v == 'm':
+                        elif v == BrowseSearchForm.STATUS_MACHINE_ANNOTATED:
                             filter_args['status__annotatedByHuman'] = False
                             filter_args['status__annotatedByRobot'] = True
-                        elif v == 'h':
+                        elif v == BrowseSearchForm.STATUS_HUMAN_ANNOTATED:
                             filter_args['status__annotatedByHuman'] = True
                         # else, don't filter
                     else:
-                        if v == 'n':
+                        if v == BrowseSearchForm.STATUS_NEEDS_ANNOTATION:
                             filter_args['status__annotatedByHuman'] = False
-                        elif v == 'a':
+                        elif v == BrowseSearchForm.STATUS_ANNOTATED:
                             filter_args['status__annotatedByHuman'] = True
                         # else, don't filter
 

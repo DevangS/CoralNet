@@ -34,6 +34,16 @@
     -o-user-select: none;
     user-select: none;
 }
+#rectangle-select-listener {
+    position: absolute;
+
+    cursor: crosshair;
+}
+#rectangle-select-area {
+    background-color: rgba(255, 255, 255, 0.6);
+    border: 1px solid black;
+    position: absolute;
+}
 
 #labelButtons button {
     /* Don't let HTML whitespace create extra horizontal space between button elements.
@@ -44,9 +54,7 @@
     /* Width will be set dynamically; that way we can check for
     text overflow, and make the text smaller if there is overflow. */
 
-    /* Set a transparent border that is the same size as the "current button"
-    border.  That way, the border size doesn't change (and thus elements
-    don't shift) when the button becomes the "current" button. */
+    /* Set a transparent border. */
     border: 3px solid transparent;
 
     /* Make left/right padding small to reduce chances of having to shrink the text.
@@ -59,9 +67,6 @@
     margin: 2px;
 
     cursor: pointer;
-}
-#labelButtons button.current {
-    border-color: #000000;
 }
 
 /* TODO: Probably want to consider assigning a certain color for each functional group
@@ -135,17 +140,21 @@
 }
 
 
-/* Column of label text fields; don't use the default form styling */
+/* Column of point fields; don't use the default form styling */
 #annotationForm {
     width: auto;
     margin: auto;
     padding: 0;
 }
 
-/* Label fields */
+/* Point fields */
 #annotationForm input {
+    width: 75px;
+
     margin: 1px 0;
     padding: 1px 1px;
+
+    cursor: pointer;
 }
 
 /* Currently selected points */
@@ -169,8 +178,8 @@
     margin: 0 2px;
     border: 1px solid #D7D7D7;
 
-    /* Use the regular arrow cursor, not the text highlight cursor */
-    cursor: default;
+    /* Use the pointer cursor, not the text highlight cursor */
+    cursor: pointer;
 
     /* Make the number's clickable box take up the whole table cell */
     display: block;
@@ -180,6 +189,28 @@
 td.annotationFormLabelCell {
     text-align: center;
 }
+
+
+
+/* Annotation field */
+#annotation-field {
+    width: 110px;
+
+    padding: 1px 1px;
+
+    font-size: 1.2em;
+}
+#annotation-field.semi-transparent {
+    background-color: rgba(255,255,255,0.7);
+}
+#annotation-field-fixed-container {
+    margin: 5px 0 10px 6px;
+}
+#annotation-field-image-container {
+    position: absolute;
+}
+
+
 
 /* Place for ALL DONE text */
 #allDone {
@@ -194,6 +225,7 @@ td.annotationFormLabelCell {
 
     padding: 5px;
 }
+
 
 
 /* Image navigation */
@@ -256,8 +288,30 @@ div.help_section span.help_header {
     line-height: 2.0em;
 }
 
+
+
+#image-tools-wrapper {
+    text-align: center;
+}
+#image-tools-wrapper label {
+    width: auto;
+}
+#image-tools-wrapper input {
+    margin: 1px 0;
+    padding: 1px 1px;
+
+    width: 40px;
+}
+
 /* Place for "Applying..." text for image options/tools form */
 #applyingText {
+    display: inline-block;
+
+    /* Hide the element from view, but let it take up its
+       normal amount of space. */
+    visibility: hidden;
+
+    font-size: 0.8em;
 }
 
 
@@ -278,8 +332,43 @@ div.help_section span.help_header {
     margin: 10px 0 10px 20px;   /* t r b l */
 }
 
+/* jQuery-UI dialogs */
+.ui-dialog.ui-widget-content{
+    background: rgba(255,255,255,0.9);
+}
+
+/* jQuery-UI autocomplete menu */
+.ui-autocomplete {
+    /* have a vertical scrollbar if the list is long enough
+       (more than 6 lines) */
+    max-height: 11.0em;
+    overflow-y: auto;
+    /* prevent horizontal scrollbar */
+    overflow-x: hidden;
+}
+
+.ui-autocomplete .ui-menu-item a {
+    font-size: 1.2em;
+    line-height: 1.2em;
+}
+
+.ui-autocomplete.semi-transparent {
+    background: rgba(255,255,255,0.7);
+}
+.ui-autocomplete.semi-transparent .ui-menu-item {
+    background: transparent;
+}
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-state-hover,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-widget-content .ui-state-hover,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-widget-header .ui-state-hover,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-state-focus,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-widget-content .ui-state-focus,
+.ui-autocomplete.semi-transparent .ui-menu-item .ui-widget-header .ui-state-focus {
+    background: rgba(255,255,255,1.0);
+}
+
 /* jQuery-UI sliders. */
 .ui-slider {
-    width: 250px;
+    width: 130px;
     display: inline-block;
 }

@@ -13,8 +13,10 @@
 {% block page-specific-includes %}
     {# TODO: Add mousetrap as part of javascript-includes? #}
     {% include "static-local-include.html" with type="js" path="js/mousetrap.min.js" %}
+    {% include "static-local-include.html" with type="js" path="js/mousetrap-pause.min.js" %}
 
     {% include "static-local-include.html" with type="css" path="css/annotation_tool.css" %}
+    {% include "static-local-include.html" with type="js" path="js/AnnotationToolAutocomplete.js" %}
     {% include "static-local-include.html" with type="js" path="js/AnnotationToolHelper.js" %}
 
     {% include "form_media_versioned.html" with form=settings_form %}
@@ -24,7 +26,7 @@
 
 {% block content %}
 
-<hr/>
+<hr class="narrow"/>
 
 <button id="settings-button" title="Annotation tool settings">Settings</button>
 <button id="help-button" title="Help, basic controls, and compatibility info">Help</button>
@@ -42,11 +44,7 @@
     </div>
 </div>
 
-<div id="id_image_tools_wrapper">
-    <hr/>
-    {% include "annotations/annotation_image_options.html" with image_options_form=image_options_form %}
-    <hr/>
-</div>
+<hr class="narrow"/>
 
 <div id="columnContainer">
 
@@ -66,6 +64,10 @@
           <div id="listenerElmt"></div>
 
         </div>
+
+        <div id="annotation-field-image-container">
+            <input id="annotation-field" type="text"/>
+        </div>
           
       </div>
 
@@ -80,11 +82,11 @@
     <div id="rightSidebar" class="column">
 
       <div id="toolButtonArea">
-         <input class="zoomButton" type="image"
+         <input type="image"
                 id="zoomInButton" src="/static/img/Icon_zoom-in.png" title="Zoom in"/>
-         <input class="zoomButton" type="image"
+         <input type="image"
                 id="zoomOutButton" src="/static/img/Icon_zoom-out.png" title="Zoom out"/>
-         <input class="zoomButton" type="image"
+         <input type="image"
                 id="zoomFitButton" src="/static/img/Icon_zoom-fit.png" title="Zoom all the way out"/>
          <br/>
          
@@ -96,13 +98,25 @@
                 id="pointModeButtonNone" src="/static/img/Icon_point-mode-none.png" title="Hide all points"/>
          <br/>
 
-         <input class="quickSelectButton" type="image"
+         <input type="image"
                 id="quickSelectButtonNone" src="/static/img/Icon_select-none.png" title="Un-select all points"/>
-         <input class="quickSelectButton" type="image"
+         <input type="image"
                 id="quickSelectButtonUnannotated" src="/static/img/Icon_select-unannotated.png" title="Select all unannotated points"/>
-         <input class="quickSelectButton" type="image"
+         <input type="image"
                 id="quickSelectButtonInvert" src="/static/img/Icon_select-inversion.png" title="Invert current selections"/>
+         <input type="image"
+                id="rectangleSelectButton" src="/static/img/Icon_rectangle-select.png" title="Rectangle select"/>
       </div>
+
+      <hr class="narrow"/>
+
+      <div id="image-tools-wrapper">
+          {% include "annotations/annotation_image_options.html" with image_options_form=image_options_form %}
+      </div>
+
+      <hr class="narrow"/>
+
+      <div id="annotation-field-fixed-container"></div>
 
       <form id="annotationForm" action="" method="post">{% csrf_token %}
 
@@ -213,7 +227,8 @@
         IMAGE_AREA_WIDTH: {{ IMAGE_AREA_WIDTH }},
         IMAGE_AREA_HEIGHT: {{ IMAGE_AREA_HEIGHT }},
         imagePoints: {{ annotationsJSON|safe }},
-        labels: {{ labels|jsonify }}
+        labels: {{ labels|jsonify }},
+        machineSuggestions: {{ machine_suggestions|jsonify }}
     });
 </script>
 

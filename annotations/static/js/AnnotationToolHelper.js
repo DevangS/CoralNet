@@ -6,11 +6,19 @@ var AnnotationToolHelper = (function() {
     // HTML elements
     var annotationArea = null;
     var annotationList = null;
-    var annotationFieldRows = [];
-    var annotationFields = [];
-    var annotationRobotFields = [];
-    var $annotationFields = null;
-    var imageArea = undefined;
+    var pointFieldRows = [];
+    var pointFields = [];
+    var pointRobotFields = [];
+    var $pointFields = null;
+
+    var $annotationField = null;
+    var $annotationFieldFixedContainer = null;
+    var $annotationFieldImageContainer = null;
+
+    var $rectangleSelectListener = null;
+    var $rectangleSelectArea = null;
+
+    var imageArea = null;
     var pointsCanvas = null;
     var listenerElmt = null;
     var saveButton = null;
@@ -18,7 +26,6 @@ var AnnotationToolHelper = (function() {
     // Annotation related
     var labelCodes = [];
     var labelCodesToNames = {};
-    var currentLabelButton = null;
 
     // Canvas related
     var context = null;
@@ -28,12 +35,13 @@ var AnnotationToolHelper = (function() {
 
     // Border where the canvas is drawn, but the image is not.
     // This is used to fully show the points that are located near the edge of the image.
-    var CANVAS_GUTTER = 25;
-    var CANVAS_GUTTER_COLOR = "#BBBBBB";
+    var IMAGE_GUTTER = 25;
+    var IMAGE_GUTTER_COLOR = "#BBBBBB";
 
     // Related to possible states of each annotation point
     var pointContentStates = [];
     var pointGraphicStates = [];
+    // Graphic state values
     var STATE_UNANNOTATED = 0;
     var STATE_ROBOT = 1;
     var STATE_ANNOTATED = 2;
@@ -59,8 +67,6 @@ var AnnotationToolHelper = (function() {
     var ANNOTATION_AREA_WIDTH = null;
     var ANNOTATION_AREA_HEIGHT = null;
     // Label button grid
-    var BUTTON_GRID_MAX_X = null;
-    var BUTTON_GRID_MAX_Y = null;
     var BUTTONS_PER_ROW = 10;
     var LABEL_BUTTON_WIDTH = null;
 
@@ -82,6 +88,9 @@ var AnnotationToolHelper = (function() {
     var imageLeftOffset = null;
     var imageTopOffset = null;
 
+    var rectangleStartX = null;
+    var rectangleStartY = null;
+
     // Size of sub-windows.
     var SUB_WINDOW_MIN_WIDTH = 500;
     var SUB_WINDOW_MIN_HEIGHT = 500;
@@ -89,6 +98,15 @@ var AnnotationToolHelper = (function() {
     var SUB_WINDOW_PCT_HEIGHT = 90;
     var subWindowWidth = null;
     var subWindowHeight = null;
+
+    // Z-indices.
+    var ZINDEX_IMAGE_CANVAS = 0;
+    var ZINDEX_POINTS_CANVAS = 1;
+    var ZINDEX_IMAGE_LISTENER = 2;
+    var ZINDEX_ANNOTATION_FIELD = 3;
+    var ZINDEX_RECTANGLE_SELECT_AREA = 4;
+    var ZINDEX_RECTANGLE_SELECT_LISTENER = 5;
+    var ZINDEX_SUBWINDOW = 6;
 
 
 
@@ -111,8 +129,14 @@ var AnnotationToolHelper = (function() {
 
         // Position the image within the image area.
         // Negative offsets means the top-left corner is offscreen.
-        // Positive offsets means there's extra space around the image
-        // (should prevent this unless the image display is smaller than the image area).
+        // Positive offsets means there's extra space around the image.
+        //
+        // Allow a certain maximum amount of extra space around the image
+        // so the user can get a sense that they are near the edge of
+        // the image.
+        //
+        // Allow more extra space only if the image display is smaller than
+        // the image area.
 
         if (imageDisplayWidth <= IMAGE_AREA_WIDTH)
             imageLeftOffset = (IMAGE_AREA_WIDTH - imageDisplayWidth) / 2;
@@ -121,10 +145,11 @@ var AnnotationToolHelper = (function() {
             var leftEdgeInDisplayX = centerOfZoomInDisplayX - (IMAGE_AREA_WIDTH / 2);
             var rightEdgeInDisplayX = centerOfZoomInDisplayX + (IMAGE_AREA_WIDTH / 2);
 
-            if (leftEdgeInDisplayX < 0)
-                imageLeftOffset = 0;
-            else if (rightEdgeInDisplayX > imageDisplayWidth)
-                imageLeftOffset = -(imageDisplayWidth - IMAGE_AREA_WIDTH);
+            // Enforce max gutter space on left, and max gutter space on right,
+            if (leftEdgeInDisplayX < -IMAGE_GUTTER)
+                imageLeftOffset = IMAGE_GUTTER;
+            else if (rightEdgeInDisplayX > imageDisplayWidth+IMAGE_GUTTER)
+                imageLeftOffset = -(imageDisplayWidth+IMAGE_GUTTER - IMAGE_AREA_WIDTH);
             else
                 imageLeftOffset = -leftEdgeInDisplayX;
         }
@@ -136,10 +161,11 @@ var AnnotationToolHelper = (function() {
             var topEdgeInDisplayY = centerOfZoomInDisplayY - (IMAGE_AREA_HEIGHT / 2);
             var bottomEdgeInDisplayY = centerOfZoomInDisplayY + (IMAGE_AREA_HEIGHT / 2);
 
-            if (topEdgeInDisplayY < 0)
-                imageTopOffset = 0;
-            else if (bottomEdgeInDisplayY > imageDisplayHeight)
-                imageTopOffset = -(imageDisplayHeight - IMAGE_AREA_HEIGHT);
+            // Enforce max gutter space on top, and max gutter space on bottom.
+            if (topEdgeInDisplayY < -IMAGE_GUTTER)
+                imageTopOffset = IMAGE_GUTTER;
+            else if (bottomEdgeInDisplayY > imageDisplayHeight+IMAGE_GUTTER)
+                imageTopOffset = -(imageDisplayHeight+IMAGE_GUTTER - IMAGE_AREA_HEIGHT);
             else
                 imageTopOffset = -topEdgeInDisplayY;
         }
@@ -154,20 +180,28 @@ var AnnotationToolHelper = (function() {
             "height": imageDisplayHeight,
             "left": imageLeftOffset,
             "top": imageTopOffset,
-            "z-index": 0
+            "z-index": ZINDEX_IMAGE_CANVAS
         });
 
         // Set styling properties for the listener element:
         // An invisible element that sits on top of the image
         // and listens for mouse events.
         // Since it has to be on top to listen for mouse events,
-        // the z-index should be above every other element's z-index.
+        // the z-index should be set accordingly.
         $(listenerElmt).css({
             "width": imageDisplayWidth,
             "height": imageDisplayHeight,
             "left": imageLeftOffset,
             "top": imageTopOffset,
-            "z-index": 100
+            "z-index": ZINDEX_IMAGE_LISTENER
+        });
+
+        // Set styling properties for the rectangle select listener, too.
+        $rectangleSelectListener.css({
+            "width": imageDisplayWidth,
+            "height": imageDisplayHeight,
+            "left": imageLeftOffset,
+            "top": imageTopOffset
         });
     }
 
@@ -183,9 +217,10 @@ var AnnotationToolHelper = (function() {
         // Clear the entire canvas.
         context.clearRect(0, 0, pointsCanvas.width, pointsCanvas.height);
 
-        // Translate the canvas context to compensate for the gutter.
-        // This'll allow us to pretend that canvas coordinates = image area coordinates.
-        context.translate(CANVAS_GUTTER, CANVAS_GUTTER);
+        // If you designed the canvas and image area such that they don't
+        // line up exactly, then translate the context.
+        // That'll allow you to pretend that canvas coordinates = image area coordinates.
+        context.translate(0,0);
     }
 
     function zoomIn(e) {
@@ -221,14 +256,15 @@ var AnnotationToolHelper = (function() {
             zoomLevelChange = -zoomLevel;
         }
 
-        // (1) Zoom on click: zoom into the part that was clicked.
-        // (Make sure to use the old zoom factor for calculating the click position)
-        // (2) Zoom with hotkey: don't change the center of zoom, just the zoom level.
-        if (e !== undefined && e.type === 'mouseup') {
+        if (e !== undefined && e.type.indexOf('mouse') !== -1) {
+            // Zoom on click: zoom into the part that was clicked. (Make sure
+            // to use the old zoom factor for calculating the click position)
             var imagePos = getImagePosition(e);
             centerOfZoomX = imagePos[0];
             centerOfZoomY = imagePos[1];
         }
+        // Else, zoom with hotkey: don't change the center of zoom, just the
+        // zoom level.
 
         zoomLevel += zoomLevelChange;
         zoomFactor = ZOOM_FACTORS[zoomLevel];
@@ -239,6 +275,9 @@ var AnnotationToolHelper = (function() {
 
         // Redraw all points.
         redrawAllPoints();
+
+        // Move the annotation field to get alongside the current point again.
+        moveAnnotationFieldImageContainer();
     }
 
     /* Get the mouse position in the canvas element:
@@ -371,12 +410,13 @@ var AnnotationToolHelper = (function() {
 
             nearestPoint = getNearestPoint(e);
             toggle(nearestPoint);
+            $annotationField.focus();
         }
         // Select the nearest point and unselect all others.
         else if (clickType === "shiftClick") {
             nearestPoint = getNearestPoint(e);
-            unselectAll();
-            select(nearestPoint);
+            selectOnly([nearestPoint]);
+            $annotationField.focus();
         }
         // Increase zoom on the image display.
         else if (clickType === "leftClick") {
@@ -422,14 +462,14 @@ var AnnotationToolHelper = (function() {
 
     function changePointMode(pointMode) {
         // Outline this point mode button in red (and de-outline the other buttons).
-        $(".pointModeButton").removeClass("selected");
+        $('.pointModeButton').removeClass('selected');
 
         if (pointMode == POINTMODE_ALL)
-            $("#pointModeButtonAll").addClass("selected");
+            $('#pointModeButtonAll').addClass('selected');
         else if (pointMode == POINTMODE_SELECTED)
-            $("#pointModeButtonSelected").addClass("selected");
+            $('#pointModeButtonSelected').addClass('selected');
         else if (pointMode == POINTMODE_NONE)
-            $("#pointModeButtonNone").addClass("selected");
+            $('#pointModeButtonNone').addClass('selected');
 
         // Set the new point display mode.
         pointViewMode = pointMode;
@@ -444,246 +484,76 @@ var AnnotationToolHelper = (function() {
     // POINT methods
     //
 
+    // These functions aren't meant to be called directly by handlers. Use
+    // toggle() and selectOnly() to ensure that various elements get updated.
     function select(pointNum) {
-        $(annotationFieldRows[pointNum]).addClass('selected');
+        $(pointFieldRows[pointNum]).addClass('selected');
         updatePointGraphic(pointNum);
     }
-
     function unselect(pointNum) {
-        $(annotationFieldRows[pointNum]).removeClass('selected');
+        $(pointFieldRows[pointNum]).removeClass('selected');
         updatePointGraphic(pointNum);
     }
 
+    // Handlers can call either of the following functions to
+    // update point selections.
     function toggle(pointNum) {
-        if ($(annotationFieldRows[pointNum]).hasClass('selected'))
+        // Toggle the selection status of a single point.
+        if (isPointSelected(pointNum))
             unselect(pointNum);
         else
             select(pointNum);
+        updateElementsAfterSelections();
+    }
+    function selectOnly(pointNumList) {
+        // Once this function is done, only the points
+        // in the given list will be selected.
+        //
+        // This function is optimized to try and limit the
+        // number of select and unselect calls.
+        var i, n;
+        var isToBeSelected = {};
+        for (n = 1; n <= numOfPoints; n++) {
+            isToBeSelected[n] = false;
+        }
+        for (i = 0; i < pointNumList.length; i++) {
+            n = pointNumList[i];
+            isToBeSelected[n] = true;
+        }
+
+        for (n = 1; n <= numOfPoints; n++) {
+            if (isPointSelected(n) && !isToBeSelected[n]) {
+                unselect(n);
+            }
+            else if (!isPointSelected(n) && isToBeSelected[n]) {
+                select(n);
+            }
+        }
+
+        updateElementsAfterSelections();
+    }
+
+    function isPointSelected(pointNum) {
+        var row = pointFieldRows[pointNum];
+        return $(row).hasClass('selected');
     }
 
     function isRobot(pointNum) {
-        var robotField = annotationRobotFields[pointNum];
+        var robotField = pointRobotFields[pointNum];
         return robotField.value === 'true';
     }
 
     function unrobot(pointNum) {
-        var robotField = annotationRobotFields[pointNum];
+        var robotField = pointRobotFields[pointNum];
         robotField.value = 'false';
 
-        var row = annotationFieldRows[pointNum];
+        var row = pointFieldRows[pointNum];
         $(row).removeClass('robot');
     }
 
-    /* Optimization of unselect for multiple points.
-     */
-    function unselectMultiple(pointList) {
-        var pointNum, i;
-
-        if (pointViewMode === POINTMODE_SELECTED) {
-
-            for (i = 0; i < pointList.length; i++) {
-                pointNum = pointList[i];
-                $(annotationFieldRows[pointNum]).removeClass('selected');
-            }
-            redrawAllPoints();
-        }
-        else {
-            for (i = 0; i < pointList.length; i++) {
-                pointNum = pointList[i];
-                unselect(pointNum);
-            }
-        }
-    }
-
-    function unselectAll() {
-        var selectedPointList = [];
-        get$selectedFields().each( function() {
-            var pointNum = getPointNumOfAnnoField(this);
-            selectedPointList.push(pointNum);
-        });
-        unselectMultiple(selectedPointList);
-    }
-
-
-
-    //
-    // LABEL methods
-    //
-
-    // Label button is clicked
-    function labelSelected(labelButtonCode) {
-        var $selectedFields = get$selectedFields();
-
-        // Iterate over selected points' fields.
-        $selectedFields.each( function() {
-            // Set the point's label.
-            this.value = labelButtonCode;
-
-            // Update the point's annotation status (including unroboting as necessary).
-            onPointUpdate(this);
-        });
-
-        // If just 1 field is selected, focus the next field automatically
-        if ($selectedFields.length === 1) {
-            // Call focusNextField() such that the selected field becomes the object 'this'
-            focusNextField.call($selectedFields[0]);
-        }
-    }
-
-    /* Event listener callback: 'this' is an annotation field */
-    function labelWithCurrentLabel() {
-        if (currentLabelButton !== null) {
-            this.value = $(currentLabelButton).text();
-            onPointUpdate(this, 'unrobotOnlyIfChanged');
-        }
-    }
-
-    function setCurrentLabelButton(button) {
-        $('#labelButtons button').removeClass('current');
-        $(button).addClass('current');
-
-        currentLabelButton = button;
-    }
-
-    /* Event listener callback: 'this' is an annotation field */
-    function beginKeyboardLabelling() {
-        // If this field already has a valid label code, then the
-        // current label button becomes the button with that label code.
-        if (labelCodes.indexOf(this.value) !== -1) {
-            setCurrentLabelButton($("#labelButtons button:exactlycontains('" + this.value + "')"));
-        }
-        // Otherwise, label the field with the current label.
-        else
-            labelWithCurrentLabel.call(this);
-    }
-
-    function buttonIndexValid(gridX, gridY) {
-        var buttonIndex = gridY*BUTTONS_PER_ROW + gridX;
-        return (buttonIndex >= 0 && buttonIndex < labelCodes.length);
-    }
-
-    /* Event listener callback: 'this' is an annotation field */
-    function moveCurrentLabel(dx, dy) {
-        if (currentLabelButton === null)
-            return;
-
-        // Start with current label button
-        var gridX = parseInt($(currentLabelButton).attr('gridx'));
-        var gridY = parseInt($(currentLabelButton).attr('gridy'));
-
-        // Move one step, check if valid grid position; repeat as needed
-        do {
-            gridX += dx;
-            gridY += dy;
-
-            // May need to wrap around to the other side of the grid
-            if (gridX < 0)
-                gridX = BUTTON_GRID_MAX_X;
-            if (gridX > BUTTON_GRID_MAX_X)
-                gridX = 0;
-            if (gridY < 0)
-                gridY = BUTTON_GRID_MAX_Y;
-            if (gridY > BUTTON_GRID_MAX_Y)
-                gridY = 0;
-
-            // Need to check for a valid grid position, if the grid isn't a perfect rectangle
-        } while (!buttonIndexValid(gridX, gridY));
-
-        // Current label button is now the button with the x and y we calculated.
-        setCurrentLabelButton($("#labelButtons button[gridx='" + gridX + "'][gridy='" + gridY + "']")[0]);
-
-        // And make sure the current annotation field's
-        // label gets changed to the current button's label.
-        labelWithCurrentLabel.call(this);
-    }
-
-    function moveCurrentLabelLeft() {
-        moveCurrentLabel.call(this, -1, 0);
-    }
-    function moveCurrentLabelRight() {
-        moveCurrentLabel.call(this, 1, 0);
-    }
-    function moveCurrentLabelUp() {
-        moveCurrentLabel.call(this, 0, -1);
-    }
-    function moveCurrentLabelDown() {
-        moveCurrentLabel.call(this, 0, 1);
-    }
-
-
-
-    //
-    // FIELD methods
-    //
-
-    /* Event listener callback: 'this' is an annotation field */
-    function focusPrevField() {
-        var pointNum = getPointNumOfAnnoField(this);
-
-        // If first point numerically...
-        if (pointNum === 1) {
-            // Just un-focus from this point's field
-            $(this).blur();
-        }
-        // If not first point...
-        else {
-            // Focus the previous point's field
-            $(annotationFields[pointNum-1]).focus();
-        }
-    }
-
-    /* Event listener callback: 'this' is an annotation field */
-    function focusNextField() {
-        var pointNum = getPointNumOfAnnoField(this);
-        var lastPoint = numOfPoints;
-
-        // If last point (numerically)...
-        if (pointNum === lastPoint) {
-            // Just un-focus from this point's field
-            $(this).blur();
-        }
-        // If not last point...
-        else {
-            // Focus the next point's field
-            $(annotationFields[pointNum+1]).focus();
-        }
-    }
-
-    /* Focus on the first unannotated field */
-    function focusUnannotatedField() {
-        var pointNum = null;
-
-        for (var n = 1; n <= numOfPoints; n++) {
-            var row = annotationFieldRows[n];
-            if (!$(row).hasClass('annotated')) {
-                pointNum = n;
-                break;
-            }
-        }
-
-        if (pointNum !== null) {
-            $(annotationFields[pointNum]).focus();
-        }
-    }
-
-    /* Event listener callback: 'this' is an annotation field
-     * Unfocus from the annotation field. */
-    function unfocusField() {
-        $(this).blur();
-    }
-
-    function onLabelFieldTyping(field) {
-        onPointUpdate(field);
-    }
-
-    /* Event listener callback: 'this' is an annotation field */
-    function confirmFieldAndFocusNext() {
-        // Unrobot/update the field
-        onPointUpdate(this);
-
-        // Switch focus to next point's field.
-        // Call focusNextField() such that the current field becomes the object 'this'
-        focusNextField.call(this);
+    function isPointHumanAnnotated(pointNum) {
+        var row = pointFieldRows[pointNum];
+        return $(row).hasClass('annotated');
     }
 
     function getPointNumOfAnnoField(annoField) {
@@ -692,8 +562,421 @@ var AnnotationToolHelper = (function() {
         return parseInt(annoField.name.substring(6));
     }
 
-    function get$selectedFields() {
-        return $(annotationList).find('tr.selected').find('input');
+    function getSelectedNumbers() {
+        var selectedNumbers = [];
+        var n;
+        for (n = 1; n <= numOfPoints; n++) {
+            if (isPointSelected(n)) {
+                selectedNumbers.push(n);
+            }
+        }
+        return selectedNumbers;
+    }
+
+
+
+    //
+    // LABEL methods
+    //
+
+    function labelPointWithValue(pointNum, v) {
+        var ptField = pointFields[pointNum];
+        ptField.value = v;
+    }
+
+    function getMatchingLabelCode(labelCode) {
+        // Get a valid label code that matches the given one
+        // case-insensitively. (Label codes are
+        // case-insensitive unique).
+        var i;
+        for (i = 0; i < labelCodes.length; i++) {
+            if (labelCode.equalsIgnoreCase(labelCodes[i])) {
+                return labelCodes[i];
+            }
+        }
+        // No matches; return null.
+        return null;
+    }
+
+    function isLabelCodeValid(labelCode) {
+        return (getMatchingLabelCode(labelCode) !== null);
+    }
+
+    // Label the selected points with the given label code,
+    // and select the next point if we only have one selected
+    function labelSelected(labelCode) {
+        var allSelectedNumbers = getSelectedNumbers();
+
+        var i;
+        for (i = 0; i < allSelectedNumbers.length; i++) {
+            var n = allSelectedNumbers[i];
+            labelPointWithValue(n, labelCode);
+            onPointUpdate(n);
+        }
+    }
+
+
+
+    //
+    // FIELD methods
+    //
+
+    function selectPrevPoint() {
+        var allSelectedNumbers = getSelectedNumbers();
+
+        if (allSelectedNumbers.length !== 1) {
+            // We've selected 0 or 2+ points, so abort
+            return;
+        }
+
+        var selectedNumber = allSelectedNumbers[0];
+
+        if (selectedNumber === 1) {
+            // If first point, just un-select
+            selectOnly([]);
+        }
+        else {
+            selectOnly([selectedNumber-1]);
+            prepareFieldForUse();
+        }
+    }
+
+    function selectNextPoint() {
+        var allSelectedNumbers = getSelectedNumbers();
+
+        if (allSelectedNumbers.length !== 1) {
+            // We've selected 0 or 2+ points, so abort
+            return;
+        }
+
+        var selectedNumber = allSelectedNumbers[0];
+
+        if (selectedNumber === numOfPoints) {
+            // If last point, just un-select
+            selectOnly([]);
+        }
+        else {
+            selectOnly([selectedNumber+1]);
+            prepareFieldForUse();
+        }
+    }
+
+    // Select the next unannotated point; or if everything is
+    // annotated, select the next point.
+    function selectNextUnannotatedPoint() {
+        var allSelectedNumbers = getSelectedNumbers();
+
+        if (allSelectedNumbers.length !== 1) {
+            // We've selected 0 or 2+ points, so abort
+            return;
+        }
+
+        var selectedNumber = allSelectedNumbers[0];
+        var n;
+
+        // Search from here to the last point
+        // for something unannotated
+        for (n = selectedNumber+1; n <= numOfPoints; n++) {
+            if (!isPointHumanAnnotated(n)) {
+                selectOnly([n]);
+                prepareFieldForUse();
+                return;
+            }
+        }
+        // Search from the first point to here
+        // for something unannotated
+        for (n = 1; n < selectedNumber; n++) {
+            if (!isPointHumanAnnotated(n)) {
+                selectOnly([n]);
+                prepareFieldForUse();
+                return;
+            }
+        }
+
+        // Nothing unannotated; just select the next point
+        selectNextPoint();
+    }
+
+    function selectFirstUnannotatedPoint() {
+        var pointNum = null;
+
+        for (var n = 1; n <= numOfPoints; n++) {
+            if (!isPointHumanAnnotated(n)) {
+                pointNum = n;
+                break;
+            }
+        }
+
+        if (pointNum !== null) {
+            selectOnly([pointNum]);
+        }
+
+        $annotationField.focus();
+    }
+
+    function unfocusField() {
+        $annotationField.blur();
+    }
+
+    function labelSelectedAndVerify() {
+        var annoField = $annotationField[0];
+
+        // Check if the label is valid
+        if (!isLabelCodeValid(annoField.value)) {
+            // TODO: Notify the user that it's invalid
+            annoField.value = '';
+            return;
+        }
+
+        labelSelected(annoField.value);
+        selectNextUnannotatedPoint();
+    }
+
+    function onFieldFocus() {
+        prepareFieldForUse();
+    }
+
+    function onFieldBlur() {
+        updateElementsAfterSelections();
+    }
+
+    function updateElementsAfterSelections() {
+
+        var selectedNumbers = getSelectedNumbers();
+
+        if (selectedNumbers.length === 0) {
+            $annotationField.prop('disabled', true);
+
+            $annotationField.attr('value', '');
+        }
+        else if (selectedNumbers.length === 1) {
+            $annotationField.prop('disabled', false);
+
+            var pointNum = selectedNumbers[0];
+            var $ptField = $(pointFields[pointNum]);
+            $annotationField.attr('value', $ptField.attr('value'));
+
+            // Shift the center of zoom to this point.
+            centerOnPoint(pointNum);
+
+            // If we have a machine annotated point, clear the field
+            // so it will display the list of machine suggestions.
+            if (isRobot(pointNum)) {
+                $annotationField.attr('value', '');
+            }
+
+            // Scroll the points list to the current point.
+            var pointAtTopScrollPosition = pointFieldRows[pointNum].offsetTop;
+            var pointsListHalfMaxHeight =
+                parseFloat($(annotationList).css('max-height')) / 2;
+            var pointAtMiddleScrollPosition =
+                Math.max(pointAtTopScrollPosition - pointsListHalfMaxHeight, 0);
+            $(annotationList).scrollTop(pointAtMiddleScrollPosition);
+        }
+        else {  // 2+ selected
+            $annotationField.prop('disabled', false);
+
+            $annotationField.attr('value', '');
+        }
+
+        // Move the annotation field if it's on the image.
+        moveAnnotationFieldImageContainer();
+    }
+
+    function prepareFieldForUse() {
+        // Select (highlight) all the text in the label field,
+        // so the user can start typing over it.
+        //
+        // Must set a timeout so that the selection sticks when you
+        // focus with a mouseclick. Otherwise, in some browsers, you
+        // will select and then immediately place your cursor to
+        // unselect.
+        // http://stackoverflow.com/a/19498477
+        // Also, a timeout of 50 ms seems enough for Chrome, but not
+        // for Firefox. 100 is enough for Firefox...
+        //
+        // TODO: Apparently may not work in mobile Safari?
+        // http://stackoverflow.com/a/4067488
+        var selectTextFunction = function(elmt) {elmt.select();};
+        setTimeout(selectTextFunction.curry($annotationField[0]), 100);
+
+        // Show the autocomplete dropdown
+        $annotationField.autocomplete("search", $annotationField[0].value);
+    }
+
+    function getAnnotationFieldContainer() {
+        if ($annotationField.parent().is($annotationFieldFixedContainer)) {
+            return 'fixed';
+        }
+        return 'image';
+    }
+
+    function moveAnnotationFieldImageContainer() {
+        if (getAnnotationFieldContainer() !== 'image') {
+            return;
+        }
+
+        var selectedNumbers = getSelectedNumbers();
+        if (selectedNumbers.length === 0) {
+            $annotationField.hide();
+        }
+        else {
+            $annotationField.show();
+
+            // Set position
+
+            var x,y;
+
+            if (selectedNumbers.length === 1) {
+                // Single point selected.
+                // Position the field a little right and below the point.
+                var canvasCoords = canvasPoints[selectedNumbers[0]];
+                x = canvasCoords.col + 100;
+                y = canvasCoords.row + 100;
+            }
+            else {
+                // Multiple points selected.
+                // Just put the field at a fixed location.
+                x = ANNOTATION_AREA_WIDTH*(2/3);
+                y = ANNOTATION_AREA_HEIGHT*(2/3);
+            }
+
+            var xMin = 0;
+            var yMin = 0;
+
+            // Don't allow the field to stick out past the image edge.
+            var xMax = ANNOTATION_AREA_WIDTH - $annotationField.width();
+            // Don't allow the field to stick out past the image edge, and
+            // don't allow the autocomplete to stick out too much.
+            var yMax = ANNOTATION_AREA_HEIGHT - $annotationField.height() - 100;
+
+            if (x < xMin) {x = xMin;}
+            if (y < yMin) {y = yMin;}
+            if (x > xMax) {x = xMax;}
+            if (y > yMax) {y = yMax;}
+
+            $annotationFieldImageContainer.css({
+                top: y+'px',
+                left: x+'px'
+            });
+        }
+    }
+
+    function toggleAnnotationFieldContainer() {
+        if (getAnnotationFieldContainer() === 'image') {
+            // Move the field to the fixed container
+            $annotationField.detach().prependTo($annotationFieldFixedContainer);
+
+            $annotationField.removeClass('semi-transparent');
+            $('.ui-autocomplete.ui-menu').removeClass('semi-transparent');
+
+            // The field should always be shown when in this location, so make
+            // sure of that
+            $annotationField.show();
+        }
+        else {
+            // Move the field to the on-image container
+            $annotationField.detach().prependTo($annotationFieldImageContainer);
+
+            $annotationField.addClass('semi-transparent');
+            $('.ui-autocomplete.ui-menu').addClass('semi-transparent');
+
+            // The field needs to move to the right spot and show/hide
+            // depending on the current selected points
+            moveAnnotationFieldImageContainer();
+        }
+    }
+
+    function enableRectangleSelect() {
+        $rectangleSelectListener.appendTo($(imageArea));
+    }
+    function disableRectangleSelect() {
+        $rectangleSelectListener.detach();
+    }
+
+    function startRectangleSelect(e) {
+        // TODO: There has got to be a simpler way to calculate this.
+        var imageElmtPos = getImageElmtPosition(e);
+        var imageElmtX = imageElmtPos[0];
+        var imageElmtY = imageElmtPos[1];
+        var imageLeftOffset = parseFloat($(ATI.imageCanvas).css('left'));
+        var imageTopOffset = parseFloat($(ATI.imageCanvas).css('top'));
+        rectangleStartX = imageElmtX + imageLeftOffset;
+        rectangleStartY = imageElmtY + imageTopOffset;
+
+        $rectangleSelectArea.css({
+            'left': rectangleStartX.toString() + 'px',
+            'top': rectangleStartY.toString() + 'px',
+            'width': '0px',
+            'height': '0px'
+        });
+        $rectangleSelectArea.appendTo($(imageArea));
+
+        $(document).bind('mouseup', finishRectangleSelect);
+        $(document).bind('mousemove', moveRectangleSelect);
+    }
+    function moveRectangleSelect(e) {
+        var imageElmtPos = getImageElmtPosition(e);
+        var imageElmtX = imageElmtPos[0];
+        var imageElmtY = imageElmtPos[1];
+        var imageLeftOffset = parseFloat($(ATI.imageCanvas).css('left'));
+        var imageTopOffset = parseFloat($(ATI.imageCanvas).css('top'));
+        var currentX = imageElmtX + imageLeftOffset;
+        var currentY = imageElmtY + imageTopOffset;
+
+        $rectangleSelectArea.css({
+            'left': Math.min(currentX, rectangleStartX).toString() + 'px',
+            'top': Math.min(currentY, rectangleStartY).toString() + 'px',
+            'width': Math.abs(currentX - rectangleStartX).toString() + 'px',
+            'height': Math.abs(currentY - rectangleStartY).toString() + 'px'
+        });
+    }
+    function finishRectangleSelect(e) {
+        $rectangleSelectArea.detach();
+
+        // Select points based on the rectangle area.
+
+        // Mouse's position in the canvas element
+        var imageElmtPos = getImageElmtPosition(e);
+        var imageLeftOffset = parseFloat($(ATI.imageCanvas).css('left'));
+        var imageTopOffset = parseFloat($(ATI.imageCanvas).css('top'));
+        var displayX1 = imageElmtPos[0] + imageLeftOffset;
+        var displayY1 = imageElmtPos[1] + imageTopOffset;
+        var displayX2 = rectangleStartX;
+        var displayY2 = rectangleStartY;
+
+        var imageXMin = (Math.min(displayX1,displayX2) - imageLeftOffset)/zoomFactor;
+        var imageYMin = (Math.min(displayY1,displayY2) - imageTopOffset)/zoomFactor;
+        var imageXMax = (Math.max(displayX1,displayX2) - imageLeftOffset)/zoomFactor;
+        var imageYMax = (Math.max(displayY1,displayY2) - imageTopOffset)/zoomFactor;
+
+        var numbersToSelect = getSelectedNumbers();
+
+        for (var i = 0; i < imagePoints.length; i++) {
+            var currPoint = imagePoints[i];
+
+            var inXRange = imageXMin <= currPoint.column
+                           && currPoint.column <= imageXMax;
+            var inYRange = imageYMin <= currPoint.row
+                           && currPoint.row <= imageYMax;
+
+            if (inXRange && inYRange) {
+                // This point is in the rectangle.
+                if (!isPointSelected(currPoint.point_number)) {
+                    // This point was not previously selected. Select it.
+                    numbersToSelect.push(currPoint.point_number)
+                }
+            }
+        }
+
+        selectOnly(numbersToSelect);
+
+        // Clean up.
+        rectangleStartX = null;
+        rectangleStartY = null;
+        $(document).unbind('mouseup', finishRectangleSelect);
+        $(document).unbind('mousemove', moveRectangleSelect);
+        disableRectangleSelect();
     }
 
 
@@ -921,14 +1204,13 @@ var AnnotationToolHelper = (function() {
             return;
 
         // Get the current (graphical) state of this point
-        var row = annotationFieldRows[pointNum];
         var newState;
 
-        if ($(row).hasClass('selected'))
+        if (isPointSelected(pointNum))
             newState = STATE_SELECTED;
-        else if ($(row).hasClass('annotated'))
+        else if (isPointHumanAnnotated(pointNum))
             newState = STATE_ANNOTATED;
-        else if ($(row).hasClass('robot'))
+        else if (isRobot(pointNum))
             newState = STATE_ROBOT;
         else
             newState = STATE_UNANNOTATED;
@@ -971,29 +1253,14 @@ var AnnotationToolHelper = (function() {
      * Return false otherwise.
      */
     function updatePointState(pointNum, robotStatusAction) {
-        var field = annotationFields[pointNum];
-        var row = annotationFieldRows[pointNum];
-        var robotField = annotationRobotFields[pointNum];
+        var field = pointFields[pointNum];
+        var row = pointFieldRows[pointNum];
+        var robotField = pointRobotFields[pointNum];
         var labelCode = field.value;
 
         // Has the label text changed?
         var oldState = pointContentStates[pointNum];
         var labelChanged = (oldState['label'] !== labelCode);
-
-        // Is the label text a valid label code?
-        var i;
-        var isValidLabelCode = false;
-        for (i = 0; i < labelCodes.length; i++) {
-            // Case-insensitive compare (this is valid because label codes
-            // are case-insensitive unique)
-            if (labelCode.equalsIgnoreCase(labelCodes[i])) {
-                isValidLabelCode = true;
-                // Fix the casing
-                labelCode = labelCodes[i];
-                field.value = labelCode;
-                break;
-            }
-        }
 
         /*
          * Update style elements and robot statuses accordingly
@@ -1006,7 +1273,7 @@ var AnnotationToolHelper = (function() {
                 field.value = oldState.label;
             return false;
         }
-        else if (!isValidLabelCode) {
+        else if (!isLabelCodeValid(labelCode)) {
             // Error: label is not in the labelset
             $(field).attr('title', 'Label not in labelset');
             $(row).addClass('error');
@@ -1015,6 +1282,10 @@ var AnnotationToolHelper = (function() {
         }
         else {
             // No error
+
+            // Fix the casing
+            labelCode = getMatchingLabelCode(labelCode);
+            field.value = labelCode;
 
             if (robotField.value === 'true') {
                 if (robotStatusAction === 'initialize') {
@@ -1056,14 +1327,14 @@ var AnnotationToolHelper = (function() {
         return contentChanged;
     }
 
-    function onPointUpdate(annoField, robotStatusAction) {
-        var pointNum = getPointNumOfAnnoField(annoField);
+    function onPointUpdate(pointNum, robotStatusAction) {
         var contentChanged = updatePointState(pointNum, robotStatusAction);
 
         updatePointGraphic(pointNum);
 
-        if (contentChanged)
+        if (contentChanged) {
             updateSaveButton();
+        }
     }
 
     function redrawAllPoints() {
@@ -1072,15 +1343,31 @@ var AnnotationToolHelper = (function() {
         resetCanvas();
 
         // Clear the pointGraphicStates.
-        for (var n = 1; n <= numOfPoints; n++) {
+        var n;
+        for (n = 1; n <= numOfPoints; n++) {
             pointGraphicStates[n] = STATE_NOTSHOWN;
         }
 
         // Draw all points.
-        $annotationFields.each( function() {
-            var pointNum = getPointNumOfAnnoField(this);
-            updatePointGraphic(pointNum);
+        for (n = 1; n <= numOfPoints; n++) {
+            updatePointGraphic(n);
+        }
+    }
+
+
+
+    //
+    // MISC methods
+    //
+
+    function openSubwindow($elmt, title) {
+        $elmt.dialog({
+            width: subWindowWidth,
+            height: subWindowHeight,
+            modal: false,
+            title: title
         });
+        $('.ui-dialog').css('z-index', ZINDEX_SUBWINDOW);
     }
 
 
@@ -1095,7 +1382,7 @@ var AnnotationToolHelper = (function() {
 
         /* Params:
          * fullHeight, fullWidth, IMAGE_AREA_WIDTH, IMAGE_AREA_HEIGHT,
-         * imagePoints, labels */
+         * imagePoints, labels, machineSuggestions */
         init: function(params) {
             var i, j, n;    // Loop variables...
 
@@ -1108,8 +1395,10 @@ var AnnotationToolHelper = (function() {
             IMAGE_AREA_WIDTH = params.IMAGE_AREA_WIDTH;
             IMAGE_AREA_HEIGHT = params.IMAGE_AREA_HEIGHT;
 
-            ANNOTATION_AREA_WIDTH = IMAGE_AREA_WIDTH + (CANVAS_GUTTER * 2);
-            ANNOTATION_AREA_HEIGHT = IMAGE_AREA_HEIGHT + (CANVAS_GUTTER * 2);
+            // TODO: Now that the annotation area is the same size as the image area,
+            // maybe some of the element hierarchy can be collapsed a bit.
+            ANNOTATION_AREA_WIDTH = IMAGE_AREA_WIDTH;
+            ANNOTATION_AREA_HEIGHT = IMAGE_AREA_HEIGHT;
 
             var horizontalSpacePerButton = ANNOTATION_AREA_WIDTH / BUTTONS_PER_ROW;
 
@@ -1161,9 +1450,6 @@ var AnnotationToolHelper = (function() {
                 $labelButton.css('width', LABEL_BUTTON_WIDTH.toString() + "px");
             }
 
-            BUTTON_GRID_MAX_Y = Math.floor(params.labels.length / BUTTONS_PER_ROW);
-            BUTTON_GRID_MAX_X = BUTTONS_PER_ROW - 1;
-
             annotationArea = $("#annotationArea")[0];
             annotationList = $("#annotationList")[0];
             pointsCanvas = $("#pointsCanvas")[0];
@@ -1172,31 +1458,15 @@ var AnnotationToolHelper = (function() {
 
             imageArea = $("#imageArea")[0];
 
-            // Hackish computation to make the right sidebar's
-            // horizontal rule line up (roughly) with the bottom of
-            // the annotation area.
-            var annotationListMaxHeight =
-                ANNOTATION_AREA_HEIGHT
-                - $("#toolButtonArea").outerHeight(true)
-                - $(saveButton).outerHeight(true)
-                - $("#allDone").outerHeight(true)
-                - parseFloat($("#rightSidebar hr").css('margin-top'));
-
-            $(annotationList).css({
-                "max-height": annotationListMaxHeight + "px"
-            });
-
             $(annotationArea).css({
                 "width": ANNOTATION_AREA_WIDTH + "px",
                 "height": ANNOTATION_AREA_HEIGHT + "px",
-                "background-color": CANVAS_GUTTER_COLOR
+                "background-color": IMAGE_GUTTER_COLOR
             });
 
             $(imageArea).css({
                 "width": IMAGE_AREA_WIDTH + "px",
-                "height": IMAGE_AREA_HEIGHT + "px",
-                "left": CANVAS_GUTTER + "px",
-                "top": CANVAS_GUTTER + "px"
+                "height": IMAGE_AREA_HEIGHT + "px"
             });
 
             // Computations for a multi-column layout. Based on
@@ -1227,10 +1497,37 @@ var AnnotationToolHelper = (function() {
                 "padding-right": $rightSidebar.width().toString() + "px"
             });
 
+            // Hackish computation to make the right sidebar's
+            // horizontal rule line up (roughly) with the bottom of
+            // the annotation area.
+            var annotationListMaxHeight =
+                ANNOTATION_AREA_HEIGHT
+                    - $("#toolButtonArea").outerHeight(true)
+                    - $("#image-tools-wrapper").outerHeight(true)
+                    - $(saveButton).outerHeight(true)
+                    - $("#allDone").outerHeight(true)
+                    - 2*$("hr.narrow").outerHeight(true);
+
+            $(annotationList).css({
+                "max-height": annotationListMaxHeight + "px"
+            });
+
             // Auto-adjust the vertical scroll position to fit the
             // annotation tool better.
             var contentContainerY = $('#content-container').offset().top;
             $(window).scrollTop(contentContainerY);
+
+            $rectangleSelectListener = $('<div>');
+            $rectangleSelectListener.attr('id', 'rectangle-select-listener');
+            $rectangleSelectListener.css({
+                "z-index": ZINDEX_RECTANGLE_SELECT_LISTENER
+            });
+
+            $rectangleSelectArea = $('<div>');
+            $rectangleSelectArea.attr('id', 'rectangle-select-area');
+            $rectangleSelectArea.css({
+                "z-index": ZINDEX_RECTANGLE_SELECT_AREA
+            });
 
 
             /* Initialization - Labels and label buttons */
@@ -1307,7 +1604,7 @@ var AnnotationToolHelper = (function() {
             $(pointsCanvas).css({
                 "left": 0,
                 "top": 0,
-                "z-index": 1
+                "z-index": ZINDEX_POINTS_CANVAS
             });
 
             // Set the sub-window size.
@@ -1340,22 +1637,30 @@ var AnnotationToolHelper = (function() {
             numOfPoints = imagePoints.length;
             getCanvasPoints();
 
-            $annotationFields = $(annotationList).find('input');
-            var $annotationFieldRows = $(annotationList).find('tr');
+            $pointFields = $(annotationList).find('input');
+            var $pointFieldRows = $(annotationList).find('tr');
+
+            $annotationField = $('#annotation-field');
+            $annotationFieldFixedContainer = $('#annotation-field-fixed-container');
+            $annotationFieldImageContainer = $('#annotation-field-image-container');
+
+            $annotationFieldImageContainer.css({
+                'z-index': ZINDEX_ANNOTATION_FIELD
+            });
 
             // Create arrays that map point numbers to HTML elements.
             // For example, for point 1:
             // annotationFields = form field with point 1's label code
             // annotationFieldRows = table row containing form field 1
             // annotationRobotFields = hidden form element of value true/false saying whether point 1 is robot annotated
-            $annotationFieldRows.each( function() {
+            $pointFieldRows.each( function() {
                 var field = $(this).find('input')[0];
                 var pointNum = getPointNumOfAnnoField(field);
                 var robotField = $('#id_robot_' + pointNum)[0];
 
-                annotationFields[pointNum] = field;
-                annotationFieldRows[pointNum] = this;
-                annotationRobotFields[pointNum] = robotField;
+                pointFields[pointNum] = field;
+                pointFieldRows[pointNum] = this;
+                pointRobotFields[pointNum] = robotField;
             });
 
             // Set point annotation statuses,
@@ -1363,10 +1668,11 @@ var AnnotationToolHelper = (function() {
             for (n = 1; n <= numOfPoints; n++) {
                 pointContentStates[n] = {'label': undefined, 'robot': undefined};
                 pointGraphicStates[n] = STATE_NOTSHOWN;
+                onPointUpdate(n, 'initialize');
             }
-            $annotationFields.each( function() {
-                onPointUpdate(this, 'initialize');
-            });
+
+            // Initialize stuff based on point selections.
+            updateElementsAfterSelections();
 
             // Set the initial point view mode.  This'll trigger a redraw of the points, but that's okay;
             // initialization slowness is a relatively minor worry.
@@ -1382,27 +1688,32 @@ var AnnotationToolHelper = (function() {
                 {'image_id': $('#id_image_id')[0].value}
             );
 
+
             /*
              * Set event handlers
              */
 
             // Mouse button is pressed and un-pressed on the canvas
-            $(listenerElmt).mouseup( function(e) {
+            $(listenerElmt).mousedown( function(e) {
                 onCanvasClick(e);
             });
 
             // Disable the context menu on the listener element.
             // The menu just gets in the way while trying to zoom out, etc.
             $(listenerElmt).bind('contextmenu', function(e){
-                return false;
+                e.preventDefault();
             });
             // Same goes for the canvas element, which is sometimes what we end up
             // right clicking on if the image is no longer over that part of the canvas.
             $(pointsCanvas).bind('contextmenu', function(e){
-                return false;
+                e.preventDefault();
             });
             // Also note that the listener element uses CSS to disable
             // double-click-to-select (it makes the image turn blue, which is annoying).
+
+            $rectangleSelectListener.mousedown(function(e){
+                startRectangleSelect(e);
+            });
 
             // Save button is clicked
             $(saveButton).click(function() {
@@ -1414,36 +1725,30 @@ var AnnotationToolHelper = (function() {
                 $(this).click( function() {
                     // Label the selected points with this button's label code
                     labelSelected($(this).text());
-                    // Set the current label button.
-                    setCurrentLabelButton(this);
+                    // Select the next unannotated point
+                    // (if we only have one selected)
+                    selectNextUnannotatedPoint();
                 });
             });
 
-            // Label field gains focus
-            $annotationFields.focus(function() {
+            // Annotation field gains focus
+            $annotationField.focus(function() {
+                onFieldFocus();
+            });
 
-                // Highlight all the text in the label field.
-                //
-                // http://stackoverflow.com/questions/4067469/
-                // TODO: Apparently may not work in mobile Safari?
-                this.select();
+            // Annotation field is unfocused
+            $annotationField.blur(function() {
+                onFieldBlur();
+            });
 
-                // Select only this point.
+            // Point fields (which are read-only) are clicked
+            $pointFields.click(function() {
                 var pointNum = getPointNumOfAnnoField(this);
-                unselectAll();
-                select(pointNum);
-
-                // Shift the center of zoom to this point.
-                centerOnPoint(pointNum);
+                selectOnly([pointNum]);
+                $annotationField.focus();
             });
 
-            // Label field is typed into and changed, and then unfocused.
-            // (This does NOT run when a label button changes the label field.)
-            $annotationFields.change(function() {
-                onLabelFieldTyping(this);
-            });
-
-            // Number next to a label field is clicked.
+            // Number next to a point field is clicked
             $(".annotationFormLabel").click(function() {
                 var pointNum = parseInt($(this).text());
                 toggle(pointNum);
@@ -1478,7 +1783,7 @@ var AnnotationToolHelper = (function() {
             $("#quickSelectButtonNone").click(function() {
                 // Un-select all points.
 
-                unselectAll();
+                selectOnly([]);
             });
             $("#quickSelectButtonUnannotated").click(function() {
                 // Select only unannotated points.
@@ -1486,15 +1791,12 @@ var AnnotationToolHelper = (function() {
                 var unannotatedPoints = [];
 
                 for (var n = 1; n <= numOfPoints; n++) {
-                    var row = annotationFieldRows[n];
-                    if (!$(row).hasClass('annotated'))
+                    if (!isPointHumanAnnotated(n)) {
                         unannotatedPoints.push(n);
+                    }
                 }
 
-                unselectAll();
-                for (var i = 0; i < unannotatedPoints.length; i++) {
-                    select(unannotatedPoints[i])
-                }
+                selectOnly(unannotatedPoints);
             });
             $("#quickSelectButtonInvert").click(function() {
                 // Invert selections. (selected -> unselected, unselected -> selected)
@@ -1502,42 +1804,31 @@ var AnnotationToolHelper = (function() {
                 var unselectedPoints = [];
 
                 for (var n = 1; n <= numOfPoints; n++) {
-                    var row = annotationFieldRows[n];
-                    if (!$(row).hasClass('selected'))
+                    if (!isPointSelected(n)) {
                         unselectedPoints.push(n);
+                    }
                 }
 
-                unselectAll();
-                for (var i = 0; i < unselectedPoints.length; i++) {
-                    select(unselectedPoints[i])
-                }
+                selectOnly(unselectedPoints);
             });
 
+            // Other tool buttons.
+            $("#rectangleSelectButton").click(function() {
+                enableRectangleSelect();
+            });
+
+            // Buttons that bring up dialogs.
             $("#settings-button").click(function() {
-                $("#settings").dialog({
-                    width: subWindowWidth,
-                    height: subWindowHeight,
-                    modal: false,
-                    title: "Settings"
-                });
+                openSubwindow($("#settings"), "Settings");
             });
             $("#help-button").click(function() {
-                $("#help").dialog({
-                    width: subWindowWidth,
-                    height: subWindowHeight,
-                    modal: false,
-                    title: "Help"
-                });
+                openSubwindow($("#help"), "Help");
             });
             var $controlsButton = $("#controls-button");
             $controlsButton.click(function() {
-                $("#controls").dialog({
-                    width: subWindowWidth,
-                    height: subWindowHeight,
-                    modal: false,
-                    title: "Controls"
-                });
+                openSubwindow($("#controls"), "Controls");
             });
+
 
             // Keymap.
             //
@@ -1545,103 +1836,78 @@ var AnnotationToolHelper = (function() {
             // "mod" means Ctrl in Windows/Linux, Cmd in Mac.
             //
             // Shortcut rules:
-            // 1. 'field' is when focused in an annotation field. 'top' is when focused
+            // 1. 'field' is when focused in the annotation field. 'top' is when focused
             // on anything else. 'all' applies when either field or top is true.
             // 2. For 'field' or 'all', don't use anything that could clash with typing
             // a label code.
+            // 3. You can't have more than one handler for a given shortcut, even if
+            // they are for different contexts (like top and field). This is due to
+            // how Mousetrap works.
             var keymap = [
                 ['shift+up', zoomIn, 'all'],
                 ['shift+down', zoomOut, 'all'],
+                ['shift+right', toggleAnnotationFieldContainer, 'all'],
 
                 ['mod+s', clickSaveButton, 'all'],
 
-                ['.', focusUnannotatedField, 'top'],
+                ['.', selectFirstUnannotatedPoint, 'top'],
                 ['?', function() {$controlsButton.click();}, 'top'],
 
                 ['g n', navNext, 'top'],
                 ['g b', navBack, 'top'],
                 ['g f', navForward, 'top'],
 
-                ['return', confirmFieldAndFocusNext, 'field'],
-                ['up', focusPrevField, 'field'],
-                ['down', focusNextField, 'field'],
-                ['esc', unfocusField, 'field'],
-
-                // Ctrl for both Windows and Mac; it seems Cmd may have more
-                // potential for clashes in Mac.
-                //
-                // Actually, this is a candidate shortcut to ditch altogether
-                // at some later date. Especially if we have a fluid layout
-                // with a reshapeable label button grid.
-                ['ctrl+left', moveCurrentLabelLeft, 'field'],
-                ['ctrl+right', moveCurrentLabelRight, 'field'],
-                ['ctrl+up', moveCurrentLabelUp, 'field'],
-                ['ctrl+down', moveCurrentLabelDown, 'field'],
-                ['ctrl', beginKeyboardLabelling, 'field', 'keydown']
+                ['return', labelSelectedAndVerify, 'field'],
+                ['shift+tab', selectPrevPoint, 'field'],
+                ['tab', selectNextPoint, 'field'],
+                ['esc', unfocusField, 'field']
             ];
 
             // By default, mousetrap doesn't activate when focused in an
             // input field. But we want some shortcut keys for our
-            // annotation input fields, so add the class 'mousetrap' to
+            // annotation input field, so add the class 'mousetrap' to
             // indicate that.
-            $annotationFields.each( function() {
-                $(this).addClass('mousetrap');
-            });
+            $annotationField.addClass('mousetrap');
 
             // Define a few possible handler modifiers.
 
             // Handler modifier: only trigger
-            // when an annotation field is focused.
-            var applyOnlyInAnnoField = function(f) {
+            // when the annotation field is focused.
+            var applyOnlyInAnnoField = function(f, event) {
                 var aElmt = document.activeElement;
+                var aElmtIsAnnotationField = $annotationField.is(aElmt);
 
-                // An annotation field is an input element
-                // within #annotationList.
-                var aElmtIsAnnotationField =
-                    aElmt.tagName.equalsIgnoreCase('input')
-                        && $('#annotationList')[0].contains(aElmt);
-
-                // We're in an annotation field.
+                // We're in the annotation field.
                 if (aElmtIsAnnotationField) {
-                    // Use apply() to ensure that in the called function,
-                    // "this" is the annotation field.
-                    f.apply(aElmt);
-                    // Prevent default behavior.
-                    return false;
+                    f(event);
+                    // Prevent browser's default behavior.
+                    event.preventDefault();
                 }
-                // We're not in an annotation field.
+                // We're not in the annotation field.
                 // Don't prevent default behavior.
-                return true;
             };
 
             // Handler modifier: only trigger
-            // when an annotation field is NOT focused.
-            var applyOnlyAtTop = function(f) {
+            // when the annotation field is NOT focused.
+            var applyOnlyAtTop = function(f, event) {
                 var aElmt = document.activeElement;
+                var aElmtIsAnnotationField = $annotationField.is(aElmt);
 
-                // An annotation field is an input element
-                // within #annotationList.
-                var aElmtIsAnnotationField =
-                    aElmt.tagName.equalsIgnoreCase('input')
-                        && $('#annotationList')[0].contains(aElmt);
-
-                // We're not in an annotation field.
+                // We're not in the annotation field.
                 if (!aElmtIsAnnotationField) {
-                    f();
-                    // Prevent default behavior.
-                    return false;
+                    f(event);
+                    // Prevent browser's default behavior.
+                    event.preventDefault();
                 }
-                // We're in an annotation field.
+                // We're in the annotation field.
                 // Don't prevent default behavior.
-                return true;
             };
 
-            // Handler modifier: prevent the event's
-            // default behavior, and prevent the event from
-            // bubbling up.
-            var modifyToPreventDefault = function(f) {
-                f();
-                return false;
+            // Handler modifier: just prevent the event's
+            // default behavior in all cases.
+            var modifyToPreventDefault = function(f, event) {
+                f(event);
+                event.preventDefault();
             };
 
             // Bind event handlers according to the keymap.
@@ -1677,6 +1943,23 @@ var AnnotationToolHelper = (function() {
                 }
             }
 
+
+            // Initialize AnnotationToolAutocomplete object.
+            // Autocomplete will work in the annotation field.
+            AnnotationToolAutocomplete.init({
+                $annotationField: $annotationField,
+                labelCodes: labelCodes,
+                machineSuggestions: params.machineSuggestions
+            });
+            $('.ui-autocomplete.ui-menu').css({
+                'z-index': ZINDEX_ANNOTATION_FIELD
+            });
+            // The annotation field starts is on the image by default, so
+            // make it and autocomplete semi-transparent by default.
+            $annotationField.addClass('semi-transparent');
+            $('.ui-autocomplete.ui-menu').addClass('semi-transparent');
+
+
             // Show/hide certain key instructions depending on whether Mac is the OS.
             if (isMac) {
                 $('span.key_mac').show();
@@ -1688,9 +1971,18 @@ var AnnotationToolHelper = (function() {
             }
         },
 
-        // Public version of this function...
+        // Public version of these functions...
+        getSelectedNumbers: function() {
+            return getSelectedNumbers();
+        },
+        labelSelected: function(v) {
+            labelSelected(v);
+        },
         redrawAllPoints: function() {
             redrawAllPoints();
+        },
+        selectNextUnannotatedPoint: function() {
+            selectNextUnannotatedPoint();
         }
     }
 })();

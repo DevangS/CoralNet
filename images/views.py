@@ -23,6 +23,7 @@ from images.utils import *
 from lib.utils import get_map_sources
 import json , csv, os.path, time
 from numpy import array
+from visualization.forms import BrowseSearchForm
 
 def source_list(request):
     """
@@ -172,21 +173,26 @@ def source_main(request, source_id):
 
     all_images = source.get_all_images()
     latest_images = all_images.order_by('-upload_date')[:3]
+    browse_url_base = reverse('visualize_source', args=[source.id])
 
     image_stats = dict(
         total = all_images.count(),
-        anno_completed = all_images.filter(status__annotatedByHuman=True).count(),
+        total_link = browse_url_base,
+        annotated = all_images.filter(status__annotatedByHuman=True).count(),
     )
     if source.enable_robot_classifier:
         image_stats.update( dict(
-            need_comp_anno = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=False).count(),
-            need_human_anno = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=True).count(),
-            need_human_anno_first = get_first_image(source, dict(status__annotatedByHuman=False, status__annotatedByRobot=True)),
+            annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_HUMAN_ANNOTATED,
+            not_annotated = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=False).count(),
+            not_annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_NEEDS_ANNOTATION,
+            not_human_annotated = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=True).count(),
+            not_human_annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_MACHINE_ANNOTATED,
         ))
     else:
         image_stats.update( dict(
-            need_anno = all_images.filter(status__annotatedByHuman=False).count(),
-            need_anno_first = get_first_image(source, dict(status__annotatedByHuman=False)),
+            annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_ANNOTATED,
+            not_annotated = all_images.filter(status__annotatedByHuman=False).count(),
+            not_annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_NEEDS_ANNOTATION,
         ))
 
 

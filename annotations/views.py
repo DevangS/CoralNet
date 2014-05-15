@@ -10,6 +10,7 @@ from easy_thumbnails.files import get_thumbnailer
 from reversion.models import Version, Revision
 from accounts.utils import get_robot_user
 import annotations.forms as annotations_forms
+import annotations.utils as annotations_utils
 from annotations.forms import NewLabelForm, NewLabelSetForm, AnnotationForm, AnnotationAreaPixelsForm, AnnotationToolSettingsForm, AnnotationImageOptionsForm
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess, AnnotationToolSettings
@@ -533,13 +534,23 @@ def annotation_tool(request, image_id):
     # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
 
 
+    # Get machine suggestions, if applicable.
+    if not settings_obj.show_machine_annotations:
+        machine_suggestions = None
+    elif not image.status.annotatedByRobot:
+        machine_suggestions = None
+    else:
+        # This can also be None if something goes wrong.
+        machine_suggestions = annotations_utils.get_machine_suggestions_for_image(image_id)
+
+
     # Image tools form (brightness, contrast, etc.)
     image_options_form = AnnotationImageOptionsForm()
 
 
     # Image dimensions.
-    IMAGE_AREA_WIDTH = 800
-    IMAGE_AREA_HEIGHT = 600
+    IMAGE_AREA_WIDTH = 850
+    IMAGE_AREA_HEIGHT = 650
 
     source_images = dict(full=dict(
         url=image.original_file.url,
@@ -590,6 +601,7 @@ def annotation_tool(request, image_id):
         'image_options_form': image_options_form,
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
+        'machine_suggestions': machine_suggestions,
         'IMAGE_AREA_WIDTH': IMAGE_AREA_WIDTH,
         'IMAGE_AREA_HEIGHT': IMAGE_AREA_HEIGHT,
         'source_images': source_images,
