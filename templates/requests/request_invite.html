@@ -11,8 +11,7 @@
 
 
     <legend>Request an account</legend>
-    <span class="helptext">We don't have open registration yet, but you can use this form to request an account.
-                           If we accept your request, we'll create an account for you and e-mail you with the info you need to log in.</span>
+    <span class="helptext">We don't have open registration yet, but you can use this form to request an account. If we accept your request, we'll create an account for you and e-mail you with the info you need to log in. If you don't hear back from us in 2 days, please send a new request, or let us know through the <a href="http://coralnet.ucsd.edu/contact/"> contact form</a>. </span>
     <form action="{% url request_account %}" method="post">
         {% csrf_token %}
         
