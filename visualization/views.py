@@ -18,6 +18,8 @@ from GChartWrapper import *
 from upload.forms import MetadataForm, CheckboxForm
 from django.forms.formsets import formset_factory
 from django.utils.functional import curry
+from numpy import array, zeros, sum, array_str, rank, linalg, logical_and, newaxis, float32
+from images.tasks import get_functional_group_confusion_matrix
 
 # TODO: Move to utils
 def image_search_args_to_queryset_args(searchDict, source):
@@ -785,6 +787,100 @@ def generate_statistics(request, source_id):
         },
         context_instance=RequestContext(request)
     )
+
+@source_visibility_required('source_id')
+def export_abundance(placeholder, source_id):
+
+    ### SETUP    
+    # get the response object, this can be used as a stream.
+    response = HttpResponse(mimetype='text/csv')
+    # force download.
+    response['Content-Disposition'] = 'attachment;filename="abundances.csv"'
+    # the csv writer
+    writer = csv.writer(response)
+    source = get_object_or_404(Source, id=source_id)
+    labelset = get_object_or_404(LabelSet, source=source)
+
+    funcgroups = LabelGroup.objects.filter()
+    nfuncgroups = len(funcgroups)    
+    
+    all_annotations = Annotation.objects.filter(source=source).select_related() #get all annotations
+    images = Image.objects.filter(source=source).select_related() #get all images
+    labels = Label.objects.filter(labelset=labelset).order_by('name')
+            
+    ### GET THE FUNCTIONAL GROUP CONFUSION MATRIX AND MAKE SOME CHECKS.
+    cm = get_functional_group_confusion_matrix(source)
+    # writer.writerow(cm.tolist()) # Debug stuff
+
+    # check if there are classes that never occur in the matrix. 
+    emptyinds = logical_and(sum(cm, axis=0)==0, sum(cm,axis=1)==0)
+    # set the diagonal entry of these classes to 1. This means that nothing will happen to them.
+    for funcgroupitt in range(nfuncgroups):
+        if(emptyinds[funcgroupitt]):
+            cm[funcgroupitt, funcgroupitt] = 1
+
+    # now check if the cm has full rank. If it does not abort the procedure.
+    if(linalg.matrix_rank(cm)<nfuncgroups):
+        writer.writerow(["Error! Confusion matrix is singular, abundance correction is not possible."])
+        return response
+
+    # This are ok, next row-normalize and invert
+    row_sums = float32(cm.sum(axis=1))
+    cm_normalized = float32(cm) / row_sums[:, newaxis]
+    # writer.writerow(cm_normalized.tolist()) # debug stuff
+
+    Q = linalg.inv(cm_normalized.transpose()) # Q matrix from Solow.
+    # writer.writerow(Q.tolist()) # debug stuff
+
+    ### Adds table header which looks something as follows:
+    #locKey1 locKey2 locKey3 locKey4 date label1 label2 label3 label4 .... labelEnd
+    #Note: labe1, label2, etc corresponds to the percent coverage of that label on
+    #a per IMAGE basis, not per source
+    header = []
+    header.extend(source.get_key_list())
+    header.append('date_taken')
+    header.append('annotation_status')
+    header.extend(images[0].get_metadata_fields_for_export()) #these are the same for all images. Use first one..
+    for funcgroup in funcgroups:
+        header.append(str(funcgroup.name))
+    writer.writerow(header)
+
+    ### BEGIN EXPORT
+    for image in images:
+        locKeys = []
+        for field in image.get_location_value_str_list():
+            if field:
+                locKeys.append(str(field))
+            else:
+                locKeys.append("Unspecified")
+        
+        image_annotations = all_annotations.filter(image=image)
+        image_annotation_count = image_annotations.count()
+        if image_annotation_count == 0:
+            image_annotation_count = 1.0 #is there is zero annotations, set this to one, to not messup the normalization below
+
+        coverage = zeros( (nfuncgroups) ) # this stores the coverage for the current image.
+        for label_index, label in enumerate(labels):
+            label_annotations_count = image_annotations.filter(label=label).count() # for each type of label
+            coverage[label.group_id-1] += label_annotations_count # increment the count of the group of this label
+        coverage /= image_annotation_count #normalize by total count
+
+        row = []
+        row.extend(locKeys)
+        row.append(str(image.metadata.photo_date))
+    
+        if image.status.annotatedByHuman:
+            row.append('verified_by_human')
+        elif image.status.annotatedByRobot:
+            row.append('not_verified_by_human_(abundance_corrected)')
+            coverage = Q.dot(coverage) #this is the abundance correction. Very simple!
+        else:
+            row.append('not_annotated')
+        row.extend(image.get_metadata_values_for_export())
+        row.extend(coverage.tolist())
+        writer.writerow(row)
+    
+    return response
 
 @source_visibility_required('source_id')
 def export_statistics(request, source_id):

@@ -9,6 +9,8 @@ from celery.task import task
 import os
 from django.conf import settings
 from django.core.mail import send_mail
+import json , csv, os.path, time
+from django.shortcuts import render_to_response, get_object_or_404
 
 try:
     from PIL import Image as PILImage
@@ -19,9 +21,11 @@ from django.db import transaction
 import reversion
 from accounts.utils import get_robot_user
 from accounts.utils import is_robot_user
-from annotations.models import Label, Annotation
+from annotations.models import Label, Annotation, LabelGroup
 from images import task_helpers
 from images.models import Point, Image, Source, Robot
+from numpy import array, zeros, sum
+import math
 
 # Revision objects will not be saved during Celery tasks unless
 # the Celery worker hooks up Reversion's signal handlers.
@@ -736,3 +740,61 @@ def verifyAllImages():
 def verifyAllAndPrint():
     for errorFile in verifyAllImages():
         print errorFile.original_file.name
+
+def get_functional_group_confusion_matrix(source):
+
+    latestRobot = source.get_latest_robot()
+    if latestRobot == None:
+        return None
+
+    f = open(latestRobot.path_to_model + '.meta.json')
+    meta=json.loads(f.read())
+    f.close()
+        
+    # get raw confusion matrix from json file
+    if 'cmOpt' in meta['hp']['gridStats']:
+        cmraw = meta['hp']['gridStats']['cmOpt']
+    else:
+        cmraw = meta['hp']['gridStats'][-1]['cmOpt']
+
+    # convert to numpy matrix.
+    nlabels = int(math.sqrt(len(cmraw)))
+    cm = zeros( ( nlabels, nlabels ), dtype = int )
+    for x in range(len(cmraw)):
+        cm[x/nlabels, x%nlabels] = cmraw[x]
+
+    ### COLLAPSE TO FUNCTIONAL GROUP MATRIX (several steps required) ###
+
+    # read labelId's from the metadata
+    labelIds = meta['labelMap']
+
+    # create a labelmap that maps the labels to functional groups
+    funcMap = zeros( (nlabels, 1), dtype = int )
+    for labelItt in range(nlabels):
+        funcMap[labelItt] = Label.objects.get(id=labelIds[labelItt]).group_id
+    funcMap -= 1 #0 indexing
+
+    # figure out how many functional groups are globall on the site
+    nfuncgroups = len(LabelGroup.objects.filter())
+
+    ## collapse columns
+    
+    # create an intermediate confusion matrix to facilitate the collapse
+    cm_int = zeros( ( nlabels, nfuncgroups ), dtype = int )
+        
+    # do the collapse
+    for rowlabelitt in range(nlabels):
+        for collabelitt in range(nlabels):
+            cm_int[rowlabelitt, funcMap[collabelitt]] += cm[rowlabelitt, collabelitt]
+    
+    ## collapse rows
+    # create the final confusion matrix for functional groups
+    cm_func = zeros( ( nfuncgroups, nfuncgroups ), dtype = int )
+        
+    # do the collapse
+    for rowlabelitt in range(nlabels):
+        for funclabelitt in range(nfuncgroups):
+            cm_func[funcMap[rowlabelitt], funclabelitt] += cm_int[rowlabelitt, funclabelitt]
+
+    return cm_func
+
