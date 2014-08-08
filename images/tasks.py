@@ -768,14 +768,18 @@ def get_functional_group_confusion_matrix(source):
     # read labelId's from the metadata
     labelIds = meta['labelMap']
 
-    # create a labelmap that maps the labels to functional groups
-    funcMap = zeros( (nlabels, 1), dtype = int )
-    for labelItt in range(nlabels):
-        funcMap[labelItt] = Label.objects.get(id=labelIds[labelItt]).group_id
-    funcMap -= 1 #0 indexing
+    # create a labelmap that maps the labels to functional groups. 
+    # The thing is that we can't rely on the functional group id field, 
+    # since this may not start on one, nor  be consecutive.
+    funcgroups = LabelGroup.objects.filter().order_by('id') # get all groups
+    nfuncgroups = len(funcgroups)
+    fdict = {} # this will map group_id to a counter from 0 to (number of functional groups - 1).
+    for itt, group in enumerate(funcgroups):
+        fdict[group.id] = itt
 
-    # figure out how many functional groups are globall on the site
-    nfuncgroups = len(LabelGroup.objects.filter())
+    funcMap = zeros( (nlabels, 1), dtype = int ) # this maps labelid to the functional group consecutive id.
+    for labelItt in range(nlabels):
+        funcMap[labelItt] = fdict[Label.objects.get(id=labelIds[labelItt]).group_id]
 
     ## collapse columns
     
@@ -796,5 +800,5 @@ def get_functional_group_confusion_matrix(source):
         for funclabelitt in range(nfuncgroups):
             cm_func[funcMap[rowlabelitt], funclabelitt] += cm_int[rowlabelitt, funclabelitt]
 
-    return cm_func
+    return (cm_func, fdict)
 

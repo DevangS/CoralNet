@@ -35,6 +35,9 @@
     <p>
     The statistics file will also contain all metadata for each image. The fields should be self-explanatory bar perhaps one, namely "Annotation area". This field specifies the area of the image where the random points are scattered. It can be set globally in the source details ("edit source details" under the Admin tab), OR on an individual image basis (in the image details view). This field will say "imported" if the image uses the global setting. Else, it will contain four integers [min column, max column, min row, max row].
     </p>
+    <p>
+    The last button "Abundance Corrected Statistics" provides a similar output as "Statistics With Robots" with 2 notable exceptions. First, it outputs statistics on the Functional Group Level, rather than on the Label level. Second, it uses the "abundance correction" method originally described by Solow et. al in <i>"Estimating the taxonomic composition of a sample when individuals are classified with error"</i>, Marine Ecology Progress Series, 2001. A paper describing our own experiments with abundance correction is currently in submission. Please note that abundance correction is only possible if the functional group matrix has full rank. This means, roughly speaking, that the classification accuracy needs to be reasonably good. If this condition does not hold, the system will return a file only containing an error message.
+    </p>
 <br/>
 
 {% endblock %}

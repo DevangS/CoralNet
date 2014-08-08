@@ -801,7 +801,7 @@ def export_abundance(placeholder, source_id):
     source = get_object_or_404(Source, id=source_id)
     labelset = get_object_or_404(LabelSet, source=source)
 
-    funcgroups = LabelGroup.objects.filter()
+    funcgroups = LabelGroup.objects.filter().order_by('id')
     nfuncgroups = len(funcgroups)    
     
     all_annotations = Annotation.objects.filter(source=source).select_related() #get all annotations
@@ -809,11 +809,12 @@ def export_abundance(placeholder, source_id):
     labels = Label.objects.filter(labelset=labelset).order_by('name')
             
     ### GET THE FUNCTIONAL GROUP CONFUSION MATRIX AND MAKE SOME CHECKS.
-    cm = get_functional_group_confusion_matrix(source)
-    # writer.writerow(cm.tolist()) # Debug stuff
+    # the second output is a dictionary that maps the group_id to a consecutive number that starts at 0.
+    (cm, fdict) = get_functional_group_confusion_matrix(source)
 
     # check if there are classes that never occur in the matrix. 
     emptyinds = logical_and(sum(cm, axis=0)==0, sum(cm,axis=1)==0)
+
     # set the diagonal entry of these classes to 1. This means that nothing will happen to them.
     for funcgroupitt in range(nfuncgroups):
         if(emptyinds[funcgroupitt]):
@@ -824,13 +825,10 @@ def export_abundance(placeholder, source_id):
         writer.writerow(["Error! Confusion matrix is singular, abundance correction is not possible."])
         return response
 
-    # This are ok, next row-normalize and invert
+    # Row-normalize and invert
     row_sums = float32(cm.sum(axis=1))
     cm_normalized = float32(cm) / row_sums[:, newaxis]
-    # writer.writerow(cm_normalized.tolist()) # debug stuff
-
     Q = linalg.inv(cm_normalized.transpose()) # Q matrix from Solow.
-    # writer.writerow(Q.tolist()) # debug stuff
 
     ### Adds table header which looks something as follows:
     #locKey1 locKey2 locKey3 locKey4 date label1 label2 label3 label4 .... labelEnd
@@ -857,12 +855,12 @@ def export_abundance(placeholder, source_id):
         image_annotations = all_annotations.filter(image=image)
         image_annotation_count = image_annotations.count()
         if image_annotation_count == 0:
-            image_annotation_count = 1.0 #is there is zero annotations, set this to one, to not messup the normalization below
+            image_annotation_count = 1.0 #is there is zero annotations, set this to one, to not mess up the normalization below
 
         coverage = zeros( (nfuncgroups) ) # this stores the coverage for the current image.
         for label_index, label in enumerate(labels):
             label_annotations_count = image_annotations.filter(label=label).count() # for each type of label
-            coverage[label.group_id-1] += label_annotations_count # increment the count of the group of this label
+            coverage[fdict[label.group_id]] += label_annotations_count # increment the count of the group of this label using the fdict dictionary
         coverage /= image_annotation_count #normalize by total count
 
         row = []
