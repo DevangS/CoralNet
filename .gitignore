@@ -22,3 +22,4 @@ apache/django.wsgi
 #ignore other misc things
 /images/robot_running_flag
 /misc_not_versioncontrolled/*
+/tmp/*
