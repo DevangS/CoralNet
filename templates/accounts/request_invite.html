@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}CoralNet - Signup{% endblock %}
+
+{% block media-includes %}
+  {{ form.media }}
+{% endblock %}
+
+{% block content %}
+
+    <h2>Request an account</h2>
+    <form action="{% url request_invite %}" method="post">{% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Submit" />
+    </form>
+
+{% endblock %}

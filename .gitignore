@@ -11,3 +11,14 @@ apache/django.wsgi
 
 #Ignore IDE stuff
 .idea
+
+#Ignore folders with the backend outputs
+/images/models/*
+/images/classify/*
+/images/features/*
+/images/preprocess/*
+/logs/*
+
+#ignore other misc things
+/images/robot_running_flag
+/misc_not_versioncontrolled/*
