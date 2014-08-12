@@ -22,6 +22,7 @@ class ImageSourceForm(ModelForm):
         )
         widgets = {
             'image_height_in_cm': TextInput(attrs={'size': 3}),
+            'alleviate_threshold': TextInput(attrs={'size': 2}),
             'longitude': TextInput(attrs={'size': 10}),
             'latitude': TextInput(attrs={'size': 10}),
         }
@@ -40,6 +41,7 @@ class ImageSourceForm(ModelForm):
         # For use in templates.  Can iterate over fieldsets instead of the entire form.
         self.fieldsets = {'general_info': [self[name] for name in ['name', 'visibility', 'affiliation', 'description']],
                           'image_height_in_cm': [self[name] for name in ['image_height_in_cm']],
+                          'alleviate_threshold': [self[name] for name in ['alleviate_threshold']],
                           'world_location': [self[name] for name in ['latitude', 'longitude']]}
 
 

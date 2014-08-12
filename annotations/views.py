@@ -499,6 +499,19 @@ def annotation_tool(request, image_id):
     labelValues = list(labels.values('code', 'group', 'name'))
 
 
+    # Get machine suggestions, if applicable.
+    if not settings_obj.show_machine_annotations:
+        machine_suggestions = None
+    elif not image.status.annotatedByRobot:
+        machine_suggestions = None
+    else:
+        machine_suggestions = annotations_utils.get_machine_suggestions_for_image(image_id)
+        # machine_suggestions can still be None here if something goes wrong.
+        # But if not None, apply Alleviate.
+        if machine_suggestions:
+            annotations_utils.apply_alleviate(image_id, machine_suggestions)
+
+
     # Get points and annotations.
     form = AnnotationForm(
         image=image,
@@ -532,16 +545,6 @@ def annotation_tool(request, image_id):
     #  {'point_number':2, ...},
     #  ...]
     # TODO: Are we even using anything besides row, column, and point_number?  If not, discard the annotation fields to avoid confusion.
-
-
-    # Get machine suggestions, if applicable.
-    if not settings_obj.show_machine_annotations:
-        machine_suggestions = None
-    elif not image.status.annotatedByRobot:
-        machine_suggestions = None
-    else:
-        # This can also be None if something goes wrong.
-        machine_suggestions = annotations_utils.get_machine_suggestions_for_image(image_id)
 
 
     # Image tools form (brightness, contrast, etc.)

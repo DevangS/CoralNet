@@ -8,14 +8,16 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        # Adding field 'Source.alleviate_threshold'
+        db.add_column('images_source', 'alleviate_threshold',
+                      self.gf('django.db.models.fields.IntegerField')(default=100),
+                      keep_default=False)
 
-        # Changing field 'Metadata.photo_date'
-        db.alter_column('images_metadata', 'photo_date', self.gf('django.db.models.fields.DateField')(null=True))
 
     def backwards(self, orm):
+        # Deleting field 'Source.alleviate_threshold'
+        db.delete_column('images_source', 'alleviate_threshold')
 
-        # Changing field 'Metadata.photo_date'
-        db.alter_column('images_metadata', 'photo_date', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(1970, 1, 1, 0, 0)))
 
     models = {
         'annotations.label': {
@@ -121,11 +123,11 @@ class Migration(SchemaMigration):
             'photo_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
             'photographer': ('django.db.models.fields.CharField', [], {'max_length': '45', 'blank': 'True'}),
             'strobes': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
-            'value1': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value1']", 'null': 'True'}),
-            'value2': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value2']", 'null': 'True'}),
-            'value3': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value3']", 'null': 'True'}),
-            'value4': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value4']", 'null': 'True'}),
-            'value5': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value5']", 'null': 'True'}),
+            'value1': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value1']", 'null': 'True', 'blank': 'True'}),
+            'value2': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value2']", 'null': 'True', 'blank': 'True'}),
+            'value3': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value3']", 'null': 'True', 'blank': 'True'}),
+            'value4': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value4']", 'null': 'True', 'blank': 'True'}),
+            'value5': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['images.Value5']", 'null': 'True', 'blank': 'True'}),
             'water_quality': ('django.db.models.fields.CharField', [], {'max_length': '45', 'blank': 'True'})
         },
         'images.point': {
@@ -149,6 +151,7 @@ class Migration(SchemaMigration):
         'images.source': {
             'Meta': {'object_name': 'Source'},
             'affiliation': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
+            'alleviate_threshold': ('django.db.models.fields.IntegerField', [], {'default': '100'}),
             'create_date': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'default_point_generation_method': ('django.db.models.fields.CharField', [], {'default': "'m_200'", 'max_length': '50'}),
             'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
