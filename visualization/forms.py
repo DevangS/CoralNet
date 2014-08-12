@@ -59,8 +59,8 @@ class ImageLocationValueForm(forms.Form):
 class BrowseSearchForm(ImageLocationValueForm):
 
     STATUS_NEEDS_ANNOTATION = 'n'
-    STATUS_MACHINE_ANNOTATED = 'm'
-    STATUS_HUMAN_ANNOTATED = 'h'
+    STATUS_UNCONFIRMED = 'm'
+    STATUS_CONFIRMED = 'h'
     STATUS_ANNOTATED = 'a'
 
     page_view = forms.ChoiceField(
@@ -107,8 +107,8 @@ class BrowseSearchForm(ImageLocationValueForm):
         ]
         if source.enable_robot_classifier:
             status_choices.extend([
-                (BrowseSearchForm.STATUS_MACHINE_ANNOTATED, 'Annotated by machine'),
-                (BrowseSearchForm.STATUS_HUMAN_ANNOTATED, 'Annotated by human'),
+                (BrowseSearchForm.STATUS_UNCONFIRMED, 'Unconfirmed'),
+                (BrowseSearchForm.STATUS_CONFIRMED, 'Confirmed'),
             ])
         else:
             status_choices.append((BrowseSearchForm.STATUS_ANNOTATED, 'Annotated'))
@@ -206,10 +206,10 @@ class ImageSpecifyForm(forms.Form):
                         if v == BrowseSearchForm.STATUS_NEEDS_ANNOTATION:
                             filter_args['status__annotatedByHuman'] = False
                             filter_args['status__annotatedByRobot'] = False
-                        elif v == BrowseSearchForm.STATUS_MACHINE_ANNOTATED:
+                        elif v == BrowseSearchForm.STATUS_UNCONFIRMED:
                             filter_args['status__annotatedByHuman'] = False
                             filter_args['status__annotatedByRobot'] = True
-                        elif v == BrowseSearchForm.STATUS_HUMAN_ANNOTATED:
+                        elif v == BrowseSearchForm.STATUS_CONFIRMED:
                             filter_args['status__annotatedByHuman'] = True
                         # else, don't filter
                     else:

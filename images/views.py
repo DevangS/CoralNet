@@ -182,11 +182,11 @@ def source_main(request, source_id):
     )
     if source.enable_robot_classifier:
         image_stats.update( dict(
-            annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_HUMAN_ANNOTATED,
+            annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_CONFIRMED,
             not_annotated = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=False).count(),
             not_annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_NEEDS_ANNOTATION,
             not_human_annotated = all_images.filter(status__annotatedByHuman=False, status__annotatedByRobot=True).count(),
-            not_human_annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_MACHINE_ANNOTATED,
+            not_human_annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_UNCONFIRMED,
         ))
     else:
         image_stats.update( dict(
