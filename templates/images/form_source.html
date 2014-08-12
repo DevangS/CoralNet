@@ -89,7 +89,7 @@ This form template is meant to be used with the "include" template tag.
         {# Possible shorter explanation: #}
         {#Auto-accept the machine annotator's suggestions when its confidence is above this percentage.<br/><br/>#}
         {#This auto-acceptance happens when you enter the annotation tool for an image. Effectively, the machine's most confident points are \"alleviated\" from your annotation workload (for that image).<br/><br/>#}
-        {#A machine confidence level above 100% is impossible, so set it to 100 to disable this feature.#}
+        {#A machine confidence level of 100% is impossible, so set it to 100 to disable this feature.#}
 
         The machine learning algorithm (we call her "Cora" sometimes) running on the CoralNet server generates posterior probabilities for each annotation. For example, the posterior probabilities for a certain location in a certain image may be: Acropora with 90% confidence, Sand with 6% and Algae with 4%, meaning that Cora is 90% confident that the correct annotation is Acropora. The details of how these posterior probabilities are generated can be seen in Section 8 of the <a href="http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.pdf">Libsvm documentation</a>.<br/><br/>
         These posterior probabilities are shown by default in the popup that appears during manual annotation process, and facilitate faster label-selection by the human operator (we call this the 'refine' annotation mode).<br/><br/>

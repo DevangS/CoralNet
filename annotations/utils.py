@@ -161,7 +161,7 @@ def apply_alleviate(image_id, machine_suggestions):
         # Make sure to go from a decimal to a percentage
         top_confidence = 100*top_score
 
-        if top_confidence > source.alleviate_threshold:
+        if top_confidence >= source.alleviate_threshold:
             # Save the annotation under the username Alleviate, so that it's no longer
             # a robot annotation.
             anno.user = get_alleviate_user()
