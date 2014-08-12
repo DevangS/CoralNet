@@ -62,8 +62,13 @@ var AnnotationToolAutocomplete = (function() {
         var suggestionsForWidget = [];
         for (i = 0; i < suggestionArray.length; i++) {
             item = suggestionArray[i];
-            // Get an integer percentage score (0.36852 -> 37%)
-            var scoreStr = (item['score']*100.0).toFixed(0);
+            // Get an integer percentage score, rounding down (0.36852 -> 36%).
+            //
+            // The round-down is to be consistent with Alleviate. To not
+            // mislead the user, it should only say 50% if it's going to
+            // satisfy a 50% Alleviate threshold, i.e. it's 50.x%.
+            var floatPercentage = item['score']*100.0;
+            var scoreStr = Math.floor(floatPercentage).toFixed(0);
             suggestionsForWidget.push({
                 label: '{0} [{1}%]'.format(item['label'], scoreStr),
                 value: item['label']
