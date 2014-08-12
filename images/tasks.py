@@ -6,6 +6,7 @@ import pickle
 from random import random
 import shutil
 from celery.task import task
+import operator
 import os
 from django.conf import settings
 from django.core.mail import send_mail
@@ -22,7 +23,7 @@ import reversion
 from accounts.utils import get_robot_user
 from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation, LabelGroup
-from images import task_helpers
+from images import task_helpers, task_utils
 from images.models import Point, Image, Source, Robot
 from numpy import array, zeros, sum
 import math
@@ -324,56 +325,46 @@ def Classify(image_id):
     #get algorithm user object
     user = get_robot_user()
 
-    #open the labelFile and rowColFile to process labels
-    rowColFile = os.path.join(FEATURES_DIR, str(image_id) + "_rowCol.txt")
-    label_file = open(labelFile, 'r')
-    row_file = open(rowColFile, 'r')
+    # Get the label probabilities that we just generated
+    label_probabilities = task_utils.get_label_probabilities_for_image(image_id)
 
-    for line in row_file:
-        row, column = line.split(',')
+    # Go through each point and update/create the annotation as appropriate
+    for point_number, probs in label_probabilities.iteritems():
+        pt = Point.objects.get(image=image, point_number=point_number)
 
-        #gets the label object based on the label id the algorithm specified
-        label_id = label_file.readline()
-        label_id.replace('\n', '')
-        label = Label.objects.get(id=label_id)
+        probs_descending_order = sorted(probs, key=operator.itemgetter('score'), reverse=True)
+        top_prob_label_code = probs_descending_order[0]['label']
+        label = Label.objects.get(code=top_prob_label_code)
 
-        #gets the point object(s) that have that row and column.
-        #if there's more than one such point, add annotations to all of
-        #these points.
-        points_at_this_row_col = Point.objects.filter(image=image, row=row, column=column)
+        # If there's an existing annotation for this point, get it.
+        # Otherwise, create a new annotation.
+        #
+        # (Assumption: there's at most 1 Annotation per Point, never multiple.
+        # If there are multiple, we'll get a MultipleObjectsReturned exception.)
+        try:
+            anno = Annotation.objects.get(image=image, point=pt)
 
-        for point in points_at_this_row_col:
+        except Annotation.DoesNotExist:
+            # No existing annotation. Create a new one.
+            new_anno = Annotation(
+                image=image, label=label, point=pt,
+                user=user, robot_version=latestRobot, source=image.source
+            )
+            new_anno.save()
 
-            existing_annotations = Annotation.objects.filter(point=point, image=image)
+        else:
+            # Got an existing annotation.
+            if is_robot_user(anno.user):
+                # It's an existing robot annotation. Update it as necessary.
+                if anno.label.id != label.id:
+                    anno.label = label
+                    anno.robot_version = latestRobot
+                    anno.save()
 
-            if (len(existing_annotations) > 0):
-                # there's an existing Annotation object for this point.
-                # (assumption: this means there's only one Annotation object
-                # for this point, never multiple.)
-                existing_annotation = existing_annotations[0]
-
-                # if this is an imported or human, we don't want to overwrite it, so continue
-                if not is_robot_user(existing_annotation.user):
-                    continue
-
-                # we have an annotation that was annotated by a previous
-                # robot version.  if the current robot's label is different
-                # from the previous robot's label, update the annotation.
-                if existing_annotation.label.id != label.id:
-                    existing_annotation.label = label
-                    existing_annotation.robot_version = latestRobot
-                    existing_annotation.save()
-
-            else:
-                # there's no existing Annotation object for this point.
-                # create a new annotation object and save it.
-                new_annotation = Annotation(image=image, label=label, point=point, user=user, robot_version=latestRobot, source=image.source)
-                new_annotation.save()
+            # Else, it's an existing confirmed annotation, and we don't want
+            # to overwrite it. So do nothing in this case.
 
     print 'Finished classification of image id {id}'.format(id = image_id)
-
-    label_file.close()
-    row_file.close()
 
 
 # This task modifies the feature file so that is contains the correct labels, as provided by the human operator.

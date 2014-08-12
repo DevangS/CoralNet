@@ -16,6 +16,7 @@ from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolAccess, AnnotationToolSettings
 from annotations.utils import get_annotation_version_user_display
 from decorators import source_permission_required, source_visibility_required, image_permission_required, image_annotation_area_must_be_editable, image_labelset_required
+from images import task_utils
 from images.models import Source, Image, Point
 from images.utils import generate_points, get_first_image, get_next_image, get_prev_image
 from visualization.utils import generate_patch_if_doesnt_exist
@@ -499,17 +500,17 @@ def annotation_tool(request, image_id):
     labelValues = list(labels.values('code', 'group', 'name'))
 
 
-    # Get machine suggestions, if applicable.
+    # Get the machine's label probabilities, if applicable.
     if not settings_obj.show_machine_annotations:
-        machine_suggestions = None
+        label_probabilities = None
     elif not image.status.annotatedByRobot:
-        machine_suggestions = None
+        label_probabilities = None
     else:
-        machine_suggestions = annotations_utils.get_machine_suggestions_for_image(image_id)
-        # machine_suggestions can still be None here if something goes wrong.
+        label_probabilities = task_utils.get_label_probabilities_for_image(image_id)
+        # label_probabilities can still be None here if something goes wrong.
         # But if not None, apply Alleviate.
-        if machine_suggestions:
-            annotations_utils.apply_alleviate(image_id, machine_suggestions)
+        if label_probabilities:
+            annotations_utils.apply_alleviate(image_id, label_probabilities)
 
 
     # Get points and annotations.
@@ -604,7 +605,7 @@ def annotation_tool(request, image_id):
         'image_options_form': image_options_form,
         'annotations': annotations,
         'annotationsJSON': simplejson.dumps(annotations),
-        'machine_suggestions': machine_suggestions,
+        'label_probabilities': label_probabilities,
         'IMAGE_AREA_WIDTH': IMAGE_AREA_WIDTH,
         'IMAGE_AREA_HEIGHT': IMAGE_AREA_HEIGHT,
         'source_images': source_images,
