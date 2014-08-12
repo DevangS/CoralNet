@@ -110,7 +110,7 @@
                                 <td>Robot Version: <b>{{ robotStats.version }}</b></td>
                             </tr>
                             <tr>
-                                <td>Est. Precision (%): <b>{{ robotStats.precision|floatformat:2 }}</b></td>
+                                <td>Accuracy (%): <b>{{ robotStats.precision|floatformat:2 }}</b></td>
                             </tr>
                             <tr>
                                 <td>Traintime (s): <b>{{ robotStats.trainTime }}</b></td>
@@ -151,7 +151,7 @@
     </script>
 
     <div id="dialog" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:1000px">
-        <p>The First Row and Column Indicate the Functional Group</p>
+        <p>Estimated prob. that func. group (row) is classified as func. group (column)</p>
         <table>
         <tr>
         <td>
@@ -200,6 +200,7 @@
     </div>
 
     <div id="dialog2" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:800px">
+      <p>Estimated prob. that label (row) is classified as label (column)</p>
       <table>
       <tr>
       <td>
