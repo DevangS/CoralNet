@@ -14,24 +14,35 @@ var AnnotationToolAutocomplete = (function() {
             var pointNumber = pointList[i];
             var pointSuggestions = machineSuggestions[pointNumber];
 
+            var sumOfScores = 0;
+
             for (j = 0; j < pointSuggestions.length; j++) {
                 item = pointSuggestions[j];
                 label = item['label'];
                 var score = item['score'];
                 if (labelsToScores.hasOwnProperty(label)) {
-                    labelsToScores[label] = labelsToScores[label] + score;
+                    // For multiple points, multiply the probabilities
+                    // together to get the overall probability that all of
+                    // those points should be labeled as "label".
+                    labelsToScores[label] = labelsToScores[label] * score;
                 }
                 else {
                     labelsToScores[label] = score;
                 }
+                sumOfScores += labelsToScores[label];
             }
-        }
-        // Normalize the scores by the number of points
-        // we're making suggestions on
-        for (label in labelsToScores) {
-            if (!labelsToScores.hasOwnProperty(label)) {continue;}
 
-            labelsToScores[label] = labelsToScores[label] / pointList.length;
+            // Normalize the scores so that they add up to 1.
+            //
+            // We do this on each iteration because if we wait until the
+            // end of all the points, after doing all of those decimal
+            // multiplications, we might go beyond the smallest supported
+            // floating point value. (In Chrome 36, that's somewhere
+            // around 1e-320 or so.)
+            for (label in labelsToScores) {
+                if (!labelsToScores.hasOwnProperty(label)) {continue;}
+                labelsToScores[label] = labelsToScores[label] / sumOfScores;
+            }
         }
 
         // Make an array of the suggestions,
@@ -62,8 +73,13 @@ var AnnotationToolAutocomplete = (function() {
         var suggestionsForWidget = [];
         for (i = 0; i < suggestionArray.length; i++) {
             item = suggestionArray[i];
-            // Get an integer percentage score (0.36852 -> 37%)
-            var scoreStr = (item['score']*100.0).toFixed(0);
+            // Get an integer percentage score, rounding down (0.36852 -> 36%).
+            //
+            // The round-down is to be consistent with Alleviate. To not
+            // mislead the user, it should only say 50% if it's going to
+            // satisfy a 50% Alleviate threshold, i.e. it's 50.x%.
+            var floatPercentage = item['score']*100.0;
+            var scoreStr = Math.floor(floatPercentage).toFixed(0);
             suggestionsForWidget.push({
                 label: '{0} [{1}%]'.format(item['label'], scoreStr),
                 value: item['label']

@@ -1,6 +1,6 @@
 import os
 from django.conf import settings
-from images.models import Image
+from images.models import Image, Point
 
 
 # TODO: Figure out how to avoid duplicating these filepaths between tasks.py
@@ -68,3 +68,62 @@ def read_label_score_file(image_id):
 
     f.close()
     return label_score_lists
+
+
+def get_label_probabilities_for_image(image_id):
+    """
+    :param image_id: id of the image to get label probabilities for.
+    :return:
+        (A) full label probabilities for an image. A dict of point numbers
+        to label-probability mappings. For example:
+        {1: [{'Acrop', 0.148928}, {'Porit', 0.213792}, ...], 2: [...], ...}
+        OR
+        (B) None, if there was a problem getting the probabilities
+        (e.g. some label ids or rows/cols didn't match for some reason,
+        or the label probabilities file couldn't be found).
+    """
+    img = Image.objects.get(pk=image_id)
+
+    points = Point.objects.filter(image=img).values()
+    labels = img.source.labelset.labels.all()
+    # Prefetch the labels
+    labels_list = list(labels)
+
+    row_col_dicts = read_row_col_file(image_id)
+    all_points_label_ids_and_scores = read_label_score_file(image_id)
+
+    # Check for problems reading the files.
+    # TODO: It would be good to have some form of logging that happens
+    # in this case (not just throwing an error at the user).
+    if all_points_label_ids_and_scores is None:
+        return None
+
+    # Convert label ids to label codes
+    all_points_label_scores = []
+    for label_ids_and_scores in all_points_label_ids_and_scores:
+        label_scores = []
+        for d in label_ids_and_scores:
+            label_id = d['label']
+            # TODO: What if a label id from the label score file
+            # isn't in the labelset?
+            label_obj = labels.get(pk=label_id)
+            label_scores.append(
+                dict(label=label_obj.code, score=d['score'])
+            )
+        all_points_label_scores.append(label_scores)
+
+    # Make a dict of row-col pairs to label scores
+    row_col_to_label_scores = dict()
+    for row_col_d, label_scores in zip(row_col_dicts, all_points_label_scores):
+        key = str(row_col_d['row']) + ',' + str(row_col_d['column'])
+        row_col_to_label_scores[key] = label_scores
+
+    # Go from row-col pairs to points;
+    # this gets a dict from point numbers to label scores
+    probabilities_for_all_points = dict()
+    for pt in points:
+        key = str(pt['row']) + ',' + str(pt['column'])
+        # TODO: What if this point's row/col was not in the row/col file?
+        probabilities_for_all_points[pt['point_number']] = row_col_to_label_scores[key]
+
+    return probabilities_for_all_points

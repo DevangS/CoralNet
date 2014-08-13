@@ -6,9 +6,12 @@ import pickle
 from random import random
 import shutil
 from celery.task import task
+import operator
 import os
 from django.conf import settings
 from django.core.mail import send_mail
+import json , csv, os.path, time
+from django.shortcuts import render_to_response, get_object_or_404
 
 try:
     from PIL import Image as PILImage
@@ -19,9 +22,11 @@ from django.db import transaction
 import reversion
 from accounts.utils import get_robot_user
 from accounts.utils import is_robot_user
-from annotations.models import Label, Annotation
-from images import task_helpers
+from annotations.models import Label, Annotation, LabelGroup
+from images import task_helpers, task_utils
 from images.models import Point, Image, Source, Robot
+from numpy import array, zeros, sum
+import math
 
 # Revision objects will not be saved during Celery tasks unless
 # the Celery worker hooks up Reversion's signal handlers.
@@ -320,56 +325,46 @@ def Classify(image_id):
     #get algorithm user object
     user = get_robot_user()
 
-    #open the labelFile and rowColFile to process labels
-    rowColFile = os.path.join(FEATURES_DIR, str(image_id) + "_rowCol.txt")
-    label_file = open(labelFile, 'r')
-    row_file = open(rowColFile, 'r')
+    # Get the label probabilities that we just generated
+    label_probabilities = task_utils.get_label_probabilities_for_image(image_id)
 
-    for line in row_file:
-        row, column = line.split(',')
+    # Go through each point and update/create the annotation as appropriate
+    for point_number, probs in label_probabilities.iteritems():
+        pt = Point.objects.get(image=image, point_number=point_number)
 
-        #gets the label object based on the label id the algorithm specified
-        label_id = label_file.readline()
-        label_id.replace('\n', '')
-        label = Label.objects.get(id=label_id)
+        probs_descending_order = sorted(probs, key=operator.itemgetter('score'), reverse=True)
+        top_prob_label_code = probs_descending_order[0]['label']
+        label = Label.objects.get(code=top_prob_label_code)
 
-        #gets the point object(s) that have that row and column.
-        #if there's more than one such point, add annotations to all of
-        #these points.
-        points_at_this_row_col = Point.objects.filter(image=image, row=row, column=column)
+        # If there's an existing annotation for this point, get it.
+        # Otherwise, create a new annotation.
+        #
+        # (Assumption: there's at most 1 Annotation per Point, never multiple.
+        # If there are multiple, we'll get a MultipleObjectsReturned exception.)
+        try:
+            anno = Annotation.objects.get(image=image, point=pt)
 
-        for point in points_at_this_row_col:
+        except Annotation.DoesNotExist:
+            # No existing annotation. Create a new one.
+            new_anno = Annotation(
+                image=image, label=label, point=pt,
+                user=user, robot_version=latestRobot, source=image.source
+            )
+            new_anno.save()
 
-            existing_annotations = Annotation.objects.filter(point=point, image=image)
+        else:
+            # Got an existing annotation.
+            if is_robot_user(anno.user):
+                # It's an existing robot annotation. Update it as necessary.
+                if anno.label.id != label.id:
+                    anno.label = label
+                    anno.robot_version = latestRobot
+                    anno.save()
 
-            if (len(existing_annotations) > 0):
-                # there's an existing Annotation object for this point.
-                # (assumption: this means there's only one Annotation object
-                # for this point, never multiple.)
-                existing_annotation = existing_annotations[0]
-
-                # if this is an imported or human, we don't want to overwrite it, so continue
-                if not is_robot_user(existing_annotation.user):
-                    continue
-
-                # we have an annotation that was annotated by a previous
-                # robot version.  if the current robot's label is different
-                # from the previous robot's label, update the annotation.
-                if existing_annotation.label.id != label.id:
-                    existing_annotation.label = label
-                    existing_annotation.robot_version = latestRobot
-                    existing_annotation.save()
-
-            else:
-                # there's no existing Annotation object for this point.
-                # create a new annotation object and save it.
-                new_annotation = Annotation(image=image, label=label, point=point, user=user, robot_version=latestRobot, source=image.source)
-                new_annotation.save()
+            # Else, it's an existing confirmed annotation, and we don't want
+            # to overwrite it. So do nothing in this case.
 
     print 'Finished classification of image id {id}'.format(id = image_id)
-
-    label_file.close()
-    row_file.close()
 
 
 # This task modifies the feature file so that is contains the correct labels, as provided by the human operator.
@@ -736,3 +731,65 @@ def verifyAllImages():
 def verifyAllAndPrint():
     for errorFile in verifyAllImages():
         print errorFile.original_file.name
+
+def get_functional_group_confusion_matrix(source):
+
+    latestRobot = source.get_latest_robot()
+    if latestRobot == None:
+        return None
+
+    f = open(latestRobot.path_to_model + '.meta.json')
+    meta=json.loads(f.read())
+    f.close()
+        
+    # get raw confusion matrix from json file
+    if 'cmOpt' in meta['hp']['gridStats']:
+        cmraw = meta['hp']['gridStats']['cmOpt']
+    else:
+        cmraw = meta['hp']['gridStats'][-1]['cmOpt']
+
+    # convert to numpy matrix.
+    nlabels = int(math.sqrt(len(cmraw)))
+    cm = zeros( ( nlabels, nlabels ), dtype = int )
+    for x in range(len(cmraw)):
+        cm[x/nlabels, x%nlabels] = cmraw[x]
+
+    ### COLLAPSE TO FUNCTIONAL GROUP MATRIX (several steps required) ###
+
+    # read labelId's from the metadata
+    labelIds = meta['labelMap']
+
+    # create a labelmap that maps the labels to functional groups. 
+    # The thing is that we can't rely on the functional group id field, 
+    # since this may not start on one, nor  be consecutive.
+    funcgroups = LabelGroup.objects.filter().order_by('id') # get all groups
+    nfuncgroups = len(funcgroups)
+    fdict = {} # this will map group_id to a counter from 0 to (number of functional groups - 1).
+    for itt, group in enumerate(funcgroups):
+        fdict[group.id] = itt
+
+    funcMap = zeros( (nlabels, 1), dtype = int ) # this maps labelid to the functional group consecutive id.
+    for labelItt in range(nlabels):
+        funcMap[labelItt] = fdict[Label.objects.get(id=labelIds[labelItt]).group_id]
+
+    ## collapse columns
+    
+    # create an intermediate confusion matrix to facilitate the collapse
+    cm_int = zeros( ( nlabels, nfuncgroups ), dtype = int )
+        
+    # do the collapse
+    for rowlabelitt in range(nlabels):
+        for collabelitt in range(nlabels):
+            cm_int[rowlabelitt, funcMap[collabelitt]] += cm[rowlabelitt, collabelitt]
+    
+    ## collapse rows
+    # create the final confusion matrix for functional groups
+    cm_func = zeros( ( nfuncgroups, nfuncgroups ), dtype = int )
+        
+    # do the collapse
+    for rowlabelitt in range(nlabels):
+        for funclabelitt in range(nfuncgroups):
+            cm_func[funcMap[rowlabelitt], funclabelitt] += cm_int[rowlabelitt, funclabelitt]
+
+    return (cm_func, fdict)
+

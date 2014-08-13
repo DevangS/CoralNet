@@ -228,7 +228,7 @@
         IMAGE_AREA_HEIGHT: {{ IMAGE_AREA_HEIGHT }},
         imagePoints: {{ annotationsJSON|safe }},
         labels: {{ labels|jsonify }},
-        machineSuggestions: {{ machine_suggestions|jsonify }}
+        machineSuggestions: {{ label_probabilities|jsonify }}
     });
 </script>
 

@@ -34,7 +34,7 @@ This form template is meant to be used with the "include" template tag.
             NOTE: Once you create your source, you cannot change the number of location keys.
             You'll only be able to change the keys' names.  So please take the time now to think
             carefully about the organization of your source.
-			NOTE2: The image acqusition date is always part of the image metadata, along with several other fields, such as camera, water quality etc. There is therefore no need to use e.g. 'year' as a location key.
+			NOTE2: The image acquisition date is always part of the image metadata, along with several other fields, such as camera, water quality etc. There is therefore no need to use e.g. 'year' as a location key.
         {% else %} {# edit #}
             Once you've uploaded some images, you'll be able to search through them using location
             values: you can search for all the images that are from the North island, all the images
@@ -66,6 +66,8 @@ This form template is meant to be used with the "include" template tag.
     <span class="helptext">{{ pointGenForm.form_help_text|linebreaksbr }}</span>
     {% include "form_generic.html" with form=pointGenForm %}
 
+    {# Careful with boolean short-circuiting - 'source' is only available if we are editing a source. #}
+
     {% if source_form_type == "edit" and not source.enable_robot_classifier %}
         <hr class="light"/>
 
@@ -76,6 +78,26 @@ This form template is meant to be used with the "include" template tag.
             source, please
             <a href="{% url contact %}" target="_blank">contact us</a>.
         </span>
+    {% endif %}
+
+    {% if source_form_type == "new" or source.enable_robot_classifier %}
+        <hr class="light"/>
+
+        <legend class="smaller">Alleviate confidence threshold</legend>
+
+        <span class="helptext_long">
+        {# Possible shorter explanation: #}
+        {#Auto-accept the machine annotator's suggestions when its confidence is above this percentage.<br/><br/>#}
+        {#This auto-acceptance happens when you enter the annotation tool for an image. Effectively, the machine's most confident points are \"alleviated\" from your annotation workload (for that image).<br/><br/>#}
+        {#A machine confidence level of 100% is impossible, so set it to 100 to disable this feature.#}
+
+        The machine learning algorithm (we call her "Cora" sometimes) running on the CoralNet server generates posterior probabilities for each annotation. For example, the posterior probabilities for a certain location in a certain image may be: Acropora with 90% confidence, Sand with 6% and Algae with 4%, meaning that Cora is 90% confident that the correct annotation is Acropora. The details of how these posterior probabilities are generated can be seen in Section 8 of the <a href="http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.pdf">Libsvm documentation</a>.<br/><br/>
+        These posterior probabilities are shown by default in the popup that appears during manual annotation process, and facilitate faster label-selection by the human operator (we call this the 'refine' annotation mode).<br/><br/>
+        To further utilize the machine learning algorithm, we allow users to specify a confidence threshold below. Any annotation decision with a posterior probability higher than this threshold will automatically be accepted when you enter the annotation tool for that image. Effectively, the machine's most confident points are "alleviated" from your annotation workload (for that image). Alleviated annotation decisions are treated as 'verified' by the human, and are included when you export your annotations. (Machine annotations that have <strong>not</strong> been verified can optionally also be included in your export (see the 'export' page) ).<br/><br/>
+        A study on how alleviation affects estimation quality of key ecological indicators is currently in submission, and will be shared upon publication. The study suggests that a threshold around 90 or 95% only marginally affects estimation quality while offering up to 50% reduction of manual annotation work. The machine confidence can never be 100%, so set the confidence threshold to 100 to disable this feature.
+        </span>
+
+        {% include "form_generic_one_field.html" with field=sourceForm.alleviate_threshold dont_show_help_text="True" %}
     {% endif %}
 </fieldset>
 

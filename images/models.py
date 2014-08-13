@@ -92,6 +92,13 @@ class Source(models.Model):
         null=True
     )
 
+    alleviate_threshold = models.IntegerField(
+        "Alleviate confidence threshold (valid range - 50 to 100)",
+        validators=[MinValueValidator(50),
+                    MaxValueValidator(100)],
+        default=100,
+    )
+
     enable_robot_classifier = models.BooleanField(
         "Enable robot classifier",
         default=True,
@@ -564,9 +571,9 @@ class Image(models.Model):
         """
         if self.source.enable_robot_classifier:
             if self.status.annotatedByHuman:
-                return "annotated_by_human"
+                return "confirmed"
             elif self.status.annotatedByRobot:
-                return "annotated_by_robot"
+                return "unconfirmed"
             else:
                 return "needs_annotation"
         else:
@@ -580,10 +587,10 @@ class Image(models.Model):
         Returns a string describing the annotation status of this image.
         """
         code = self.get_annotation_status_code()
-        if code == "annotated_by_human":
-            return "Annotated by human"
-        elif code == "annotated_by_robot":
-            return "Annotated by robot"
+        if code == "confirmed":
+            return "Confirmed"
+        elif code == "unconfirmed":
+            return "Unconfirmed"
         elif code == "needs_annotation":
             return "Needs annotation"
         elif code == "annotated":

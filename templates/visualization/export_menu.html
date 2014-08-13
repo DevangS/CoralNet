@@ -13,10 +13,11 @@
 
     <div class="nav_container" id="nav_second_container">
           <ul class="nav nav_right" id="nav_visualize">
-            <li><a href="{% url export_statistics source.id %}"><span>{% trans 'Export Statistics' %}</span></a></li>
-            <li><a href="{% url export_statistics source.id %}?robot=true"><span>{% trans 'Export Statistics With Robots' %}</span></a></li>
-            <li><a href="{% url export_annotations source.id %}"><span>{% trans 'Export Annotations' %}</span></a></li>
-            <li><a href="{% url export_annotations source.id %}?robot=true"><span>{% trans 'Export Annotations With Robots' %}</span></a></li>
+            <li><a href="{% url export_statistics source.id %}"><span>{% trans 'Statistics' %}</span></a></li>
+            <li><a href="{% url export_statistics source.id %}?robot=true"><span>{% trans 'Statistics With Robots' %}</span></a></li>
+            <li><a href="{% url export_annotations source.id %}"><span>{% trans 'Annotations' %}</span></a></li>
+            <li><a href="{% url export_annotations source.id %}?robot=true"><span>{% trans 'Annotations With Robots' %}</span></a></li>
+            <li><a href="{% url export_abundance source.id %}"><span>{% trans 'Abundance Corr. Statistics' %}</span></a></li>
           </ul>
     </div>
 
@@ -25,14 +26,27 @@
 {% block content %}
     <legend>Export Tool</legend>
     <br/>
-     <p>Welcome to the export tool. You can export data related to your source in two ways, by statistics or annotations. By choosing either export method, all the
+    <p>Welcome to the export tool. You can export data related to your source in two ways, by statistics or annotations. By choosing either export method, all the
     data for the source will be collected and put into a .csv file for you to download. Please note that if your source
     contains a large amount of data, then this export process will be very time consuming, so you may want to leave the
-    window open and go have a cup of coffee and a snack. </p>
-    <p> Statistics will export the aggregated annotations as fraction of coverage of each labeltype for each image. Annotations will export each individual annotation including row and column information (one annotation per line). Each of these can be exported with our without the "Robots". If you include "Robots", the annotations automatically provided by the system will be also be exported. Else, only human-supplied annotations will be exported.
+    window open and go have a cup of coffee and a snack. NOTE: Some users in Australia have had problems with time-out for large downloads on their univerity networks. They were able to download their exports from home.
     </p>
     <p>
+    Statistics will export the aggregated annotations as fraction of coverage of each labeltype for each image. Annotations will export each individual annotation including row and column information (one annotation per line). Each of these can be exported with or without the "Robots".
+    </p>
+    <p>
+    If you include "Robots", the annotations automatically provided by the system will be also be exported. Else, only human-confirmed annotations will be exported, including:</p>
+    {# TODO: Figure out site-wide list CSS rules again... #}
+    <ul style="list-style: inherit; margin: 20px;">
+        <li>Annotations made with the annotation tool</li>
+        <li>Annotations imported from data files during image upload</li>
+        <li>Annotations automatically confirmed using the Alleviate confidence threshold</li>
+    </ul>
+    <p>
     The statistics file will also contain all metadata for each image. The fields should be self-explanatory bar perhaps one, namely "Annotation area". This field specifies the area of the image where the random points are scattered. It can be set globally in the source details ("edit source details" under the Admin tab), OR on an individual image basis (in the image details view). This field will say "imported" if the image uses the global setting. Else, it will contain four integers [min column, max column, min row, max row].
+    </p>
+    <p>
+    The last button "Abundance Corrected Statistics" provides a similar output as "Statistics With Robots" with 2 notable exceptions. First, it outputs statistics on the Functional Group Level, rather than on the Label level. Second, it uses the "abundance correction" method originally described by Solow et. al in <i>"Estimating the taxonomic composition of a sample when individuals are classified with error"</i>, Marine Ecology Progress Series, 2001. A paper describing our own experiments with abundance correction is currently in submission. Please note that abundance correction is only possible if the functional group matrix has full rank. This means, roughly speaking, that the classification accuracy needs to be reasonably good. If this condition does not hold, the system will return a file only containing an error message.
     </p>
 <br/>
 

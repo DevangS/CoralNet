@@ -24,6 +24,7 @@ def request_invite(request):
             affiliation = form.cleaned_data.pop('affiliation')
             project_description = form.cleaned_data.pop('project_description')
             how_did_you_hear_about_us = form.cleaned_data.pop('how_did_you_hear_about_us')
+            policy_agree = form.cleaned_data.pop('agree_to_data_policy')
             response_field =  request.POST.get("recaptcha_response_field")
             challenge_field = request.POST.get("recaptcha_challenge_field") 
             
@@ -40,8 +41,9 @@ def request_invite(request):
                       'Reason: ' + reason + '\n' + \
                       'affiliation: ' + affiliation + '\n' + \
                       'project_description: ' + project_description +'\n'+\
-                      'how_did_you_hear_about_us: ' + how_did_you_hear_about_us + '\n'
-            
+                      'how_did_you_hear_about_us: ' + how_did_you_hear_about_us + '\n'+\
+                      'agree_to_data_policy: ' + str(policy_agree) + '\n'
+
             params = urllib.urlencode ({
               'privatekey': encode_if_necessary(CAPTCHA_PRIVATE_KEY),
               'remoteip' :  encode_if_necessary(client_ip),

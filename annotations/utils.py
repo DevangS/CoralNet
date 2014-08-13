@@ -1,9 +1,10 @@
+import operator
+
 from django.contrib.auth.models import User
-from accounts.utils import get_robot_user, is_robot_user
+from accounts.utils import get_robot_user, is_robot_user, get_alleviate_user
 from annotations.models import Annotation
 from images.model_utils import PointGen
 from images.models import Image, Point, Robot
-import images.task_utils as task_utils
 
 def image_annotation_all_done(image):
     """
@@ -83,53 +84,47 @@ def get_annotation_version_user_display(anno_version):
     else:
         return user.username
 
-def get_machine_suggestions_for_image(image_id):
+
+def apply_alleviate(image_id, label_probabilities):
     """
-    :param image_id: id of the image to get machine suggestions for.
-    :return: suggestions as a list of {label: <label code>,
-        score: <score as an integer string>} dicts,
-        ordered by confidence.
-        OR, None if there was a problem getting the suggestions.
+    Apply alleviate to a particular image: auto-accept top machine suggestions
+    based on the confidence threshold.
+
+    :param image_id: id of the image.
+    :param label_probabilities: the machine's assigned label
+           probabilities for each point of the image.
+    :return: nothing.
     """
-    img = Image.objects.get(pk=image_id)
+    img = Image.objects.get(id=image_id)
+    source = img.source
 
-    points = Point.objects.filter(image=img).values()
-    labels = img.source.labelset.labels.all()
-    # Prefetch the labels
-    labels_list = list(labels)
+    if source.alleviate_threshold >= 100:
+        return
 
-    row_col_dicts = task_utils.read_row_col_file(image_id)
-    all_points_label_ids_and_scores = task_utils.read_label_score_file(image_id)
+    machine_annos = Annotation.objects.filter(image=img, user=get_robot_user())
+    alleviate_was_applied = False
 
-    # Check for problems reading the files.
-    # TODO: It would be good to have some form of logging that happens
-    # in this case (without just throwing an error at the user).
-    if all_points_label_ids_and_scores is None:
-        return None
+    for anno in machine_annos:
+        pt_number = anno.point.point_number
+        label_scores = label_probabilities[pt_number]
+        descending_scores = sorted(label_scores, key=operator.itemgetter('score'), reverse=True)
+        top_score = descending_scores[0]['score']
+        # Make sure to go from a decimal to a percentage
+        top_confidence = 100*top_score
 
-    # Convert label ids to label codes
-    all_points_label_scores = []
-    for label_ids_and_scores in all_points_label_ids_and_scores:
-        label_scores = []
-        for d in label_ids_and_scores:
-            label_id = d['label']
-            # TODO: What if the label isn't in the labelset?
-            label_obj = labels.get(pk=label_id)
-            label_scores.append(
-                dict(label=label_obj.code, score=d['score'])
-            )
-        all_points_label_scores.append(label_scores)
+        if top_confidence >= source.alleviate_threshold:
+            # Save the annotation under the username Alleviate, so that it's no longer
+            # a robot annotation.
+            anno.user = get_alleviate_user()
+            anno.save()
+            alleviate_was_applied = True
 
-    row_col_to_label_scores = dict()
-    for row_col_d, label_scores in zip(row_col_dicts, all_points_label_scores):
-        key = str(row_col_d['row']) + ',' + str(row_col_d['column'])
-        row_col_to_label_scores[key] = label_scores
+    if alleviate_was_applied:
+        # Are all points human annotated now?
+        all_done = image_annotation_all_done(img)
+        # Update image status, if needed
+        if all_done:
+            img.status.annotatedByHuman = True
+            img.status.save()
 
-    suggestions_for_all_points = dict()
-    for pt in points:
-        key = str(pt['row']) + ',' + str(pt['column'])
-        # TODO: What if there is no entry for this row and column?
-        suggestions_for_all_points[pt['point_number']] = row_col_to_label_scores[key]
-
-    return suggestions_for_all_points
 

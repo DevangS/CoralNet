@@ -53,6 +53,13 @@
                         <li>Default image annotation area: {{ source.image_annotation_area_display }}</li>
                     {% endif %}
                     <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
+                    <li>
+                        {% if source.alleviate_threshold < 100 %}
+                            Alleviate confidence threshold: {{ source.alleviate_threshold }}%
+                        {% else %}
+                            Alleviate feature is off (100% threshold)
+                        {% endif %}
+                    </li>
                 </ul>
                 </div>
             </div>
@@ -103,7 +110,7 @@
                                 <td>Robot Version: <b>{{ robotStats.version }}</b></td>
                             </tr>
                             <tr>
-                                <td>Est. Precision (%): <b>{{ robotStats.precision|floatformat:2 }}</b></td>
+                                <td>Accuracy (%): <b>{{ robotStats.precision|floatformat:2 }}</b></td>
                             </tr>
                             <tr>
                                 <td>Traintime (s): <b>{{ robotStats.trainTime }}</b></td>
@@ -122,9 +129,11 @@
         <div style="padding:10px;float:right">
             <h2>Not annotated: <a href="{{ image_stats.not_annotated_link }}">{{ image_stats.not_annotated }}</a></h2>
             {% if source.enable_robot_classifier %}
-                <h2>Needs review: <a href="{{ image_stats.not_human_annotated_link }}">{{ image_stats.not_human_annotated }}</a></h2>
+                <h2>Unconfirmed: <a href="{{ image_stats.not_human_annotated_link }}">{{ image_stats.not_human_annotated }}</a></h2>
+                <h2>Confirmed: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
+            {% else %}
+                <h2>Annotated: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
             {% endif %}
-            <h2>Completed: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
             <h2>Total images: <a href="{{ image_stats.total_link }}">{{ image_stats.total }}</a></h2>
         </div>
     </div>
@@ -142,7 +151,7 @@
     </script>
 
     <div id="dialog" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:1000px">
-        <p>The First Row and Column Indicate the Functional Group</p>
+        <p>Estimated prob. that func. group (row) is classified as func. group (column)</p>
         <table>
         <tr>
         <td>
@@ -191,6 +200,7 @@
     </div>
 
     <div id="dialog2" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:800px">
+      <p>Estimated prob. that label (row) is classified as label (column)</p>
       <table>
       <tr>
       <td>

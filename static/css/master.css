@@ -1150,10 +1150,10 @@ span.thumb_front_wrapper {
 img.thumb {
     vertical-align: middle;
 }
-img.thumb.annotated_by_human, img.thumb.annotated {
+img.thumb.confirmed, img.thumb.annotated {
     border: 4px #00CC00 solid;
 }
-img.thumb.annotated_by_robot {
+img.thumb.unconfirmed {
     border: 4px #FF9900 solid;
 }
 img.thumb.needs_annotation {

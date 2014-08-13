@@ -274,6 +274,7 @@ ANONYMOUS_USER_ID = -1
 # Other special user ids
 IMPORTED_USER_ID = -2
 ROBOT_USER_ID = -3
+ALLEVIATE_USER_ID = -4
 
 #Userena settings
 LOGIN_REDIRECT_URL = '/images/source/'
