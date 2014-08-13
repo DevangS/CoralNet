@@ -18,7 +18,7 @@ from GChartWrapper import *
 from upload.forms import MetadataForm, CheckboxForm
 from django.forms.formsets import formset_factory
 from django.utils.functional import curry
-from numpy import array, zeros, sum, array_str, rank, linalg, logical_and, newaxis, float32
+from numpy import array, zeros, sum, array_str, rank, linalg, logical_and, newaxis, float32, vectorize
 from images.tasks import get_functional_group_confusion_matrix
 
 # TODO: Move to utils
@@ -788,6 +788,12 @@ def generate_statistics(request, source_id):
         context_instance=RequestContext(request)
     )
 
+
+# helper function to format abundance corrected outputs with 4 decimal points
+def myfmt(r):
+    return "%.4f" % (r,)
+
+
 @source_visibility_required('source_id')
 def export_abundance(placeholder, source_id):
 
@@ -811,7 +817,7 @@ def export_abundance(placeholder, source_id):
     ### GET THE FUNCTIONAL GROUP CONFUSION MATRIX AND MAKE SOME CHECKS.
     # the second output is a dictionary that maps the group_id to a consecutive number that starts at 0.
     (cm, fdict) = get_functional_group_confusion_matrix(source)
-
+   
     # check if there are classes that never occur in the matrix. 
     emptyinds = logical_and(sum(cm, axis=0)==0, sum(cm,axis=1)==0)
 
@@ -820,15 +826,22 @@ def export_abundance(placeholder, source_id):
         if(emptyinds[funcgroupitt]):
             cm[funcgroupitt, funcgroupitt] = 1
 
-    # now check if the cm has full rank. If it does not abort the procedure.
-    if(linalg.matrix_rank(cm)<nfuncgroups):
+    # row-normalize
+    cm = float32(cm)
+    row_sums = cm.sum(axis=1)
+    cm_normalized = cm / row_sums[:, newaxis]
+
+    # try inverting
+    try:
+        Q = linalg.inv(cm_normalized.transpose()) # Q matrix from Solow.
+    except:
         writer.writerow(["Error! Confusion matrix is singular, abundance correction is not possible."])
         return response
-
-    # Row-normalize and invert
-    row_sums = float32(cm.sum(axis=1))
-    cm_normalized = float32(cm) / row_sums[:, newaxis]
-    Q = linalg.inv(cm_normalized.transpose()) # Q matrix from Solow.
+        
+    # now check if the cm has full rank. If it does not abort the procedure.
+    #if(linalg.matrix_rank(cm)<nfuncgroups):
+    #    writer.writerow(["Error! Confusion matrix is singular, abundance correction is not possible."])
+    #    return response
 
     ### Adds table header which looks something as follows:
     #locKey1 locKey2 locKey3 locKey4 date label1 label2 label3 label4 .... labelEnd
@@ -844,6 +857,7 @@ def export_abundance(placeholder, source_id):
     writer.writerow(header)
 
     ### BEGIN EXPORT
+    vecfmt = vectorize(myfmt)
     for image in images:
         locKeys = []
         for field in image.get_location_value_str_list():
@@ -875,7 +889,7 @@ def export_abundance(placeholder, source_id):
         else:
             row.append('not_annotated')
         row.extend(image.get_metadata_values_for_export())
-        row.extend(coverage.tolist())
+        row.extend(vecfmt(coverage))
         writer.writerow(row)
     
     return response
