@@ -859,13 +859,8 @@ def export_abundance(placeholder, source_id):
     ### BEGIN EXPORT
     vecfmt = vectorize(myfmt)
     for image in images:
-        locKeys = []
-        for field in image.get_location_value_str_list():
-            if field:
-                locKeys.append(str(field))
-            else:
-                locKeys.append("Unspecified")
-        
+        locKeys = image.get_location_value_str_list_robust()
+
         image_annotations = all_annotations.filter(image=image)
         image_annotation_count = image_annotations.count()
         if image_annotation_count == 0:
@@ -920,6 +915,7 @@ def export_statistics(request, source_id):
     header = []
     header.extend(source.get_key_list())
     header.append('date_taken')
+    header.append('annotation_status')
     header.extend(images[0].get_metadata_fields_for_export()) #these are the same for all images. Use first one..
     for label in labels:
         header.append(str(label.name))
@@ -929,12 +925,7 @@ def export_statistics(request, source_id):
     #Adds data row which looks something as follows:
     #lter1 out10m line1-2 qu1 20100427  10.2 12.1 0 0 13.2
     for image in images:
-        locKeys = []
-        for field in image.get_location_value_str_list():
-            if field:
-                locKeys.append(str(field))
-            else:
-                locKeys.append("Unspecified")
+        locKeys = image.get_location_value_str_list_robust()
 
         photo_date = str(image.metadata.photo_date)
         image_labels_data = []
@@ -954,6 +945,12 @@ def export_statistics(request, source_id):
         row = []
         row.extend(locKeys)
         row.append(photo_date)
+        if image.status.annotatedByHuman:
+            row.append('verified_by_human')
+        elif image.status.annotatedByRobot:
+            row.append('not_verified_by_human')
+        else:
+            row.append('not_annotated')
         row.extend(image.get_metadata_values_for_export())
         row.extend(image_labels_data)
         writer.writerow(row)
@@ -985,12 +982,7 @@ def export_annotations(request, source_id):
     #Adds the relevant annotation data in a row
     #Example row: lter1 out10m line1-2 qu1 20100427 20110101 130 230 Porit
     for image in images:
-        locKeys = []
-        for field in image.get_location_value_str_list():
-            if field:
-                locKeys.append(str(field))
-            else:
-                locKeys.append("Unspecified")
+        locKeys = image.get_location_value_str_list_robust()
         photo_date = str(image.metadata.photo_date)
 
         annotations = all_annotations.filter(image=image).order_by('point').select_related()
