@@ -35,16 +35,7 @@ try
     allData.labels = tmp(:,3);
     
     fileNames = importdata(fileNamesPath);
-%     oldMetaPath = strcat(oldModelPath, '.meta.mat');
-    
-%     if(exist(oldMetaPath, 'file'))
-%         
-%         oldmeta = load(oldMetaPath, '-mat');
-%         gridParams.start = oldmeta.meta.hp.optValues;
-%         logger('Found old meta file path[%s], and setting grid search start to [%d, %d]\n', oldMetaPath, gridParams.start(1), gridParams.start(2));
-%         
-%     end
-    
+
     %%% PREPARE HP DATA SPLIT AND SET UP PATHS %%%
     testIdsBinary = false(numel(fileNames), 1);
     testIdsBinary(1:5:end) = true; % 1/5 of the data is test data
@@ -179,16 +170,17 @@ classes = unique(dataIn.labels);
 nbrClasses = length(classes);
 
 keepInd = true(numel(dataIn.labels), 1);
+removedLabelsStr = [];
 for itt = 1 : nbrClasses
     thisClass = classes(itt);
     theseSamples = (dataIn.labels == thisClass);
     nbrTotalSamples = nnz(theseSamples);
     if (nbrTotalSamples < labelThreshhold)
-        logger('Remove label %d (labelitt: %d)', thisClass, itt);
+        removedLabelsStr = sprintf('%s %d,', removedLabelsStr, thisClass);
         keepInd(theseSamples) = false;
     end
-    
 end
+logger('Removed labels: %s', removedLabelsStr);
 
 dataOut = dataIn;
 for thisField = rowVector(fieldnames(dataOut))
