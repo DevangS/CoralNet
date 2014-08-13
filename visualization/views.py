@@ -859,7 +859,7 @@ def export_abundance(placeholder, source_id):
 
         coverage = zeros( (nfuncgroups) ) # this stores the coverage for the current image.
         for label_index, label in enumerate(labels):
-            label_annotations_count = image_annotations.filter(label=label).count() # for each type of label
+            label_annotations_count = all_annotations.filter(image=image, label=label).count() # for each type of label
             coverage[fdict[label.group_id]] += label_annotations_count # increment the count of the group of this label using the fdict dictionary
         coverage /= image_annotation_count #normalize by total count
 
