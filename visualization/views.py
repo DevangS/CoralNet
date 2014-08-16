@@ -816,8 +816,12 @@ def export_abundance(placeholder, source_id):
             
     ### GET THE FUNCTIONAL GROUP CONFUSION MATRIX AND MAKE SOME CHECKS.
     # the second output is a dictionary that maps the group_id to a consecutive number that starts at 0.
-    (cm, fdict) = get_functional_group_confusion_matrix(source)
-   
+    try:
+        (cm, fdict) = get_functional_group_confusion_matrix(source)
+    except:
+        writer.writerow(["Error! Automated annotator is not availible for this source."])
+        return response
+
     # check if there are classes that never occur in the matrix. 
     emptyinds = logical_and(sum(cm, axis=0)==0, sum(cm,axis=1)==0)
 
