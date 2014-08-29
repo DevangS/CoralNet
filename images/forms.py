@@ -50,18 +50,18 @@ class ImageSourceForm(ModelForm):
 
         if 'annotation_min_x' in data and \
            'annotation_max_x' in data and \
-           data['annotation_min_x'] > data['annotation_max_x']:
+           data['annotation_min_x'] >= data['annotation_max_x']:
 
-            msg = "The maximum x must be greater than or equal to the minimum x."
+            msg = "The maximum x must be greater than the minimum x."
             self._errors['annotation_max_x'] = self.error_class([msg])
             del data['annotation_min_x']
             del data['annotation_max_x']
 
         if 'annotation_min_y' in data and \
            'annotation_max_y' in data and \
-           data['annotation_min_y'] > data['annotation_max_y']:
+           data['annotation_min_y'] >= data['annotation_max_y']:
 
-            msg = "The maximum y must be greater than or equal to the minimum y."
+            msg = "The maximum y must be greater than the minimum y."
             self._errors['annotation_max_y'] = self.error_class([msg])
             del data['annotation_min_y']
             del data['annotation_max_y']

@@ -272,15 +272,15 @@ class AnnotationAreaPercentsForm(Form):
 
         if 'min_x' in data and 'max_x' in data:
 
-            if data['min_x'] > data['max_x']:
-                self._errors['max_x'] = self.error_class(["The right boundary x must be greater than or equal to the left boundary x."])
+            if data['min_x'] >= data['max_x']:
+                self._errors['max_x'] = self.error_class(["The right boundary x must be greater than the left boundary x."])
                 del data['min_x']
                 del data['max_x']
 
         if 'min_y' in data and 'max_y' in data:
 
-            if data['min_y'] > data['max_y']:
-                self._errors['max_y'] = self.error_class(["The bottom boundary y must be greater than or equal to the top boundary y."])
+            if data['min_y'] >= data['max_y']:
+                self._errors['max_y'] = self.error_class(["The bottom boundary y must be greater than the top boundary y."])
                 del data['min_y']
                 del data['max_y']
 
