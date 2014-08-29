@@ -861,7 +861,7 @@ def export_abundance(placeholder, source_id):
     writer.writerow(header)
 
     ### BEGIN EXPORT
-    vecfmt = vectorize(myfmt)
+    vecfmt = vectorize(myfmt) # this is a tool that exports the vector to a nice string with three decimal points
     for image in images:
         locKeys = image.get_location_value_str_list_robust()
 
@@ -875,6 +875,7 @@ def export_abundance(placeholder, source_id):
             label_annotations_count = all_annotations.filter(image=image, label=label).count() # for each type of label
             coverage[fdict[label.group_id]] += label_annotations_count # increment the count of the group of this label using the fdict dictionary
         coverage /= image_annotation_count #normalize by total count
+        coverage *= 100 #make into percent
 
         row = []
         row.extend(locKeys)
@@ -888,7 +889,7 @@ def export_abundance(placeholder, source_id):
         else:
             row.append('not_annotated')
         row.extend(image.get_metadata_values_for_export())
-        row.extend(vecfmt(coverage))
+        row.extend(vecfmt(coverage)) #vecfmt converts to a string with 3 decimal points
         writer.writerow(row)
     
     return response
