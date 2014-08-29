@@ -5,7 +5,6 @@
 {% load common_tags %}
 
 {% block title %}{{ source.name }} - Browse Images | CoralNet{% endblock %}
-
 {% block js-includes %}
     {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
 {% endblock %}
@@ -21,6 +20,7 @@
 
     <legend>Browse Images</legend>
 
+	For instructions refer to our <a href="http://vimeo.com/104752613">browse instruction</a> and <a href="http://vimeo.com/104525967">image delete</a> videos on Vimeo or click the questionmark.
     <div class="tutorial-message">
         {% include "visualization/help_browse.html" %}
     </div>

@@ -23,3 +23,4 @@ apache/django.wsgi
 /images/robot_running_flag
 /misc_not_versioncontrolled/*
 /tmp/*
+supervisor*
