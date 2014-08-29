@@ -157,6 +157,11 @@ class LocationKeyForm(Form):
         if data['key4'] == u'':
             data['key5'] = u''
 
+        # Check if a location key is used to denote date, year or similar.
+        date_strings = {'date', 'year', 'time', 'month', 'day'}
+        if ('key1' in data and data['key1'].lower() in date_strings) or ('key2' in data and data['key2'].lower() in date_strings) or ('key3' in data and data['key3'].lower() in date_strings) or ('key4' in data and data['key4'].lower() in date_strings) or ('key5' in data and data['key5'].lower() in date_strings):
+            raise ValidationError("The image acquisition date is a default metadata field. Do not use locationkeys to encode temporal information.")
+
         self.cleaned_data = data
 
         return super(LocationKeyForm, self).clean()
