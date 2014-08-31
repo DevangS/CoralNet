@@ -29,140 +29,215 @@
                 </span>
             {% endfor %}
         {% endif %}
-
-        <div class="detail_box">
-            <div>
-                <div style="float:left; width: 50%">
-                <ul>
-                    <li>Date Created: {{ source.create_date }}</li>
-                {% if not source.enable_robot_classifier %}
-                    <li>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</li>
-                {% else %}
-                    {% if  robotStats.hasRobot %}
-                        <li>{{robotStats.edit}}</li>
-                    {% endif %}
-                {% endif %}
-                </ul>
-                </div>
-                <div style="float:left; width: 50%">
-                <ul>
-                    {% if source.image_height_in_cm %}
-                        <li>Default image height coverage(cm): {{ source.image_height_in_cm }}</li>
-                    {% endif %}
-                    {% if source.image_annotation_area %}
-                        <li>Default image annotation area: {{ source.image_annotation_area_display }}</li>
-                    {% endif %}
-                    <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
-                    <li>
-                        {% if source.alleviate_threshold < 100 %}
-                            Alleviate confidence threshold: {{ source.alleviate_threshold }}%
-                        {% else %}
-                            Alleviate feature is off (100% threshold)
-                        {% endif %}
-                    </li>
-                </ul>
-                </div>
-            </div>
-            <div style="clear:both">
-                <br>
-                {% if source.description %}
-                    <br>
-                    {{ source.description|linebreaksbr }}
-                {% endif %}
-            </div>
-        </div>
-
-
-        <div style="float:left;">
-            {% if members %}
-                <div class="detail_box">
-                    <h3 style="text-align:center">Members</h3>
-                    <table class="detail_box_table">
-                        {% for member in members %}
-                            <tr>
-                                <td><a href="{% url userena_profile_detail member.username %}">{{ member.username }}</a></td>
-                                <td><b>{{ member.role }}</b></td>
-                            </tr>
-                        {% endfor %}
-                    </table>
-                </div>
-            {% endif %}
-
-            <div class="detail_box">
-                <h3 style="text-align:center">Source Details</h3>
-                <table class="detail_box_table">
-                    <tr>
-                        <td>Visibility: <b>{{ source.get_visibility_display }}</b></td>
-                    </tr>
-                    {% if source.latitude %}
-                        <tr>
-                            <td>Latitude: <b>{{ source.latitude }}</b></td>
-                        </tr>
-                    {% endif %}
-                    {% if source.longitude %}
-                        <tr>
-                            <td>Longitude: <b>{{ source.longitude }}</b></td>
-                        </tr>
-                    {% endif %}
-                    {% if source.enable_robot_classifier  %}
-                        {% if robotStats.hasRobot %}
-                            <tr>
-                                <td>Robot Version: <b>{{ robotStats.version }}</b></td>
-                            </tr>
-                        <div class="tutorial-message">
-                            {% include "images/help_robot.html" %}
-                        </div>
-                            <tr>
-                                <td>Accuracy (%): <b>{{ robotStats.precision|floatformat:2 }}</b></td>
-                            </tr>
-                            <tr>
-                                <td>Traintime (s): <b>{{ robotStats.trainTime }}</b></td>
-                            </tr>
-                            <tr>
-                                <td><a href="javascript:openDialog();">Confusion Matrix <br>(Functional Groups)</a></td>
-                            </tr><tr>    
-                                <td><a href="javascript:openDialog2();">Full Confusion Matrix</a></td>
-                            </tr>
-                        {% endif %}
-                    {% endif %}
-                </table>
-            </div>
-        </div>
-
-        <div style="padding:10px;float:right">
-            <h2>Not annotated: <a href="{{ image_stats.not_annotated_link }}">{{ image_stats.not_annotated }}</a></h2>
-            {% if source.enable_robot_classifier %}
-                <h2>Unconfirmed: <a href="{{ image_stats.not_human_annotated_link }}">{{ image_stats.not_human_annotated }}</a></h2>
-                <h2>Confirmed: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
+    </div>
+    <div class="detail_box">
+        <div>
+            <div style="float:left; width: 50%">
+            <ul>
+                <li>Date Created: {{ source.create_date }}</li>
+            {% if not source.enable_robot_classifier %}
+                <li>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</li>
             {% else %}
-                <h2>Annotated: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
+                {% if  robotStats.hasRobot %}
+                    <li>{{robotStats.edit}}</li>
+                {% endif %}
             {% endif %}
-            <h2>Total images: <a href="{{ image_stats.total_link }}">{{ image_stats.total }}</a></h2>
+            </ul>
+            </div>
+            <div style="float:left; width: 50%">
+            <ul>
+                {% if source.image_height_in_cm %}
+                    <li>Default image height coverage(cm): {{ source.image_height_in_cm }}</li>
+                {% endif %}
+                {% if source.image_annotation_area %}
+                    <li>Default image annotation area: {{ source.image_annotation_area_display }}</li>
+                {% endif %}
+                <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
+                <li>
+                    {% if source.alleviate_threshold < 100 %}
+                        Alleviate confidence threshold: {{ source.alleviate_threshold }}%
+                    {% else %}
+                        Alleviate feature is off (100% threshold)
+                    {% endif %}
+                </li>
+            </ul>
+            </div>
+        </div>
+        <div style="clear:both">
+            <br>
+            {% if source.description %}
+                <br>
+                {{ source.description|linebreaksbr }}
+            {% endif %}
         </div>
     </div>
+
+
+
+
+
+
+    <div style="float:left;">
+        {% if members %}
+            <div class="detail_box">
+                <h3 style="text-align:center">Members</h3>
+                <table class="detail_box_table">
+                    {% for member in members %}
+                        <tr>
+                            <td><a href="{% url userena_profile_detail member.username %}">{{ member.username }}</a></td>
+                            <td><b>{{ member.role }}</b></td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        {% endif %}
+
+        <div class="detail_box">
+            <h3 style="text-align:center">Source Details</h3>
+            <table class="detail_box_table">
+                <tr>
+                    <td>Visibility: <b>{{ source.get_visibility_display }}</b></td>
+                </tr>
+                {% if source.latitude %}
+                    <tr>
+                    <td>Latitude: <b>{{ source.latitude }}</b></td>
+                    </tr>
+                {% endif %}
+                {% if source.longitude %}
+                    <tr>
+                    <td>Longitude: <b>{{ source.longitude }}</b></td>
+                    </tr>
+                {% endif %}
+                {% if source.enable_robot_classifier  %}
+                    {% if robotStats.hasRobot %}
+                        <tr>
+                        <td>Robot Version: <b>{{ robotStats.version }}</b></td>
+                        </tr>
+ 
+                        <tr>
+                            <td>Accuracy (%): <b>{{ robotStats.precision|floatformat:2 }}</b></td>
+                        </tr>
+                        <tr>
+                            <td>Traintime (s): <b>{{ robotStats.trainTime }}</b></td>
+                        </tr>
+                        <tr>
+                            <td><a href="javascript:openDialog();">Confusion Matrix <br>(Functional Groups)</a></td>
+                        </tr><tr>    
+                            <td><a href="javascript:openDialog2();">Full Confusion Matrix</a></td>
+                        </tr>
+                    {% endif %}
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    <div style="float:left;">
+    <div style="margin-left:10px; width:100%">
+    <div class="detail_box">
+    <h3 style="text-align:center">Automated Annotation</h3>
+    <div class="tutorial-message">
+        {% include "images/help_robot.html" %}
+    </div>
+    <table class="detail_table_popup">
+
+        <tr>
+            <th colspan="4">details</th>
+            <th colspan="2">full</th>
+            <th colspan="2">func.</th>
+         </tr>
+        <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Time (s)</th>
+            <th>Samp (#)</th>  
+            <th>Acc</th>  
+            <th>&#922</th>
+            <th>Acc</th>  
+            <th>&#922</th>
+        </tr>
+        {% for robot in robot_stats.robotlist %}
+            <tr>
+            <td> {{robot.number}} </td>
+            <td> {{robot.date}} </td>
+            <td> {{robot.train_time}} </td>
+            <td> {{robot.nsamples}} </td>
+            {% for cm in robot.cmlist %}
+                <td><a href="javascript:openFullCMdialog({{cm.idstr}});">{{cm.acc}}</a> </td>
+                <td><a href="javascript:openFullCMdialog({{cm.idstr}});">{{cm.kappa}}</a> </td>
+            {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+    </div>
+    </div>
+    </div>
+
+    <div style="float:right">
+    <div class="detail_box">
+        <h2>Not annotated: <a href="{{ image_stats.not_annotated_link }}">{{ image_stats.not_annotated }}</a></h2>
+        {% if source.enable_robot_classifier %}
+            <h2>Unconfirmed: <a href="{{ image_stats.not_human_annotated_link }}">{{ image_stats.not_human_annotated }}</a></h2>
+            <h2>Confirmed: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
+        {% else %}
+            <h2>Annotated: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
+        {% endif %}
+        <h2>Total images: <a href="{{ image_stats.total_link }}">{{ image_stats.total }}</a></h2>
+    </div>
+    </div>
+
 
     <div style="clear:left"></div>
 
     <script>
         function openDialog() {
-            $("#dialog").dialog({resizable: false,modal: true, width:"auto"});
+            $( "#dialog" ).dialog({resizable: false, modal: true, width:"auto"});
 
         }
         function openDialog2() {
-            $( "#dialog2" ).dialog({resizable: false,modal: true, width:"auto"});
+            $( "#dialog2" ).dialog({resizable: false, modal: true, width:"auto"});
         }
+        function openFullCMdialog(ii) {
+            $(ii).dialog({resizable: false, modal: true, width:"auto"});
+        }
+
     </script>
+
+    {% for robot in robot_stats.robotlist %}
+        {% for cm in robot.cmlist %}
+            <div id={{cm.idstr}} title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:1000px">
+            <p>Estimated prob. that label (row) is classified as label (column)</p>
+            <table class="detail_table_popup">
+                {% for value in cm.cm_str %}
+                    {% if forloop.counter0|divisibleby:cm.ncols %}
+                        <tr>
+                    {% endif %}
+                    {% if forloop.counter0|divisibleby:cm.ndiags %}
+                        <td height="20"> <b>{{value}}</b> </td>
+                    {% else %}
+                        <td height="20"> {{value}} </td>
+                    {% endif %}
+                    {% if forloop.counter|divisibleby:cm.ncols %}
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </table>
+            <p><a href="{% url cm_download source.id robot.version cm.namestr%}">Download Confusion Matrix</a></p>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
 
     <div id="dialog" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:1000px">
         <p>Estimated prob. that func. group (row) is classified as func. group (column)</p>
+        <p>
         <table>
         <tr>
         <td>
         <table class="detail_table_popup">
             <tr>
-                <td height="20"> cm </td>
+                <td height="20">  </td>
                 {% for labels in robotStats.labelMap %}
-                    <td height="20">{{labels}}</td>
+                   <td height="20">{{labels}}</td>
                 {% endfor %}
             </tr>
             {% for value in robotStats.cm %}
@@ -172,15 +247,14 @@
                 {% else %}
                 {% if forloop.revcounter0|divisibleby:robotStats.diaglen %}
                     <td height="20"> <b>{{value}} </b></td>
-                
                 {%else %}
                     <td height="20"> {{value}} </td>
                 {% endif %}
                 {% endif %}
 
-            {% if forloop.counter|divisibleby:robotStats.matrixSize %}
-                </tr>
-            {% endif %}
+                {% if forloop.counter|divisibleby:robotStats.matrixSize %}
+                    </tr>
+                {% endif %}
             {% endfor %}
         </table>
         </td>
@@ -197,10 +271,13 @@
             </tr>
         </table>
         </td>
+        </tr>
         </table>
+        </p>
         <p><a href="{% url csv_download source.id %}">Download Full Confusion Matrix</a></p>
 
     </div>
+
 
     <div id="dialog2" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:800px">
       <p>Estimated prob. that label (row) is classified as label (column)</p>
@@ -250,4 +327,5 @@
         <p><a href="{% url csv_download source.id %}">Download Full Confusion Matrix</a></p>
 
     </div>
+
 {% endblock %}

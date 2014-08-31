@@ -7,10 +7,10 @@ from random import random
 import shutil
 from celery.task import task
 import operator
-import os
+import os, copy
 from django.conf import settings
 from django.core.mail import send_mail
-import json , csv, os.path, time
+import json, csv, os.path, time
 from django.shortcuts import render_to_response, get_object_or_404
 
 try:
@@ -25,7 +25,8 @@ from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation, LabelGroup
 from images import task_helpers, task_utils
 from images.models import Point, Image, Source, Robot
-from numpy import array, zeros, sum
+from numpy import array, zeros, sum, float32, newaxis
+import numpy as np
 import math
 
 # Revision objects will not be saved during Celery tasks unless
@@ -732,13 +733,23 @@ def verifyAllAndPrint():
     for errorFile in verifyAllImages():
         print errorFile.original_file.name
 
-def get_functional_group_confusion_matrix(source):
+#
+# (cm, labelIds) = get_full_confusion_matrix(source_id) 
+# reads the confusion matrix form the vision .json file. 
+# it also returns a list of the labelIds corresponding to each row (and column) of the matrix.
+#
+def get_current_confusion_matrix(source_id):
 
+    source = Source.objects.get(id = source_id)
     latestRobot = source.get_latest_robot()
     if latestRobot == None:
         return None
+    (cm, labelIds) = get_confusion_matrix(latestRobot)
+    return (cm, labelIds)
 
-    f = open(latestRobot.path_to_model + '.meta.json')
+def get_confusion_matrix(robot):
+
+    f = open(robot.path_to_model + '.meta.json')
     meta=json.loads(f.read())
     f.close()
         
@@ -748,27 +759,44 @@ def get_functional_group_confusion_matrix(source):
     else:
         cmraw = meta['hp']['gridStats'][-1]['cmOpt']
 
+    # read labelId's from the metadata
+    labelIds = meta['labelMap'] # this lists the labelIds in order.
+
+
     # convert to numpy matrix.
-    nlabels = int(math.sqrt(len(cmraw)))
+    nlabels = len(labelIds)
     cm = zeros( ( nlabels, nlabels ), dtype = int )
     for x in range(len(cmraw)):
         cm[x/nlabels, x%nlabels] = cmraw[x]
 
-    ### COLLAPSE TO FUNCTIONAL GROUP MATRIX (several steps required) ###
+    return (cm, labelIds)
 
-    # read labelId's from the metadata
-    labelIds = meta['labelMap']
+#
+# (cm_func, fdict, funcIds) = collapse_confusion_matrix(cm, labelIds)
+# OUTPUT cm_func. a numpy matrix of functional group confusion matrix
+# OUTPUT fdict a dictionary that maps the functional group id to the row (and column) number in the confusion matrix
+# OUTPUT funcIds is a list that maps the row (or column) to the functional group id. ("inverse" or the fdict).
+#
+def collapse_confusion_matrix(cm, labelIds):
+
+    nlabels = len(labelIds)
 
     # create a labelmap that maps the labels to functional groups. 
     # The thing is that we can't rely on the functional group id field, 
-    # since this may not start on one, nor  be consecutive.
+    # since this may not start on one, nor be consecutive.
     funcgroups = LabelGroup.objects.filter().order_by('id') # get all groups
     nfuncgroups = len(funcgroups)
     fdict = {} # this will map group_id to a counter from 0 to (number of functional groups - 1).
     for itt, group in enumerate(funcgroups):
         fdict[group.id] = itt
 
-    funcMap = zeros( (nlabels, 1), dtype = int ) # this maps labelid to the functional group consecutive id.
+    # create the 'inverse' of the dictionary, namely a list of the functional groups. Same as the labelIds list but for functional groups. This is not used in this file, but is useful for other situations
+    funcIds = []    
+    for itt, group in enumerate(funcgroups):
+        funcIds.append(int(group.id))
+
+    # create a map from labelid to the functional group consecutive id. Needed for the matrix collapse.
+    funcMap = zeros( (nlabels, 1), dtype = int )
     for labelItt in range(nlabels):
         funcMap[labelItt] = fdict[Label.objects.get(id=labelIds[labelItt]).group_id]
 
@@ -791,5 +819,66 @@ def get_functional_group_confusion_matrix(source):
         for funclabelitt in range(nfuncgroups):
             cm_func[funcMap[rowlabelitt], funclabelitt] += cm_int[rowlabelitt, funclabelitt]
 
-    return (cm_func, fdict)
+    return (cm_func, fdict, funcIds)
+
+# (cm, row_sums) = confusion_matrix_normalize(cm)
+# OUTPUT cm is row-normalized confusion matrix. Exception. if row sums to zero, it will not be normalized.
+# OUTPUT row_sums is the row sums of the input cm
+def confusion_matrix_normalize(cm):
+
+    # row-normalize
+    row_sums = cm.sum(axis=1)
+    cm = float32(cm)
+
+    row_sums_corr = copy.deepcopy(row_sums)
+    for i, item in enumerate(row_sums):
+        if (item == 0):
+            row_sums_corr[i] = 1
+
+    cm_normalized = cm / row_sums_corr[:, newaxis]
+
+    return (cm_normalized, row_sums)
+
+
+#
+# This function takes a cm, and labels, and formats it for display on screen. 
+# OUTPUT cm_str is a list of strings.
+#
+def format_cm_for_display(cm, row_sums, labelobjects, labelIds):
+
+    nlabels = len(labelIds)
+    cm_str = ['']
+    for thisid in labelIds:
+        cm_str.append(str(labelobjects.get(id = thisid).name))
+    cm_str.append('Count')
+    for row in range(nlabels):
+        cm_str.append(str(labelobjects.get(id = labelIds[row]).name)) #the first entry is the name of the funcgroup.
+        for col in range(nlabels):
+            cm_str.append("%.2f" % cm[row][col])
+        cm_str.append("%.0f" % row_sums[row]) # add the count for this row
+
+    return cm_str
+
+
+
+#
+#
+#
+def accuracy_from_cm(cm):
+    cm = float32(cm)
+    acc = sum(np.diagonal(cm))/sum(cm)
+
+    pgt = cm.sum(axis=1) / sum(cm) #probability of the ground truth to predict each class
+
+    pest = cm.sum(axis=0) / sum(cm) #probability of the estimates to predict each class
+
+    pe = sum(pgt * pest) #probaility of randomly guessing the same thing!
+
+    if (pe == 1):
+        cok = 1
+    else:
+        cok = (acc - pe) / (1 - pe) #cohens kappa!
+
+    return (acc, cok)
+
 

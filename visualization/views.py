@@ -19,7 +19,7 @@ from upload.forms import MetadataForm, CheckboxForm
 from django.forms.formsets import formset_factory
 from django.utils.functional import curry
 from numpy import array, zeros, sum, array_str, rank, linalg, logical_and, newaxis, float32, vectorize
-from images.tasks import get_functional_group_confusion_matrix
+from images.tasks import *
 
 # TODO: Move to utils
 def image_search_args_to_queryset_args(searchDict, source):
@@ -817,7 +817,7 @@ def export_abundance(placeholder, source_id):
     ### GET THE FUNCTIONAL GROUP CONFUSION MATRIX AND MAKE SOME CHECKS.
     # the second output is a dictionary that maps the group_id to a consecutive number that starts at 0.
     try:
-        (cm, fdict) = get_functional_group_confusion_matrix(source)
+        (cm, fdict, funcIds) = collapse_confusion_matrix(get_current_confusion_matrix(source_id))
     except:
         writer.writerow(["Error! Automated annotator is not availible for this source."])
         return response
@@ -831,9 +831,7 @@ def export_abundance(placeholder, source_id):
             cm[funcgroupitt, funcgroupitt] = 1
 
     # row-normalize
-    cm = float32(cm)
-    row_sums = cm.sum(axis=1)
-    cm_normalized = cm / row_sums[:, newaxis]
+    (cm_normalized, row_sums) = confusion_matrix_normalize(cm)
 
     # try inverting
     try:
@@ -842,11 +840,6 @@ def export_abundance(placeholder, source_id):
         writer.writerow(["Error! Confusion matrix is singular, abundance correction is not possible."])
         return response
         
-    # now check if the cm has full rank. If it does not abort the procedure.
-    #if(linalg.matrix_rank(cm)<nfuncgroups):
-    #    writer.writerow(["Error! Confusion matrix is singular, abundance correction is not possible."])
-    #    return response
-
     ### Adds table header which looks something as follows:
     #locKey1 locKey2 locKey3 locKey4 date label1 label2 label3 label4 .... labelEnd
     #Note: labe1, label2, etc corresponds to the percent coverage of that label on

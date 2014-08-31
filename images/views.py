@@ -17,13 +17,15 @@ from annotations.utils import image_annotation_area_is_editable, image_has_any_h
 from decorators import source_permission_required, image_visibility_required, image_permission_required, source_visibility_required
 
 from images.models import Source, Image, SourceInvite
+from images.tasks import *
 from images.forms import *
 from images.model_utils import PointGen
 from images.utils import *
 from lib.utils import get_map_sources
-import json , csv, os.path, time
+import json , csv, os.path, time, datetime
 from numpy import array
 from visualization.forms import BrowseSearchForm
+from numpy import vectorize
 
 def source_list(request):
     """
@@ -158,6 +160,8 @@ def source_new(request):
     )
 
 
+
+
 @source_visibility_required('source_id')
 def source_main(request, source_id):
     """
@@ -195,6 +199,67 @@ def source_main(request, source_id):
             not_annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_NEEDS_ANNOTATION,
         ))
 
+    ### PREPARE ALL CONFUSION MATRICES ###
+    groupObjects = LabelGroup.objects.filter()
+    labelObjects = Label.objects.filter()
+    validRobots = source.get_valid_robots()
+    
+    robotlist = []
+    for itt, robot in enumerate(validRobots):
+        (fullcm, labelIds) = get_confusion_matrix(robot)
+        (fullcm_n, row_sums) = confusion_matrix_normalize(fullcm)
+        cm_str = format_cm_for_display(fullcm_n, row_sums, labelObjects, labelIds)
+        fullacc = accuracy_from_cm(fullcm)
+
+        (funccm, placeholder, groupIds) = collapse_confusion_matrix(fullcm, labelIds)
+        (funccm_n, row_sums) = confusion_matrix_normalize(funccm)
+        cm_func_str = format_cm_for_display(funccm_n, row_sums, groupObjects, groupIds)
+        funcacc = accuracy_from_cm(funccm)
+
+        cmlist = []
+        cmlist.append(dict(        
+            cm_str = cm_str,
+            ncols = len(labelIds) + 2,
+            ndiags = len(labelIds) + 3,
+            idstr = 'dialog' + str(robot.version) + 'full',
+            namestr = 'full',
+            acc = '%.1f' % (100*fullacc[0]),
+            kappa = '%.1f' % (100*fullacc[1]),
+        ))
+        cmlist.append(dict(        
+            cm_str = cm_func_str,
+            ncols = len(groupIds) + 2,
+            ndiags = len(groupIds) + 3,
+            idstr = 'dialog' + str(robot.version) + 'func',
+            namestr = 'func',
+            acc = '%.1f' % (100*funcacc[0]),
+            kappa = '%.1f' % (100*funcacc[1]),
+        ))
+
+        f = open(robot.path_to_model + '.meta.json')
+        jsonstring = f.read()
+        f.close()
+        meta = json.loads(jsonstring)
+
+        robotlist.append(dict(
+            cmlist = cmlist,
+            version = robot.version,
+            number = itt + 1,
+            nsamples = sum(meta['final']['trainData']['labelhist']['org']),
+            train_time = str(int(round(meta['totalRuntime']))),
+            date = '%s' %  datetime.datetime.fromtimestamp(os.path.getctime(robot.path_to_model + '.meta.json')).date()
+        ))
+   
+    robot_stats = dict(
+            robotlist = robotlist,
+            nbr_robots = len(validRobots),
+        )
+
+
+
+
+
+    ### THIS IS THE OLD ROBOT-STATS CODE BY ANDREW. 
 
     latestRobot = source.get_latest_robot()
     if latestRobot == None:
@@ -389,7 +454,8 @@ def source_main(request, source_id):
         'members': memberDicts,
         'latest_images': latest_images,
         'image_stats': image_stats,
-		    'robotStats':robotStats,
+		'robotStats':robotStats,
+        'robot_stats':robot_stats,
         },
         context_instance=RequestContext(request)
         )
@@ -512,6 +578,39 @@ def csv_download(request, source_id):
           writer.writerow (rows.tolist())
 
         return response
+
+# helper function to format numpy outputs
+def myfmt(r):
+    return "%.0f" % (r,)
+
+#
+# This functions prepares the confusion matrix for download in a csv file. input namestr determines whether it's the full of functional confusion matrix. INPUT source_id is included for permission reasons only.
+#
+@source_visibility_required('source_id')
+def cm_download(request, source_id, robot_id, namestr):
+    vecfmt = vectorize(myfmt)
+    (fullcm, labelIds) = get_confusion_matrix(Robot.objects.get(id = robot_id))
+    if namestr == "full":
+        cm = fullcm
+        labelObjects = Label.objects.filter()
+    else:
+        (cm, placeholder, labelIds) = collapse_confusion_matrix(fullcm, labelIds)
+        labelObjects = LabelGroup.objects.filter()
+
+    #creating csv file
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment;filename=confusion_matrix.csv'
+    writer = csv.writer(response)
+    
+    ngroups = len(labelIds)
+    for i in range(ngroups):
+        row = []
+        row.append(labelObjects.get(id=labelIds[i]).name)
+        row.extend(vecfmt(cm[i, :]))
+        writer.writerow(row)
+
+    return response
+
 
 
 @source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)

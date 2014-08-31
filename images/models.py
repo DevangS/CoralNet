@@ -10,6 +10,7 @@ from annotations.model_utils import AnnotationAreaUtils
 from images.model_utils import PointGen
 from CoralNet.utils import generate_random_filename
 import os
+import json
 
 # Constants that don't really belong to a particular model
 class ImageModelConstants():
@@ -315,6 +316,22 @@ class Source(models.Model):
 			return latestRobot
 		else:
 			return None
+
+    def get_valid_robots(self):
+        """
+        returns a list of all robots that have valid metadata
+        """
+        allRobots = Robot.objects.filter(source = self).order_by('id')
+        validRobots = []
+        for thisRobot in allRobots:
+            try:
+                f = open(thisRobot.path_to_model + '.meta.json')
+                meta = json.loads(f.read())
+                f.close()
+                validRobots.append(thisRobot)
+            except:
+                continue
+        return validRobots
 
     def remove_unused_key_values(self):
         """
