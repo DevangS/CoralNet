@@ -206,7 +206,7 @@ def source_main(request, source_id):
     validRobots = validRobots[-5:] #grab the five most recent. Else it takes too long to generate the main source page.
     
     robotlist = []
-    for itt, robot in enumerate(validRobots):
+    for robot in validRobots:
         (fullcm, labelIds) = get_confusion_matrix(robot)
         (fullcm_n, row_sums) = confusion_matrix_normalize(fullcm)
         cm_str = format_cm_for_display(fullcm_n, row_sums, labelObjects, labelIds)
@@ -245,7 +245,6 @@ def source_main(request, source_id):
         robotlist.append(dict(
             cmlist = cmlist,
             version = robot.version,
-            number = itt + 1,
             nsamples = sum(meta['final']['trainData']['labelhist']['org']),
             train_time = str(int(round(meta['totalRuntime']))),
             date = '%s' %  datetime.datetime.fromtimestamp(os.path.getctime(robot.path_to_model + '.meta.json')).date()
