@@ -321,7 +321,7 @@ class Source(models.Model):
         """
         returns a list of all robots that have valid metadata
         """
-        allRobots = Robot.objects.filter(source = self).order_by('id')
+        allRobots = Robot.objects.filter(source = self).order_by('version')
         validRobots = []
         for thisRobot in allRobots:
             try:

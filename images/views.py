@@ -347,9 +347,9 @@ def myfmt(r):
 # This functions prepares the confusion matrix for download in a csv file. input namestr determines whether it's the full of functional confusion matrix. INPUT source_id is included for permission reasons only.
 #
 @source_visibility_required('source_id')
-def cm_download(request, source_id, robot_id, namestr):
+def cm_download(request, source_id, robot_version, namestr):
     vecfmt = vectorize(myfmt)
-    (fullcm, labelIds) = get_confusion_matrix(Robot.objects.get(id = robot_id))
+    (fullcm, labelIds) = get_confusion_matrix(Robot.objects.get(version = robot_version))
     if namestr == "full":
         cm = fullcm
         labelObjects = Label.objects.filter()
