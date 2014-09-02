@@ -203,6 +203,7 @@ def source_main(request, source_id):
     groupObjects = LabelGroup.objects.filter()
     labelObjects = Label.objects.filter()
     validRobots = source.get_valid_robots()
+    validRobots = validRobots[-5:] #grab the five most recent. Else it takes too long to generate the main source page.
     
     robotlist = []
     for itt, robot in enumerate(validRobots):
