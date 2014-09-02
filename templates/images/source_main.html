@@ -7,6 +7,7 @@
 
 {% block js-includes %}
     {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
+    {% include "static-local-include.html" with type="css" path="css/source.css" %}
 {% endblock %}
 
 {% block page-specific-includes %}
@@ -38,8 +39,8 @@
             {% if not source.enable_robot_classifier %}
                 <li>Machine annotator: Disabled (can enable upon <a href="{% url contact %}">request</a>)</li>
             {% else %}
-                {% if  robotStats.hasRobot %}
-                    <li>{{robotStats.edit}}</li>
+                {% if  robot_stats.has_robot %}
+                    <li>Last Robot run: {{robot_stats.most_recent_run_date}}</li>
                 {% endif %}
             {% endif %}
             </ul>
@@ -108,25 +109,6 @@
                     <td>Longitude: <b>{{ source.longitude }}</b></td>
                     </tr>
                 {% endif %}
-                {% if source.enable_robot_classifier  %}
-                    {% if robotStats.hasRobot %}
-                        <tr>
-                        <td>Robot Version: <b>{{ robotStats.version }}</b></td>
-                        </tr>
- 
-                        <tr>
-                            <td>Accuracy (%): <b>{{ robotStats.precision|floatformat:2 }}</b></td>
-                        </tr>
-                        <tr>
-                            <td>Traintime (s): <b>{{ robotStats.trainTime }}</b></td>
-                        </tr>
-                        <tr>
-                            <td><a href="javascript:openDialog();">Confusion Matrix <br>(Functional Groups)</a></td>
-                        </tr><tr>    
-                            <td><a href="javascript:openDialog2();">Full Confusion Matrix</a></td>
-                        </tr>
-                    {% endif %}
-                {% endif %}
             </table>
         </div>
     </div>
@@ -189,15 +171,8 @@
     <div style="clear:left"></div>
 
     <script>
-        function openDialog() {
-            $( "#dialog" ).dialog({resizable: false, modal: true, width:"auto"});
-
-        }
-        function openDialog2() {
-            $( "#dialog2" ).dialog({resizable: false, modal: true, width:"auto"});
-        }
-        function openFullCMdialog(ii) {
-            $(ii).dialog({resizable: false, modal: true, width:"auto"});
+        function openFullCMdialog(idstr) {
+            $(idstr).dialog({resizable: false, modal: true, width:"auto"});
         }
 
     </script>
@@ -226,106 +201,5 @@
         {% endfor %}
     {% endfor %}
 
-
-    <div id="dialog" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:1000px">
-        <p>Estimated prob. that func. group (row) is classified as func. group (column)</p>
-        <p>
-        <table>
-        <tr>
-        <td>
-        <table class="detail_table_popup">
-            <tr>
-                <td height="20">  </td>
-                {% for labels in robotStats.labelMap %}
-                   <td height="20">{{labels}}</td>
-                {% endfor %}
-            </tr>
-            {% for value in robotStats.cm %}
-                {% if forloop.counter0|divisibleby:robotStats.matrixSize %}
-                    <tr>
-                    <td height="20"> {{value}} </td>
-                {% else %}
-                {% if forloop.revcounter0|divisibleby:robotStats.diaglen %}
-                    <td height="20"> <b>{{value}} </b></td>
-                {%else %}
-                    <td height="20"> {{value}} </td>
-                {% endif %}
-                {% endif %}
-
-                {% if forloop.counter|divisibleby:robotStats.matrixSize %}
-                    </tr>
-                {% endif %}
-            {% endfor %}
-        </table>
-        </td>
-        <td>
-        <table class="detail_table">
-            <tr>
-                <td height="20">Count</td>
-            </tr>
-            {% for labels in robotStats.row_sum %}
-                <tr>
-                    <td height="20">{{ labels}}</td>
-                </tr>
-            {% endfor %}
-            </tr>
-        </table>
-        </td>
-        </tr>
-        </table>
-        </p>
-        <p><a href="{% url csv_download source.id %}">Download Full Confusion Matrix</a></p>
-
-    </div>
-
-
-    <div id="dialog2" title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:800px">
-      <p>Estimated prob. that label (row) is classified as label (column)</p>
-      <table>
-      <tr>
-      <td>
-      <table class="detail_table_popup">
-    <tr>
-        <td height="20"> cm </td>
-              {% for labels in robotStats.labels %}
-                      <td height="20">{{ labels}}</td>
-        {% endfor %}
-                </tr>
-    {% for value in robotStats.fullcm %}
-        {% if forloop.counter0|divisibleby:robotStats.FullmatrixSize %}
-                <tr>  
-                          <td height="20"> {{value}} </td>
-         {%else %}
-        {% if forloop.revcounter0|divisibleby:robotStats.full_diaglen %}
-         
-            <td height="20"> <b>{{value}}</b> </td>
-            {%else%}
-            <td height="20"> {{value}} </td>
-            {% endif %}
-         {% endif %}
-
-         {% if forloop.counter|divisibleby:robotStats.FullmatrixSize %}
-           </tr>
-         {% endif %}
-
-    {% endfor %}
-              </table>
-              </td><td>
-                      <table class="detail_table">
-            <tr>
-                <td height="20">Count</td>
-            </tr>
-            {% for labels in robotStats.full_row_sum %}
-                <tr>
-                    <td height="20">{{ labels}}</td>
-                </tr>
-            {% endfor %}
-            </tr>
-        </table>
-        </td>
-        </table>
-        <p><a href="{% url csv_download source.id %}">Download Full Confusion Matrix</a></p>
-
-    </div>
 
 {% endblock %}

@@ -1,4 +1,36 @@
-<h3>Automate annotation</h3>
+<h3>Automated annotation</h3>
 
-<p>For general information about the CoralNet computer vision backend, please refer to our <a href="http://vimeo.com/104754418">instruction video</a> on Vimeo.</p>
+<p> This dialog contain information about the CoralNet automated annotation system. This information is summarized in our <a href="http://vimeo.com/104754418">instruction video</a> on Vimeo. For technical details we refer to <a href="http://vision.ucsd.edu/sites/default/files/automated_coral_annotation.pdf">this publication</a>.</p>
 
+<ul>
+    <li><strong>Basic information</strong>
+        <p> The CoralNet backend (Robot) runs each morning 3.03 AM Pacific Central Time. CoralNet reads all confirmed annotations, and if there are new annotations, trains a new version of the Robot. The new Robot will then (re)annotate all unconfirmed images. This means that for large sources, an image may be re-annotated by several Robot versions before a human operator annotates (confirms) it. These Robot annotations can be viewed in the annotation log, which is accessible from the annotation tool. </p>
+
+        <p> Note: the first Robot will be trained once there are at least 5 confirmed images in the source.</p>
+
+    </li>
+
+    <li><strong>Robot Performance Estimation</strong>
+        <p>The confirmed data (training data) is split in five equal parts. A classifier is then trained on four of the parts and evaluated on the last part. This procedure is used to generate the confusion matrices (and accuracy estimates) in the table, as well as to calibrate the <a href="http://vision.ucsd.edu/sites/default/files/automated_coral_annotation.pdf">hyper parameters</a> of the machine learning algorithm.</p>
+    <p> Note: Due to the design of the performance estimation procedure, the total number of classified samples in the confusion matrices (which can be seen in the rightmost column) should be roughly 1/5 of the total number of training samples. </p> 
+    </li>
+
+    <li><strong>Robot statistics table</strong>
+        <p>Once your first Robot is trained, a table will appear in this dialog. This table contain the following information: 
+        <ul>
+            <li>#: Robot version. </li>
+            <li>Date: Date this Robot version was trained. </li>
+            <li>Time: Time required to train this Robot version (seconds). </li>
+            <li>Samp: Number of training samples availible for this Robot version. This is equal to the number of confirmed images times the number of points per image. </li>
+            <li>Full: Accuracy as measured on the full labelset. Accuracy is calculated as simple Accuracy (Acc), and as Cohen's Kappa (K). </li>
+            <li>Func.: Accuracy as measured on the functional group level. </li>
+        </ul>
+        You may click on any of the accuracy numbers to view the confusion matrix on the full or functional group level. These can then be downloaded for further analysis. </p>
+    </li>
+
+
+    <li><strong>Source specific Robots</strong>
+        <p> All Robots are source-specific. This means that it will learn only from confirmed annotation <i>within</i> the source, and only annotate image in that same source. The reason for this is simple: machine-learning across different sources is difficult, and it's not clear how to do this efficiently yet. This general problem is referred to as Domain Transfer Learing.</p>
+    </li>
+
+</ul>

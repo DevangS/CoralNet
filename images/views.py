@@ -199,7 +199,7 @@ def source_main(request, source_id):
             not_annotated_link = browse_url_base + '?image_status=' + BrowseSearchForm.STATUS_NEEDS_ANNOTATION,
         ))
 
-    ### PREPARE ALL CONFUSION MATRICES ###
+    ### PREPARE ALL ROBOT STATS ###
     groupObjects = LabelGroup.objects.filter()
     labelObjects = Label.objects.filter()
     validRobots = source.get_valid_robots()
@@ -249,204 +249,18 @@ def source_main(request, source_id):
             train_time = str(int(round(meta['totalRuntime']))),
             date = '%s' %  datetime.datetime.fromtimestamp(os.path.getctime(robot.path_to_model + '.meta.json')).date()
         ))
-   
-    robot_stats = dict(
-            robotlist = robotlist,
-            nbr_robots = len(validRobots),
-        )
-
-
-
-
-
-    ### THIS IS THE OLD ROBOT-STATS CODE BY ANDREW. 
-
-    latestRobot = source.get_latest_robot()
-    if latestRobot == None:
-        robotStats = dict(
-            hasRobot=False,
+    
+    latest_robot = source.get_latest_robot()
+    if latest_robot == None:
+        latest_robot = dict(
+            has_robot=False,
         )
     else:
-        f = open(latestRobot.path_to_model + '.meta.json')
-        jsonstring = f.read()
-        f.close()
-        meta=json.loads(jsonstring)
-        
-        lastedit = 'Last Robot Run: %s' %  time.ctime(os.path.getmtime(\
-        latestRobot.path_to_model + '.meta.json'))
-
-        #getting raw confusion matrix from json file
-        if 'cmOpt' in meta['hp']['gridStats']:
-            cmx = meta['hp']['gridStats']['cmOpt']
-        else:
-            cmx = meta['hp']['gridStats'][-1]['cmOpt']
-          
-        labelMap = meta['labelMap']
-        
-        dimension = len(labelMap)
-        matrixSize =  dimension + 1
-        sizeOfNewMatrix = (int( len(cmx) + matrixSize) )
-        newcm = [None] * (sizeOfNewMatrix -1 )
-
-        temp = []
-        groupCM = []
-
-        #create an array out of the the raw cm list
-        for x in range(len(cmx)):
-            temp.append(cmx[x])
-            if (x+1) % dimension == 0:
-                groupCM.append(temp)
-                temp = []
-        groupCM = array(groupCM)
-        
-        
-        
-        labelNames = []
-        groupsNames = []
-        label_fullName = []
-
-        #getting label objects 
-        for ids in labelMap:
-          labelNames.append( get_object_or_404(Label, id=ids))
-        for label in labelNames:
-          groupsNames.append(str(label.group.name))
-        for label in labelNames:
-          label_fullName.append(str(label.name))
-
-
-        numofGroups = len( set(groupsNames) )
-        setMap = list(set(groupsNames) )
-        groupLen = len(setMap)
-
-        sizeOfGroup = len(setMap) ** 2
-        groupCols = []
-        temp = None
-
-        #reduce the cols and create a list of cols
-        for col in range(groupLen):
-            for x in range(dimension):
-                if setMap[col] == groupsNames[x]:
-                    if temp == None:
-                        temp = groupCM[:,x]
-                    else:
-                        temp += groupCM[:,x]
-            groupCols.append(temp)
-            temp = None
- 
-        temp = []
-        colList = []
-        for x in groupCols:
-            colList.append ( x.tolist())
-
-        #convert to single matrix format from cols list
-        cmint = []
-        for x in range(dimension):
-            for col in range(len(colList)):
-                temp.append( colList[col][x])
-            cmint.append(temp)
-            temp = []
-
-        #reduce rows and create a list of rows
-        cmint = array(cmint)
-        temp = None
-        cmout = []
-        for row in range(groupLen):
-            for x in range(dimension):
-                if setMap[row] == groupsNames[x]:
-                    if temp == None:
-                        temp = cmint[x,:]
-                    else:
-                        temp += cmint[x,:]
-            cmout.append(temp)
-            temp = None
-
-        rowList = []
-        for x in cmout:
-            rowList.append ( x.tolist())
-
-        rowSum = 0
-        rowSumList = []
-        #convert to single matrix format from row list
-        finalGroup = []
-        for x in rowList:
-            for cell in x:
-                rowSum += cell
-            rowSumList.append(rowSum)
-            rowSum = 0
-
-        i = 0
-        #convert to single matrix format from row list
-        finalGroup = []
-        for x in rowList:
-            for cell in x:
-                if rowSumList[i] == 0:
-                    percent = 0.0
-                else:
-                    percent = cell/float(rowSumList[i])
-                finalGroup.append(("%.2f" % percent).lstrip('0'))
-            i += 1     
-             
-        i = j = 0
-        groupcm = [None] * (len(finalGroup) + groupLen )
-
-        #functional group CM
-        for items in finalGroup:
-            if ( i % (groupLen + 1 ) ) == 0:
-                groupcm[i] = setMap[j]
-                j+=1
-                i+=1
-            groupcm[i] = items
-            i+=1
-        
-        i = j = 0
-        fullcm = [None] * (matrixSize + len(cmx) -1)
-       
-
-        full_row_sum = []
-        temp = 0
-        
-
-        #full cm
-        for items in cmx:
-            temp += items
-            i += 1
-            if(i % (matrixSize-1)) == 0:
-                full_row_sum.append(temp)
-                temp = 0
-            
-        i = 0
-        for x in cmx:
-            if(i % matrixSize) == 0:
-               fullcm[i] = label_fullName[j]
-               j += 1
-               i += 1
-            
-            if full_row_sum[j-1] == 0:
-                percent = 0.0
-            else:
-                percent = x/float(full_row_sum[j-1])
-            fullcm[i] = (("%.2f" % percent).lstrip('0'))
-            i += 1     
-             
-
-        robotStats = dict(
-            version=latestRobot.version,
-            edit = lastedit,
-            trainTime=round(meta['totalRuntime']),
-            precision = 100 * (1 - meta['hp']['estPrecision']),
-            fullcm = fullcm,
-            labels = label_fullName,
-            cm = groupcm,
-            labelMap = setMap,
-            row_sum = rowSumList,
-            full_row_sum = full_row_sum,
-            matrixSize = len(setMap) + 1,
-            FullmatrixSize = matrixSize,
-            full_diaglen = matrixSize + 1,
-            diaglen = len(setMap) + 2,
-            hasRobot=True,
+        robot_stats = dict(
+            robotlist = robotlist,
+            has_robot=True,
+            most_recent_run_date = '%s' %  time.ctime(os.path.getmtime(latest_robot.path_to_model + '.meta.json')),
         )
-
 
     return render_to_response('images/source_main.html', {
         'source': source,
@@ -454,12 +268,10 @@ def source_main(request, source_id):
         'members': memberDicts,
         'latest_images': latest_images,
         'image_stats': image_stats,
-		'robotStats':robotStats,
         'robot_stats':robot_stats,
         },
         context_instance=RequestContext(request)
-        )
-
+)
 
 @source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def source_edit(request, source_id):
@@ -526,58 +338,6 @@ def source_edit(request, source_id):
         context_instance=RequestContext(request)
     )
 
-@source_visibility_required('source_id')
-def csv_download(request, source_id):
-    source = get_object_or_404(Source, id=source_id)
-    latestRobot = source.get_latest_robot()
-    
-    if latestRobot == None:
-        return HttpResponse('No Robot Stats')  
-    else:
-        f = open(latestRobot.path_to_model + '.meta.json')
-        jsonstring = f.read()
-        f.close()
-        meta=json.loads(jsonstring)
-
-        #getting raw confusion matrix from json file
-        if 'cmOpt' in meta['hp']['gridStats']:
-            cmx = meta['hp']['gridStats']['cmOpt']
-        else:
-            cmx = meta['hp']['gridStats'][-1]['cmOpt']
-        labelMap = meta['labelMap']
-        dimension = len(labelMap)
-
-        temp = []
-        groupCM = []
-
-        #create an array out of the the raw cm list
-        for x in range(len(cmx)):
-            temp.append(cmx[x])
-            if (x+1) % dimension == 0:
-                groupCM.append(temp)
-                temp = []
-        groupCM = array(groupCM)
-              
-        
-        labelNames = []
-        label_fullName = []
-
-        #getting label objects 
-        for ids in labelMap:
-          labelNames.append( get_object_or_404(Label, id=ids))
-        for label in labelNames:
-          label_fullName.append(str(label.name))
-        
-        #creating csv file
-        response = HttpResponse(mimetype='text/csv')
-        response['Content-Disposition'] = 'attachment;filename=Full_CM.csv'
-        writer = csv.writer(response)
-
-        writer.writerow(label_fullName)
-        for rows in groupCM:
-          writer.writerow (rows.tolist())
-
-        return response
 
 # helper function to format numpy outputs
 def myfmt(r):
