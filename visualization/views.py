@@ -817,7 +817,8 @@ def export_abundance(placeholder, source_id):
     ### GET THE FUNCTIONAL GROUP CONFUSION MATRIX AND MAKE SOME CHECKS.
     # the second output is a dictionary that maps the group_id to a consecutive number that starts at 0.
     try:
-        (cm, fdict, funcIds) = collapse_confusion_matrix(get_current_confusion_matrix(source_id))
+        (fullcm, labelIds) = get_current_confusion_matrix(source_id)
+        (cm, fdict, funcIds) = collapse_confusion_matrix(fullcm, labelIds)
     except:
         writer.writerow(["Error! Automated annotator is not availible for this source."])
         return response
