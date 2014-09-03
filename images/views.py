@@ -200,67 +200,7 @@ def source_main(request, source_id):
         ))
 
     ### PREPARE ALL ROBOT STATS ###
-    groupObjects = LabelGroup.objects.filter()
-    labelObjects = Label.objects.filter()
-    validRobots = source.get_valid_robots()
-    validRobots = validRobots[-5:] #grab the five most recent. Else it takes too long to generate the main source page.
-    
-    robotlist = []
-    for robot in validRobots:
-        (fullcm, labelIds) = get_confusion_matrix(robot)
-        (fullcm_n, row_sums) = confusion_matrix_normalize(fullcm)
-        cm_str = format_cm_for_display(fullcm_n, row_sums, labelObjects, labelIds)
-        fullacc = accuracy_from_cm(fullcm)
-
-        (funccm, placeholder, groupIds) = collapse_confusion_matrix(fullcm, labelIds)
-        (funccm_n, row_sums) = confusion_matrix_normalize(funccm)
-        cm_func_str = format_cm_for_display(funccm_n, row_sums, groupObjects, groupIds)
-        funcacc = accuracy_from_cm(funccm)
-
-        cmlist = []
-        cmlist.append(dict(        
-            cm_str = cm_str,
-            ncols = len(labelIds) + 2,
-            ndiags = len(labelIds) + 3,
-            idstr = 'dialog' + str(robot.version) + 'full',
-            namestr = 'full',
-            acc = '%.1f' % (100*fullacc[0]),
-            kappa = '%.1f' % (100*fullacc[1]),
-        ))
-        cmlist.append(dict(        
-            cm_str = cm_func_str,
-            ncols = len(groupIds) + 2,
-            ndiags = len(groupIds) + 3,
-            idstr = 'dialog' + str(robot.version) + 'func',
-            namestr = 'func',
-            acc = '%.1f' % (100*funcacc[0]),
-            kappa = '%.1f' % (100*funcacc[1]),
-        ))
-
-        f = open(robot.path_to_model + '.meta.json')
-        jsonstring = f.read()
-        f.close()
-        meta = json.loads(jsonstring)
-
-        robotlist.append(dict(
-            cmlist = cmlist,
-            version = robot.version,
-            nsamples = sum(meta['final']['trainData']['labelhist']['org']),
-            train_time = str(int(round(meta['totalRuntime']))),
-            date = '%s' %  datetime.datetime.fromtimestamp(os.path.getctime(robot.path_to_model + '.meta.json')).date()
-        ))
-    
-    latest_robot = source.get_latest_robot()
-    if latest_robot == None:
-        latest_robot = dict(
-            has_robot=False,
-        )
-    else:
-        robot_stats = dict(
-            robotlist = robotlist,
-            has_robot=True,
-            most_recent_run_date = '%s' %  time.ctime(os.path.getmtime(latest_robot.path_to_model + '.meta.json')),
-        )
+    robot_stats = make_robot_stats(source_id, 3)
 
     return render_to_response('images/source_main.html', {
         'source': source,
@@ -732,4 +672,87 @@ def import_labels(request, source_id):
             context_instance=RequestContext(request)
     )
 
+@source_visibility_required('source_id')
+def robot_stats_all(request, source_id):
+
+    robot_stats = make_robot_stats(source_id, 0)
+    source = Source.objects.get(id = source_id)
+
+    return render_to_response('images/robot_stats_all.html', {
+        'robot_stats':robot_stats,
+        'source':source,
+        },
+        context_instance=RequestContext(request)
+)
+
+
+def make_robot_stats(source_id, nbr_robots):
+
+    ### PREPARE ALL ROBOT STATS ###
+    source = Source.objects.get(id = source_id)
+    groupObjects = LabelGroup.objects.filter()
+    labelObjects = Label.objects.filter()
+    validRobots = source.get_valid_robots()
+
+    if nbr_robots > 0:
+        validRobots = validRobots[-nbr_robots:]
+    
+    robotlist = []
+    for robot in validRobots:
+        (fullcm, labelIds) = get_confusion_matrix(robot)
+        (fullcm_n, row_sums) = confusion_matrix_normalize(fullcm)
+        cm_str = format_cm_for_display(fullcm_n, row_sums, labelObjects, labelIds)
+        fullacc = accuracy_from_cm(fullcm)
+
+        (funccm, placeholder, groupIds) = collapse_confusion_matrix(fullcm, labelIds)
+        (funccm_n, row_sums) = confusion_matrix_normalize(funccm)
+        cm_func_str = format_cm_for_display(funccm_n, row_sums, groupObjects, groupIds)
+        funcacc = accuracy_from_cm(funccm)
+
+        cmlist = []
+        cmlist.append(dict(        
+            cm_str = cm_str,
+            ncols = len(labelIds) + 2,
+            ndiags = len(labelIds) + 3,
+            idstr = 'dialog' + str(robot.version) + 'full',
+            namestr = 'full',
+            acc = '%.1f' % (100*fullacc[0]),
+            kappa = '%.1f' % (100*fullacc[1]),
+        ))
+        cmlist.append(dict(        
+            cm_str = cm_func_str,
+            ncols = len(groupIds) + 2,
+            ndiags = len(groupIds) + 3,
+            idstr = 'dialog' + str(robot.version) + 'func',
+            namestr = 'func',
+            acc = '%.1f' % (100*funcacc[0]),
+            kappa = '%.1f' % (100*funcacc[1]),
+        ))
+
+        f = open(robot.path_to_model + '.meta.json')
+        jsonstring = f.read()
+        f.close()
+        meta = json.loads(jsonstring)
+
+        robotlist.append(dict(
+            cmlist = cmlist,
+            version = robot.version,
+            nsamples = sum(meta['final']['trainData']['labelhist']['org']),
+            train_time = str(int(round(meta['totalRuntime']))),
+            date = '%s' %  datetime.datetime.fromtimestamp(os.path.getctime(robot.path_to_model + '.meta.json')).date()
+        ))
+    
+    if not validRobots:
+        robot_stats = dict(
+            robotlist = robotlist,
+            has_robot=False,
+        )
+    else:
+        robot_stats = dict(
+            robotlist = robotlist,
+            has_robot=True,
+            most_recent_run_date = '%s' %  time.ctime(os.path.getmtime(validRobots[-1].path_to_model + '.meta.json')),
+        )
+
+    return robot_stats
 

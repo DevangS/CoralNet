@@ -150,6 +150,9 @@
             </tr>
         {% endfor %}
     </table>
+    {% if  robot_stats.has_robot %}
+    <p> <a href="{% url robot_stats_all source.id %}">Full Automated Annotation history</a></p>
+    {% endif %}
     </div>
     </div>
     </div>

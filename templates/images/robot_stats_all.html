@@ -1,0 +1,68 @@
+{% extends "images/base_source.html" %}
+{% load i18n %}
+{% load guardian_tags %}
+{% load thumbnail %}
+
+{% block title %}{{ source.name }} | CoralNet{% endblock %}
+
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
+    {% include "static-local-include.html" with type="css" path="css/source.css" %}
+{% endblock %}
+
+{% block page-specific-includes %}
+    {{ editSourceForm.media }}
+{% endblock %}
+
+{% block content %}
+
+    <div style="float:left;">
+    <div style="margin-left:10px; width:100%">
+    <div class="detail_box">
+    <h3 style="text-align:center">Full Automated Annotation Table</h3>
+    <p> This page does not create the pop-up view of the confusion matrices. Instead it redirecty immediately to the confusion matrix download. This is done to minimize page loading time. </p>
+    <table class="detail_table_popup">
+
+        <tr>
+            <th colspan="4">details</th>
+            <th colspan="2">full</th>
+            <th colspan="2">func.</th>
+         </tr>
+        <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Time (s)</th>
+            <th>Samp (#)</th>  
+            <th>Acc</th>  
+            <th>&#922</th>
+            <th>Acc</th>  
+            <th>&#922</th>
+        </tr>
+        {% for robot in robot_stats.robotlist %}
+            <tr>
+            <td> {{robot.version}} </td>
+            <td> {{robot.date}} </td>
+            <td> {{robot.train_time}} </td>
+            <td> {{robot.nsamples}} </td>
+            {% for cm in robot.cmlist %}
+                <td><a href="{% url cm_download source.id robot.version cm.namestr%}">{{cm.acc}}</a> </td>
+                <td><a href="{% url cm_download source.id robot.version cm.namestr%}">{{cm.kappa}}</a> </td>
+            {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+    </div>
+    </div>
+    </div>
+
+  
+    <div style="clear:left"></div>
+
+    <script>
+        function openFullCMdialog(idstr) {
+            $(idstr).dialog({resizable: false, modal: true, width:"auto"});
+        }
+
+    </script>
+
+{% endblock %}
