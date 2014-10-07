@@ -505,8 +505,8 @@ def trainRobot(source_id):
         send_mail('CoralNet Backend Error', 'in trainRobot', 'noreply@coralnet.ucsd.edu', ['oscar.beijbom@gmail.com'])
         newRobot.delete()
     else:
-        #if not (previousRobot == None):
-            #os.remove(oldModelPath) # remove old model, but keep the meta data files.
+        if not (previousRobot == None):
+            os.remove(oldModelPath) # remove old model, but keep the meta data files.
         print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
 
 def export_images(source_id, outDir):
