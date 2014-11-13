@@ -42,11 +42,12 @@ def resetImageStatus():
         for image in imgquerry:
             if image.process_date is None:
                 img_counter += 1
+                i.after_height_cm_change() # this resets the image
                 continue
             preprocessedImageFile = os.path.join(PREPROCESS_DIR, str(image.id) + "_" + image.get_process_date_short_str() + ".mat")
             featureFile = os.path.join(FEATURES_DIR, str(image.id) + "_" + image.get_process_date_short_str() + ".dat")
             if not(os.path.isfile(preprocessedImageFile)) or not(os.path.isfile(featureFile)):
-                # i.after_height_cm_change() # this resets the image
+                i.after_height_cm_change() # this resets the image
                 img_counter += 1
         print this_source.name + "has " + str(img_counter) + " images with bad status"
 
