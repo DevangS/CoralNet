@@ -49,7 +49,7 @@ def resetImageStatus():
             if not(os.path.isfile(preprocessedImageFile)) or not(os.path.isfile(featureFile)):
                 image.after_height_cm_change() # this resets the image
                 img_counter += 1
-        print this_source.name + "has " + str(img_counter) + " images with bad status"
+        print "Reset the status for " + str(img_counter) + " images in: " + this_source.name
 
 
 
