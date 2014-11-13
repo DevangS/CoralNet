@@ -161,7 +161,7 @@ def PreprocessImages(image_id):
 
     # check if already preprocessed
     if image.status.preprocessed:
-        print 'PreprocessImages: Image {id} is already preprocessed'.format(id = image_id)
+        # print 'PreprocessImages: Image {id} is already preprocessed'.format(id = image_id)
         return 1
 
     if not (image.metadata.height_in_cm or image.source.image_height_in_cm):
@@ -227,7 +227,7 @@ def MakeFeatures(image_id):
         print 'MakeFeatures: Image id {id} doesnt have random points. Can not make features'.format(id = image_id)
         return
     if image.status.featuresExtracted:
-        print 'MakeFeatures: Features already extracted for image id {id}'.format(id = image_id)
+        # print 'MakeFeatures: Features already extracted for image id {id}'.format(id = image_id)
         return
 
     ####### EVERYTHING OK: START THE FEATURE EXTRACTION ##########
@@ -274,12 +274,12 @@ def Classify(image_id):
 
     # if annotated by Human, no need to re-classify
     if image.status.annotatedByHuman:
-        print 'Classify: Image nr ' + str(image_id) + ' is annotated by the human operator, aborting'
+        # print 'Classify: Image nr ' + str(image_id) + ' is annotated by the human operator, aborting'
         return
 
     # make sure that the previous step is complete
     if not image.status.featuresExtracted:
-        print 'Classify: Features not extracted for image id {id}, can not proceed'.format(id = image_id)
+        # print 'Classify: Features not extracted for image id {id}, can not proceed'.format(id = image_id)
         return
 
     # Get all robots for this source
@@ -293,7 +293,7 @@ def Classify(image_id):
     if (image.status.annotatedByRobot):
         # now, compare this version number to the latest_robot_annotator field for image.
         if (not (latestRobot.version > image.latest_robot_annotator.version)):
-            print 'Image {id} is already annotated by the latest robot version, {ver}, for source, {src}'.format(id = image_id,  ver=latestRobot.version, src=image.source)
+            # print 'Image {id} is already annotated by the latest robot version, {ver}, for source, {src}'.format(id = image_id,  ver=latestRobot.version, src=image.source)
             return
 
     ####### EVERYTHING OK: START THE CLASSIFICATION ##########
@@ -380,7 +380,7 @@ def addLabelsToFeatures(image_id):
         print 'addLabelsToFeatures: Image id {id} has not yet gone through feature extraction. Can not add labels to feature file'.format(id = image_id)
         return 0
     if image.status.featureFileHasHumanLabels:
-        print 'addLabelsToFeatuers: Image id ' + str(image_id) + ' already has human label attached to the feature file'
+        # print 'addLabelsToFeatuers: Image id ' + str(image_id) + ' already has human label attached to the feature file'
         return 1
 
 
@@ -409,6 +409,9 @@ def addLabelsToFeatures(image_id):
 
     copyfile(featureFileOut, featureFileIn)
     os.remove(featureFileOut)
+
+
+
 @task()
 def trainRobot(source_id):
 
