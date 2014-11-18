@@ -975,15 +975,15 @@ def export_annotations(request, source_id):
     #Add table headings: locKey1 locKey2 locKey3 locKey4 photo_date anno_date row col label shortcode fun_group annotator
     header = []
     header.extend(source.get_key_list())
-    header.extend(['photo_date','anno_date','annotator', 'row', 'col', 'label','shortcode', 'func_group'])
+    header.extend(['original_file_name', 'date_taken','date_annotated','annotator', 'row', 'col', 'label','shortcode', 'func_group'])
     writer.writerow(header)
 
     #Adds the relevant annotation data in a row
     #Example row: lter1 out10m line1-2 qu1 20100427 20110101 130 230 Porit
     for image in images:
         locKeys = image.get_location_value_str_list_robust()
+        original_file_name = str(image.metadata.name)        
         photo_date = str(image.metadata.photo_date)
-
         annotations = all_annotations.filter(image=image).order_by('point').select_related()
 
         for annotation in annotations:
@@ -998,6 +998,7 @@ def export_annotations(request, source_id):
 
             row = []
             row.extend(locKeys)
+            row.append(original_file_name)
             row.append(photo_date)
             row.append(annotation_date)
             row.append(annotator)

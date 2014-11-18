@@ -657,7 +657,7 @@ class Image(models.Model):
         """
         Returns the image's location values as a list of strings:
         ['Shore3', 'Reef 5', 'Loc10']
-        This file will return the value 'unspecified' for each key 
+        This file will return the value 'not_specified' for each key 
         where there is no location value specified.
         """
 
