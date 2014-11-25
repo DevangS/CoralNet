@@ -35,7 +35,7 @@ try
     allData.labels = tmp(:,3);
     
     fileNames = importdata(fileNamesPath);
-
+    
     %%% PREPARE HP DATA SPLIT AND SET UP PATHS %%%
     testIdsBinary = false(numel(fileNames), 1);
     testIdsBinary(1:5:end) = true; % 1/5 of the data is test data
@@ -53,26 +53,36 @@ try
     
     %%% HP - TRAINDATA %%%
     logger('Making HP train data')
-    hp.trainData = makeTrainData(allData, fileNames, trainIds, HPtrainPath, targetNbrSamplesPerClass.HP, labelThreshhold, labelMap);
+    [hp.trainData, keepInd] = makeTrainData(allData, fileNames, trainIds, HPtrainPath, targetNbrSamplesPerClass.HP, labelThreshhold, labelMap);
     
     %%% HP - TESTDATA %%%
     logger('Making HP test data')
-    [hp.testData gtLabels] = makeTestData(allData, fileNames, testIds, HPtestPath, maxNbrTestImages);
+    [hp.testData, gtLabels] = makeTestData(allData, fileNames, testIds, HPtestPath, maxNbrTestImages);
     
     %%% RUN HP %%%
     logger('Running HP calibration');
-    [hp.optValues, hp.estPrecision, hp.gridStats] = coralnet_runHPcalibration(HPtrainPath, HPtestPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, hp.trainData.ssfactor, labelMap);
+    [hp.optValues, hp.estPrecision, hp.gridStats] = coralnet_runHPcalibration(HPtrainPath, HPtestPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, hp.trainData.ssfactor, labelMap, keepInd);
+    
+    %%% SET FINAL PARAMS %%%
+    solverOptions.libsvm.prob = 1; % this one uses probability outputs.
+    solverOptions = setSolverCommonOptions(solverOptions, hp.optValues);
+    
+    
+    %%% RERUN WITH OPTIMAL PARAMETERS TO GENEARTE DECISION VALUES %%%
+    logger('Training model for making decision values');
+    hp.decvals.optStr = makeSolverOptionString(solverOptions, hp.trainData.ssfactor(keepInd), labelMap(keepInd));
+    system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-train %s %s %s;\n', hp.decvals.optStr, HPtrainPath, modelPath));
+    system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-predict -b 1 %s %s %s', HPtestPath,  modelPath,  labelPath));
+    coralnet_alleviatecurves(gtLabels, labelPath, fullfile(workDir, 'labelmap'), strcat(modelPath, '.meta_all'));
+    
     
     %%% MAKE FINAL TRAIN DATA %%%
     logger('Making final train data')
-    final.trainData = makeTrainData(allData, fileNames, [trainIds; testIds], finalTrainPath, targetNbrSamplesPerClass.final, labelThreshhold, labelMap);
-    
+    [final.trainData, keepInd] = makeTrainData(allData, fileNames, [trainIds; testIds], finalTrainPath, targetNbrSamplesPerClass.final, labelThreshhold, labelMap);
     
     %%% TRAIN MODEL %%%
     logger('Training final model');
-    solverOptions.libsvm.prob = 1; % this one uses probability outputs.
-    solverOptions = setSolverCommonOptions(solverOptions, hp.optValues);
-    final.optStr = makeSolverOptionString(solverOptions, final.trainData.ssfactor, labelMap);
+    final.optStr = makeSolverOptionString(solverOptions, final.trainData.ssfactor(keepInd), labelMap(keepInd));
     tic; system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-train %s %s %s;\n', final.optStr, finalTrainPath, modelPath));
     final.time.train = toc;
     
@@ -127,7 +137,7 @@ end
 
 
 
-function stats = makeTrainData(allData, fileNames, trainIds, trainPath, targetNbrSamplesPerClass, labelThreshhold, labelMap)
+function [stats keepInd] = makeTrainData(allData, fileNames, trainIds, trainPath, targetNbrSamplesPerClass, labelThreshhold, labelMap)
 
 % select the ids.
 trainData = splitData(allData, trainIds);
@@ -138,7 +148,7 @@ ssfactor = getSVMssfactor(trainData, targetNbrSamplesPerClass);
 trainData = subsampleDataStruct(trainData, ssfactor);
 
 % Filter out the most rare labels
-trainData = removeRareLabels(trainData, labelThreshhold);
+[trainData, keepInd] = removeRareLabels(trainData, labelThreshhold, labelMap);
 stats.labelhist.pruned = hist(trainData.labels, labelMap);
 
 % Merge the train data
@@ -163,21 +173,21 @@ gtLabels = testData.labels;
 
 end
 
-function dataOut = removeRareLabels(dataIn, labelThreshhold)
+function [dataOut keepClasses] = removeRareLabels(dataIn, labelThreshhold, labelMap)
 
 
-classes = unique(dataIn.labels);
-nbrClasses = length(classes);
+nbrClasses = length(labelMap);
 
 keepInd = true(numel(dataIn.labels), 1);
+keepClasses = true(size(labelMap));
 removedLabelsStr = [];
 for itt = 1 : nbrClasses
-    thisClass = classes(itt);
+    thisClass = labelMap(itt);
     theseSamples = (dataIn.labels == thisClass);
-    nbrTotalSamples = nnz(theseSamples);
-    if (nbrTotalSamples < labelThreshhold)
+    if (nnz(theseSamples) < labelThreshhold)
         removedLabelsStr = sprintf('%s %d,', removedLabelsStr, thisClass);
         keepInd(theseSamples) = false;
+        keepClasses(itt) = false;
     end
 end
 logger('Removed labels: %s', removedLabelsStr);
@@ -191,7 +201,7 @@ end
 end
 
 
-function [optValues, estPrecision, stats] = coralnet_runHPcalibration(trainPath, testPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, ssfactor, labelMap)
+function [optValues, estPrecision, stats] = coralnet_runHPcalibration(trainPath, testPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, ssfactor, labelMap, keepInd)
 np = gridCrawler([], [], gridParams);
 mainItt = 0;
 fval = [];
@@ -207,7 +217,7 @@ while (~isempty(np))
     for thisPoint = 1 : size(np, 1)
         
         solverOptions = setSolverCommonOptions(solverOptions, np(thisPoint, :));
-        optStr = makeSolverOptionString(solverOptions, ssfactor, labelMap);
+        optStr = makeSolverOptionString(solverOptions, ssfactor(keepInd), labelMap(keepInd));
         
         logger(sprintf('Running job, gamma:%.3g, C:%.3g', np(thisPoint, 1), np(thisPoint, 2)));
         
@@ -217,7 +227,7 @@ while (~isempty(np))
         
         estLabels = dlmread(labelPath);
         
-        thisFval(thisPoint) = 1 - (nnz(gtLabels == estLabels) / nnz(gtLabels));
+        thisFval(thisPoint) = 1 - (nnz(gtLabels == estLabels) / numel(gtLabels));
         
         % now make the confusion matrix
         cm{thisPoint} = confMatrix(mapLabels(gtLabels, labelMap), mapLabels(estLabels, labelMap), numel(labelMap));
@@ -260,3 +270,103 @@ for i = 1 : numel(labelMap)
 end
 
 end
+
+
+function coralnet_alleviatecurves(gtLabels, decvalPath, labelMapPath, outputmetapath)
+% this function does the whole alleviate thing. 
+
+% read decision values (probabilities)
+decvals = dlmread(decvalPath, ' ', 1, 1);
+estLabels = dlmread(decvalPath, ' ', [1 0 size(decvals, 1) 0]);
+
+% read label order
+estLabelorder = dlmread(decvalPath, ' ', [0 1 0 size(decvals, 2)]);
+
+allLabels = union(unique(gtLabels), estLabelorder);
+
+% read the func group map
+[funcmap, funcnames] = coralnet_readlabelmap(labelMapPath);
+
+% pick all possible threholds
+thresholds = unique(decvals(:));
+
+% now subsample so we only consider max 10000 threholds
+thresholds = thresholds(round(linspace(1, numel(thresholds), min(10000, numel(thresholds)))));
+thresholds = sort(thresholds, 'descend');
+alleviateLabels = gtLabels;
+
+activeFuncGroups = unique(funcmap(allLabels));
+acc = zeros(numel(thresholds), numel(activeFuncGroups));
+keepRatio = zeros(numel(thresholds), 1);
+for tItt = 1 : numel(thresholds)
+    keepInd = any(decvals > thresholds(tItt), 2);
+    keepRatio(tItt) = nnz(keepInd) ./ numel(keepInd);
+    alleviateLabels(keepInd) = estLabels(keepInd);
+    alleviateLabels(~keepInd) = gtLabels(~keepInd);
+    cm = confMatrix(gtLabels, alleviateLabels, numel(funcmap));
+    
+    for fItt = 1 : numel(activeFuncGroups)
+        maptmp = (funcmap == activeFuncGroups(fItt));
+        maptmp = maptmp + 1; % 2 will now be the active func group. The rest will be 1.
+        acc(tItt, fItt) = cohensKappa(confMatrixCollapse(cm, maptmp));
+    end
+end
+
+
+clf;
+plot(keepRatio, acc,'LineWidth',3);
+legend(funcnames(activeFuncGroups))
+ylabel('Cohens kappa')
+xlabel('Ratio of points classified by machine');
+
+if sum(ismember('Hard coral', funcnames(activeFuncGroups))) > 0
+    coralAcc = acc(:, strcmp(funcnames(activeFuncGroups), 'Hard coral'));
+    allLevel = find(coralAcc<0.95, 1);
+    line([keepRatio(allLevel) keepRatio(allLevel)], [0 1], 'LineStyle', '-.', 'color', 'red', 'LineWidth', 1.5)
+    line([0 1], [coralAcc(allLevel) coralAcc(allLevel)], 'LineStyle', '-.', 'color', 'red', 'LineWidth', 1.5)
+    grid
+    set(gcf, 'color', [1 1 1]);
+    set(gcf, 'position', [100 100 500 300]);
+    
+    meta_all.keepRatio = round(keepRatio(allLevel) * 100);
+    meta_all.ok = 1;
+    % find the threholds that correspond to each integer alleviation level
+    for intkeep = rowVector(1 : 100)
+        [~, ind] = min(abs(keepRatio*100 - intkeep));
+        meta_all.thout(intkeep) = thresholds(ind);
+    end
+else
+    meta_all.ok = 0; % no hard coral label, can't do anything.
+end
+
+export_fig([outputmetapath, '.pdf']);
+save([outputmetapath, '.mat'], 'meta_all');
+
+ff = fopen(strcat(outputmetapath, '.json'), 'w');
+fprintf(ff, '%s', savejson('' , meta_all, []));
+fclose(ff);
+
+
+end
+
+function [funcmap, funcnames] = coralnet_readlabelmap(labelMapPath)
+fid = fopen(labelMapPath, 'r');
+line = fgetl(fid);
+while ~strcmp(line, '===')
+    parts = regexp(line, ',', 'split');
+    funcnames{str2double(parts{2})} = parts{1};
+    line = fgetl(fid);
+end
+
+line = fgetl(fid);
+while ~(line == -1)
+    parts = regexp(line, ',', 'split');
+    funcmap(str2double(parts{1})) = str2double(parts{2});
+    line = fgetl(fid);
+end
+fclose(fid);
+
+
+end
+
+

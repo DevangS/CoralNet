@@ -25,3 +25,7 @@ coralnet_trainRobot(modelPath, oldModelPath, pointInfoPath, fileNamesPath, workD
 coralnet_classify(featfile, modelPath, labelFile, errorLogfile)
 load(strcat(modelPath, '.meta.mat'))
 
+%%
+addpath(genpath('~/e/Code/gitProjects/CoralNet/vision_backend_code/current_matlab'))
+workdir = 'home/beijbom/e/Code/gitProjects/CoralNet/images/models/robot27.workdir';
+coralnet_trainRobot('~/Desktop/modeltmp.dat', '', fullfile(workdir, 'points'), fullfile(workdir, 'fileNames'), fullfile(workdir), '~/Desktop/log.txt', '~/Desktop/err.log');
