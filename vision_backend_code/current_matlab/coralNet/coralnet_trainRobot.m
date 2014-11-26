@@ -345,7 +345,7 @@ else
     meta_all.ok = 0; % no hard coral label, can't do anything.
 end
 
-export_fig([outputmetapath, '.png']);
+print(gcf, [outputmetapath, '.png'], '-dpng');
 save([outputmetapath, '.mat'], 'meta_all');
 
 ff = fopen(strcat(outputmetapath, '.json'), 'w');
