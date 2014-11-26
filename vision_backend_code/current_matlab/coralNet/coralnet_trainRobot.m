@@ -1,19 +1,24 @@
-function coralnet_trainRobot(modelPath, oldModelPath, pointInfoPath, fileNamesPath, workDir, logFile, errorLogfile)
+function coralnet_trainRobot(modelPath, oldModelPath, pointInfoPath, fileNamesPath, workDir, logFile, errorLogfile, varargin)
 
 global logfid
 
-%%% HARD CODED PARAMS, KIND OF BUGGY, BUT COULDNT BOTHER WITH YET ANOTHER
-%%% PARAM FILE
-targetNbrSamplesPerClass.final = 7500;
-targetNbrSamplesPerClass.HP = 5000;
-labelRatio = 0.005;
-maxNbrTestImages = 500;
 gridParams.start = [0 2];
 gridParams.range.min = [-5 -5];
 gridParams.range.max = [5 5];
 gridParams.stepsize = [1 1];
 gridParams.edgeLength = 3;
 
+targetNbrSamplesPerClass.final = 7500;
+targetNbrSamplesPerClass.HP = 5000;
+
+[varnames, varvals] = var2varvallist(gridParams, targetNbrSamplesPerClass);
+[gridParams, targetNbrSamplesPerClass] = varargin_helper(varnames, varvals, varargin{:});
+
+
+%%% HARD CODED PARAMS, KIND OF BUGGY, BUT COULDNT BOTHER WITH YET ANOTHER
+%%% PARAM FILE
+labelRatio = 0.005;
+maxNbrTestImages = 500;
 
 solverOptions.libsvm.gamma = -2;
 solverOptions.libsvm.C = -1;
@@ -46,14 +51,14 @@ try
     HPtestPath = fullfile(workDir, 'test');
     finalTrainPath = fullfile(workDir, 'trainFinal');
     labelPath = fullfile(workDir, 'label');
-    labelMap = unique(allData.labels);
+    labelMap = unique(allData.labels); %this is a list of all the label ids
     
     %%% FIND A THRESHHOLD FOR NBR SAMPLES REQUIRED FOR TRAINING %%%
     labelThreshhold = findNbrLabelsThreshhold(allData.labels, labelRatio);
     
     %%% HP - TRAINDATA %%%
     logger('Making HP train data')
-    [hp.trainData, keepInd] = makeTrainData(allData, fileNames, trainIds, HPtrainPath, targetNbrSamplesPerClass.HP, labelThreshhold, labelMap);
+    [hp.trainData, keepClasses] = makeTrainData(allData, fileNames, trainIds, HPtrainPath, targetNbrSamplesPerClass.HP, labelThreshhold, labelMap);
     
     %%% HP - TESTDATA %%%
     logger('Making HP test data')
@@ -61,7 +66,7 @@ try
     
     %%% RUN HP %%%
     logger('Running HP calibration');
-    [hp.optValues, hp.estPrecision, hp.gridStats] = coralnet_runHPcalibration(HPtrainPath, HPtestPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, hp.trainData.ssfactor, labelMap, keepInd);
+    [hp.optValues, hp.estPrecision, hp.gridStats] = coralnet_runHPcalibration(HPtrainPath, HPtestPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, hp.trainData.ssfactor, labelMap, keepClasses);
     
     %%% SET FINAL PARAMS %%%
     solverOptions.libsvm.prob = 1; % this one uses probability outputs.
@@ -70,7 +75,7 @@ try
     
     %%% RERUN WITH OPTIMAL PARAMETERS TO GENEARTE DECISION VALUES %%%
     logger('Training model for making decision values');
-    hp.decvals.optStr = makeSolverOptionString(solverOptions, hp.trainData.ssfactor(keepInd), labelMap(keepInd));
+    hp.decvals.optStr = makeSolverOptionString(solverOptions, hp.trainData.ssfactor(keepClasses), labelMap(keepClasses));
     system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-train %s %s %s;\n', hp.decvals.optStr, HPtrainPath, modelPath));
     system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-predict -b 1 %s %s %s', HPtestPath,  modelPath,  labelPath));
     coralnet_alleviatecurves(gtLabels, labelPath, fullfile(workDir, 'labelmap'), strcat(modelPath, '.meta_all'));
@@ -78,11 +83,11 @@ try
     
     %%% MAKE FINAL TRAIN DATA %%%
     logger('Making final train data')
-    [final.trainData, keepInd] = makeTrainData(allData, fileNames, [trainIds; testIds], finalTrainPath, targetNbrSamplesPerClass.final, labelThreshhold, labelMap);
+    [final.trainData, keepClasses] = makeTrainData(allData, fileNames, [trainIds; testIds], finalTrainPath, targetNbrSamplesPerClass.final, labelThreshhold, labelMap);
     
     %%% TRAIN MODEL %%%
     logger('Training final model');
-    final.optStr = makeSolverOptionString(solverOptions, final.trainData.ssfactor(keepInd), labelMap(keepInd));
+    final.optStr = makeSolverOptionString(solverOptions, final.trainData.ssfactor(keepClasses), labelMap(keepClasses));
     tic; system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-train %s %s %s;\n', final.optStr, finalTrainPath, modelPath));
     final.time.train = toc;
     
@@ -137,18 +142,18 @@ end
 
 
 
-function [stats keepInd] = makeTrainData(allData, fileNames, trainIds, trainPath, targetNbrSamplesPerClass, labelThreshhold, labelMap)
+function [stats keepClasses] = makeTrainData(allData, fileNames, trainIds, trainPath, targetNbrSamplesPerClass, labelThreshhold, labelMap)
 
 % select the ids.
 trainData = splitData(allData, trainIds);
 stats.labelhist.org = hist(trainData.labels, labelMap);
 
 % Subsamples to not have too much data
-ssfactor = getSVMssfactor(trainData, targetNbrSamplesPerClass);
+ssfactor = getSVMssfactor(trainData, targetNbrSamplesPerClass, labelMap);
 trainData = subsampleDataStruct(trainData, ssfactor);
 
 % Filter out the most rare labels
-[trainData, keepInd] = removeRareLabels(trainData, labelThreshhold, labelMap);
+[trainData, keepClasses] = removeRareLabels(trainData, labelThreshhold, labelMap);
 stats.labelhist.pruned = hist(trainData.labels, labelMap);
 
 % Merge the train data
@@ -335,11 +340,12 @@ if sum(ismember('Hard coral', funcnames(activeFuncGroups))) > 0
         [~, ind] = min(abs(keepRatio*100 - intkeep));
         meta_all.thout(intkeep) = thresholds(ind);
     end
+    
 else
     meta_all.ok = 0; % no hard coral label, can't do anything.
 end
 
-export_fig([outputmetapath, '.pdf']);
+export_fig([outputmetapath, '.png']);
 save([outputmetapath, '.mat'], 'meta_all');
 
 ff = fopen(strcat(outputmetapath, '.json'), 'w');
@@ -368,5 +374,3 @@ fclose(fid);
 
 
 end
-
-

@@ -1,12 +1,11 @@
-function [ssfactor stats] = getSVMssfactor(data, targetNbrSamplesPerClass)
+function [ssfactor stats] = getSVMssfactor(data, targetNbrSamplesPerClass, labelMap)
 
-classes = unique(data.labels);
-nbrClasses = length(classes);
+nbrClasses = length(labelMap);
 
 % Prepare the train data and model weights.
 % find subsamples factors for the train data.
 for itt = 1 : nbrClasses
-    thisClass = classes(itt);
+    thisClass = labelMap(itt);
     stats.nbrTotalSamples(itt) = sum(data.labels == thisClass);
     stats.ssfactor(itt) = max(1, stats.nbrTotalSamples(itt) / targetNbrSamplesPerClass);
     stats.nbrTrainSamples(itt) = stats.nbrTotalSamples(itt) / stats.ssfactor(itt);

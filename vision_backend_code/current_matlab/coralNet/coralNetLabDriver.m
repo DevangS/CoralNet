@@ -27,5 +27,18 @@ load(strcat(modelPath, '.meta.mat'))
 
 %%
 addpath(genpath('~/e/Code/gitProjects/CoralNet/vision_backend_code/current_matlab'))
-workdir = 'home/beijbom/e/Code/gitProjects/CoralNet/images/models/robot27.workdir';
-coralnet_trainRobot('~/Desktop/modeltmp.dat', '', fullfile(workdir, 'points'), fullfile(workdir, 'fileNames'), fullfile(workdir), '~/Desktop/log.txt', '~/Desktop/err.log');
+workdir = '/home/beijbom/e/Code/gitProjects/CoralNet/images/models/robot30.workdir';
+
+gridParams.start = [0 2];
+gridParams.range.min = [-5 -5];
+gridParams.range.max = [5 5];
+gridParams.stepsize = [1 1];
+gridParams.edgeLength = 1;
+
+targetNbrSamplesPerClass.final = 200;
+targetNbrSamplesPerClass.HP = 100;
+
+
+coralnet_trainRobot('~/Desktop/modeltmp.dat', '', fullfile(workdir, 'points'), ...
+    fullfile(workdir, 'fileNames'), fullfile(workdir), '~/Desktop/log.txt', ...
+    '~/Desktop/err.log', 'gridParams', gridParams, 'targetNbrSamplesPerClass', targetNbrSamplesPerClass);
