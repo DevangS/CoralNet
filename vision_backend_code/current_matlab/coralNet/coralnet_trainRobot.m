@@ -312,7 +312,7 @@ for tItt = 1 : numel(thresholds)
     cm = confMatrix(funcmap(gtLabels), funcmap(alleviateLabels), max(activeFuncGroups));
     for fItt = 1 : numel(activeFuncGroups)
         maptmp = ones(1, max(activeFuncGroups));
-        maptmp(activeFuncGroups == activeFuncGroups(fItt)) = 2; % 2 will now be the active func group. The rest will be 1.
+        maptmp(activeFuncGroups(fItt)) = 2; % 2 will now be the active func group. The rest will be 1.
         acc(tItt, fItt) = cohensKappa(confMatrixCollapse(cm, maptmp));
     end
 end
