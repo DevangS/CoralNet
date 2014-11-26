@@ -320,9 +320,11 @@ end
 
 clf;
 plot(keepRatio, acc,'LineWidth',3);
-legend(funcnames(activeFuncGroups))
-ylabel('Cohens kappa')
-xlabel('Ratio of points classified by machine');
+fs = 15;
+legend(funcnames(activeFuncGroups), 'fontsize', fs, 'location', 'southwest');
+set(gca, 'fontsize', fs-2);
+ylabel('Cohens kappa', 'fontsize', fs)
+xlabel('Ratio of points classified by machine', 'fontsize', fs);
 
 if sum(ismember('Hard coral', funcnames(activeFuncGroups))) > 0
     coralAcc = acc(:, strcmp(funcnames(activeFuncGroups), 'Hard coral'));
@@ -334,7 +336,8 @@ if sum(ismember('Hard coral', funcnames(activeFuncGroups))) > 0
     
     grid
     set(gcf, 'color', [1 1 1]);
-    set(gcf, 'position', [100 100 500 300]);
+    set(gcf, 'PaperUnits', 'centimeters');
+    set(gcf, 'PaperPosition', [0 0 18 15]);
     
     meta_all.keepRatio = round(keepRatio(allLevel) * 100);
     meta_all.ok = 1;
