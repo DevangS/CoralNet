@@ -308,11 +308,11 @@ for tItt = 1 : numel(thresholds)
     keepRatio(tItt) = nnz(keepInd) ./ numel(keepInd);
     alleviateLabels(keepInd) = estLabels(keepInd);
     alleviateLabels(~keepInd) = gtLabels(~keepInd);
-    cm = confMatrix(gtLabels, alleviateLabels, numel(funcmap));
     
+    cm = confMatrix(funcmap(gtLabels), funcmap(alleviateLabels), max(activeFuncGroups));
     for fItt = 1 : numel(activeFuncGroups)
-        maptmp = (funcmap == activeFuncGroups(fItt));
-        maptmp = maptmp + 1; % 2 will now be the active func group. The rest will be 1.
+        maptmp = ones(1, max(activeFuncGroups));
+        maptmp(activeFuncGroups == activeFuncGroups(fItt)) = 2; % 2 will now be the active func group. The rest will be 1.
         acc(tItt, fItt) = cohensKappa(confMatrixCollapse(cm, maptmp));
     end
 end
@@ -329,6 +329,9 @@ if sum(ismember('Hard coral', funcnames(activeFuncGroups))) > 0
     allLevel = find(coralAcc<0.95, 1);
     line([keepRatio(allLevel) keepRatio(allLevel)], [0 1], 'LineStyle', '-.', 'color', 'red', 'LineWidth', 1.5)
     line([0 1], [coralAcc(allLevel) coralAcc(allLevel)], 'LineStyle', '-.', 'color', 'red', 'LineWidth', 1.5)
+    line([keepRatio(allLevel) keepRatio(allLevel)], [0 1], 'LineStyle', ':', 'color', 'yellow', 'LineWidth', 2)
+    line([0 1], [coralAcc(allLevel) coralAcc(allLevel)], 'LineStyle', ':', 'color', 'yellow', 'LineWidth', 2)
+    
     grid
     set(gcf, 'color', [1 1 1]);
     set(gcf, 'position', [100 100 500 300]);
@@ -344,7 +347,7 @@ if sum(ismember('Hard coral', funcnames(activeFuncGroups))) > 0
 else
     meta_all.ok = 0; % no hard coral label, can't do anything.
 end
-
+set(gcf, 'position', [1 1 500 300])
 print(gcf, [outputmetapath, '.png'], '-dpng');
 save([outputmetapath, '.mat'], 'meta_all');
 
