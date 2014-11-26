@@ -51,6 +51,8 @@ TRAIN_ERROR_LOG = join_processing_root("logs/train_error.txt")
 CV_LOG = join_processing_root("logs/cvlog.txt")
 
 ORIGINALIMAGES_DIR = settings.MEDIA_ROOT
+ALLEVIATE_IMAGE_DIR = os.path.join(settings.MEDIA_ROOT, "vision_backend/alleviate_plots")
+ALLEVIATE_IMAGE_URL = os.path.join(settings.MEDIA_URL, "vision_backend/alleviate_plots")
 PREPROCESS_DIR = join_processing_root("images/preprocess/")
 FEATURES_DIR = join_processing_root("images/features/")
 CLASSIFY_DIR = join_processing_root("images/classify/")
@@ -508,7 +510,7 @@ def trainRobot(source_id):
     )
 
     # clean up
-    # shutil.rmtree(workingDir)
+    shutil.rmtree(workingDir)
     if os.path.isfile(TRAIN_ERROR_LOG):
         for image in allImages: # roll back changes.
             if image.status.featureFileHasHumanLabels:
@@ -520,6 +522,7 @@ def trainRobot(source_id):
     else:
         if not (previousRobot == None):
             os.remove(oldModelPath) # remove old model, but keep the meta data files.
+            copyfile(newRobot.path_to_model + '.meta_all.png', os.path.join(ALLEVIATE_IMAGE_DIR, str(newRobot.version) + '.png')) #copy to the media folder where it can be viewed
         print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
 
 
@@ -676,7 +679,7 @@ def format_cm_for_display(cm, row_sums, labelobjects, labelIds):
 
 
 #
-#
+# This function calculates accuracy and cohens kappa from a confusion matrix
 #
 def accuracy_from_cm(cm):
     cm = float32(cm)
@@ -694,5 +697,33 @@ def accuracy_from_cm(cm):
         cok = (acc - pe) / (1 - pe) #cohens kappa!
 
     return (acc, cok)
+
+
+#
+# Reads the alleviate stats
+#
+def get_alleviate_meta(robot):
+    alleviate_meta_file  = robot.path_to_model + '.meta_all.json'
+    if not os.path.exists(alleviate_meta_file):
+        ok = 0
+    else:
+        f = open(alleviate_meta_file)
+        meta=json.loads(f.read())
+        f.close()
+        ok = meta['ok']
+
+    if (ok == 1):
+        alleviate_meta = dict(        
+            suggestion = meta['keepRatio'],
+            score_translate = meta['thout'],
+            plot_path = os.path.join(ALLEVIATE_IMAGE_DIR, str(robot.version) + '.png'),
+            plot_url = os.path.join(ALLEVIATE_IMAGE_URL, str(robot.version) + '.png'),
+            ok = True,
+        )
+    else:
+        alleviate_meta = dict(        
+            ok = False,
+        )
+    return (alleviate_meta)
 
 

@@ -312,6 +312,18 @@ def cm_download(request, source_id, robot_version, namestr):
     return response
 
 
+"""
+This file exports the alleviate curve file
+"""
+@source_visibility_required('source_id')
+def alleviate_download(request, source_id, robot_version):
+    alleviate_meta = get_alleviate_meta(Robot.objects.get(version = robot_version))
+    with open(alleviate_meta['plot_path'], 'r') as png:
+        response = HttpResponse(png.read(), mimetype='application/png')
+        response['Content-Disposition'] = 'inline;filename=alleviate' + str(robot_version) + '.png'
+        return response
+    pdf.closed
+
 
 @source_permission_required('source_id', perm=Source.PermTypes.ADMIN.code)
 def source_admin(request, source_id):
@@ -736,6 +748,7 @@ def make_robot_stats(source_id, nbr_robots):
 
         robotlist.append(dict(
             cmlist = cmlist,
+            alleviate_meta = get_alleviate_meta(robot),
             version = robot.version,
             nsamples = sum(meta['final']['trainData']['labelhist']['org']),
             train_time = str(int(round(meta['totalRuntime']))),

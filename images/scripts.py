@@ -7,6 +7,15 @@ PREPROCESS_DIR = join_processing_root("images/preprocess/")
 FEATURES_DIR = join_processing_root("images/features/")
 
 """
+This scripts set the level of alleviation to 0 for all sources
+"""
+def set_alleviate_to_zero():
+    for source in Source.objects.filter(enable_robot_classifier=True):
+        print "Processing source id:" + str(source.id)
+        source.alleviate_threshold = 0
+        source.save()
+
+"""
 This is a script to remove all inactive robot models. 
 The current semantic is that the robot model file is 
 removed once a new is trained. Previously, however

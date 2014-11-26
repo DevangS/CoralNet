@@ -94,10 +94,10 @@ class Source(models.Model):
     )
 
     alleviate_threshold = models.IntegerField(
-        "Alleviate confidence threshold (valid range - 50 to 100)",
-        validators=[MinValueValidator(50),
+        "Level of alleviation (%)",
+        validators=[MinValueValidator(0),
                     MaxValueValidator(100)],
-        default=100,
+        default=0,
     )
 
     enable_robot_classifier = models.BooleanField(

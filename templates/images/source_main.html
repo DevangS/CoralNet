@@ -56,7 +56,7 @@
                 <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
                 <li>
                     {% if source.alleviate_threshold < 100 %}
-                        Alleviate confidence threshold: {{ source.alleviate_threshold }}%
+                        Level of alleviation: {{ source.alleviate_threshold }}% <a href="{% url source_edit source.id%}">(edit)</a>
                     {% else %}
                         Alleviate feature is off (100% threshold)
                     {% endif %}
@@ -123,9 +123,9 @@
     <table class="detail_table_popup">
 
         <tr>
-            <th colspan="4">details</th>
-            <th colspan="2">full</th>
-            <th colspan="2">func.</th>
+            <th colspan="4">Details</th>
+            <th colspan="2">Full (%)</th>
+            <th colspan="3">Func. (%)</th>
          </tr>
         <tr>
             <th>#</th>
@@ -136,6 +136,7 @@
             <th>&#922</th>
             <th>Acc</th>  
             <th>&#922</th>
+            <th>ALL</th>
         </tr>
         {% for robot in robot_stats.robotlist %}
             <tr>
@@ -147,6 +148,11 @@
                 <td><a href="javascript:openFullCMdialog({{cm.idstr}});">{{cm.acc}}</a> </td>
                 <td><a href="javascript:openFullCMdialog({{cm.idstr}});">{{cm.kappa}}</a> </td>
             {% endfor %}
+            {% if robot.alleviate_meta.ok %}
+                <td><a href="javascript:openFullCMdialog(dialog{{robot.version}});">{{robot.alleviate_meta.suggestion}}</a> </td>
+            {% else %}
+                <td> N.A. </td>
+            {% endif %}
             </tr>
         {% endfor %}
     </table>
@@ -184,6 +190,7 @@
         {% for cm in robot.cmlist %}
             <div id={{cm.idstr}} title="Confusion Matrix" style="display:none;overflow:auto;font-size: 62.5%;max-width:1000px">
             <p>Estimated prob. that label (row) is classified as label (column)</p>
+            
             <table class="detail_table_popup">
                 {% for value in cm.cm_str %}
                     {% if forloop.counter0|divisibleby:cm.ncols %}
@@ -198,10 +205,21 @@
                         </tr>
                     {% endif %}
                 {% endfor %}
-            </table>
+           </table>
             <p><a href="{% url cm_download source.id robot.version cm.namestr%}">Download Confusion Matrix</a></p>
             </div>
         {% endfor %}
+            <div id=dialog{{robot.version}} title="Alleviation Curves" style="display:none;overflow:auto;font-size: 100%;max-width:500px">
+<p>Estimated accuracy as a function of level of alleviation (i.e. ratio of points annotated by the robot). 
+                    The red cross indicate the point where the  accuracy of coral versus other drops by 5%. 
+                    Our experiments indicate that such drop in accuracy have marginal (if any) impact on cover estimates.</p>
+                    <img 
+                        src= "{{ robot.alleviate_meta.plot_url }}"
+                         title="Alleviate for robot"/>
+
+
+            </div>
+
     {% endfor %}
 
 

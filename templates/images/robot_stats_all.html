@@ -24,9 +24,9 @@
     <table class="detail_table_popup">
 
         <tr>
-            <th colspan="4">details</th>
-            <th colspan="2">full</th>
-            <th colspan="2">func.</th>
+            <th colspan="4">Details</th>
+            <th colspan="2">Full</th>
+            <th colspan="3">Functional</th>
          </tr>
         <tr>
             <th>#</th>
@@ -45,9 +45,14 @@
             <td> {{robot.train_time}} </td>
             <td> {{robot.nsamples}} </td>
             {% for cm in robot.cmlist %}
-                <td><a href="{% url cm_download source.id robot.version cm.namestr%}">{{cm.acc}}</a> </td>
-                <td><a href="{% url cm_download source.id robot.version cm.namestr%}">{{cm.kappa}}</a> </td>
+                <td><a href="{% url cm_download source.id robot.version cm.namestr%}">{{cm.acc}}%</a> </td>
+                <td><a href="{% url cm_download source.id robot.version cm.namestr%}">{{cm.kappa}}%</a> </td>
             {% endfor %}
+            {% if robot.alleviate_meta.ok %}
+                <td><a href="{% url alleviate_download source.id robot.version%}">{{robot.alleviate_meta.suggestion}}%</a> </td>
+            {% else %}
+                <td> N.A. </td>
+            {% endif %}
             </tr>
         {% endfor %}
     </table>
@@ -58,11 +63,5 @@
   
     <div style="clear:left"></div>
 
-    <script>
-        function openFullCMdialog(idstr) {
-            $(idstr).dialog({resizable: false, modal: true, width:"auto"});
-        }
-
-    </script>
 
 {% endblock %}
