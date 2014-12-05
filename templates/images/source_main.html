@@ -58,7 +58,7 @@
                     {% if source.alleviate_threshold < 100 %}
                         Level of alleviation: {{ source.alleviate_threshold }}% <a href="{% url source_edit source.id%}">(edit)</a>
                     {% else %}
-                        Alleviate feature is off (100% threshold)
+                        Alleviate feature is off.
                     {% endif %}
                 </li>
             </ul>

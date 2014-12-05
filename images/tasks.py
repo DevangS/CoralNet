@@ -288,7 +288,7 @@ def Classify(image_id):
     latestRobot = image.source.get_latest_robot()
 
     if latestRobot == None:
-        print 'Classify: No robots exist for the source, {src}, of image id {id}. Aborting.'.format(src=image.source, id=image_id)
+        # print 'Classify: No robots exist for the source, {src}, of image id {id}. Aborting.'.format(src=image.source, id=image_id)
         return
 
     # Check if this image has been previously annotated by a robot.
@@ -376,10 +376,10 @@ def addLabelsToFeatures(image_id):
 
     image = Image.objects.get(pk=image_id)
     if not image.status.annotatedByHuman:
-        print 'addLabelsToFeatures: Image id {id} is not annoated by human. Can not make add labels to feature file'.format(id = image_id)
+        # print 'addLabelsToFeatures: Image id {id} is not annoated by human. Can not make add labels to feature file'.format(id = image_id)
         return 0
     if not image.status.featuresExtracted:
-        print 'addLabelsToFeatures: Image id {id} has not yet gone through feature extraction. Can not add labels to feature file'.format(id = image_id)
+        # print 'addLabelsToFeatures: Image id {id} has not yet gone through feature extraction. Can not add labels to feature file'.format(id = image_id)
         return 0
     if image.status.featureFileHasHumanLabels:
         # print 'addLabelsToFeatuers: Image id ' + str(image_id) + ' already has human label attached to the feature file'
@@ -443,7 +443,7 @@ def trainRobot(source_id):
     newRobot = Robot(source=source, version = version, time_to_train = 1)
     newRobot.path_to_model = os.path.join(MODEL_DIR, "robot"+str(newRobot.version))
     newRobot.save();
-    print 'new robot version:' + str(newRobot.version)
+    print 'New robot version is:' + str(newRobot.version) + ' for source ' + str(source_id) + '.'
     # update the data base.
     for image in allImages: # mark that these images are used in the current model.
         if image.status.featureFileHasHumanLabels:
@@ -456,7 +456,7 @@ def trainRobot(source_id):
         oldModelPath = '';
     else:
         oldModelPath = previousRobot.path_to_model
-        print 'previous robot version:' + str(previousRobot.version)
+        print 'Previous robot version was:' + str(previousRobot.version) + ' for source ' + str(source_id) + '.'
 
     # now, loop through the images and create some meta data files that MATLAB needs
     workingDir = newRobot.path_to_model + '.workdir/'
@@ -511,6 +511,7 @@ def trainRobot(source_id):
 
     # clean up
     shutil.rmtree(workingDir)
+    copyfile(newRobot.path_to_model + '.meta_all.png', os.path.join(ALLEVIATE_IMAGE_DIR, str(newRobot.version) + '.png')) #copy to the media folder where it can be viewed
     if os.path.isfile(TRAIN_ERROR_LOG):
         for image in allImages: # roll back changes.
             if image.status.featureFileHasHumanLabels:
@@ -522,7 +523,6 @@ def trainRobot(source_id):
     else:
         if not (previousRobot == None):
             os.remove(oldModelPath) # remove old model, but keep the meta data files.
-            copyfile(newRobot.path_to_model + '.meta_all.png', os.path.join(ALLEVIATE_IMAGE_DIR, str(newRobot.version) + '.png')) #copy to the media folder where it can be viewed
         print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)
 
 

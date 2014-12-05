@@ -103,6 +103,8 @@ def apply_alleviate(image_id, label_probabilities):
 
     if source.alleviate_threshold < 1:
         return
+    if (not(alleviate_meta['ok'])):
+        return
 
     if (source.alleviate_threshold == 100):
         # if the user wants 100% alleviation, we set the threhold to 0, meaning that all points will be annotated.

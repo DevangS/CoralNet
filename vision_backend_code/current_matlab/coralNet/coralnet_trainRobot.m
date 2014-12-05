@@ -52,20 +52,21 @@ try
     finalTrainPath = fullfile(workDir, 'trainFinal');
     labelPath = fullfile(workDir, 'label');
     labelMap = unique(allData.labels); %this is a list of all the label ids
+    [~, robotstr] = fileparts(modelPath);
     
     %%% FIND A THRESHHOLD FOR NBR SAMPLES REQUIRED FOR TRAINING %%%
     labelThreshhold = findNbrLabelsThreshhold(allData.labels, labelRatio);
     
     %%% HP - TRAINDATA %%%
-    logger('Making HP train data')
+    logger('[%s] Making HP train data', robotstr)
     [hp.trainData, keepClasses] = makeTrainData(allData, fileNames, trainIds, HPtrainPath, targetNbrSamplesPerClass.HP, labelThreshhold, labelMap);
     
     %%% HP - TESTDATA %%%
-    logger('Making HP test data')
+    logger('[%s] Making HP test data', robotstr)
     [hp.testData, gtLabels] = makeTestData(allData, fileNames, testIds, HPtestPath, maxNbrTestImages);
     
     %%% RUN HP %%%
-    logger('Running HP calibration');
+    logger('[%s] Running HP calibration', robotstr);
     [hp.optValues, hp.estPrecision, hp.gridStats] = coralnet_runHPcalibration(HPtrainPath, HPtestPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, hp.trainData.ssfactor, labelMap, keepClasses);
     
     %%% SET FINAL PARAMS %%%
@@ -74,7 +75,7 @@ try
     
     
     %%% RERUN WITH OPTIMAL PARAMETERS TO GENEARTE DECISION VALUES %%%
-    logger('Training model for making decision values');
+    logger('[%s] Training model for making decision values', robotstr);
     hp.decvals.optStr = makeSolverOptionString(solverOptions, hp.trainData.ssfactor(keepClasses), labelMap(keepClasses));
     system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-train %s %s %s;\n', hp.decvals.optStr, HPtrainPath, modelPath));
     system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-predict -b 1 %s %s %s', HPtestPath,  modelPath,  labelPath));
@@ -82,17 +83,17 @@ try
     
     
     %%% MAKE FINAL TRAIN DATA %%%
-    logger('Making final train data')
+    logger('[%s] Making final train data', robotstr)
     [final.trainData, keepClasses] = makeTrainData(allData, fileNames, [trainIds; testIds], finalTrainPath, targetNbrSamplesPerClass.final, labelThreshhold, labelMap);
     
     %%% TRAIN MODEL %%%
-    logger('Training final model');
+    logger('[%s] Training final model', robotstr);
     final.optStr = makeSolverOptionString(solverOptions, final.trainData.ssfactor(keepClasses), labelMap(keepClasses));
     tic; system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-train %s %s %s;\n', final.optStr, finalTrainPath, modelPath));
     final.time.train = toc;
     
     %%% STORE IN MEAT DATA STRUCTURE %%%
-    logger('Storing metadata');
+    logger('[%s] Storing metadata', robotstr);
     meta.gridParams = gridParams;
     meta.solverOptions = solverOptions;
     meta.hp = hp;
@@ -278,7 +279,7 @@ end
 
 
 function coralnet_alleviatecurves(gtLabels, decvalPath, labelMapPath, outputmetapath)
-% this function does the whole alleviate thing. 
+% this function does the whole alleviate thing.
 
 % read decision values (probabilities)
 decvals = dlmread(decvalPath, ' ', 1, 1);
@@ -333,23 +334,23 @@ if sum(ismember('Hard coral', funcnames(activeFuncGroups))) > 0
     line([0 1], [coralAcc(allLevel) coralAcc(allLevel)], 'LineStyle', '-.', 'color', 'red', 'LineWidth', 1.5)
     line([keepRatio(allLevel) keepRatio(allLevel)], [0 1], 'LineStyle', ':', 'color', 'yellow', 'LineWidth', 2)
     line([0 1], [coralAcc(allLevel) coralAcc(allLevel)], 'LineStyle', ':', 'color', 'yellow', 'LineWidth', 2)
-    
-    grid
-    set(gcf, 'color', [1 1 1]);
-    set(gcf, 'PaperUnits', 'centimeters');
-    set(gcf, 'PaperPosition', [0 0 18 15]);
-    
     meta_all.keepRatio = round(keepRatio(allLevel) * 100);
-    meta_all.ok = 1;
-    % find the threholds that correspond to each integer alleviation level
-    for intkeep = rowVector(1 : 100)
-        [~, ind] = min(abs(keepRatio*100 - intkeep));
-        meta_all.thout(intkeep) = thresholds(ind);
-    end
-    
 else
-    meta_all.ok = 0; % no hard coral label, can't do anything.
+    meta_all.keepRatio = 'N.A.';
 end
+
+grid
+set(gcf, 'color', [1 1 1]);
+set(gcf, 'PaperUnits', 'centimeters');
+set(gcf, 'PaperPosition', [0 0 18 15]);
+
+meta_all.ok = 1;
+% find the threholds that correspond to each integer alleviation level
+for intkeep = rowVector(1 : 100)
+    [~, ind] = min(abs(keepRatio*100 - intkeep));
+    meta_all.thout(intkeep) = thresholds(ind);
+end
+
 set(gcf, 'position', [1 1 500 300])
 print(gcf, [outputmetapath, '.png'], '-dpng');
 save([outputmetapath, '.mat'], 'meta_all');
