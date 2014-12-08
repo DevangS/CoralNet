@@ -7,16 +7,26 @@
   {{ labelForm.media }}
 {% endblock %}
 
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
+    {% include "static-local-include.html" with type="css" path="css/source.css" %}
+{% endblock %}
+
 {% block content %}
 
     {# inline display confines the bottom border to the length of the text. #}
     <legend style="display:inline">Edit LabelSet</legend>
     {# unfortunately, inline display means we need to manually insert linebreaks #}
-    <br /><br />
+
+    <div class="tutorial-message">
+        {% include "annotations/help_labels.html" %}
+    </div>
+        <br /><br />
     <span class="helptext">
-        Click on a table row to select or unselect a label.<br />
-        You will not be able to unselect labels that already have annotations in your Source. (These labels will be highlighted in gray.)
-    </span>
+        Click on a table row to select or unselect a label.
+        </span>
+    
+
 
     <button id="id_button_show_label_form">Add a new label that's not in the list</button>
 
