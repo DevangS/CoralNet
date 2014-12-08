@@ -55,11 +55,7 @@
                 {% endif %}
                 <li>Annotation point generation: {{ source.point_gen_method_display }}</li>
                 <li>
-                    {% if source.alleviate_threshold < 100 %}
                         Level of alleviation: {{ source.alleviate_threshold }}% <a href="{% url source_edit source.id%}">(edit)</a>
-                    {% else %}
-                        Alleviate feature is off.
-                    {% endif %}
                 </li>
             </ul>
             </div>
@@ -114,7 +110,7 @@
     </div>
 
     <div style="float:left;">
-    <div style="margin-left:10px; width:100%">
+    <div style="margin-left:20px; width:100%">
     <div class="detail_box">
     <h3 style="text-align:center">Automated Annotation</h3>
     <div class="tutorial-message">
@@ -165,14 +161,18 @@
 
     <div style="float:right">
     <div class="detail_box">
-        <h2>Not annotated: <a href="{{ image_stats.not_annotated_link }}">{{ image_stats.not_annotated }}</a></h2>
-        {% if source.enable_robot_classifier %}
-            <h2>Unconfirmed: <a href="{{ image_stats.not_human_annotated_link }}">{{ image_stats.not_human_annotated }}</a></h2>
-            <h2>Confirmed: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
-        {% else %}
-            <h2>Annotated: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></h2>
-        {% endif %}
-        <h2>Total images: <a href="{{ image_stats.total_link }}">{{ image_stats.total }}</a></h2>
+        <h3 style="text-align:center">Image Status</h3>
+        <table class="detail_box_table">
+                <tr><td>Not annotated: <a href="{{ image_stats.not_annotated_link }}">{{ image_stats.not_annotated }}</a></td></tr>
+                {% if source.enable_robot_classifier %}
+                <tr><td>Unconfirmed: <a href="{{ image_stats.not_human_annotated_link }}">{{ image_stats.not_human_annotated }}</a></td> </tr>
+                <tr><td>Confirmed: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></td></tr>
+                {% else %}
+                <tr><td>Annotated: <a href="{{ image_stats.annotated_link }}">{{ image_stats.annotated }}</a></td></tr>
+                {% endif %}
+                <tr><td>Total images: <a href="{{ image_stats.total_link }}">{{ image_stats.total }}</a></td></tr>
+
+            </table>
     </div>
     </div>
 
