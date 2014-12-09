@@ -92,10 +92,12 @@ def processAllSourcesConcurrent():
     if os.path.exists(keyfilepath):
         return 1
     open(keyfilepath, 'w')
+    print "==== Starting Processing All Sources ===="
     for source in Source.objects.filter(enable_robot_classifier=True):
         result = processSingleSource.delay(source.id)
     while not result.ready(): #NOTE, implement with callback
         time.sleep(5)
+    print "==== Done Processing All Sources ===="
     os.remove(keyfilepath)
 
 # this task is depleated!!!
