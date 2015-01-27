@@ -201,6 +201,8 @@ def source_main(request, source_id):
 
     ### PREPARE ALL ROBOT STATS ###
     robot_stats = make_robot_stats(source_id, 3)
+    source.latitude = source.latitude[:8]
+    source.longitude = source.longitude[:8]
 
     return render_to_response('images/source_main.html', {
         'source': source,
