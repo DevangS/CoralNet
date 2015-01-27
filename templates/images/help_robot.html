@@ -22,16 +22,37 @@
             <li>#: Robot version. This is a site-wide unique Robot id number. This is generally not consecutive for a source.</li>
             <li>Date: Date this Robot version was trained. </li>
             <li>Time: Time required to train this Robot version (seconds). </li>
-            <li>Samp: Number of training samples available for this Robot version. This is equal to the number of confirmed images times the number of points per image. </li>
-            <li>Full: Accuracy as measured on the full label set. Accuracy is calculated as simple Accuracy (Acc), and as Cohen's Kappa (K). Clicking on any of these generates a pop-up with the confusion matrix.</li>
-            <li>Func.: Accuracy as measured on the functional group level. In addition to (Acc) and (K) which are accuracies calculated on the functional group level, we also show the recommended alleviation level (ALL). This level is determined as the alleviation that results in a 5% reduction of accuracy for classifying corals versus non-corals. According to our experiments, a 5% reduction of this accuracy has only marginal impact on derived cover estimates. Clicking the ALL number produces a curve showing the trade-off between higher alleviation and accuracy. NOTE: if your source doesn't contain any coral, the ALL column will say N.A. You may, however, still use the Alleviate feature.</li>
+            <li>Samp: Number of training samples available for this Robot version. This is 4/5 of the number of confirmed images times the number of points per image. </li>
+            <li>Full: Accuracy as measured on the full label set. Accuracy is calculated as simple Accuracy (Acc), and as <a href="http://en.wikipedia.org/wiki/Cohen%27s_kappa">Cohen's Kappa (K)</a>. Clicking on any of these generates a pop-up with the confusion matrix.</li>
+            <li>Func.: Accuracy as measured on the functional group level. In addition to (Acc) and (K) which are accuracies calculated on the functional group level, we also show the recommended alleviation level (ALL). This level is determined as the alleviation that results in a 5% reduction of accuracy for classifying corals versus non-corals. Clicking the ALL number produces a curve showing the trade-off between higher alleviation and accuracy. If your source doesn't contain any coral, the ALL column will say N.A. You may, however, still use the Alleviate feature.</li>
         </ul>
         You may click on any of the accuracy numbers to view the confusion matrix on the full or functional group level. These can then be downloaded for further analysis. </p>
     </li>
 
 
     <li><strong>Source specific Robots</strong>
-        <p> All Robots are source-specific. This means that it will learn only from confirmed annotation <i>within</i> the source, and only annotate image in that same source. The reason for this is simple: machine learning across different sources is difficult, and it's not clear how to do this efficiently yet. This general problem is referred to as Domain Transfer Learning.</p>
+        <p> All Robots are source-specific. This means that it will learn only from confirmed annotation <i>within</i> the source, and only annotate image in that same source. The reason for this is simple: machine learning across different sources is difficult, and it's not clear how to do this efficiently yet. </p>
     </li>
+    
+    <li><strong>More information on the Alleviation functionality</strong>
+    <p>
+    Auto-accept the machine annotator's suggestions when its confident enough.<br/><br/>
+        
+        This auto-acceptance happens when you enter the annotation tool for an image. Effectively, the machine's most confident points are "alleviated" from your annotation workload (for that image).<br/><br/>
+        
+        Alleviated annotation decisions are treated as 'verified', and are included when you export your annotations. <br/><br/>
+        
+        0% alleviation corresponds to no alleviation (i.e. fully manual annotation). <br/><br/> 
+        
+        Users control this functionality by specifying the level of alleviation. For example, with 40% alleviation, the machine learning algorithm ("robot") will do 40% of the point annotations and leave the remaining 60% for the human operator. This level of alleviation is NOT per image, but the average across all remaining images. Some (easy) images may be fully alleviated, while other (harder) may have very little alleviated points<br/><br/>
+        
+        When the first robot version is trained for your source, you can see the trade-off between the level of alleviation and the annotation accuracy. We recommend that you set the alleviation level to 0% until you have seen this trade-off curve. You can then adjust the alleviation level. <br/><br/>
+        
+        NOTE1: Machine annotations that have <strong>not</strong> been verified can optionally also be included in your export (see the 'export' page) <br/><br/>
 
+        NOTE2: A study on how alleviation affects estimation quality of benthic cover is currently in submission, and will be shared upon publication. The study suggests that a 5% drop is annotation accuracy has marginal (if any) impact on derived cover estimates. We therefore suggest that you set the level of alleviation corresponding to a 5% drop in accuracy.<br/><br/>
+
+        NOTE3: The level of alleviation should not be confused with the confidence scores that are displayed during manual annotation. Once you set your desired level of alleviation, this is translated to a confidence score by the back end, and any robot prediction above that confidence will be automatically accepted. 
+        <br/><br/>
+</p>
 </ul>

@@ -86,13 +86,18 @@ This form template is meant to be used with the "include" template tag.
         <legend class="smaller">Level of alleviation</legend>
 
         <span class="helptext_long">
-        {# Possible shorter explanation: #}
-        {#Auto-accept the machine annotator's suggestions when its confidence is above this percentage.<br/><br/>#}
-        {#This auto-acceptance happens when you enter the annotation tool for an image. Effectively, the machine's most confident points are \"alleviated\" from your annotation workload (for that image).<br/><br/>#}
-        {#A machine confidence level of 100% is impossible, so set it to 100 to disable this feature.#}
-
-        Users may specify an alleviation level to determine what proportion of the labels that will be automatically annotated. For example, with 40% alleviation, the machine learning algorithm ("robot") will do 40% of the point annotations and leave the remaining 60% for the human operator. When the first robot version is trained for your source, you will see the trade-off between the level of alleviation and the annotation accuracy. We recommend that you set the alleviation level to 0% (which corresponds to fully manual annotation) until you have seen this trade-off curve. You can then go back and adjust the alleviation level as you see fit. Alleviated annotation decisions are treated as 'verified' by the human, and are included when you export your annotations. <br/><br/>
-
+        Auto-accept the machine annotator's suggestions when its confident enough.<br/><br/>
+        
+        This auto-acceptance happens when you enter the annotation tool for an image. Effectively, the machine's most confident points are "alleviated" from your annotation workload (for that image).<br/><br/>
+        
+        Alleviated annotation decisions are treated as 'verified', and are included when you export your annotations. <br/><br/>
+        
+        0% alleviation corresponds to no alleviation (i.e. fully manual annotation). <br/><br/> 
+        
+        Users control this functionality by specifying the level of alleviation. For example, with 40% alleviation, the machine learning algorithm ("robot") will do 40% of the point annotations and leave the remaining 60% for the human operator. This level of alleviation is NOT per image, but the average across all remaining images. Some (easy) images may be fully alleviated, while other (harder) may have very little alleviated points<br/><br/>
+        
+        When the first robot version is trained for your source, you can see the trade-off between the level of alleviation and the annotation accuracy. We recommend that you set the alleviation level to 0% until you have seen this trade-off curve. You can then adjust the alleviation level. <br/><br/>
+        
         NOTE1: Machine annotations that have <strong>not</strong> been verified can optionally also be included in your export (see the 'export' page) <br/><br/>
 
         NOTE2: A study on how alleviation affects estimation quality of benthic cover is currently in submission, and will be shared upon publication. The study suggests that a 5% drop is annotation accuracy has marginal (if any) impact on derived cover estimates. We therefore suggest that you set the level of alleviation corresponding to a 5% drop in accuracy.<br/><br/>
