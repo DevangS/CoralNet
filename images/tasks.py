@@ -445,7 +445,7 @@ def trainRobot(source_id):
     newRobot = Robot(source=source, version = version, time_to_train = 1)
     newRobot.path_to_model = os.path.join(MODEL_DIR, "robot"+str(newRobot.version))
     newRobot.save();
-    print 'New robot version is:' + str(newRobot.version) + ' for source ' + str(source_id) + '.'
+    print 'Training [robot' + str(newRobot.version) + '] for source' + str(source_id) + ': [' + str(source.name) + '].'
     # update the data base.
     for image in allImages: # mark that these images are used in the current model.
         if image.status.featureFileHasHumanLabels:

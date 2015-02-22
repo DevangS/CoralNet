@@ -3,13 +3,13 @@ function coralnet_trainRobot(modelPath, oldModelPath, pointInfoPath, fileNamesPa
 global logfid
 
 gridParams.start = [0 2];
-gridParams.range.min = [-5 -5];
-gridParams.range.max = [5 5];
+gridParams.range.min = [-2 0];
+gridParams.range.max = [2 4];
 gridParams.stepsize = [1 1];
 gridParams.edgeLength = 3;
 
-targetNbrSamplesPerClass.final = 4000;
-targetNbrSamplesPerClass.HP = 3000;
+targetNbrSamplesPerClass.final = 2000;
+targetNbrSamplesPerClass.HP = 1800;
 
 [varnames, varvals] = var2varvallist(gridParams, targetNbrSamplesPerClass);
 [gridParams, targetNbrSamplesPerClass] = varargin_helper(varnames, varvals, varargin{:});
@@ -17,7 +17,7 @@ targetNbrSamplesPerClass.HP = 3000;
 
 %%% HARD CODED PARAMS, KIND OF BUGGY, BUT COULDNT BOTHER WITH YET ANOTHER
 %%% PARAM FILE
-labelRatio = 0.005;
+labelRatio = 0.01;
 maxNbrTestImages = 500;
 
 solverOptions.libsvm.gamma = -2;
@@ -54,12 +54,17 @@ try
     labelMap = unique(allData.labels); %this is a list of all the label ids
     [~, robotstr] = fileparts(modelPath);
     
+    %%% FIND A MAXIMUM NUMBER OF SAMPLES PER CLASS
+    targetNbrSamplesPerClass.final = 2500;
+    targetNbrSamplesPerClass.HP = 2000;
+    
+    
     %%% FIND A THRESHHOLD FOR NBR SAMPLES REQUIRED FOR TRAINING %%%
     labelThreshhold = findNbrLabelsThreshhold(allData.labels, labelRatio);
     
     %%% HP - TRAINDATA %%%
     logger('[%s] Making HP train data', robotstr)
-    [hp.trainData, keepClasses] = makeTrainData(allData, fileNames, trainIds, HPtrainPath, targetNbrSamplesPerClass.HP, labelThreshhold, labelMap);
+    [hp.trainData, keepClasses] = makeTrainData(allData, fileNames, trainIds, HPtrainPath, targetNbrSamplesPerClass.HP, labelThreshhold, labelMap, robostr);
     
     %%% HP - TESTDATA %%%
     logger('[%s] Making HP test data', robotstr)
@@ -67,7 +72,7 @@ try
     
     %%% RUN HP %%%
     logger('[%s] Running HP calibration', robotstr);
-    [hp.optValues, hp.estPrecision, hp.gridStats] = coralnet_runHPcalibration(HPtrainPath, HPtestPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, hp.trainData.ssfactor, labelMap, keepClasses);
+    [hp.optValues, hp.estPrecision, hp.gridStats] = coralnet_runHPcalibration(HPtrainPath, HPtestPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, hp.trainData.ssfactor, labelMap, keepClasses, robotstr);
     
     %%% SET FINAL PARAMS %%%
     solverOptions.libsvm.prob = 1; % this one uses probability outputs.
@@ -84,7 +89,7 @@ try
     
     %%% MAKE FINAL TRAIN DATA %%%
     logger('[%s] Making final train data', robotstr)
-    [final.trainData, keepClasses] = makeTrainData(allData, fileNames, [trainIds; testIds], finalTrainPath, targetNbrSamplesPerClass.final, labelThreshhold, labelMap);
+    [final.trainData, keepClasses] = makeTrainData(allData, fileNames, [trainIds; testIds], finalTrainPath, targetNbrSamplesPerClass.final, labelThreshhold, labelMap, robotstr);
     
     %%% TRAIN MODEL %%%
     logger('[%s] Training final model', robotstr);
@@ -143,7 +148,7 @@ end
 
 
 
-function [stats keepClasses] = makeTrainData(allData, fileNames, trainIds, trainPath, targetNbrSamplesPerClass, labelThreshhold, labelMap)
+function [stats keepClasses] = makeTrainData(allData, fileNames, trainIds, trainPath, targetNbrSamplesPerClass, labelThreshhold, labelMap, robotstr)
 
 % select the ids.
 trainData = splitData(allData, trainIds);
@@ -154,7 +159,7 @@ ssfactor = getSVMssfactor(trainData, targetNbrSamplesPerClass, labelMap);
 trainData = subsampleDataStruct(trainData, ssfactor);
 
 % Filter out the most rare labels
-[trainData, keepClasses] = removeRareLabels(trainData, labelThreshhold, labelMap);
+[trainData, keepClasses] = removeRareLabels(trainData, labelThreshhold, labelMap, robotstr);
 stats.labelhist.pruned = hist(trainData.labels, labelMap);
 
 % Merge the train data
@@ -179,7 +184,7 @@ gtLabels = testData.labels;
 
 end
 
-function [dataOut keepClasses] = removeRareLabels(dataIn, labelThreshhold, labelMap)
+function [dataOut keepClasses] = removeRareLabels(dataIn, labelThreshhold, labelMap, robotstr)
 
 
 nbrClasses = length(labelMap);
@@ -196,7 +201,7 @@ for itt = 1 : nbrClasses
         keepClasses(itt) = false;
     end
 end
-logger('Removed labels: %s', removedLabelsStr);
+logger('[%s] Removed labels: %s', robotstr, removedLabelsStr);
 
 dataOut = dataIn;
 for thisField = rowVector(fieldnames(dataOut))
@@ -207,7 +212,7 @@ end
 end
 
 
-function [optValues, estPrecision, stats] = coralnet_runHPcalibration(trainPath, testPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, ssfactor, labelMap, keepInd)
+function [optValues, estPrecision, stats] = coralnet_runHPcalibration(trainPath, testPath, modelPath, labelPath, gtLabels, gridParams, solverOptions, ssfactor, labelMap, keepInd, robotstr)
 np = gridCrawler([], [], gridParams);
 mainItt = 0;
 fval = [];
@@ -217,7 +222,7 @@ while (~isempty(np))
     thisFval = zeros(size(np, 1), 1);
     cm = cell(size(np, 1), 1);
     
-    logger('Running new grid of points.');
+    logger('[%s] Running new grid of points.', robotstr);
     % Plant jobs.
     tic
     for thisPoint = 1 : size(np, 1)
@@ -225,7 +230,7 @@ while (~isempty(np))
         solverOptions = setSolverCommonOptions(solverOptions, np(thisPoint, :));
         optStr = makeSolverOptionString(solverOptions, ssfactor(keepInd), labelMap(keepInd));
         
-        logger(sprintf('Running job, gamma:%.3g, C:%.3g', np(thisPoint, 1), np(thisPoint, 2)));
+        logger(sprintf('[%s] Job gamma:%.3g, C:%.3g', robotstr, np(thisPoint, 1), np(thisPoint, 2)));
         
         system(sprintf('/home/beijbom/e/Code/apps/libsvm/svm-train %s %s %s;\n', optStr, trainPath, modelPath));
         
