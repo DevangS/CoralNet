@@ -513,7 +513,7 @@ def trainRobot(source_id):
 
     # clean up
     shutil.rmtree(workingDir)
-    copyfile(newRobot.path_to_model + '.meta_all.png', os.path.join(ALLEVIATE_IMAGE_DIR, str(newRobot.version) + '.png')) #copy to the media folder where it can be viewed
+    
     if os.path.isfile(TRAIN_ERROR_LOG):
         for image in allImages: # roll back changes.
             if image.status.featureFileHasHumanLabels:
@@ -523,6 +523,7 @@ def trainRobot(source_id):
         send_mail('CoralNet Backend Error', 'in trainRobot', 'noreply@coralnet.ucsd.edu', ['oscar.beijbom@gmail.com'])
         newRobot.delete()
     else:
+        copyfile(newRobot.path_to_model + '.meta_all.png', os.path.join(ALLEVIATE_IMAGE_DIR, str(newRobot.version) + '.png')) #copy to the media folder where it can be viewed
         if not (previousRobot == None):
             os.remove(oldModelPath) # remove old model, but keep the meta data files.
         print 'Finished training new robot(' + str(newRobot.version) + ') for source id: ' + str(source_id)

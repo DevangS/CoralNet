@@ -64,7 +64,7 @@ try
     
     %%% HP - TRAINDATA %%%
     logger('[%s] Making HP train data', robotstr)
-    [hp.trainData, keepClasses] = makeTrainData(allData, fileNames, trainIds, HPtrainPath, targetNbrSamplesPerClass.HP, labelThreshhold, labelMap, robostr);
+    [hp.trainData, keepClasses] = makeTrainData(allData, fileNames, trainIds, HPtrainPath, targetNbrSamplesPerClass.HP, labelThreshhold, labelMap, robotstr);
     
     %%% HP - TESTDATA %%%
     logger('[%s] Making HP test data', robotstr)
