@@ -4,7 +4,7 @@ global logfid
 
 gridParams.start = [0 2];
 gridParams.range.min = [-2 0];
-gridParams.range.max = [2 4];
+gridParams.range.max = [2 3];
 gridParams.stepsize = [1 1];
 gridParams.edgeLength = 3;
 
