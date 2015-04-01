@@ -82,8 +82,10 @@ def processAllSources():
 	if os.path.exists(keyfilepath):
 		return 1
 	open(keyfilepath, 'w')
+    print "==== Starting Processing All Sources ===="
 	for source in Source.objects.filter(enable_robot_classifier=True):
 		processSourceCompleate(source.id)
+    print "==== Done Processing All Sources ===="
 	os.remove(keyfilepath)
 
 # this is the new MAIN TASK called by the CRONJOB once per day. It parallellize on the source level. This allows for two calls to svmtrain concurrently. Which might hog a ton of memory, but it will be faster.
