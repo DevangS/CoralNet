@@ -3,7 +3,7 @@ from django.conf import settings
 from images.models import Image, Point
 from annotations.models import Label
 from django.core.exceptions import ObjectDoesNotExist
-
+from django.core.mail import mail_admins
 
 # TODO: Figure out how to avoid duplicating these filepaths between tasks.py
 # and task_utils.py. Perhaps anything reading the raw filenames should just
@@ -108,8 +108,9 @@ def get_label_probabilities_for_image(image_id):
             label_id = d['label']
             try:
                 label_obj = labels.get(pk=label_id)
-            except ObjectDoesNotExist:
+            except ObjectDoesNotExist, e:
                 # if we can't find the label in the labelset we return None. TODO: this seems like sort of a hack.
+                mail_admins('Annotation tool error', 'Error in matching the predicted label to the labelset - reason: ' + str(e))
                 return None
             label_scores.append(
                 dict(label=label_obj.code, score=d['score'])
@@ -127,7 +128,10 @@ def get_label_probabilities_for_image(image_id):
     probabilities_for_all_points = dict()
     for pt in points:
         key = str(pt['row']) + ',' + str(pt['column'])
-        # TODO: What if this point's row/col was not in the row/col file?
-        probabilities_for_all_points[pt['point_number']] = row_col_to_label_scores[key]
+        try:
+            probabilities_for_all_points[pt['point_number']] = row_col_to_label_scores[key]
+        except KeyError, e:
+            mail_admins('Annotation tool error', 'Cant match the row, col location to a point number -reason: ' + str(e))
+            return None
 
     return probabilities_for_all_points

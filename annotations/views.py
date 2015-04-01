@@ -499,7 +499,7 @@ def annotation_tool(request, image_id):
     # Convert from a ValuesQuerySet to a list to make the structure JSON-serializable.
     labelValues = list(labels.values('code', 'group', 'name'))
 
-
+    error_message = []
     # Get the machine's label probabilities, if applicable.
     if not settings_obj.show_machine_annotations:
         label_probabilities = None
@@ -511,6 +511,8 @@ def annotation_tool(request, image_id):
         # But if not None, apply Alleviate.
         if label_probabilities:
             annotations_utils.apply_alleviate(image_id, label_probabilities)
+        else:
+            error_message.append('Woops! Could not read the label probabilities. Manual annotation still works.')
 
 
     # Get points and annotations.
@@ -611,6 +613,7 @@ def annotation_tool(request, image_id):
         'source_images': source_images,
         'num_of_points': len(annotations),
         'num_of_annotations': len(annotationValues),
+        'messages': error_message,
         },
         context_instance=RequestContext(request)
     )
