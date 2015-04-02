@@ -29,7 +29,7 @@ from numpy import array, zeros, sum, float32, newaxis
 import numpy as np
 import math
 import logging
-logging.basicConfig(filename='logs/tasks.log', level=logging.DEBUG, format='[%(asctime)s] %(levelname)s:%(message)s')
+logging.basicConfig(filename='logs/tasks.log', level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 # Revision objects will not be saved during Celery tasks unless
 # the Celery worker hooks up Reversion's signal handlers.
@@ -78,93 +78,41 @@ def dummyTaskLong(s):
     print("This is a dummy task that can sleep")
     time.sleep(s)
 
-# this tasks serialize on the source level.
-def processAllSourcesSerial():
-    keyfilepath = join_processing_root("images/robot_running_flag")
+# This is the main tasks for classification. This does not use the task manager, but does everything in serial. Nice and slow.
+def classify_wrapper():
+    keyfilepath = join_processing_root("logs/classify_flag")
+
     if os.path.exists(keyfilepath):
         return 1
     open(keyfilepath, 'w')
-    print "==== Starting Processing All Sources ===="
-    for source in Source.objects.filter(enable_robot_classifier=True):
-        processSourceComplete(source.id)
-    print "==== Done Processing All Sources ===="
+    logging.info("==== Start classifying all images ====")
+    for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
+        for image in source.get_all_images():
+            preprocess_image(image.id)
+            make_features(image.id)
+            classify_image(image.id)
+    logging.info("==== Done classifying all images ====")
     os.remove(keyfilepath)
 
-# this is the new MAIN TASK called by the CRONJOB once per day. It parallellize on the source level. This allows for two calls to svmtrain concurrently. Which might hog a ton of memory, but it will be faster.
-def processAllSourcesParallel():
-    keyfilepath = join_processing_root("images/robot_running_flag")
+# This is the main tasks for learning. This does not use the task manager, but does everything in serial. Nice and slow.
+def train_wrapper():
+    keyfilepath = join_processing_root("logs/learning_flag")
+
     if os.path.exists(keyfilepath):
         return 1
     open(keyfilepath, 'w')
-    print "==== Starting Processing All Sources ===="
-    for source in Source.objects.filter(enable_robot_classifier=True):
-        result = processSingleSource.delay(source.id)
-    while not result.ready(): #NOTE, implement with callback
-        time.sleep(5)
-    print "==== Done Processing All Sources ===="
+    logging.info("==== Start training new batch of robots ====")
+    for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
+        for image in source.get_all_images():
+            add_labels_to_features(image.id)
+        train_robot(source.id)
+    logging.info("==== Done training robots ====")
     os.remove(keyfilepath)
 
-# This tasks parallelize on the source level. To be used with processAllSourcesSerial
-@task()
-def processSourceParallel(source_id):
-    source = Source.objects.get(pk = source_id)
-    
-    if not source.get_all_images():
-        return 1
-
-    print "==== Processing source: " + source.name + " ===="
-    # == For each image, do all preprocessing ==
-    for image in source.get_all_images():
-        result = prepareImage.delay(image.id)
-    while not result.ready(): #NOTE, implement with callback
-        time.sleep(5)
-
-    # == Train robot for this source ==
-    result = trainRobot.delay(source.id)
-    while not result.ready():
-        time.sleep(5)
-
-    # == Classify all images with the new robot ==
-    for image in source.get_all_images():
-        result = Classify.delay(image.id)
-    while not result.ready():
-        time.sleep(5)
-    print "==== Source: " + source.name + " done ===="
-
-
-# This tasks serialize the source level. To be used with processAllSourcesParallel
-@task()
-def processSourceSerial(source_id):
-    source = Source.objects.get(pk = source_id)
-    
-    if not source.get_all_images():
-        return 1
-
-    print "==== Processing source: " + source.name + " ===="
-    # == For each image, do all preprocessing ==
-    for image in source.get_all_images():
-        prepareImage(image.id)
-
-    # == Train robot for this source ==
-    trainRobot(source.id)
-
-    # == Classify all images with the new robot ==
-    for image in source.get_all_images():
-        Classify(image.id)
-    print "==== Source: " + source.name + " done ===="
-    return 1
-
-
-@task()
-def prepareImage(image_id):
-    PreprocessImages(image_id)
-    MakeFeatures(image_id)
-    addLabelsToFeatures(image_id)
-    return 1
 
 @task()
 @transaction.commit_on_success()
-def PreprocessImages(image_id):
+def preprocess_image(image_id):
     image = Image.objects.get(pk=image_id)
 
     if image.status.preprocessed:
@@ -176,12 +124,12 @@ def PreprocessImages(image_id):
     ####### EVERYTHING OK: START THE IMAGE PREPROCESSING ##########
     image.status.preprocessed = True # Update database
     image.status.save()
-    print 'Pre-processing [image {id}] from [source {sid}: {sname}]'.format(id = image_id, sid = image.source_id, sname = image.source.name)
+    logging.info('Pre-processing image{id} from source{sid}: {sname}'.format(id = image_id, sid = image.source_id, sname = image.source.name))
 
     thisPixelCmRatio = image.original_height / float(image.height_cm())
     subSampleRate = thisPixelCmRatio / TARGET_PIXEL_CM_RATIO
     if(subSampleRate < 1):
-        print 'Changed ssrate from {ssold} to 1 for [image {id}]'.format(ssold = subSampleRate, id = image_id)
+        logging.info('Changed ssrate from {ssold} to 1 for image{id}'.format(ssold = subSampleRate, id = image_id))
         subSampleRate = 1
 
     #creates ssRate file
@@ -210,15 +158,14 @@ def PreprocessImages(image_id):
     if os.path.isfile(PREPROCESS_ERROR_LOG):
         image.status.preprocessed = False # roll back data base changes
         image.status.save()
-        print("Sorry error detected in preprocessing this image, halting!")
+        logging.info('ERROR pre-processing [image {id}] from [source{sid}: {sname}]'.format(id = image_id, sid = image.source_id, sname = image.source.name))
         mail_admins('CoralNet Backend Error', 'in PreprocessImages')
-    #everything went okay with matlab
-    else:
-        print 'Finished pre-processing [image {id}] from [source {sid}: {sname}]'.format(id = image_id, sid = image.source_id, sname = image.source.name)
+        return 0
+    
     return 1
 
 @task()
-def MakeFeatures(image_id):
+def make_features(image_id):
     image = Image.objects.get(pk=image_id)
 
     # Do some checks
@@ -226,8 +173,7 @@ def MakeFeatures(image_id):
         return 1
     
     ####### EVERYTHING OK: START THE FEATURE EXTRACTION ##########
-    print 'Extracting features [image {id}] from [source {sid}: {sname}]'.format(id = image_id, sid = image.source_id, sname = image.source.name)
-    logging.info('Extracting features [image {id}] from [source {sid}: {sname}]'.format(id = image_id, sid = image.source_id, sname = image.source.name))
+    logging.info('Extracting features image{id} from source{sid}: {sname}'.format(id = image_id, sid = image.source_id, sname = image.source.name))
     image.status.featuresExtracted = True;
     image.status.save()
 
@@ -257,15 +203,16 @@ def MakeFeatures(image_id):
     if os.path.isfile(FEATURE_ERROR_LOG):
         image.status.featuresExtracted = False;
         image.status.save()
-        print("Sorry error detected in feature extraction!")
+        logging.info('ERROR extracting features image{id} from source{sid}: {sname}'.format(id = image_id, sid = image.source_id, sname = image.source.name))
         mail_admins('CoralNet Backend Error', 'in MakeFeatures')
-    else:
-        print 'Done extracting features [image {id}] from [source {sid}: {sname}]'.format(id = image_id, sid = image.source_id, sname = image.source.name)
+        return 0
 
+    return 1
+    
 @task()
 @transaction.commit_on_success()
 @reversion.create_revision()
-def Classify(image_id):
+def classify_image(image_id):
     image = Image.objects.get(pk=image_id)
 
     # if annotated by Human, or if the previous step is not complete
@@ -285,7 +232,7 @@ def Classify(image_id):
             return
 
     ####### EVERYTHING OK: START THE CLASSIFICATION ##########
-    print 'Classifying [image {id}] from [source {sid}: {sname}]'.format(id = image_id, sid = image.source_id, sname = image.source.name)
+    logging.info('Classifying image{id} from source{sid}: {sname}'.format(id = image_id, sid = image.source_id, sname = image.source.name))
     
     #builds args for matlab script
     featureFile = os.path.join(FEATURES_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".dat")
@@ -300,7 +247,7 @@ def Classify(image_id):
     )
 
     if os.path.isfile(CLASSIFY_ERROR_LOG):
-        print("Error detected in image classification.")
+        logging.info('ERROR classifying image{id} from source{sid}: {sname}'.format(id = image_id, sid = image.source_id, sname = image.source.name))
         mail_admins('CoralNet Backend Error', 'in Classify')
         return 0
     else:
@@ -315,6 +262,9 @@ def Classify(image_id):
 
     # Get the label probabilities that we just generated
     label_probabilities = task_utils.get_label_probabilities_for_image(image_id)
+
+    if len(label_probabilities) == 0:
+        mail_admins('Classify error', 'Classification output for image{id} from source{sid}: {sname} was empty.'.format(id = image_id, sid = image.source_id, sname = image.source.name))
 
     # Go through each point and update/create the annotation as appropriate
     for point_number, probs in label_probabilities.iteritems():
@@ -352,12 +302,12 @@ def Classify(image_id):
             # Else, it's an existing confirmed annotation, and we don't want
             # to overwrite it. So do nothing in this case.
 
-    print 'Done classifying [image {id}] from [source {sid}: {sname}]'.format(id = image_id, sid = image.source_id, sname = image.source.name)
+    logging.info('Classified {npts} points in image{id} from source{sid}: {sname}'.format(npts = len(label_probabilities), id = image_id, sid = image.source_id, sname = image.source.name))
 
 
 # This task modifies the feature file so that is contains the correct labels, as provided by the human operator.
 @task()
-def addLabelsToFeatures(image_id):
+def add_labels_to_features(image_id):
 
     image = Image.objects.get(pk=image_id)
     if not image.status.annotatedByHuman or not image.status.featuresExtracted or image.status.featureFileHasHumanLabels:
@@ -388,9 +338,10 @@ def addLabelsToFeatures(image_id):
 
     copyfile(featureFileOut, featureFileIn)
     os.remove(featureFileOut)
+    return 1
 
 @task()
-def trainRobot(source_id):
+def train_robot(source_id):
 
     # first, see if we should train a new robot
     hasNewImagesToTrainOn = False
@@ -417,7 +368,6 @@ def trainRobot(source_id):
     newRobot = Robot(source = source, version = version, time_to_train = 1)
     newRobot.path_to_model = os.path.join(MODEL_DIR, "robot" + str(newRobot.version))
     newRobot.save();
-    print 'Training [robot {id}] from [source {sid}: {sname}]'.format(id = newRobot.version, sid = image.source_id, sname = image.source.name)
     
     # update the data base.
     for image in allImages: # mark that these images are used in the current model.
@@ -429,9 +379,10 @@ def trainRobot(source_id):
     previousRobot = source.get_latest_robot()
     if previousRobot == None:
         oldModelPath = '';
+        logging.info('Training first robot{id} for source{sid}: {sname}'.format(id = newRobot.version, sid = image.source_id, sname = image.source.name))
     else:
         oldModelPath = previousRobot.path_to_model
-        print 'Previous was [robot {id}] from [source {sid}: {sname}]'.format(id = previousRobot.version, sid = image.source_id, sname = image.source.name)
+        logging.info('Training robot{id} for source{sid}: {sname}. Previous was robot{pid}'.format(id = newRobot.version, sid = image.source_id, sname = image.source.name, pid = previousRobot.version))
 
     # now, loop through the images and create some meta data files that MATLAB needs
     workingDir = newRobot.path_to_model + '.workdir/'
@@ -441,7 +392,7 @@ def trainRobot(source_id):
     try:
         os.mkdir(workingDir)
     except OSError as e:
-        print "Error creating workingDir: {error}".format(error=e.strerror)
+        logging.info("Error creating workingDir: {error}".format(error=e.strerror))
         raise
 
     fItt = 0 #image iterator
@@ -492,14 +443,16 @@ def trainRobot(source_id):
             if image.status.featureFileHasHumanLabels:
                 image.status.usedInCurrentModel = False
                 image.status.save()
-        print("Sorry error detected in robot training!")
+        logging.info('ERROR training robot{id} for source{sid}: {sname}'.format(id = newRobot.version, sid = image.source_id, sname = image.source.name))
         mail_admins('CoralNet Backend Error', 'in trainRobot')
         newRobot.delete()
+        return 0
     else:
         copyfile(newRobot.path_to_model + '.meta_all.png', os.path.join(ALLEVIATE_IMAGE_DIR, str(newRobot.version) + '.png')) #copy to the media folder where it can be viewed
         if not (previousRobot == None):
             os.remove(oldModelPath) # remove old model, but keep the meta data files.
-        print 'Done training [robot {id}] from [source {sid}: {sname}]'.format(id = newRobot.version, sid = image.source_id, sname = image.source.name)
+        logging.info('Done training robot{id} for source{sid}: {sname}'.format(id = newRobot.version, sid = image.source_id, sname = image.source.name))
+        return 1
 
 
 def custom_listdir(path):
