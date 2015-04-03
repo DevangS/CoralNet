@@ -418,10 +418,7 @@ def train_robot(source_id):
         logFile = CV_LOG,
         errorLogfile = TRAIN_ERROR_LOG,
     )
-
-    # clean up
-    shutil.rmtree(workingDir)
-    
+  
     if os.path.isfile(TRAIN_ERROR_LOG):
         for image in allImages: # roll back changes.
             if image.status.featureFileHasHumanLabels:
@@ -435,6 +432,7 @@ def train_robot(source_id):
         copyfile(newRobot.path_to_model + '.meta_all.png', os.path.join(ALLEVIATE_IMAGE_DIR, str(newRobot.version) + '.png')) #copy to the media folder where it can be viewed
         if not (previousRobot == None):
             os.remove(oldModelPath) # remove old model, but keep the meta data files.
+        shutil.rmtree(workingDir) # only remove temp files if everything worked. Else keep it for debugging purposes.
         logging.info('Done training robot{id} for source{sid}: {sname}'.format(id = newRobot.version, sid = image.source_id, sname = image.source.name))
         return 1
 
