@@ -355,7 +355,7 @@ def train_robot(source_id):
     
     # update the data base.
     for image in allImages: # mark that these images are used in the current model.
-        if image.status.featureFileHasHumanLabels:
+        if image.status.featureFileHasHumanLabels and not image.status.usedInCurrentModel:
             image.status.usedInCurrentModel = True;
             image.status.save()
 
