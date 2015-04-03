@@ -24,7 +24,7 @@ try:
 except ImportError:
     import Image as PILImage
 
-logging.basicConfig(filename='logs/tasks.log', level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(filename=os.path.join(settings.PROCESSING_ROOT, 'logs/tasks.log'), level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 admin.autodiscover()
 
 PREPROCESS_ERROR_LOG = os.path.join(settings.PROCESSING_ROOT, "logs/preprocess_error.txt")
@@ -63,7 +63,7 @@ def dummy_task_sleep(s):
 
 # This is the main tasks for classification. This does not use the task manager, but does everything in serial. Nice and slow.
 def classify_wrapper():
-    keyfilepath = os.path.join(PROCESSING_ROOT, "logs/classify_flag")
+    keyfilepath = os.path.join(settings.PROCESSING_ROOT, "logs/classify_flag")
 
     if os.path.exists(keyfilepath):
         return 1
@@ -79,7 +79,7 @@ def classify_wrapper():
 
 # This is the main tasks for learning. This does not use the task manager, but does everything in serial. Nice and slow.
 def train_wrapper():
-    keyfilepath = os.path.join(PROCESSING_ROOT, "logs/learning_flag")
+    keyfilepath = os.path.join(settings.PROCESSING_ROOT, "logs/learning_flag")
 
     if os.path.exists(keyfilepath):
         return 1
