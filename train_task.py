@@ -1,2 +1,2 @@
 from CoralNet.images.tasks import *
-processAllSourcesConcurrent()
+train_wrapper()
