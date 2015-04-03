@@ -157,6 +157,7 @@ class SourceNewTest(ClientTest):
             key1='Number',
             point_generation_type=PointGen.Types.SIMPLE,
             simple_number_of_points=200,
+            alleviate_threshold=25,
             image_height_in_cm=50,
             min_x=0,
             max_x=100,
@@ -218,7 +219,7 @@ class SourceNewTest(ClientTest):
         self.assertEqual(new_source.longitude, self.source_args['longitude'])
         self.assertEqual(new_source.latitude, self.source_args['latitude'])
 
-        self.assertEqual(new_source.enable_robot_classifier, False)
+        self.assertEqual(new_source.enable_robot_classifier, True)
 
         # This check is of limited use since database datetimes (in
         # MySQL 5.1 at least) get truncated to whole seconds. But it still
@@ -319,6 +320,7 @@ class SourceEditTest(ClientTest):
             visibility=Source.VisibilityTypes.PRIVATE,
             key1='Letter',
             point_generation_type=PointGen.Types.SIMPLE,
+            alleviate_threshold=25,
             simple_number_of_points=16,
             image_height_in_cm=125,
             min_x=10,
@@ -394,7 +396,7 @@ class SourceEditTest(ClientTest):
             key4="Section",
             key5="ID",
         )
-
+        
         response = self.client.post(reverse('source_edit', kwargs={'source_id': self.source_id}),
             self.source_args,
         )
@@ -407,6 +409,7 @@ class SourceEditTest(ClientTest):
         self.assertEqual(edited_source.key3, self.source_args['key3'])
         self.assertEqual(edited_source.key4, self.source_args['key4'])
         self.assertEqual(edited_source.key5, self.source_args['key5'])
+
 
     def test_missing_keys(self):
         """

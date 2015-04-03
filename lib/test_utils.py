@@ -105,7 +105,7 @@ class ClientTest(BaseTest):
 
         self.default_upload_params = dict(
             specify_metadata='filenames',
-            skip_or_replace_duplicates='skip',
+            skip_or_upload_duplicates='skip',
             is_uploading_points_or_annotations=False,
             is_uploading_annotations_not_just_points='no',
         )

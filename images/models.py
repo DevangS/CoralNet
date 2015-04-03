@@ -307,7 +307,7 @@ class Source(models.Model):
 		latestVersion = 0
 		foundRobot = False
 		for thisRobot in allRobots:
-			if (thisRobot.version > latestVersion) and os.path.exists(thisRobot.path_to_model + '.meta.json'): #if meta file does not exist, the robot is not yet trained..
+			if (thisRobot.version > latestVersion) and os.path.exists(thisRobot.path_to_model + '.meta.json') and os.path.exists(thisRobot.path_to_model): #if meta file does not exist, the robot is not yet trained. Also check if the actual robot file is there. Sometimes it gets deleted mysteriously.
 				latestRobot = thisRobot
 				foundRobot = True
 				latestVersion = thisRobot.version

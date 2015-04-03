@@ -1,5 +1,7 @@
 import os
+import shutil
 import random
+import numpy as np
 from django.conf import settings
 
 from django.contrib.auth.models import User
@@ -7,7 +9,8 @@ from accounts.utils import get_robot_user, get_imported_user
 
 from annotations.models import Annotation
 from images.models import Source, Image, Point, Robot
-from images.tasks import PreprocessImages, MakeFeatures, Classify, addLabelsToFeatures, trainRobot
+from images.tasks import preprocess_image, make_features, add_labels_to_features, train_robot, classify_image
+from images.task_utils import read_label_score_file
 from lib.test_utils import ProcessingTestComponent, ClientTest, MediaTestComponent
 
 
@@ -73,9 +76,9 @@ class ImageProcessingTaskBaseTest(ClientTest):
         img.status.annotatedByHuman = True
         img.status.save()
 
+   
 
     def setUp(self):
-
 
         super(ImageProcessingTaskBaseTest, self).setUp()
         self.source_id = Source.objects.get(name='Labelset 1key').pk
@@ -84,6 +87,10 @@ class ImageProcessingTaskBaseTest(ClientTest):
         self.username = 'user2'
 
         self.upload_images()
+        
+        # Copy parameter file to desired location (It's totally hacky, but didn't know how else to do it.)
+        if(os.path.isfile('/cnhome/images/preprocess/preProcessParameters.mat')):
+            shutil.copy('/cnhome/images/preprocess/preProcessParameters.mat', os.path.join(settings.TEST_PROCESSING_ROOT, 'images/preprocess/preProcessParameters.mat'))
 
 
 class SingleImageProcessingTaskTest(ImageProcessingTaskBaseTest):
@@ -97,16 +104,15 @@ class SingleImageProcessingTaskTest(ImageProcessingTaskBaseTest):
 
     def test_preprocess_task(self):
 
-
         # The uploaded image should start out not preprocessed.
         # Otherwise, we need to change the setup code so that
         # the prepared image has preprocessed == False.
         self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, False)
 
         # Run task, attempt 1.
-        result = PreprocessImages.delay(self.image_id)
+        result = preprocess_image(self.image_id)
         # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
 
         # Should be preprocessed, and process_date should be set
         self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
@@ -114,9 +120,9 @@ class SingleImageProcessingTaskTest(ImageProcessingTaskBaseTest):
         self.assertNotEqual(process_date, None)
 
         # Run task, attempt 2.
-        result = PreprocessImages.delay(self.image_id)
+        result = preprocess_image(self.image_id)
         # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
 
         # Should have exited without re-doing the preprocess
         self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
@@ -126,27 +132,26 @@ class SingleImageProcessingTaskTest(ImageProcessingTaskBaseTest):
 
     def test_make_features_task(self):
 
-
         # Preprocess the image first.
-        result = PreprocessImages.delay(self.image_id)
-        self.assertTrue(result.successful())
+        result = preprocess_image(self.image_id)
+        self.assertTrue(result == 1)
         self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
 
         # Sanity check: features have not been made yet
         self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, False)
 
         # Run task, attempt 1.
-        result = MakeFeatures.delay(self.image_id)
+        result = make_features(self.image_id)
         # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
 
         # Should have extracted features
         self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
 
         # Run task, attempt 2.
-        result = MakeFeatures.delay(self.image_id)
+        result = make_features(self.image_id)
         # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
 
         # Should have exited without re-doing the feature making
         # TODO: Check file ctime/mtime to check that it wasn't redone?
@@ -155,13 +160,12 @@ class SingleImageProcessingTaskTest(ImageProcessingTaskBaseTest):
 
     def test_add_feature_labels_task(self):
 
-
         # Preprocess and feature-extract first.
-        result = PreprocessImages.delay(self.image_id)
-        self.assertTrue(result.successful())
+        result = preprocess_image(self.image_id)
+        self.assertTrue(result == 1)
         self.assertEqual(Image.objects.get(pk=self.image_id).status.preprocessed, True)
-        result = MakeFeatures.delay(self.image_id)
-        self.assertTrue(result.successful())
+        result = make_features(self.image_id)
+        self.assertTrue(result == 1)
         self.assertEqual(Image.objects.get(pk=self.image_id).status.featuresExtracted, True)
 
         # Add human annotations.
@@ -173,9 +177,9 @@ class SingleImageProcessingTaskTest(ImageProcessingTaskBaseTest):
 
 
         # Run task, attempt 1.
-        result = addLabelsToFeatures.delay(self.image_id)
+        result = add_labels_to_features(self.image_id)
         # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
 
         # Should have added labels to features
         # TODO: Check file ctime/mtime to check that the file was changed
@@ -183,8 +187,8 @@ class SingleImageProcessingTaskTest(ImageProcessingTaskBaseTest):
 
 
         # Run task, attempt 2.
-        result = addLabelsToFeatures.delay(self.image_id)
-        self.assertTrue(result.successful())
+        result = add_labels_to_features(self.image_id)
+        self.assertTrue(result == 1)
 
         # Should have exited without re-doing label adding
         # TODO: Check file ctime/mtime to check that it wasn't redone?
@@ -214,10 +218,10 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
         source_images = Image.objects.filter(source__pk=self.source_id)
 
         for img in source_images:
-            PreprocessImages.delay(img.id)
-            MakeFeatures.delay(img.id)
+            preprocess_image(img.id)
+            make_features(img.id)
             self.add_human_annotations(img.id)
-            addLabelsToFeatures.delay(img.id)
+            add_labels_to_features(img.id)
 
         # From now on, this variable may be out of date.
         # del it to avoid mistakes.
@@ -225,8 +229,8 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
 
 
         # Create a robot.
-        result = trainRobot.delay(self.source_id)
-        self.assertTrue(result.successful())
+        result = train_robot(self.source_id)
+        self.assertTrue(result == 1)
 
 
         source_images = Image.objects.filter(source__pk=self.source_id)
@@ -242,32 +246,32 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
         # Preprocess, feature extract, and add human annotations to
         # the features.
         for img in Image.objects.filter(source__pk=self.source_id):
-            PreprocessImages.delay(img.id)
-            MakeFeatures.delay(img.id)
+            preprocess_image(img.id)
+            make_features(img.id)
             self.add_human_annotations(img.id)
-            addLabelsToFeatures.delay(img.id)
+            add_labels_to_features(img.id)
 
 
         # Create a robot.
-        result = trainRobot.delay(self.source_id)
-        self.assertTrue(result.successful())
+        result = train_robot(self.source_id)
+        self.assertTrue(result == 1)
 
 
         # Upload a new image.
         img_id = self.upload_image('006_2012-06-28_color-grid-006.png')[0]
 
         # Preprocess and feature extract.
-        PreprocessImages.delay(img_id)
-        MakeFeatures.delay(img_id)
+        preprocess_image(img_id)
+        make_features(img_id)
         # Sanity check: not classified yet
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, False)
 
 
         # Run task, attempt 1.
-        result = Classify.delay(img_id)
+        result = classify_image(img_id)
 
         # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
         # Should have classified the image
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
         # Check that the image's actual Annotation objects are there.
@@ -281,10 +285,10 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
 
 
         # Run task, attempt 2.
-        result = Classify.delay(img_id)
+        result = classify_image(img_id)
 
         # Check that the task didn't encounter an exception
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
         # Should have exited without re-doing the classification
         # TODO: Check file ctime/mtime to check that it wasn't redone?
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
@@ -305,30 +309,29 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
         # Preprocess, feature extract, and add human annotations to
         # the features.
         for img in Image.objects.filter(source__pk=self.source_id):
-            PreprocessImages.delay(img.id)
-            MakeFeatures.delay(img.id)
+            preprocess_image(img.id)
+            make_features(img.id)
             self.add_human_annotations(img.id)
-            addLabelsToFeatures.delay(img.id)
+            add_labels_to_features(img.id)
 
         # Create a robot.
-        result = trainRobot.delay(self.source_id)
-        self.assertTrue(result.successful())
+        result = train_robot(self.source_id)
+        self.assertTrue(result == 1)
 
 
         # Upload a new image.
         img_id = self.upload_image('006_2012-06-28_color-grid-006.png')[0]
 
         # Preprocess and feature extract.
-        PreprocessImages.delay(img_id)
-        MakeFeatures.delay(img_id)
+        preprocess_image(img_id)
+        make_features(img_id)
         # Sanity check: not classified yet
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, False)
 
-
         # Classify, 1st time.
-        result = Classify.delay(img_id)
+        result = classify_image(img_id)
 
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
 
         num_points = Point.objects.filter(image__pk=img_id).count()
@@ -336,7 +339,6 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
             Annotation.objects.filter(image__pk=img_id).count(),
             num_points,
         )
-
 
         # Verify that the points match those in the label file output by the
         # classification task.
@@ -350,49 +352,33 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
             )
         )
 
-        label_file = open(label_filename)
+        label_score_dict = read_label_score_file(img_id)
 
-        # The label file should have one label id per line, with each line
-        # corresponding to one point of the image.
-        labels_in_label_file = dict()
-        point_num = 1
+        for point_num in range(num_points):
 
-        for line in label_file:
-
-            line = line.strip()
-            if line == '':
-                continue
-
-            label_id = int(line)
-            labels_in_label_file[point_num] = label_id
-            point_num += 1
-
-        label_file.close()
-
-        for point_num in range(1, num_points+1):
-
-            label_id = Annotation.objects.get(image__pk=img_id, point__point_number=point_num).label.id
-            self.assertEqual(label_id, labels_in_label_file[point_num])
+            label_id = Annotation.objects.get(image__pk=img_id, point__point_number=point_num+1).label.id # from database
+            scores = np.asarray([s['score'] for s in label_score_dict[point_num]])
+            label_id_file = int(label_score_dict[point_num][scores.argmax()]['label']) # from file
+            self.assertEqual(label_id, label_id_file)
 
 
         # Add another training image.
         extra_training_img_id = self.upload_image(
             os.path.join('1key', '001_2011-05-28.png')
         )[0]
-        PreprocessImages.delay(extra_training_img_id)
-        MakeFeatures.delay(extra_training_img_id)
+        preprocess_image(extra_training_img_id)
+        make_features(extra_training_img_id)
         self.add_human_annotations(extra_training_img_id)
-        addLabelsToFeatures.delay(extra_training_img_id)
+        add_labels_to_features(extra_training_img_id)
 
         # Create another robot.
-        result = trainRobot.delay(self.source_id)
-        self.assertTrue(result.successful())
-
+        result = train_robot(self.source_id)
+        self.assertTrue(result == 1)
 
         # Classify, 2nd time.
-        result = Classify.delay(img_id)
+        result = classify_image(img_id)
 
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
 
         # We'd better still have one annotation per point
@@ -402,30 +388,16 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
             Point.objects.filter(image__pk=img_id).count(),
         )
 
-
         # Verify, again, that the points match those in the label file output
         # by the classification task.
-        label_file = open(label_filename)
+        label_score_dict = read_label_score_file(img_id)
 
-        labels_in_label_file = dict()
-        point_num = 1
+        for point_num in range(num_points):
 
-        for line in label_file:
-
-            line = line.strip()
-            if line == '':
-                continue
-
-            label_id = int(line)
-            labels_in_label_file[point_num] = label_id
-            point_num += 1
-
-        label_file.close()
-
-        for point_num in range(1, num_points+1):
-
-            label_id = Annotation.objects.get(image__pk=img_id, point__point_number=point_num).label.id
-            self.assertEqual(label_id, labels_in_label_file[point_num])
+            label_id = Annotation.objects.get(image__pk=img_id, point__point_number=point_num+1).label.id # from database
+            scores = np.asarray([s['score'] for s in label_score_dict[point_num]])
+            label_id_file = int(label_score_dict[point_num][scores.argmax()]['label']) # from file
+            self.assertEqual(label_id, label_id_file)
 
 
         # TODO: Check that new history entries are created / not created accordingly?
@@ -441,22 +413,21 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
         # Preprocess, feature extract, and add human annotations to
         # the features.
         for img in Image.objects.filter(source__pk=self.source_id):
-            PreprocessImages.delay(img.id)
-            MakeFeatures.delay(img.id)
+            preprocess_image(img.id)
+            make_features(img.id)
             self.add_human_annotations(img.id)
-            addLabelsToFeatures.delay(img.id)
+            add_labels_to_features(img.id)
 
         # Create a robot.
-        result = trainRobot.delay(self.source_id)
-        self.assertTrue(result.successful())
-
+        result = train_robot(self.source_id)
+        self.assertTrue(result == 1)
 
         # Upload a new image.
         img_id = self.upload_image('006_2012-06-28_color-grid-006.png')[0]
 
         # Preprocess and feature extract.
-        PreprocessImages.delay(img_id)
-        MakeFeatures.delay(img_id)
+        preprocess_image(img_id)
+        make_features(img_id)
 
         # Add annotations.
         source = Source.objects.get(pk=self.source_id)
@@ -497,10 +468,10 @@ class MultiImageProcessingTaskTest(ImageProcessingTaskBaseTest):
 
 
         # Try to Classify.
-        result = Classify.delay(img_id)
+        result = classify_image(img_id)
 
         # Shouldn't throw exception.
-        self.assertTrue(result.successful())
+        self.assertTrue(result == 1)
         self.assertEqual(Image.objects.get(pk=img_id).status.annotatedByRobot, True)
 
 

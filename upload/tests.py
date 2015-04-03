@@ -97,7 +97,7 @@ class ImageUploadBaseTest(ClientTest):
                 # We just replaced a duplicate image.
                 full_options = self.get_full_upload_options(options)
 
-                if full_options['skip_or_replace_duplicates'] == 'skip':
+                if full_options['skip_or_upload_duplicates'] == 'skip':
                     self.assertEqual(response_content['status'], 'error')
                 else:  # replace
                     self.assertEqual(response_content['status'], 'ok')
@@ -235,7 +235,7 @@ class UploadDupeImageTest(ImageUploadBaseTest):
     Duplicate images.
     """
     def duplicate_upload_test(self, dupe_option):
-        options = dict(skip_or_replace_duplicates=dupe_option)
+        options = dict(skip_or_upload_duplicates=dupe_option)
 
         self.upload_image_test('001_2012-05-01_color-grid-001.png', **options)
 
@@ -244,7 +244,7 @@ class UploadDupeImageTest(ImageUploadBaseTest):
 
         # Duplicate
         datetime_before_dupe_upload = datetime.datetime.now().replace(microsecond=0)
-        self.upload_image_test('001_2012-05-01_color-grid-001_jpg-valid.jpg', expecting_dupe=True, **options)
+        self.upload_image_test('001_2012-05-01_color-grid-001.png', expecting_dupe=True, **options)
 
         image_001 = Image.objects.get(source__pk=self.source_id, metadata__value1__name='001')
         image_001_name = image_001.metadata.name
@@ -272,7 +272,7 @@ class UploadDupeImageTest(ImageUploadBaseTest):
         self.duplicate_upload_test('skip')
 
     def test_duplicate_upload_with_replace(self):
-        self.duplicate_upload_test('replace')
+        self.duplicate_upload_test('upload_anyway')
 
 
 class UploadInvalidImageTest(ImageUploadBaseTest):
@@ -574,7 +574,7 @@ class PreviewFilenameTest(ImageUploadBaseTest):
 
         response = self.client.post(
             reverse('image_upload_preview_ajax', kwargs={'source_id': self.source_id}),
-            {'filenames[]': filenames},
+            {'metadataOption': 'filenames', 'filenames[]': filenames},
         )
         response_content = simplejson.loads(response.content)
         status_list = response_content['statusList']
@@ -611,13 +611,14 @@ class PreviewFilenameTest(ImageUploadBaseTest):
             ('002_2012-05-28.png', 'ok'),    # Number different
             ('001_2011-05-28.png', 'ok'),    # Year different
             ('002_2011-05-28.png', 'ok'),    # Both different
-            ('001_2012-05-28.png', 'dupe'),
+            ('001_2012-05-28.png', 'ok'),    # Same keys but other filename
+            ('001_2012-05-28_rainbow-grid-one.png', 'possible_dupe'), # Duplicate
         ]
         filenames = [f[0] for f in files]
 
         response = self.client.post(
             reverse('image_upload_preview_ajax', kwargs={'source_id': self.source_id}),
-            {'filenames[]': filenames},
+            {'metadataOption': 'filenames', 'filenames[]': filenames},
         )
         response_content = simplejson.loads(response.content)
         status_list = response_content['statusList']
@@ -643,7 +644,7 @@ class PreviewFilenameTest(ImageUploadBaseTest):
 
         response = self.client.post(
             reverse('image_upload_preview_ajax', kwargs={'source_id': self.source_id}),
-            {'filenames[]': filenames},
+            {'metadataOption': 'filenames', 'filenames[]': filenames},
         )
         response_content = simplejson.loads(response.content)
         status_list = response_content['statusList']
@@ -683,6 +684,7 @@ class AnnotationUploadBaseTest(ImageUploadBaseTest):
         options = dict(self.default_options)
         options.update(extra_options)
         options.update(annotations_file=annotations_file)
+        options.update(metadataOption='filenames')
 
         response = self.client.post(
             reverse('annotation_file_process_ajax', kwargs={'source_id': self.source_id}),
@@ -815,32 +817,32 @@ class AnnotationUploadTest(AnnotationUploadBaseTest):
         # The annotations that should actually be created after the upload
         # completes.
         self.expected_annotations = {
-            '2011 cool 001': set([
+            'cool_001_2011-05-28.png': set([
                 (200, 300, 'Scarlet'),
                 (50, 250, 'Lime'),
                 (10, 10, 'Turq'),
             ]),
-            '2012 cool 001': set([
+            'cool_001_2012-05-28.png': set([
                 (1, 1, 'UMarine'),
                 (400, 400, 'Lime'),
             ]),
-            '2011 cool 002': set([
+            'cool_002_2011-05-28.png': set([
                 (160, 40, 'Turq'),
             ]),
         }
 
         # Same as expected_annotations, but for the points-only option.
         self.expected_points = {
-            '2011 cool 001': set([
+            'cool_001_2011-05-28.png': set([
                 (200, 300),
                 (50, 250),
                 (10, 10),
             ]),
-            '2012 cool 001': set([
+            'cool_001_2012-05-28.png': set([
                 (1, 1),
                 (400, 400),
             ]),
-            '2011 cool 002': set([
+            'cool_002_2011-05-28.png': set([
                 (160, 40),
             ]),
         }
