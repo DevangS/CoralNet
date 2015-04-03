@@ -86,6 +86,8 @@ def train_wrapper():
     open(keyfilepath, 'w')
     logging.info("==== Start training new batch of robots ====")
     for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
+        if source.id == 122: #this is obviously a hack. it's to get rid of that large hard-bottom source
+            continue
         for image in source.get_all_images():
             add_labels_to_features(image.id)
         train_robot(source.id)
@@ -426,7 +428,8 @@ def train_robot(source_id):
                 image.status.save()
         logging.info('ERROR training robot{id} for source{sid}: {sname}'.format(id = newRobot.version, sid = image.source_id, sname = image.source.name))
         mail_admins('CoralNet Backend Error', 'in trainRobot')
-        newRobot.delete()
+        os.rename(TRAIN_ERROR_LOG, TRAIN_ERROR_LOG + '.' + str(source_id)) # change the name so it won't interfere with other sources.
+        # newRobot.delete() Don't delete the model. It won't bother us anyays since it lacks the needed metadata.
         return 0
     else:
         copyfile(newRobot.path_to_model + '.meta_all.png', os.path.join(ALLEVIATE_IMAGE_DIR, str(newRobot.version) + '.png')) #copy to the media folder where it can be viewed

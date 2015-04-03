@@ -296,24 +296,10 @@ class Source(models.Model):
 		return the latest robot associated with this source.
 		if no robots, retun None
 		"""
-    	# Get all robots for this source
-		allRobots = Robot.objects.filter(source = self)
-	 
-		# if empty, return
-		if len(allRobots) == 0:
-			return None
-	    
-		# find the most recent robot
-		latestVersion = 0
-		foundRobot = False
-		for thisRobot in allRobots:
-			if (thisRobot.version > latestVersion) and os.path.exists(thisRobot.path_to_model + '.meta.json') and os.path.exists(thisRobot.path_to_model): #if meta file does not exist, the robot is not yet trained. Also check if the actual robot file is there. Sometimes it gets deleted mysteriously.
-				latestRobot = thisRobot
-				foundRobot = True
-				latestVersion = thisRobot.version
+    	validRobots = self.get_valid_robots()
 
-		if foundRobot:
-			return latestRobot
+		if len(validRobots) > 0:
+			return validRobots[-1]
 		else:
 			return None
 
@@ -324,13 +310,15 @@ class Source(models.Model):
         allRobots = Robot.objects.filter(source = self).order_by('version')
         validRobots = []
         for thisRobot in allRobots:
-            try:
-                f = open(thisRobot.path_to_model + '.meta.json')
-                meta = json.loads(f.read())
-                f.close()
-                validRobots.append(thisRobot)
-            except:
-                continue
+            # check that the meta-data exists and that the actual model file exists.
+            if os.path.exists(thisRobot.path_to_model + '.meta.json') and os.path.exists(thisRobot.path_to_model):
+                try: # check that we can actually read the meta data
+                    f = open(thisRobot.path_to_model + '.meta.json')
+                    meta = json.loads(f.read())
+                    f.close()
+                    validRobots.append(thisRobot)
+                except:
+                    continue
         return validRobots
 
     def remove_unused_key_values(self):
