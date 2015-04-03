@@ -1,67 +1,49 @@
-import time
-import csv
+import time, os, copy, csv, pickle, shutil, operator, json, reversion, math, logging
+import numpy as np
 from shutil import copyfile
 from datetime import datetime
-import pickle
 from random import random
-import shutil
 from celery.task import task
-import operator
-import os, copy
 from django.conf import settings
 from django.core.mail import mail_admins
-import json, csv, os.path, time
 from django.shortcuts import render_to_response, get_object_or_404
-
-try:
-    from PIL import Image as PILImage
-except ImportError:
-    import Image as PILImage
-
-from django.db import transaction
-import reversion
 from accounts.utils import get_robot_user
 from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation, LabelGroup
 from images import task_helpers, task_utils
 from images.models import Point, Image, Source, Robot
 from numpy import array, zeros, sum, float32, newaxis
-import numpy as np
-import math
-import logging
-logging.basicConfig(filename='logs/tasks.log', level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-
+from django.db import transaction
 # Revision objects will not be saved during Celery tasks unless
 # the Celery worker hooks up Reversion's signal handlers.
 # To do this, import admin modules so that
 # the admin registration statements are run.
 from django.contrib import admin
+try:
+    from PIL import Image as PILImage
+except ImportError:
+    import Image as PILImage
+
+logging.basicConfig(filename='logs/tasks.log', level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 admin.autodiscover()
 
+PREPROCESS_ERROR_LOG = os.path.join(settings.PROCESSING_ROOT, "logs/preprocess_error.txt")
+FEATURE_ERROR_LOG = os.path.join(settings.PROCESSING_ROOT, "logs/features_error.txt")
+CLASSIFY_ERROR_LOG = os.path.join(settings.PROCESSING_ROOT, "logs/classify_error.txt")
+TRAIN_ERROR_LOG = os.path.join(settings.PROCESSING_ROOT, "logs/train_error.txt")
+CV_LOG = os.path.join(settings.PROCESSING_ROOT, "logs/cvlog.txt")
 
-join_processing_root = lambda *p: os.path.join(settings.PROCESSING_ROOT, *p)
-
-# In most cases you'll join from the image-processing root directory, not
-# from the project root directory.  Uncomment this if needed though.
-# - Stephen
-#join_project_root = lambda *p: os.path.join(settings.PROJECT_ROOT, *p)
-
-PREPROCESS_ERROR_LOG = join_processing_root("logs/preprocess_error.txt")
-FEATURE_ERROR_LOG = join_processing_root("logs/features_error.txt")
-CLASSIFY_ERROR_LOG = join_processing_root("logs/classify_error.txt")
-TRAIN_ERROR_LOG = join_processing_root("logs/train_error.txt")
-CV_LOG = join_processing_root("logs/cvlog.txt")
-
-ORIGINALIMAGES_DIR = settings.MEDIA_ROOT
 ALLEVIATE_IMAGE_DIR = os.path.join(settings.MEDIA_ROOT, "vision_backend/alleviate_plots")
 ALLEVIATE_IMAGE_URL = os.path.join(settings.MEDIA_URL, "vision_backend/alleviate_plots")
-PREPROCESS_DIR = join_processing_root("images/preprocess/")
-FEATURES_DIR = join_processing_root("images/features/")
-CLASSIFY_DIR = join_processing_root("images/classify/")
-MODEL_DIR = join_processing_root("images/models/")
+PREPROCESS_DIR = os.path.join(settings.PROCESSING_ROOT, "images/preprocess/")
+FEATURES_DIR = os.path.join(settings.PROCESSING_ROOT, "images/features/")
+CLASSIFY_DIR = os.path.join(settings.PROCESSING_ROOT, "images/classify/")
+MODEL_DIR = os.path.join(settings.PROCESSING_ROOT, "images/models/")
+PREPROCESS_PARAM_FILE = os.path.join(settings.PROCESSING_ROOT, "images/preprocess/preProcessParameters.mat")
+
 TARGET_PIXEL_CM_RATIO = 17.2
 
-PREPROCESS_PARAM_FILE = join_processing_root("images/preprocess/preProcessParameters.mat")
+
 
 #Tasks that get processed by Celery
 #Possible future problems include that each task relies on it being the same day to continue processing an image,
@@ -69,18 +51,19 @@ PREPROCESS_PARAM_FILE = join_processing_root("images/preprocess/preProcessParame
 #the algorithm against it
 
 @task()
-def dummyTask():
+def dummy_task():
     print("This is a dummy task console output")
     return 1
 
 @task()
-def dummyTaskLong(s):
+def dummy_task_sleep(s):
     print("This is a dummy task that can sleep")
     time.sleep(s)
 
+
 # This is the main tasks for classification. This does not use the task manager, but does everything in serial. Nice and slow.
 def classify_wrapper():
-    keyfilepath = join_processing_root("logs/classify_flag")
+    keyfilepath = os.path.join(PROCESSING_ROOT, "logs/classify_flag")
 
     if os.path.exists(keyfilepath):
         return 1
@@ -96,7 +79,7 @@ def classify_wrapper():
 
 # This is the main tasks for learning. This does not use the task manager, but does everything in serial. Nice and slow.
 def train_wrapper():
-    keyfilepath = join_processing_root("logs/learning_flag")
+    keyfilepath = os.path.join(PROCESSING_ROOT, "logs/learning_flag")
 
     if os.path.exists(keyfilepath):
         return 1
@@ -146,7 +129,7 @@ def preprocess_image(image_id):
     preprocessedImageFile = os.path.join(PREPROCESS_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".mat")
 
     task_helpers.coralnet_preprocessImage(
-        imageFile=os.path.join(ORIGINALIMAGES_DIR, str(image.original_file)),
+        imageFile=os.path.join(settings.MEDIA_ROOT, str(image.original_file)),
         preprocessedImageFile=preprocessedImageFile,
         preprocessParameterFile=PREPROCESS_PARAM_FILE,
         ssFile = ssFile,
@@ -229,7 +212,7 @@ def classify_image(image_id):
     if (image.status.annotatedByRobot):
         # now, compare this version number to the latest_robot_annotator field for image.
         if (not (latestRobot.version > image.latest_robot_annotator.version)):
-            return
+            return 1
 
     ####### EVERYTHING OK: START THE CLASSIFICATION ##########
     logging.info('Classifying image{id} from source{sid}: {sname}'.format(id = image_id, sid = image.source_id, sname = image.source.name))
@@ -303,6 +286,7 @@ def classify_image(image_id):
             # to overwrite it. So do nothing in this case.
 
     logging.info('Classified {npts} points in image{id} from source{sid}: {sname}'.format(npts = len(label_probabilities), id = image_id, sid = image.source_id, sname = image.source.name))
+    return 1
 
 
 # This task modifies the feature file so that is contains the correct labels, as provided by the human operator.
