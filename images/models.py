@@ -292,16 +292,16 @@ class Source(models.Model):
         return PointGen.db_to_readable_format(self.default_point_generation_method)
 
     def get_latest_robot(self):
-		"""
-		return the latest robot associated with this source.
-		if no robots, retun None
-		"""
-    	validRobots = self.get_valid_robots()
+        """
+        return the latest robot associated with this source.
+        if no robots, retun None
+        """
+        validRobots = self.get_valid_robots()
 
-		if len(validRobots) > 0:
-			return validRobots[-1]
-		else:
-			return None
+        if len(validRobots) > 0:
+            return validRobots[-1]
+        else:
+            return None
 
     def get_valid_robots(self):
         """
@@ -311,7 +311,7 @@ class Source(models.Model):
         validRobots = []
         for thisRobot in allRobots:
             # check that the meta-data exists and that the actual model file exists.
-            if os.path.exists(thisRobot.path_to_model + '.meta.json') and os.path.exists(thisRobot.path_to_model):
+            if os.path.exists(thisRobot.path_to_model + '.meta.json'):
                 try: # check that we can actually read the meta data
                     f = open(thisRobot.path_to_model + '.meta.json')
                     meta = json.loads(f.read())
