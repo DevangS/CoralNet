@@ -292,16 +292,16 @@ class Source(models.Model):
         return PointGen.db_to_readable_format(self.default_point_generation_method)
 
     def get_latest_robot(self):
-		"""
-		return the latest robot associated with this source.
-		if no robots, retun None
-		"""
-    	validRobots = self.get_valid_robots()
-
-		if len(validRobots) > 0:
-			return validRobots[-1]
-		else:
-			return None
+        """
+        return the latest robot associated with this source.
+        if no robots, retun None
+        """
+        validRobots = self.get_valid_robots()
+        
+        if len(validRobots) > 0:
+        	return validRobots[-1]
+        else:
+        	return None
 
     def get_valid_robots(self):
         """
