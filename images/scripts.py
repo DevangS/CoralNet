@@ -1,10 +1,80 @@
+"""
+This file contains scripts that are not part of the main production server. But that reads/exports/manipulates things on a one-to-one basis.
+"""
+
 from images.models import Point, Image, Source, Robot
 import os
 from django.conf import settings
-
+from datetime import datetime
+from images.tasks import *
+from images.scripts_helper import RobotStats
 join_processing_root = lambda *p: os.path.join(settings.PROCESSING_ROOT, *p)
 PREPROCESS_DIR = join_processing_root("images/preprocess/")
 FEATURES_DIR = join_processing_root("images/features/")
+
+
+
+"""
+This script exports a bunch of robots stats to a data structure. This is then saved to disk (for now). 
+TODO: automatically generate scripts to read this data structure and display plots on the website.
+"""
+
+def export_robot_stats():
+   
+    sources = Source.objects.filter()
+    all_stats = []
+    for source in sources:
+        robots = source.get_valid_robots()
+        latest_robot = source.get_latest_robot()
+        for robot in robots:
+            print robot
+            ts = RobotStats(robot.version)
+
+            # basic stats
+            ts.source_id = source.id
+            ts.active = robot == latest_robot
+            ts.date = '%s' %  datetime.fromtimestamp(os.path.getctime(robot.path_to_model + '.meta.json')).date()
+
+            # read accuracy of the full confusion matrix
+            (fullcm, labelIds) = get_confusion_matrix(robot)
+            fullacc = accuracy_from_cm(fullcm)
+            ts.fullacc = fullacc[0]
+            ts.fullkappa = fullacc[1]
+
+            # read accuracy of the functional groups
+            (funccm, placeholder, groupIds) = collapse_confusion_matrix(fullcm, labelIds)
+            funcacc = accuracy_from_cm(funccm)
+            ts.funcacc = funcacc[0]
+            ts.funckappa = funcacc[1]
+
+            # read other stuff
+            f = open(robot.path_to_model + '.meta.json')
+            meta=json.loads(f.read())
+            f.close()
+
+            ts.nsamples_org = sum(meta['final']['trainData']['labelhist']['org']),
+            ts.nsamples_pruned = sum(meta['final']['trainData']['labelhist']['pruned']),
+            ts.train_time = str(int(round(meta['totalRuntime']))),    
+            ts.target_nbr_samples_hp = meta['targetNbrSamplesPerClass']['HP']
+            ts.target_nbr_samples_final = meta['targetNbrSamplesPerClass']['final']
+            ts.label_threshold = meta['labelThreshhold']
+            gs = meta['hp']['gridStats']
+            if(isinstance(gs, list)):
+                gs = gs[-1]
+            ts.gamma_opt = gs['gammaCOpt'][0]
+            ts.c_opt = gs['gammaCOpt'][1]
+
+            # alleviation meta
+            all_meta = get_alleviate_meta(robot)
+            if all_meta['ok']:
+                ts.allevation_level = all_meta['suggestion']
+            else:
+                ts.allevation_level = None
+            all_stats.append(ts)
+
+    return all_stats
+
+
 
 """
 This scripts set the level of alleviation to 0 for all sources

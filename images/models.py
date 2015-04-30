@@ -311,7 +311,7 @@ class Source(models.Model):
         validRobots = []
         for thisRobot in allRobots:
             # check that the meta-data exists and that the actual model file exists.
-            if os.path.exists(thisRobot.path_to_model + '.meta.json') and os.path.exists(thisRobot.path_to_model):
+            if os.path.exists(thisRobot.path_to_model + '.meta.json'):
                 try: # check that we can actually read the meta data
                     f = open(thisRobot.path_to_model + '.meta.json')
                     meta = json.loads(f.read())

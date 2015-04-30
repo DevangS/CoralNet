@@ -259,7 +259,7 @@ class UploadDupeImageTest(ImageUploadBaseTest):
             # get truncated to whole seconds. But it still doesn't hurt to check.
             self.assertTrue(image_001.upload_date <= datetime_before_dupe_upload)
 
-        else:  # 'replace'
+        else:  # 'upload_anyway'
 
             # Check that the image name is from the dupe
             # we just uploaded.
