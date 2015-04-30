@@ -27,6 +27,7 @@ def export_robot_stats():
         robots = source.get_valid_robots()
         latest_robot = source.get_latest_robot()
         for robot in robots:
+            print robot
             ts = RobotStats(robot.version)
 
             # basic stats
@@ -51,8 +52,17 @@ def export_robot_stats():
             meta=json.loads(f.read())
             f.close()
 
-            ts.nsamples = sum(meta['final']['trainData']['labelhist']['org']),
+            ts.nsamples_org = sum(meta['final']['trainData']['labelhist']['org']),
+            ts.nsamples_pruned = sum(meta['final']['trainData']['labelhist']['pruned']),
             ts.train_time = str(int(round(meta['totalRuntime']))),    
+            ts.target_nbr_samples_hp = meta['targetNbrSamplesPerClass']['HP']
+            ts.target_nbr_samples_final = meta['targetNbrSamplesPerClass']['final']
+            ts.label_threshold = meta['labelThreshhold']
+            gs = meta['hp']['gridStats']
+            if(isinstance(gs, list)):
+                gs = gs[-1]
+            ts.gamma_opt = gs['gammaCOpt'][0]
+            ts.c_opt = gs['gammaCOpt'][1]
 
             # alleviation meta
             all_meta = get_alleviate_meta(robot)
