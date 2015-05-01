@@ -8,7 +8,7 @@ gridParams.range.max = [2 3];
 gridParams.stepsize = [1 1];
 gridParams.edgeLength = 3;
 
-targetNbrSamplesPerClass.final = 3000;
+targetNbrSamplesPerClass.final = 4000;
 targetNbrSamplesPerClass.HP = 3000;
 
 [varnames, varvals] = var2varvallist(gridParams, targetNbrSamplesPerClass);
@@ -17,7 +17,7 @@ targetNbrSamplesPerClass.HP = 3000;
 
 %%% HARD CODED PARAMS, KIND OF BUGGY, BUT COULDNT BOTHER WITH YET ANOTHER
 %%% PARAM FILE
-labelRatio = 0.01;
+labelRatio = 0.005;
 maxNbrTestImages = 500;
 
 solverOptions.libsvm.gamma = -2;
