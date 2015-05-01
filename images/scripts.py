@@ -52,9 +52,9 @@ def export_robot_stats():
             meta=json.loads(f.read())
             f.close()
 
-            ts.nsamples_org = sum(meta['final']['trainData']['labelhist']['org']),
-            ts.nsamples_pruned = sum(meta['final']['trainData']['labelhist']['pruned']),
-            ts.train_time = str(int(round(meta['totalRuntime']))),    
+            ts.nsamples_org = sum(meta['final']['trainData']['labelhist']['org'])
+            ts.nsamples_pruned = sum(meta['final']['trainData']['labelhist']['pruned'])
+            ts.train_time = int(round(meta['totalRuntime']))
             ts.target_nbr_samples_hp = meta['targetNbrSamplesPerClass']['HP']
             ts.target_nbr_samples_final = meta['targetNbrSamplesPerClass']['final']
             ts.label_threshold = meta['labelThreshhold']
