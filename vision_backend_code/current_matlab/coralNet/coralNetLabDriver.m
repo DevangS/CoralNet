@@ -1,7 +1,40 @@
+%% DEBUGGING SOME TRAINING
+workDir = '/home/beijbom/robot/robot823.workdir';
+modelPath = '/home/beijbom/robot/robot823';
+
+testPath = fullfile(workDir, 'test');
+labelPath = fullfile(workDir, 'label2');
+
+system(sprintf('/home/beijbom/apps/libsvm/svm-predict %s %s %s;\n', testPath, modelPath, labelPath));
+
+%%
+
+estLabels = dlmread(fullfile(workDir, 'label'));
+d1 = unique(estLabels);
+
+tmp = dlmread(fullfile(workDir, 'points'));
+allData.fromfile = tmp(:,1);
+allData.pointNbr = tmp(:,2);
+allData.labels = tmp(:,3);
+labelMap = unique(allData.labels); %this is a list of all the label ids
+
+[gtLabels, testfeatures] = libsvmread(fullfile(workDir, 'test'));
+
+cm{thisPoint} = confMatrix(mapLabels(gtLabels, labelMap), mapLabels(estLabels, labelMap), numel(labelMap));
+
+% 
+% d2 = unique(gtlabels);
+% setdiff(d1, dd)
+% setdiff(dd, d1)
+% setdiff(dd, d2)
+% setdiff(d2, d1)
+% setdiff(d1, d2)
+
+
 
 %% SETUP PATHS
-workDir = '/home/beijbom/cnhome/images/models/debug_testDir/';
-modelPath = fullfile(workDir, 'robot');
+workDir = '/home/beijbom/robot/robot823.workdir';
+modelPath = '/home/beijbom/robot/robot823';
 oldModelPath = '';
 pointInfoPath = fullfile(workDir, 'points');
 fileNamesPath = fullfile(workDir, 'fileNames');
