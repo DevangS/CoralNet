@@ -335,6 +335,7 @@ xlabel('Ratio of points classified by machine', 'fontsize', fs);
 if sum(ismember('Hard coral', funcnames(activeFuncGroups))) > 0
     coralAcc = acc(:, strcmp(funcnames(activeFuncGroups), 'Hard coral'));
     allLevel = find(coralAcc<0.95, 1);
+    if (isempty(allLevel)); allLevel = numel(coralAcc); end;
     line([keepRatio(allLevel) keepRatio(allLevel)], [0 1], 'LineStyle', '-.', 'color', 'red', 'LineWidth', 1.5)
     line([0 1], [coralAcc(allLevel) coralAcc(allLevel)], 'LineStyle', '-.', 'color', 'red', 'LineWidth', 1.5)
     line([keepRatio(allLevel) keepRatio(allLevel)], [0 1], 'LineStyle', ':', 'color', 'yellow', 'LineWidth', 2)
