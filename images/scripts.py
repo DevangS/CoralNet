@@ -57,6 +57,7 @@ def export_robot_stats():
             ts.train_time = int(round(meta['totalRuntime']))
             ts.target_nbr_samples_hp = meta['targetNbrSamplesPerClass']['HP']
             ts.target_nbr_samples_final = meta['targetNbrSamplesPerClass']['final']
+            ts.nlabels = len(meta['labelMap'])
             ts.label_threshold = meta['labelThreshhold']
             gs = meta['hp']['gridStats']
             if(isinstance(gs, list)):
