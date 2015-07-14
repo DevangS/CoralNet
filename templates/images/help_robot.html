@@ -1,6 +1,6 @@
 <h3>Automated annotation</h3>
 
-<p> This dialog contain information about the CoralNet automated annotation system. This information is summarized in our <a href="http://vimeo.com/104754418">instruction video</a> on Vimeo. For technical details we refer to <a href="http://vision.ucsd.edu/sites/default/files/automated_coral_annotation.pdf">this publication</a>.</p>
+<p> This dialog contain information about the CoralNet automated annotation system. This information is summarized in our <a href="http://vimeo.com/104754418">instruction video</a> on Vimeo. For technical details refer to these two publications: <a href="http://vision.ucsd.edu/sites/default/files/automated_coral_annotation.pdf">This one</a>, and <a href="http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130312">this one.</a></p>
 
 <ul>
     <li><strong>Basic information</strong>
@@ -34,25 +34,22 @@
         <p> All Robots are source-specific. This means that it will learn only from confirmed annotation <i>within</i> the source, and only annotate image in that same source. The reason for this is simple: machine learning across different sources is difficult, and it's not clear how to do this efficiently yet. </p>
     </li>
     
-    <li><strong>More information on the Alleviation functionality</strong>
+    <li><strong>More information on the Alleviate annotation mode</strong>
     <p>
-    Auto-accept the machine annotator's suggestions when its confident enough.<br/><br/>
+        The CoralNet alleviate feature offers a trade-off between fully automated and fully manual annotation. This is done by auto-accepting machine annotations when they are sufficiently confident. Please refer to our <a href="https://vimeo.com/channels/coralnet/133397508"> instruction video</a> for an overview and <a href="http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130312">this study</a> for more details.<br/><br/>
         
-        This auto-acceptance happens when you enter the annotation tool for an image. Effectively, the machine's most confident points are "alleviated" from your annotation workload (for that image).<br/><br/>
+        This auto-acceptance happens when you enter the annotation tool for an image. Effectively, the machine's most confident points are "alleviated" from your annotation workload (for that image). Alleviated annotation decisions are treated as 'Confirmed', and are included when you export your annotations. <br/><br/>
         
-        Alleviated annotation decisions are treated as 'verified', and are included when you export your annotations. <br/><br/>
-        
-        0% alleviation corresponds to no alleviation (i.e. fully manual annotation). <br/><br/> 
-        
-        Users control this functionality by specifying the level of alleviation. For example, with 40% alleviation, the machine learning algorithm ("robot") will do 40% of the point annotations and leave the remaining 60% for the human operator. This level of alleviation is NOT per image, but the average across all remaining images. Some (easy) images may be fully alleviated, while other (harder) may have very little alleviated points<br/><br/>
+        Users control this functionality by specifying the level of alleviation. For example, with 40% alleviation, the machine learning algorithm ("robot") will do 40% of the point annotations and leave the remaining 60% for the human operator. This level of alleviation is NOT per image, but the average across all remaining images. Some (easy) images may be fully alleviated, while other (harder) may have very little alleviated points. 0% alleviation corresponds to no alleviation (i.e. fully manual annotation).<br/><br/>
         
         When the first robot version is trained for your source, you can see the trade-off between the level of alleviation and the annotation accuracy. We recommend that you set the alleviation level to 0% until you have seen this trade-off curve. You can then adjust the alleviation level. <br/><br/>
         
-        NOTE1: Machine annotations that have <strong>not</strong> been verified can optionally also be included in your export (see the 'export' page) <br/><br/>
+        <a href="http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130312">This study</a> suggests that a 5% drop is annotation accuracy has marginal (if any) impact on derived cover estimates. We therefore suggest that you set the level of alleviation corresponding to a 5% drop in accuracy.<br/><br/>
 
-        NOTE2: A study on how alleviation affects estimation quality of benthic cover is currently in submission, and will be shared upon publication. The study suggests that a 5% drop is annotation accuracy has marginal (if any) impact on derived cover estimates. We therefore suggest that you set the level of alleviation corresponding to a 5% drop in accuracy.<br/><br/>
-
-        NOTE3: The level of alleviation should not be confused with the confidence scores that are displayed during manual annotation. Once you set your desired level of alleviation, this is translated to a confidence score by the back end, and any robot prediction above that confidence will be automatically accepted. 
+        NOTE1: The level of alleviation should not be confused with the confidence scores that are displayed during manual annotation. Once you set your desired level of alleviation, this is translated to a confidence score by the back-end, and any robot prediction above that confidence will be automatically accepted. 
         <br/><br/>
-</p>
+
+        NOTE2: Machine annotations that have <strong>not</strong> been Confirmed can optionally also be included in your export (see the 'export' page) <br/><br/>
+    </p>
+    </li>
 </ul>
