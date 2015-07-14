@@ -31,8 +31,36 @@ table.people td {
     machine-annotator can learn from human labels and then proceed to rapidly process large numbers of new images.</p>
     <p>CoralNet offers an open-source framework to approach this solution. It serves as a repository of benthic images,
     and allow for different modes of interaction between the machine-annotator and the human expert. CoralNet, by it’s
-    nature, also provides a platform for collaboration / sharing of data.</p>
-<h2>Data Policy</h2>
+    nature, also provides a platform for collaboration & sharing of data.</p>
+
+
+<h2>The site</h2>
+    <p>
+        The CoralNet website consist of several modules outlined below. For more information, 
+        check out our <a href="http://vimeo.com/channels/coralnet">Vimeo channel</a>.
+    </p>
+    <p>
+        <a name="source"></a>
+        <b>Source creation:</b> Your “source” is your space at CoralNet. You specify what labelset you want to use, your
+        privacy settings, and invite collaborators to your source. The source interface also allows you to organize your
+        images by a number of locationkeys, such as “site”, “habitat”, “depth”.
+    </p>
+    <p>
+        <b>Labelset:</b> Specify what labels you want to use in your analysis. Choose from a set of existing labels or create your own.
+    </p>
+    <p>
+        <b>Import:</b> Upload images to the server. You can also import annotation already completed in other systems such as Coral Point Count.
+    </p>
+    <p>
+        <b>Annotation:</b> Annotate your image right in the web browser using a point count interface. CoralNet supports manual annotation through an interface similar to the popular Coral Point Count with Excel Extensions. Several users can annotate the same set of  images at the same time, and the system tracks who annotated what. Each night at 3.03 AM PST CoralNet will read all annotations provided by the users of each source, and (if new annotations have been provided) train an automated classifier as detailed in the paper below. This classifier, or 'robot' as we call it, will then provided annotations for the remaining images in your source. Note that the robot is specific to your source meaning that it only uses images and annotation from your source for the training. Accuracy and confusion of the robot can be viewed on the source main page. The robot annotations can then be accepted or corrected by the users during the next annotation session. As more annotations are provided, new versions of the robot will be trained that (hopefully) achieve higher and higher accuracy. Users may choose whether to proceed in this semi-automated annotation mode (accepting or correcting the robot's suggestions), until all images are annotated, or to stop at any point and export the robot annotations for the remaining images along with the user provided annotations.
+    </p>
+    <p>
+        <b>Statistics:</b> Get statistics detailing the coverage of each category in your labelset along with aggregated functional group level statistics.
+    </p>
+    <p>
+        <b>Export:</b> Export all images and annotations to your desktop for backup or further processing.
+    </p>
+    <h2>Data Policy</h2>
     <p>CoralNet are committed to protecting the data privacy of it’s users, and offer two privacy options which are set
     of the <a href="#source">Source</a> level.</p>
 <h3>Private</h3>
@@ -58,50 +86,25 @@ table.people td {
         In addition to the information shared in the private mode, all your source images and annotation data will be
         available for the public to browse and download (including original images in full resolution). However, only members of the source can add or edit content. We encourage all users to consider this privacy option.
     </p>
-<h2>The site</h2>
-    <p>
-        The CoralNet website consist of several modules:
-    </p>
-    <p>
-        <a name="source"></a>
-        <b>Source creation:</b> Your “source” is your space at CoralNet. You specify what labelset you want to use, your
-        privacy settings, and invite collaborators to your source. The source interface also allows you to organize your
-        images by a number of locationkeys, such as “site”, “habitat”, “depth”.
-    </p>
-    <p>
-        <b>Labelset:</b> Specify what labels you want to use in your analysis. Choose from a set of already created
-        labels or create your own if needed.
-    </p>
-    <p>
-        <b>Import:</b> Upload images to the server. You can also import annotation already completed in other systems
-        such as Coral Point Count.
-    </p>
-    <p>
-        <b>Annotation:</b> Annotate your image right in the web browser using a point count interface. CoralNet
-        supports manual annotation through an interface similar to the popular Coral Point Count with Excel Extensions. Several users can annotate the same set of  images at the same time, and the system tracks who annotated what. Each night at 3.03 AM PST CoralNet will read all annotations provided by the users of each source, and (if new annotations have been provided) train an automated classifier as detailed in the paper below. This classifier, or 'robot' as we call it, will then provided annotations for the remaining images in your source. Note that the robot is specific to your source meaning that it only uses images and annotation from your source for the training. Accuracy and confusion of the robot can be viewed on the source main page. The robot annotations can then be accepted or corrected by the users during the next annotation session. As more annotations are provided, new versions of the robot will be trained that (hopefully) achieve higher and higher accuracy. Users may choose whether to proceed in this semi-automated annotation mode (accepting or correcting the robot's suggestions), until all images are annotated, or to stop at any point and export the robot annotations for the remaining images along with the user provided annotations.
-    </p>
-    <p>
-        The computer vision algorithm used by CoralNet was developed in the following publication: “Automatic
-        Annotation of Coral Reef Survey Images”, Beijbom, O. and Edmunds, P.J. and Kline, D.I. and Mitchell, B.G.
-        and Kriegman, D., Computer Vision and Pattern Recognition (CVPR), 2012 IEEE Conference on, Rhode Island 2012.
-    </p>
-    <p>
-        <b>Statistics:</b> Get statistics detailing the coverage of each category in your labelset along with
-        aggregated functional group level statistics.
-    </p>
-    <p>
-        <b>Export:</b> Export all images and annotations to your desktop for backup or further processing.
-    </p>
+
+<h2>Support:</h2>
 <a name="funding"></a>
-<h2>Funding support</h2>
     <p>
-        CoralNet development is support by the NSF Computer Vision Coral Ecology grant #ATM-0941760. We ask that you cite the following paper if you have used CoralNet in your work
-    </p><p>
-    Beijbom O., Edmunds P.J., Kline D.I., Mitchell G.B.,Kriegman D., "Automated Annotation of Coral Reef Survey Images", IEEE Conference on Computer Vision and Pattern Recognition (CVPR), Providence, Rhode Island, June, 2012.
+        CoralNet development is support by the NSF Computer Vision Coral Ecology grant #ATM-0941760 and by the National Oceanic and Atmospheric Administration (NOAA) grant No. NA10OAR4320156.
     </p>
+<h2>Publications:</h2>
+    <p>
+    The following papers are relevant to the development of CoralNet. We ask that you cite the appropriate papers if you use CoralNet in your work.
+    </p>
+    <dl>
+    <dd><p>O. Beijbom, P.J. Edmunds, D.I. Kline, G.B. Mitchell, D. Kriegman. <a href="http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6247798&tag=1">"Automated Annotation of Coral Reef Survey Images"</a>. IEEE Conference on Computer Vision and Pattern Recognition (CVPR), Providence, Rhode Island, June, 2012.</p></dd>
 
+    <dd><p>O. Beijbom, P. J. Edmunds, C. Roelfsema, J. Smith, D. I. Kline, B. Neal, M. J. Dunlap, V. Moriarty, T-Y. Fan, C-J. Tan, S. Chan, T. Treibitz, A. Gamst, B. G. Mitchell, D. Kriegman. <a href="http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130312">"Towards automated annotation of benthic survey images: variability of human experts and operational modes of automation"</a>. PLOS One, July 2015.</p></dd>
+    </dl>   
 
-<h2>Contact</h2>
+    <dd><p>O. Beijbom, <a href="http://roger.ucsd.edu/record=b8984742~S9">"Automated Annotation of Coral Reef Survey Images"</a>. PhD Thesis UCSD, June 2015.</p>
+    </dd>
+<h2>Contact:</h2>
 <p>
     Contact us by filling out this <a href="{% url contact %}">form</a>.
 </p>
@@ -109,7 +112,7 @@ table.people td {
 
 <h2>Affiliation</h2>
 
-<h3>Development team</h3>
+<h3>Development team:</h3>
     <table class="people">
         <tr>
             <td><img width="150" src="../static/img/mugshots/oscar-beijbom.jpg"></td>
