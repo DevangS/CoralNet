@@ -110,7 +110,7 @@ def get_label_probabilities_for_image(image_id):
                 label_obj = labels.get(pk=label_id)
             except ObjectDoesNotExist, e:
                 # if we can't find the label in the labelset we return None. TODO: this seems like sort of a hack.
-                mail_admins('Annotation tool error', 'Error in matching the predicted label to the labelset - reason: ' + str(e))
+                mail_admins('Label match error', 'Error in matching label ' + str(label_id) + ' from image ' + str(image_id) + ' to the labelset. Error message: ' + str(e))
                 return None
             label_scores.append(
                 dict(label=label_obj.code, score=d['score'])
