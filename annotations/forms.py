@@ -1,7 +1,7 @@
 from decimal import Decimal
 from exceptions import ValueError
 from itertools import chain
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, MultipleObjectsReturned
 from django.core.urlresolvers import reverse
 from django.forms import Form
 from django.forms.fields import BooleanField, CharField, DecimalField, IntegerField
@@ -15,6 +15,7 @@ from django.forms.models import ModelForm
 from accounts.utils import is_robot_user, get_robot_user
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Label, LabelSet, Annotation, AnnotationToolSettings
+from django.core.mail import mail_admins
 from CoralNet.forms import FormHelper
 
 # Custom widget to enable multiple checkboxes without outputting a wrongful
@@ -150,6 +151,9 @@ class AnnotationForm(forms.Form):
                     existingAnnotation = Annotation.objects.exclude(user=get_robot_user()).get(point=point)
             except Annotation.DoesNotExist:
                 existingAnnotation = None
+            except MultipleObjectsReturned:
+                existingAnnotation = None
+                mail_admins('Multiple annotations returned for a point object', 'Multiple annotations returned for query: Annotations.objects.get(point=point) for Imageid:' + str(image.id) + ', pointid:' + str(point.id) + '. Please investigate.')
 
             if existingAnnotation:
                 existingAnnoCode = existingAnnotation.label.code
