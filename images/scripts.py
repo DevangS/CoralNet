@@ -3,15 +3,34 @@ This file contains scripts that are not part of the main production server. But 
 """
 
 from images.models import Point, Image, Source, Robot
+from annotations.models import Annotation
 import os
 from django.conf import settings
 from datetime import datetime
 from images.tasks import *
 from images.scripts_helper import RobotStats
+from django.core.exceptions import ValidationError, MultipleObjectsReturned
 join_processing_root = lambda *p: os.path.join(settings.PROCESSING_ROOT, *p)
 PREPROCESS_DIR = join_processing_root("images/preprocess/")
 FEATURES_DIR = join_processing_root("images/features/")
 
+
+
+"""
+This scipts goes through all point and check if there are duplicate annotations. We had some problems with this so are trying to debug.
+"""
+def find_duplicate_annotations():
+    n = len(Point.objects.filter())
+    for itt, p in enumerate(Point.objects.filter()):
+        if(itt % 10000 == 0):
+            print 'Processed ' + str(itt) + ' out of ' + str(n) + 'annotations.'
+        try:
+            a = Annotation.objects.get(point = p)
+        except MultipleObjectsReturned:
+            print 'Multiple annotation objects for Imageid:' + str(p.image_id) + ', pointid:' + str(p.id)
+        except Annotation.DoesNotExist:
+            d = 1
+    print "done."
 
 
 """
