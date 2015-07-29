@@ -46,9 +46,9 @@ class Source(models.Model):
     # Automatically set to the date and time of creation.
     create_date = models.DateTimeField('Date created', auto_now_add=True, editable=False)
 
-    description = models.TextField(blank=True)
+    description = models.TextField()
 
-    affiliation = models.CharField(max_length=200, blank=True)
+    affiliation = models.CharField(max_length=200)
 
     labelset = models.ForeignKey('annotations.LabelSet')
     
