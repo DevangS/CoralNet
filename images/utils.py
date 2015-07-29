@@ -2,7 +2,7 @@
 
 import datetime
 import math, random
-from accounts.utils import get_robot_user
+from accounts.utils import get_robot_user, get_alleviate_user
 from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Annotation
 from lib.exceptions import *
@@ -243,7 +243,7 @@ def calculate_points(img,
     return points
 
 
-def generate_points(img):
+def generate_points(img, usesourcemethod=True):
     """
     Generate annotation points for the Image img,
     and delete any points that had previously existed.
@@ -254,7 +254,7 @@ def generate_points(img):
 
     # If there are any human annotations for this image,
     # abort point generation.
-    human_annotations = Annotation.objects.filter(image=img).exclude(user=get_robot_user())
+    human_annotations = Annotation.objects.filter(image = img).exclude(user = get_robot_user()).exclude(user = get_alleviate_user())
     if human_annotations:
         return
 

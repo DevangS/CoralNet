@@ -68,7 +68,7 @@ class Source(models.Model):
     )
     default_point_generation_method = models.CharField(
         "Point generation method",
-        help_text="When we create annotation points for uploaded images, this is how we'll generate the point locations.",
+        help_text="When we create annotation points for uploaded images, this is how we'll generate the point locations. Note that if you change this setting later on, it will NOT apply to images that are already uploaded.",
         max_length=50,
         default=PointGen.args_to_db_format(
                     point_generation_type=PointGen.Types.SIMPLE,

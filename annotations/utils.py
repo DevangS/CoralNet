@@ -26,7 +26,7 @@ def image_has_any_human_annotations(image):
     Return True if the image has at least one human-made Annotation.
     Return False otherwise.
     """
-    human_annotations = Annotation.objects.filter(image=image).exclude(user=get_robot_user())
+    human_annotations = Annotation.objects.filter(image=image).exclude(user=get_robot_user()).exclude(user=get_alleviate_user())
     return human_annotations.count() > 0
 
 def image_annotation_area_is_editable(image):

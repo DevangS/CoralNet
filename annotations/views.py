@@ -18,6 +18,7 @@ from annotations.utils import get_annotation_version_user_display
 from decorators import source_permission_required, source_visibility_required, image_permission_required, image_annotation_area_must_be_editable, image_labelset_required
 from images import task_utils
 from images.models import Source, Image, Point
+from images.views import image_detail
 from images.utils import generate_points, get_first_image, get_next_image, get_prev_image
 from visualization.utils import generate_patch_if_doesnt_exist
 
@@ -333,6 +334,18 @@ def label_list(request):
                 },
                 context_instance=RequestContext(request)
     )
+
+
+
+@image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
+@image_annotation_area_must_be_editable('image_id')
+def regenerate_point_locations(request, image_id):
+    
+    image = get_object_or_404(Image, id=image_id)
+    generate_points(image)
+    image.after_annotation_area_change()
+    messages.success(request, 'Successfully regenerated point locations.')
+    return HttpResponseRedirect(reverse('image_detail', args=[image.id]))
 
 
 @image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)

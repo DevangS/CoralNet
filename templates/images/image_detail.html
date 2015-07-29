@@ -8,6 +8,11 @@
     {% include "static-local-include.html" with type="js" path="js/ImageDisplayHelper.js" %}
 {% endblock %}
 
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
+    {% include "static-local-include.html" with type="css" path="css/source.css" %}
+{% endblock %}
+
 {% block title %}{{ metadata.name }} | CoralNet{% endblock %}
 
 {% block content %}
@@ -58,7 +63,11 @@
     <div class="details">
 
         <ul>
-        <li>Annotation points: {{ image.point_gen_method_display }}</li>
+        <li>Annotation points: {{ image.point_gen_method_display }} (<a href="{% url regenerate_point_locations image.id %}">Regenerate point locations</a>)
+        <div class="tutorial-message">
+            {% include "images/help_regenerate_points.html" %}
+        </div>
+        </li>
         <li>Annotation area: {{ image.annotation_area_display }}
             {% if "source_edit" in source_perms and annotation_area_editable %}
               (<a href="{% url annotation_area_edit image.id %}">Edit</a>)
@@ -90,7 +99,6 @@
             {% endif %}
         {% endfor %}
         </ul>
-
         {% if "source_edit" in source_perms %}
             <a href="{% url image_detail_edit image.id %}">{% trans 'Edit Image Details' %}</a>
         {% endif %}
