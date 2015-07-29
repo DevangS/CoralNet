@@ -61,21 +61,30 @@
     <hr class="light"/>
 
     <div class="details">
-
         <ul>
-        <li>Annotation points: {{ image.point_gen_method_display }} (<a href="{% url regenerate_point_locations image.id %}">Regenerate point locations</a>)
-        <div class="tutorial-message">
-            {% include "images/help_regenerate_points.html" %}
-        </div>
+        <li>Annotation points: {{ image.point_gen_method_display }} 
+            {% if "source_edit" in source_perms and annotation_area_editable %}
+                (<a href="{% url regenerate_point_locations image.id %}">Regenerate point locations</a>)
+            {% endif %}
         </li>
         <li>Annotation area: {{ image.annotation_area_display }}
             {% if "source_edit" in source_perms and annotation_area_editable %}
               (<a href="{% url annotation_area_edit image.id %}">Edit</a>)
             {% endif %}
         </li>
-        <li>Annotation status: <b>{{ annotation_status }}</b></li>
+        <li> 
+        Annotation status: <b>{{ annotation_status }}</b> </li>
         </ul>
-
+        {% if "source_edit" in source_perms %}
+        <form action="" method="post" onsubmit="return confirm('Are you sure you want to delete all annotation for this image?')">{% csrf_token %}
+            <input type="submit" name="delete_annotations" value="Clear annotations" />
+        </form>
+        <div class="tutorial-message">
+        {% include "images/help_manipulate_annotations.html" %}
+        </div>
+        {% endif %}
+        
+    
         <ul>
         <li>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</li>
         <li>Height coverage: {{ metadata.height_in_cm }} centimeters</li>
@@ -101,6 +110,12 @@
         </ul>
         {% if "source_edit" in source_perms %}
             <a href="{% url image_detail_edit image.id %}">{% trans 'Edit Image Details' %}</a>
+        {% endif %}
+
+        {% if "source_edit" in source_perms %}
+        <form action="" method="post" onsubmit="return confirm('Are you sure you want to delete this image and all image annotations?')">{% csrf_token %}
+            <input type="submit" name="delete_this_image" value="Delete image" />
+        </form>
         {% endif %}
 
     </div>

@@ -455,12 +455,11 @@ def invites_manage(request):
         )
 
 
-@image_visibility_required('image_id')
-def image_detail(request, image_id):
-    """
-    View for seeing an image's full size and details/metadata.
-    """
 
+def image_detail_helper(image_id):
+    """
+        package the request form for image_details()
+    """
     image = get_object_or_404(Image, id=image_id)
     source = image.source
     metadata = image.metadata
@@ -509,20 +508,44 @@ def image_detail(request, image_id):
     # Should we include a link to the annotation area edit page?
     annotation_area_editable = image_annotation_area_is_editable(image)
 
-    return render_to_response('images/image_detail.html', {
-        'source': source,
-        'image': image,
-        'next_image': next_image,
-        'prev_image': prev_image,
-        'metadata': metadata,
-        'detailsets': detailsets,
-        'has_thumbnail': bool(thumbnail_dimensions),
-        'thumbnail_dimensions': thumbnail_dimensions,
-        'annotation_status': annotation_status,
-        'annotation_area_editable': annotation_area_editable,
-        },
+    return({
+            'source': source,
+            'image': image,
+            'next_image': next_image,
+            'prev_image': prev_image,
+            'metadata': metadata,
+            'detailsets': detailsets,
+            'has_thumbnail': bool(thumbnail_dimensions),
+            'thumbnail_dimensions': thumbnail_dimensions,
+            'annotation_status': annotation_status,
+            'annotation_area_editable': annotation_area_editable,
+    })
+
+
+@image_visibility_required('image_id')
+def image_detail(request, image_id):
+    """
+    View for seeing an image's full size and details/metadata.
+    """
+
+    if request.method == 'POST':
+
+        if(request.POST.get('delete_annotations', None)):
+            image = get_object_or_404(Image, id=image_id)
+            for ann in Annotation.objects.filter(image=image):
+                ann.delete()
+            messages.success(request, 'Successfully removed all annotations from this image.')
+        elif(request.POST.get('delete_this_image', None)):
+            image = get_object_or_404(Image, id=image_id)
+            image_name = image.metadata.name
+            source_id = image.source_id
+            image.delete()
+            messages.success(request, 'Successfully deleted image ' + image_name + '.')
+            return HttpResponseRedirect(reverse('source_main', args=[source_id]))
+        
+    return render_to_response('images/image_detail.html', image_detail_helper(image_id),
         context_instance=RequestContext(request)
-    )
+        )
 
 @image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
 def image_detail_edit(request, image_id):
