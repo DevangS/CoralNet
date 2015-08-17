@@ -15,6 +15,15 @@ PREPROCESS_DIR = join_processing_root("images/preprocess/")
 FEATURES_DIR = join_processing_root("images/features/")
 
 
+"""
+This script runs to robot for all "small" sources.
+
+"""
+def train_small_robots(nimage_threshold = 50):
+    for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
+        if len(source.get_all_images()) < nimage_threshold:
+            train_robot(source.id)
+
 
 """
 This scipts goes through all point and check if there are duplicate annotations. We had some problems with this so are trying to debug.
