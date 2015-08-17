@@ -22,6 +22,8 @@ This script runs to robot for all "small" sources.
 def train_small_robots(nimage_threshold = 50):
     for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
         if len(source.get_all_images()) < nimage_threshold:
+            for image in source.get_all_images():
+                add_labels_to_features(image.id)
             train_robot(source.id)
 
 
