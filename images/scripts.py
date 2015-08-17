@@ -22,7 +22,7 @@ This scipts goes through all point and check if there are duplicate annotations.
 def find_duplicate_annotations():
     n = len(Point.objects.filter())
     for itt, p in enumerate(Point.objects.filter()):
-        if(itt % 10000 == 0):
+        if(itt % 500000 == 0):
             print 'Processed ' + str(itt) + ' out of ' + str(n) + 'annotations.'
         try:
             a = Annotation.objects.get(point = p)
