@@ -1,7 +1,6 @@
-function dataOut = subsampleDataStruct(dataIn, ssfactor)
+function dataOut = subsampleDataStruct(dataIn, ssfactor, labelMap)
 
-classes = unique(dataIn.labels);
-nbrClasses = length(classes);
+nbrClasses = length(labelMap);
 
 % subsample dataOut and labels
 dataOut = dataIn;
@@ -10,7 +9,7 @@ for thisField = rowVector(fieldnames(dataOut))
 end
 
 for itt = 1 : nbrClasses
-    thisClass = classes(itt);
+    thisClass = labelMap(itt);
     for thisField = rowVector(fieldnames(dataOut))
         temp.(thisField{1}) = dataIn.(thisField{1})(dataIn.labels == thisClass, :);
         indexes = round(1 : ssfactor(itt) : size(temp.(thisField{1}), 1));

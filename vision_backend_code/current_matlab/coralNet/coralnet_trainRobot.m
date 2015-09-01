@@ -8,8 +8,8 @@ gridParams.range.max = [2 3];
 gridParams.stepsize = [1 1];
 gridParams.edgeLength = 3;
 
-targetNbrSamplesPerClass.final = 5000;
-targetNbrSamplesPerClass.HP = 4000;
+targetNbrSamplesPerClass.final = 4000;
+targetNbrSamplesPerClass.HP = 3500;
 
 [varnames, varvals] = var2varvallist(gridParams, targetNbrSamplesPerClass);
 [gridParams, targetNbrSamplesPerClass] = varargin_helper(varnames, varvals, varargin{:});
@@ -53,11 +53,6 @@ try
     labelPath = fullfile(workDir, 'label');
     labelMap = unique(allData.labels); %this is a list of all the label ids
     [~, robotstr] = fileparts(modelPath);
-    
-    %%% FIND A MAXIMUM NUMBER OF SAMPLES PER CLASS
-    targetNbrSamplesPerClass.final = 2500;
-    targetNbrSamplesPerClass.HP = 2000;
-    
     
     %%% FIND A THRESHHOLD FOR NBR SAMPLES REQUIRED FOR TRAINING %%%
     labelThreshhold = findNbrLabelsThreshhold(allData.labels, labelRatio);
@@ -148,7 +143,7 @@ end
 
 
 
-function [stats keepClasses] = makeTrainData(allData, fileNames, trainIds, trainPath, targetNbrSamplesPerClass, labelThreshhold, labelMap, robotstr)
+function [stats, keepClasses] = makeTrainData(allData, fileNames, trainIds, trainPath, targetNbrSamplesPerClass, labelThreshhold, labelMap, robotstr)
 
 % select the ids.
 trainData = splitData(allData, trainIds);
@@ -156,7 +151,7 @@ stats.labelhist.org = hist(trainData.labels, labelMap);
 
 % Subsamples to not have too much data
 ssfactor = getSVMssfactor(trainData, targetNbrSamplesPerClass, labelMap);
-trainData = subsampleDataStruct(trainData, ssfactor);
+trainData = subsampleDataStruct(trainData, ssfactor, labelMap);
 
 % Filter out the most rare labels
 [trainData, keepClasses] = removeRareLabels(trainData, labelThreshhold, labelMap, robotstr);
@@ -184,7 +179,7 @@ gtLabels = testData.labels;
 
 end
 
-function [dataOut keepClasses] = removeRareLabels(dataIn, labelThreshhold, labelMap, robotstr)
+function [dataOut, keepClasses] = removeRareLabels(dataIn, labelThreshhold, labelMap, robotstr)
 
 
 nbrClasses = length(labelMap);

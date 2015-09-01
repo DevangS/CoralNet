@@ -15,6 +15,37 @@ PREPROCESS_DIR = join_processing_root("images/preprocess/")
 FEATURES_DIR = join_processing_root("images/features/")
 
 
+
+
+
+
+"""
+This script process a source in serial. Useful for debugging the vision backend
+"""
+
+def process_source_complete_debug(source_id, force_retrain = False):
+  
+    print "==== Start processing source ===="
+    source = Source.objects.get(pk = source_id)
+
+    if force_retrain: #make sure the robot will re-train
+        for image in Image.objects.filter(source = source):
+            image.status.usedInCurrentModel = False
+            image.status.save()
+    
+    for image in source.get_all_images():
+        preprocess_image(image.id)
+        make_features(image.id)
+ #       classify_image(image.id)
+    
+    
+    for image in source.get_all_images():
+        add_labels_to_features(image.id)
+    train_robot(source.id)
+    print "==== Done processing source ===="
+
+
+
 """
 This script runs to robot for all "small" sources.
 
