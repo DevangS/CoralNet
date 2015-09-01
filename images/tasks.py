@@ -86,8 +86,6 @@ def train_wrapper():
     open(keyfilepath, 'w')
     logging.info("==== Start training new batch of robots ====")
     for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
-        if source.id == 122: #this is obviously a hack. it's to get rid of that large hard-bottom source
-            continue
         for image in source.get_all_images():
             add_labels_to_features(image.id)
         train_robot(source.id)
