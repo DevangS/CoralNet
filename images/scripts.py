@@ -36,7 +36,7 @@ def process_source_complete_debug(source_id, force_retrain = False):
     for image in source.get_all_images():
         preprocess_image(image.id)
         make_features(image.id)
- #       classify_image(image.id)
+        classify_image(image.id)
     
     
     for image in source.get_all_images():
@@ -54,6 +54,7 @@ def train_small_robots(nimage_threshold = 50):
     for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
         if len(source.get_all_images()) < nimage_threshold:
             for image in source.get_all_images():
+                print image.id
                 add_labels_to_features(image.id)
             train_robot(source.id)
 
