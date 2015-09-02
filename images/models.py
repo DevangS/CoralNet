@@ -723,6 +723,14 @@ class Image(models.Model):
         status.usedInCurrentModel = False
         status.save()
 
+    def after_deleting_annotations(self):
+        status = self.status
+        status.featureFileHasHumanLabels = False
+        status.annotatedByHuman = False
+        status.annotatedByRobot = False
+        status.usedInCurrentModel = False
+        status.save()
+
     def annotation_area_display(self):
         """
         Display the annotation area parameters in templates.

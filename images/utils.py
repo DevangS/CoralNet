@@ -269,9 +269,14 @@ def generate_points(img, usesourcemethod=True):
         raise ValueError("Can't generate points with annotation area type '{0}'.".format(annoarea_type))
 
     # Calculate points.
+    if usesourcemethod:
+        point_gen_method = img.source.default_point_generation_method
+    else:
+        point_gen_method = img.point_generation_method
+    
     new_points = calculate_points(
         img, annotation_area=annoarea_dict,
-        **PointGen.db_to_args_format(img.source.default_point_generation_method)
+        **PointGen.db_to_args_format(point_gen_method)
     )
 
     # Delete old points for this image, if any.

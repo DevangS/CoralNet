@@ -339,17 +339,6 @@ def label_list(request):
 
 @image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
 @image_annotation_area_must_be_editable('image_id')
-def regenerate_point_locations(request, image_id):
-    
-    image = get_object_or_404(Image, id=image_id)
-    generate_points(image)
-    image.after_annotation_area_change()
-    messages.success(request, 'Successfully regenerated point locations.')
-    return HttpResponseRedirect(reverse('image_detail', args=[image.id]))
-
-
-@image_permission_required('image_id', perm=Source.PermTypes.EDIT.code)
-@image_annotation_area_must_be_editable('image_id')
 def annotation_area_edit(request, image_id):
     """
     Edit an image's annotation area.
@@ -377,7 +366,7 @@ def annotation_area_edit(request, image_id):
             metadata.save()
 
             if metadata.annotation_area != old_annotation_area:
-                generate_points(image)
+                generate_points(image, usesourcemethod=False)
                 image.after_annotation_area_change()
 
             messages.success(request, 'Annotation area successfully edited.')
