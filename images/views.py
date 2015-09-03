@@ -518,6 +518,7 @@ def image_detail_helper(image_id):
             'annotation_area_editable': image_annotation_area_is_editable(image), # Should we include a link to the annotation area edit page?
             'has_any_human_annotations' : image_has_any_human_annotations(image), # Does the image have any human annotation (if so elable them to be deleted)?
             'point_gen_method_synced' : image.point_generation_method == source.default_point_generation_method,
+            'annotation_area_synced' : image.metadata.annotation_area == source.image_annotation_area,
     })
 
 
@@ -546,6 +547,13 @@ def image_detail(request, image_id):
             generate_points(image, usesourcemethod=False)
             image.after_annotation_area_change()
             messages.success(request, 'Reset image point generation method to source default.')
+
+        elif(request.POST.get('set_annotation_area_default', None)):
+            image.metadata.annotation_area = image.source.image_annotation_area
+            image.metadata.save()
+            generate_points(image, usesourcemethod=False)
+            image.after_annotation_area_change()
+            messages.success(request, 'Reset annotation area to source default.')
 
         elif(request.POST.get('delete_this_image', None)):
             image_name = image.metadata.name

@@ -291,6 +291,13 @@ class Source(models.Model):
         """
         return PointGen.db_to_readable_format(self.default_point_generation_method)
 
+    def annotation_area_display(self):
+        """
+        Display the annotation area parameters in templates.
+        Usage: {{ mysource.annotation_area_display }}
+        """
+        return AnnotationAreaUtils.db_format_to_display(self.image_annotation_area)
+
     def get_latest_robot(self):
         """
         return the latest robot associated with this source.

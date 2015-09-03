@@ -1,14 +1,20 @@
 <h2>Manipulate annotations and point locations</h2>
-
-<h4>Clear annotations</h4>
 <p>
-Clicking the "Delete annotation" buttom will remove all annotations for the image. This includes all human and machine annotations. </p>
+First a note on the semantic for source vs. image level with regards to point generation method and image annotation area (both referred to below as "settings"): If you change the source level settings, it does NOT affect the images settings for previously uploaded images. If you want to update the settings for these images, you must click the corresponding buttons as detailed below.
+</p>
+<h3>Information </h3>
+<ul>
+<li> Point generation method: Point generation method for this image. If this differs from the source default , the source default will also be displayed.
+</li>
+<li> Annotation area: Annotation area for this image. If this differs from the source default, the source default will also be displayed. An option to edit the image level annotation area appears if the image doesn't have any human annotations. 
+</li>
+<li> Annotation status: states the annotation status for this image </li>
+</ul>
 
-<h4>Re-generate random point locations</h4>
-<p> If there are no human annotations for the image, an option will appear to regenerate the point locations.</p>
-<p> The new points will be generated according to the point generation method specified on the source-level, using either the source-level default annotation area, or (if specified) the image-level annotation area.  Any Robot and Alleviate annotation will be deleted. </p>
-<p> If there are human annotations on the image, you must first delete these before you can re-generate the point-locations. </p>
-
-<h4>Modify annotation area</h4>
-<p> If there are no human annotations for the image, an option will appear to re-define the image area for which points should be scattered. If a new area is set, new points will be scattered as detailed above, and any Robot or Alleviate annotatations will be deleted .</p>
-<p> If there are human annotations on the image, you must first delete these. </p>
+<h3>Action buttons</h3>
+<ul>
+<li> Regenerate point locations: This button will re-generate the point locations according to the image level point generation method. ONLY SHOWN IF: image doesn't have any human annotations</li>
+<li> Reset point generation method: This will change the image level point generation method to the source level default. It will also re-generate the point locations. ONLY SHOWN IF: image doesn't have any human annotations</li>
+<li> Reset annotation area: This will change the image level annotation area to the source level default. It will also re-generate the point locations. ONLY SHOWN IF: image doesn't have any human annotations</li>
+<li> Delete image annotations: Remove all annotations (both human and machine) for the image. ONLY SHOWN IF: image has human annotations</li>
+</ul>

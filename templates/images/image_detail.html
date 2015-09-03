@@ -68,10 +68,9 @@
         {% include "images/help_manipulate_annotations.html" %}
         </div>
         </li>
-        Point generation method: {{ image.point_gen_method_display }}
+        <li>Point generation method: {{ image.point_gen_method_display }}
         </li>
-        <li>
-        {% if not point_gen_method_synced %}
+        <li>{% if not point_gen_method_synced %}
         <i>[NOTE! The point gen. method for this image is different from the source default. The source default is: {{ image.source.point_gen_method_display }}] </i>
         {% endif %} 
         </li>
@@ -80,8 +79,12 @@
               (<a href="{% url annotation_area_edit image.id %}">Edit</a>)
             {% endif %}
         </li>
-        <li> 
-        Annotation status: <b>{{ annotation_status }}</b> </li>
+        <li>{% if not annotation_area_synced %}
+        <i>[NOTE! The annotation area for this image is different from the source default. The source default is: {{ image.source.annotation_area_display }}] </i>
+        {% endif %} 
+        </li>
+        <li>Annotation status: <b>{{ annotation_status }}</b>
+        </li>
         </ul>
         {% if "source_edit" in source_perms %}
 
@@ -92,7 +95,13 @@
             
                 {% if not point_gen_method_synced %}
                     <form action="" method="post" onsubmit="return confirm('Are you sure you want to change the point generation method of this image to the source default method [this will also generate new point locations]?')">{% csrf_token %}
-                    <input type="submit" name="set_point_gen_default" value="Change point generation to source default" />
+                    <input type="submit" name="set_point_gen_default" value="Reset point generation method" />
+                    </form>    
+                {% endif %}
+
+                {% if not annotation_area_synced %}
+                    <form action="" method="post" onsubmit="return confirm('Are you sure you want to change the annotation area of this image to the source default method [this will also generate new point locations]?')">{% csrf_token %}
+                    <input type="submit" name="set_annotation_area_default" value="Reset annotation area" />
                     </form>    
                 {% endif %}
 
