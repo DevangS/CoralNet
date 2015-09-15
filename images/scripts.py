@@ -54,7 +54,6 @@ def train_small_robots(nimage_threshold = 50):
     for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
         if len(source.get_all_images()) < nimage_threshold:
             for image in source.get_all_images():
-                print image.id
                 add_labels_to_features(image.id)
             train_robot(source.id)
 
@@ -195,15 +194,18 @@ def resetImageStatus():
 """
 This script exports all images from a source.
 """
-def export_images(source_id, outDir):
+def export_images(source_id, outDir, original_file_name = True):
     mysource = Source.objects.filter(id = source_id)
     images = Image.objects.filter(source = mysource[0])
     for i in images:
         m = i.metadata
-        fname = str(m.value1) + '_' + str(m.value2) + '_' + \
-        str(m.value3) + '_' + str(m.value4) + '_' + str(m.value5) + \
-        '_' + m.photo_date.isoformat() + '.jpg'
-        copyfile(os.path.join(ORIGINALIMAGES_DIR, str(i.original_file)), 
+        if original_file_name:
+            fname = m.name
+        else:
+            fname = str(m.value1) + '_' + str(m.value2) + '_' + \
+            str(m.value3) + '_' + str(m.value4) + '_' + str(m.value5) + \
+            '_' + m.photo_date.isoformat() + '.jpg'
+        copyfile(os.path.join('/cnhome/media', str(i.original_file)), 
         os.path.join(outDir, fname))
 
 
