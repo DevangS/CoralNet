@@ -61,28 +61,63 @@
     <hr class="light"/>
 
     <div class="details">
+        <h3>Annotation and point location status</h3>
         <ul>
         <li>
         <div class="tutorial-message">
         {% include "images/help_manipulate_annotations.html" %}
-        </div>Annotation points: {{ image.point_gen_method_display }} 
-            {% if "source_edit" in source_perms and annotation_area_editable %}
-                (<a href="{% url regenerate_point_locations image.id %}">Regenerate point locations</a>)
-            {% endif %}
+        </div>
+        </li>
+        <li>Point generation method: {{ image.point_gen_method_display }}
+        </li>
+        <li>{% if not point_gen_method_synced %}
+        <i>[NOTE! The point gen. method for this image is different from the source default. The source default is: {{ image.source.point_gen_method_display }}] </i>
+        {% endif %} 
         </li>
         <li>Annotation area: {{ image.annotation_area_display }}
             {% if "source_edit" in source_perms and annotation_area_editable %}
               (<a href="{% url annotation_area_edit image.id %}">Edit</a>)
             {% endif %}
         </li>
-        <li> 
-        Annotation status: <b>{{ annotation_status }}</b> </li>
+        <li>{% if not annotation_area_synced %}
+        <i>[NOTE! The annotation area for this image is different from the source default. The source default is: {{ image.source.annotation_area_display }}] </i>
+        {% endif %} 
+        </li>
+        <li>Annotation status: <b>{{ annotation_status }}</b>
+        </li>
         </ul>
         {% if "source_edit" in source_perms %}
-        <form action="" method="post" onsubmit="return confirm('Are you sure you want to delete all annotation for this image?')">{% csrf_token %}
-            <input type="submit" name="delete_annotations" value="Clear annotations" />
-        </form>
+
+            {% if annotation_area_editable %}
+                <form action="" method="post" onsubmit="return confirm('Are you sure you want to re-generate the image point locations?')">{% csrf_token %}
+                <input type="submit" name="regenerate_point_locations" value="Regenerate point locations" />
+                </form>
+            
+                {% if not point_gen_method_synced %}
+                    <form action="" method="post" onsubmit="return confirm('Are you sure you want to change the point generation method of this image to the source default method [this will also generate new point locations]?')">{% csrf_token %}
+                    <input type="submit" name="set_point_gen_default" value="Reset point generation method" />
+                    </form>    
+                {% endif %}
+
+                {% if not annotation_area_synced %}
+                    <form action="" method="post" onsubmit="return confirm('Are you sure you want to change the annotation area of this image to the source default method [this will also generate new point locations]?')">{% csrf_token %}
+                    <input type="submit" name="set_annotation_area_default" value="Reset annotation area" />
+                    </form>    
+                {% endif %}
+
+            {% endif %}
+
+            {% if has_any_human_annotations %}
+                <form action="" method="post" onsubmit="return confirm('Are you sure you want to delete all annotation for this image?')">{% csrf_token %}
+                <input type="submit" name="delete_annotations" value="Delete image annotations" />
+                </form>
+            {% endif %}
+
         {% endif %}
+        </div>
+        <hr class="light"/>
+        <div class="details">
+        <h3>Other image details</h3>
         <ul>
         <li>Full resolution: {{ image.original_width }} x {{ image.original_height }} pixels</li>
         <li>Height coverage: {{ metadata.height_in_cm }} centimeters</li>

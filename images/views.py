@@ -505,9 +505,6 @@ def image_detail_helper(image_id):
     else:
         annotation_status = "Not started"
 
-    # Should we include a link to the annotation area edit page?
-    annotation_area_editable = image_annotation_area_is_editable(image)
-
     return({
             'source': source,
             'image': image,
@@ -518,7 +515,10 @@ def image_detail_helper(image_id):
             'has_thumbnail': bool(thumbnail_dimensions),
             'thumbnail_dimensions': thumbnail_dimensions,
             'annotation_status': annotation_status,
-            'annotation_area_editable': annotation_area_editable,
+            'annotation_area_editable': image_annotation_area_is_editable(image), # Should we include a link to the annotation area edit page?
+            'has_any_human_annotations' : image_has_any_human_annotations(image), # Does the image have any human annotation (if so elable them to be deleted)?
+            'point_gen_method_synced' : image.point_generation_method == source.default_point_generation_method,
+            'annotation_area_synced' : image.metadata.annotation_area == source.image_annotation_area,
     })
 
 
@@ -529,14 +529,33 @@ def image_detail(request, image_id):
     """
 
     if request.method == 'POST':
-
+        image = get_object_or_404(Image, id=image_id)
         if(request.POST.get('delete_annotations', None)):
-            image = get_object_or_404(Image, id=image_id)
             for ann in Annotation.objects.filter(image=image):
                 ann.delete()
+            image.after_deleting_annotations()
             messages.success(request, 'Successfully removed all annotations from this image.')
+
+        elif(request.POST.get('regenerate_point_locations', None)):
+            generate_points(image, usesourcemethod=False)
+            image.after_annotation_area_change()
+            messages.success(request, 'Successfully regenerated point locations.')
+    
+        elif(request.POST.get('set_point_gen_default', None)):
+            image.point_generation_method = image.source.default_point_generation_method
+            image.save()
+            generate_points(image, usesourcemethod=False)
+            image.after_annotation_area_change()
+            messages.success(request, 'Reset image point generation method to source default.')
+
+        elif(request.POST.get('set_annotation_area_default', None)):
+            image.metadata.annotation_area = image.source.image_annotation_area
+            image.metadata.save()
+            generate_points(image, usesourcemethod=False)
+            image.after_annotation_area_change()
+            messages.success(request, 'Reset annotation area to source default.')
+
         elif(request.POST.get('delete_this_image', None)):
-            image = get_object_or_404(Image, id=image_id)
             image_name = image.metadata.name
             source_id = image.source_id
             image.delete()

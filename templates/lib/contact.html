@@ -14,14 +14,12 @@
     <fieldset>
         <legend>Contact Us</legend>
 
-        <p>You may use this form to send an email to the CoralNet team. Use
-           this form for questions or requests about your use of the
-           site: your sources, your account, etc.</p>
+        <p> For general questions and suggestions on features and designs, please send an email to <a href="mailto:coralnet-users@googlegroups.com">coralnet-users@googlegroups.com</a>. You can also visit the <a href="https://groups.google.com/forum/#!forum/coralnet-users">group forum</a>, and search for previously asked questions.</p>
 
-        <p>For comments related to the site in general, such as feedback, bug
-           reports, and feature suggestions, please use the
-           <a href="{% url feedback_form %}">feedback form</a>
-           instead.</p>
+        <p>For private questions regarding your account or data, please use this form.</p>
+
+        <p>For bug reports please use the
+           <a href="{% url feedback_form %}">feedback form</a>.</p>
 
         {% if user.is_authenticated %}
             <p>We'll send any replies to your email: {{ user.email }}</p>
