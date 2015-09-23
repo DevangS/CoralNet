@@ -8,8 +8,8 @@ gridParams.range.max = [2 3];
 gridParams.stepsize = [1 1];
 gridParams.edgeLength = 3;
 
-targetNbrSamplesPerClass.final = 4000;
-targetNbrSamplesPerClass.HP = 3500;
+targetNbrSamplesPerClass.final = 4500;
+targetNbrSamplesPerClass.HP = 4500;
 
 [varnames, varvals] = var2varvallist(gridParams, targetNbrSamplesPerClass);
 [gridParams, targetNbrSamplesPerClass] = varargin_helper(varnames, varvals, varargin{:});
