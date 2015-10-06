@@ -50,11 +50,13 @@ def process_source_complete_debug(source_id, force_retrain = False):
 This script runs to robot for all "small" sources.
 
 """
-def train_small_robots(nimage_threshold = 50):
+def train_small_robots(th = 50):
     for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
-        if len(source.get_all_images()) < nimage_threshold:
+        if len(source.get_all_images()) < th:
+            print 'Adding labels for ' + source.name + '.'
             for image in source.get_all_images():
                 add_labels_to_features(image.id)
+            print 'Done adding labels. Training robot for ' + source.name + '.'
             train_robot(source.id)
 
 
