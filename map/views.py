@@ -6,7 +6,9 @@ from django.template import RequestContext
 from annotations.models import *
 from images.models import *
 
-
+######################
+# I think this file is depleted [oct 10 2015, OB]
+######################
 def map(request):
 
     # Get all sources that have both latitude and longitude specified.
@@ -17,6 +19,8 @@ def map(request):
     map_sources = []
 
     for source in map_sources_queryset:
+
+    	num_of_images = Image.objects.filter(source=source).count()
 
         # If the source is public, include a link to the source main page.
         # Otherwise, don't include a link.
@@ -40,7 +44,7 @@ def map(request):
             longitude=longitude,
             name=source.name,
             color = color,
-            num_of_images=str( Image.objects.filter(source=source).count() ),
+            num_of_images=str(num_of_images),
             url=source_url,
         ))
 

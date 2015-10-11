@@ -34,6 +34,19 @@ def get_map_sources():
 
     for source in map_sources_queryset:
 
+        num_of_images = Image.objects.filter(source=source).count()
+        
+        # Make some check to remove small sources and test sources
+        is_test_source = False
+        if num_of_images < 100:
+            is_test_source = True
+        possible_test_sources_substrings = ['test', 'sandbox', 'dummy', 'tmp', 'temp', 'check']
+        for str_ in possible_test_sources_substrings:
+            if str_ in source.name.lower():
+                is_test_source = True
+        if is_test_source:
+            continue
+
         # If the source is public, include a link to the source main page.
         # Otherwise, don't include a link.
         if source.visibility == Source.VisibilityTypes.PUBLIC:
@@ -61,7 +74,7 @@ def get_map_sources():
             longitude=longitude,
             name=source.name,
             color = color,
-            num_of_images=str( Image.objects.filter(source=source).count() ),
+            num_of_images=str( num_of_images ),
             url=source_url,
             latest_images=latest_images,
             id=source.id
