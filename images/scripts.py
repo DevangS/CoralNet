@@ -82,26 +82,33 @@ def find_duplicate_annotations():
 This script organizes some key stats of all the source, and puts it in a nice list.
 """
 def get_source_stats():
-	nlabels = Label.objects.order_by('-id')[0].id #highest label id on the site
-	labeldict = {}
-	for label in Label.objects.filter():
-		labeldict[label.id] = label.name
-	ss = []
-	for s in Source.objects.filter():
-		labellist = [a.label_id for a in s.annotation_set.filter()]
-		if not labellist:
-			continue
-		print s.name
-		sp = {}
-		sp['name'] = s.name
-		sp['id'] = s.id
- 		sp['labelids'] = [l.id for l in s.labelset.labels.all()]
- 		sp['nlabels'] = s.labelset.labels.count()
- 		sp['nimgs'] = s.get_all_images().filter(status__annotatedByHuman=True).count()
-		sp['nanns'] = s.annotation_set.count()
-		sp['anncount'] = np.bincount(labellist, minlength = nlabels)
-		ss.append(sp)
-	return ss, labeldict
+    nlabels = Label.objects.order_by('-id')[0].id #highest label id on the site
+    labelname = {}
+    labelfunc = {}
+    funcname = {}
+    for label in Label.objects.filter():
+        labelname[label.id] = label.name
+        labelfunc[label.id] = label.group_id
+    for fg in LabelGroup.objects.filter():
+        funcname[fg.id] = fg.name
+    ss = []
+    for s in Source.objects.filter():
+        annlist = [a.label_id for a in s.annotation_set.exclude(user=get_robot_user())]
+        if not annlist:
+            continue
+        print s.name
+        sp = {}
+        sp['name'] = s.name
+        sp['lat'] = s.latitude
+        sp['long'] = s.longitude
+        sp['id'] = s.id
+        sp['labelids'] = [l.id for l in s.labelset.labels.all()]
+        sp['nlabels'] = s.labelset.labels.count()
+        sp['nimgs'] = s.get_all_images().filter(status__annotatedByHuman=True).count()
+        sp['nanns'] = len(annlist)
+        sp['anncount'] = np.bincount(annlist, minlength = nlabels)
+        ss.append(sp)
+    return ss, labelname, labelfunc, funcname
 
 
 
