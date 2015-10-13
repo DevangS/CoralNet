@@ -90,12 +90,18 @@ def export_imgage_and_annotations(source_idlist, outdir):
         imdict = []
         source = Source.objects.get(id = source_id)
         for im in source.get_all_images:
-            if im.status.annotatedByHuman:
-                annlist = []
-                for a in im.annotation_set.filter():
-                    annlist.append((a.label.name, a.point.row, a.point.column))
-                imdict[im.metadata.name] = (annlist, im.height_cm())
-                copyfile(os.path.join('/cnhome/media', str(i.original_file)), os.path.join(this_dir, 'imgs', im.metadata.name))
+
+        	# Special check for MLC. Do not want the imgs from 2008!!!!
+        	if source_id == 16 and im.metadata.photo_date.year == 2008:
+        		continue
+            if not im.status.annotatedByHuman:
+            	continue
+            
+            annlist = []
+			for a in im.annotation_set.filter():
+                annlist.append((a.label.name, a.point.row, a.point.column))
+            imdict[im.metadata.name] = (annlist, im.height_cm())
+            copyfile(os.path.join('/cnhome/media', str(i.original_file)), os.path.join(this_dir, 'imgs', im.metadata.name))
         pickle.dump(imdict, os.path.join(this_dir, 'imdict.p'))
 
 
