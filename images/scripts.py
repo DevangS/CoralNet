@@ -79,6 +79,27 @@ def find_duplicate_annotations():
 
 
 """
+This script exports all imges and annotations for the purpose of building a deep super-classifier
+"""
+def export_imgage_and_annotations(source_idlist, outdir):
+
+    for source_id in source_idlist:
+        this_dir = os.path.join(outdir, 's{}'.format(source_id))
+        os.mkdir(this_dir)
+        os.mkdir(os.path.join(this_dir, 'imgs'))
+        imdict = []
+        source = Source.objects.get(id = source_id)
+        for im in source.get_all_images:
+            if im.status.annotatedByHuman:
+                annlist = []
+                for a in im.annotation_set.filter():
+                    annlist.append((a.label.name, a.point.row, a.point.column))
+                imdict[im.metadata.name] = (annlist, im.height_cm())
+                copyfile(os.path.join('/cnhome/media', str(i.original_file)), os.path.join(this_dir, 'imgs', im.metadata.name))
+        pickle.dump(imdict, os.path.join(this_dir, 'imdict.p'))
+
+
+"""
 This script organizes some key stats of all the source, and puts it in a nice list.
 """
 def get_source_stats():
