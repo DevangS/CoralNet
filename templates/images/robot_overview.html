@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<form action="" method="post">{% csrf_token %}<input type="submit" name="list_in_process" value="List as seen by current backend-run." /></form>
+
+<form action="" method="post">{% csrf_token %} <input type="submit" name="list_current" value="Current list." /></form>
+
+<p>{{timestr}}</p>
+
+<table class="detail_table_popup">
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th># imgs</th>
+        <th>has robot</th>
+        <th>need new</th>
+        <th># verified</th>
+        <th># in current</th>
+        <th># need feats</th>
+        <th># uncl.</th>
+        <th># undercl.</th>
+	</tr>
+    {% for source in laundry_list %}
+    	{% if source.need_attention %}
+    		<tr style="background-color:red">
+    	{% else %}
+         	<tr style="background-color:green">
+        {% endif %}
+        <td> <a href="{% url source_main source.id %}">{{source.id}}</a></td>
+        <td> {{source.name}} </td>
+        <td> {{source.nbr_total_images}} </td>
+        <td> {{source.has_robot}} </td>
+        <td> {{source.need_robot}} </td>
+        <td> {{source.nbr_human_annotated_images}} </td>
+        <td> {{source.nbr_in_current_model}} </td>
+        <td> {{source.nbr_images_needs_features}} </td>
+        <td> {{source.nbr_unclassified_images}} </td>
+		<td> {{source.nbr_underclassified_images}} </td>
+        </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
+
+
+<a href="{% url annotation_area_edit image.id %}">Edit</a>)
