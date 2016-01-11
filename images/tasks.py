@@ -148,7 +148,7 @@ def nrs_train_wrapper(source_id):
     train_robot(source_id)
 
     # now we re-classify all images that were classified by an older version of the robot.
-    imglist = Image.objects.filter(source=source, status__annotatedByRobot=True)
+    imglist = Image.objects.filter(source=source, status__annotatedByRobot=True, status__annotatedByHuman=False)
     logging.info("==== NRS Re-classifier {nbr} images after robot training of source{sid}: {sname}".format(nbr = len(imglist), sid = source.id, sname = source.name))
     for img in imglist:
         classify_image(img.id)
@@ -280,10 +280,10 @@ def classify_image(image_id):
     latestRobot = image.source.get_latest_robot()
 
     if latestRobot == None:
-        return
+        return 1
 
     # Check if this image has been previously annotated by a robot.
-    if (image.status.annotatedByRobot):
+    if image.status.annotatedByRobot:
         # now, compare this version number to the latest_robot_annotator field for image.
         if (not (latestRobot.version > image.latest_robot_annotator.version)):
             return 1
