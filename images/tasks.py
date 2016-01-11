@@ -12,6 +12,7 @@ from accounts.utils import is_robot_user
 from annotations.models import Label, Annotation, LabelGroup
 from images import task_helpers, task_utils
 from images.models import Point, Image, Source, Robot
+from images.utils import source_robot_status
 from numpy import array, zeros, sum, float32, newaxis
 from django.db import transaction
 # Revision objects will not be saved during Celery tasks unless
@@ -91,6 +92,74 @@ def train_wrapper():
         train_robot(source.id)
     logging.info("==== Done training robots ====")
     os.remove(keyfilepath)
+
+
+# This is the new master function
+def nrs_robot_wrapper():
+
+    # check if thread is already running
+    keyfilepath = os.path.join(settings.PROCESSING_ROOT, "logs/nrs_running_flag")
+    if os.path.exists(keyfilepath):
+        return 1
+    open(keyfilepath, 'w')
+
+    # make laundry list for the sources
+    laundry_list = []
+    for source in Source.objects.filter():
+        laundry_list.append(source_robot_status(source.id))
+    laundry_list = [l for l in laundry_list if l['need_attention']]
+    logging.info("==== NRS MAIN WRAPPER start processing {} sources ====".format(len(laundry_list)))
+    pickle.dump(laundry_list, open(os.path.join(settings.PROCESSING_ROOT, "logs/laundry_list.pkl"), "wb"))
+
+
+    for item in laundry_list:
+        # check break flag:
+        if os.path.exists(os.path.join(settings.PROCESSING_ROOT, "logs/break_flag")):
+            logging.info("==== NRS Aborting due to break flag raised ====")
+            return 1
+
+        if item['need_robot']:
+            nrs_train_wrapper(item['id'])
+        if item['nbr_unclassified_images'] > 0:
+            nrs_classify_wrapper(item['id'])
+    logging.info("==== NRS MAIN WRAPPER done processing {} sources ====".format(len(laundry_list)))
+
+    os.remove(keyfilepath)
+        
+
+
+def nrs_train_wrapper(source_id):
+
+    # we begin by extracting features for all verified images
+    source = Source.objects.get(id = source_id)
+    imglist = Image.objects.filter(source=source, status__annotatedByHuman=True, status__featuresExtracted=False)
+    logging.info("==== NRS Making features for {nbr} images in preparation for robot training of source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
+    for img in imglist:
+        preprocess_image(img.id)
+        make_features(img.id)
+        add_labels_to_features(img.id)
+
+    # then we train a new robot
+    train_robot(source_id)
+
+    # now we re-classify all images that were classified by an older version of the robot.
+    imglist = Image.objects.filter(source=source, status__annotatedByRobot=True)
+    logging.info("==== NRS Re-classifier {nbr} images after robot training of source{sid}: {sname}".format(nbr = len(imglist), sid = source.id, sname = source.name))
+    for img in imglist:
+        classify_image(img.id)
+    logging.info("==== NRS Done train wrapper for source{sid}: {sname}".format(sid = source.id, sname = source.name))
+
+def nrs_classify_wrapper(source_id):
+
+    source = Source.objects.get(id = source_id)
+    imglist = Image.objects.filter(source = source, status__annotatedByRobot = False, status__annotatedByHuman = False)[:settings.NBR_IMAGES_PER_LOOP]
+    logging.info("==== NRS Extracting features and classifying {nbr} images from source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
+    for img in imglist:
+        preprocess_image(img.id)
+        make_features(img.id)
+        classify_image(img.id)
+    logging.info("==== NRS Done extracting features and classifying {nbr} images from source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
+
 
 
 @task()
@@ -294,14 +363,10 @@ def classify_image(image_id):
 def add_labels_to_features(image_id):
 
     image = Image.objects.get(pk=image_id)
-    if not image.status.annotatedByHuman or not image.status.featuresExtracted or image.status.featureFileHasHumanLabels:
+    if not image.status.annotatedByHuman or not image.status.featuresExtracted:
         return 1
 
     ############### EVERYTHING OK, START THE PROCEDURE ###########
-    # update status first to ensure concurrency
-    image.status.featureFileHasHumanLabels = True
-    image.status.save()
-
     featureFileIn = os.path.join(FEATURES_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".dat")
     featureFileOut = os.path.join(FEATURES_DIR, str(image_id) + "_temp_" + image.get_process_date_short_str() + ".dat")	#temp file
     inputFF = open(featureFileIn, 'r')
@@ -327,19 +392,11 @@ def add_labels_to_features(image_id):
 @task()
 def train_robot(source_id):
 
-    # first, see if we should train a new robot
-    hasNewImagesToTrainOn = False
-    nbrAnnotatedImages = 0
-    source = Source.objects.get(pk = source_id)
-    allImages = Image.objects.filter(source = source)
-    for image in allImages:
-        if (image.status.featureFileHasHumanLabels and not image.status.usedInCurrentModel):
-            hasNewImagesToTrainOn = True
-        if image.status.featureFileHasHumanLabels:
-            nbrAnnotatedImages = nbrAnnotatedImages + 1;
-
-    if ( not hasNewImagesToTrainOn or ( nbrAnnotatedImages < 5 ) ) : #TODO, add field to souce object that specify this threshold.
+    source = Source.objects.get(id = source_id)
+    if not source.need_new_robot():
         return 1
+    
+    allImages = Image.objects.filter(source = source, status__annotatedByHuman = True, status__featuresExtracted = True)
 
     ################### EVERYTHING OK, START TRAINING NEW MODEL ################
 
@@ -355,7 +412,7 @@ def train_robot(source_id):
     
     # update the data base.
     for image in allImages: # mark that these images are used in the current model.
-        if image.status.featureFileHasHumanLabels and not image.status.usedInCurrentModel:
+        if not image.status.usedInCurrentModel:
             image.status.usedInCurrentModel = True;
             image.status.save()
 
@@ -383,8 +440,6 @@ def train_robot(source_id):
     pointFile = open(pointInfoPath, 'w')
     fileNameFile = open(fileNamesPath, 'w')
     for image in allImages:
-        if not image.status.featureFileHasHumanLabels:
-            continue
         fItt = fItt + 1 #note that we start at 1, MATLAB style
         featureFile = os.path.join(FEATURES_DIR, str(image.id) + "_" + image.get_process_date_short_str() + ".dat")
         fileNameFile.write(featureFile + "\n") # write all file names in a file, so that MATLAB can find them
@@ -421,9 +476,8 @@ def train_robot(source_id):
   
     if os.path.isfile(TRAIN_ERROR_LOG):
         for image in allImages: # roll back changes.
-            if image.status.featureFileHasHumanLabels:
-                image.status.usedInCurrentModel = False
-                image.status.save()
+            image.status.usedInCurrentModel = False
+            image.status.save()
         logging.info('ERROR training robot{id} for source{sid}: {sname}'.format(id = newRobot.version, sid = image.source_id, sname = image.source.name))
         mail_admins('CoralNet Backend Error', 'in trainRobot')
         os.rename(TRAIN_ERROR_LOG, TRAIN_ERROR_LOG + '.' + str(source_id)) # change the name so it won't interfere with other sources.

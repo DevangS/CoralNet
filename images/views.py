@@ -66,6 +66,28 @@ def source_list(request):
     # not used
     return HttpResponseRedirect(reverse('source_about'))
 
+
+def source_laundry_list(request):
+
+    if request.method == 'POST' and request.POST.get('list_in_process', None):
+        file_ = os.path.join(settings.PROCESSING_ROOT, "logs/laundry_list.pkl")
+        laundry_list = pickle.load(open(file_, "rb"))
+        timestr = "Laundry list created: %s" % time.ctime(os.path.getctime(file_))
+    else:
+        laundry_list = []
+        for source in Source.objects.filter():
+            laundry_list.append(source_robot_status(source.id))
+        timestr = ""
+
+    laundry_list = sorted(laundry_list, key=lambda k: k['need_attention'])[::-1]
+    
+    return render_to_response('images/robot_overview.html', {
+        'laundry_list': laundry_list,
+        'timestr': timestr}, 
+        context_instance = RequestContext(request))
+
+
+
 # This isn't really used anymore, since we now display the Home page when
 # the user is logged out.
 def source_about(request):
