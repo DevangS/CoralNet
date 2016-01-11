@@ -19,7 +19,6 @@
         <th># in current</th>
         <th># need feats</th>
         <th># uncl.</th>
-        <th># undercl.</th>
 	</tr>
     {% for source in laundry_list %}
     	{% if source.need_attention %}
@@ -36,7 +35,6 @@
         <td> {{source.nbr_in_current_model}} </td>
         <td> {{source.nbr_images_needs_features}} </td>
         <td> {{source.nbr_unclassified_images}} </td>
-		<td> {{source.nbr_underclassified_images}} </td>
         </tr>
     {% endfor %}
 </table>

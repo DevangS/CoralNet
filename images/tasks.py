@@ -137,6 +137,9 @@ def nrs_train_wrapper(source_id):
     for img in imglist:
         preprocess_image(img.id)
         make_features(img.id)
+
+    imglist = Image.objects.filter(source=source, status__annotatedByHuman=True, status__featuresExtracted=True)
+    for img in imglist:
         add_labels_to_features(img.id)
 
     # then we train a new robot
