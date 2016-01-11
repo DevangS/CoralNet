@@ -324,6 +324,6 @@ def source_robot_status(source_id):
 
     status['nbr_human_annotated_images'] = Image.objects.filter(source=source, status__annotatedByHuman = True).count()
     status['nbr_in_current_model'] = Image.objects.filter(source=source, status__usedInCurrentModel = True).count()
-    status['need_attention'] = status['need_robot'] or status['nbr_images_needs_features'] > 0 or status['nbr_unclassified_images'] > 0
+    status['need_attention'] = source.enable_robot_classifier and (status['need_robot'] or status['nbr_images_needs_features'] > 0 or status['nbr_unclassified_images'] > 0)
 
     return status
