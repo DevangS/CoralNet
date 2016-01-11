@@ -312,6 +312,7 @@ def source_robot_status(source_id):
     status = dict()
     source = Source.objects.get(id = source_id)
     status['name'] = source.name
+    status['name_short'] = source.name[:40]
     status['id'] = source.id
     status['has_robot'] = source.get_latest_robot() is not None
     status['need_robot'] = source.need_new_robot()
