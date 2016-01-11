@@ -7,7 +7,7 @@ from annotations.model_utils import AnnotationAreaUtils
 from annotations.models import Annotation
 from lib.exceptions import *
 from images.model_utils import PointGen
-from images.models import Point, Metadata, Image, Value1, Value2, Value3, Value4, Value5
+from images.models import Source, Point, Metadata, Image, Value1, Value2, Value3, Value4, Value5
 
 
 def get_location_value_objs(source, value_names, createNewValues=False):
@@ -297,3 +297,33 @@ def generate_points(img, usesourcemethod=True):
     status = img.status
     status.hasRandomPoints = True
     status.save()
+
+
+def source_robot_status(source_id):
+    """
+    checks source with source_id to determine the status of the vision back-end for this source.
+    takes: 
+    source_id (int)
+
+    gives:
+    several data point regarding the status of the vision backend for this source.
+    """
+    status = dict()
+    source = Source.objects.get(id = source_id)
+    status['name'] = source.name
+    status['id'] = source.id
+    status['has_robot'] = source.get_latest_robot() is not None
+    status['need_robot'] = source.need_new_robot()
+    status['nbr_total_images'] = Image.objects.filter(source=source).count()
+    status['nbr_images_needs_features'] = Image.objects.filter(source=source).count() - Image.objects.filter(source=source, status__preprocessed=True, status__featuresExtracted=True).count()
+    status['nbr_unclassified_images'] = Image.objects.filter(source=source, status__annotatedByRobot=False, status__annotatedByHuman=False).count()
+    
+    latestRobot = source.get_latest_robot() # Get last robot for this source
+    tmp = list(Image.objects.filter(source=source, status__annotatedByRobot=True, status__annotatedByHuman=False))
+    status['nbr_underclassified_images'] = sum([1 for i in tmp if i.latest_robot_annotator.version < latestRobot.version]) #I could not figure out how to do this using db queries, since only images which are annotated by robot has the latest_robot_annotator field populated.
+
+    status['nbr_human_annotated_images'] = Image.objects.filter(source=source, status__annotatedByHuman = True).count()
+    status['nbr_in_current_model'] = Image.objects.filter(source=source, status__usedInCurrentModel = True).count()
+    status['need_attention'] = status['need_robot'] or status['nbr_images_needs_features'] > 0 or status['nbr_unclassified_images'] > 0
+
+    return status

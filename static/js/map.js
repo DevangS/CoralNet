@@ -141,14 +141,10 @@ var CNMap = (function() {
                 var markerColor = source.color;
 		var markerSize = null
 		
-
-		if (source.num_of_images < 10) {
-		    continue;
-		}
-		else if(source.num_of_images < 50){
+		if(source.num_of_images < 500){
 		    markerSize = new google.maps.Size(20, 32);
 		}
-		else if(source.num_of_images < 500){
+		else if(source.num_of_images < 1500){
 		    markerSize = new google.maps.Size(25, 40);		
 		}
 		else {

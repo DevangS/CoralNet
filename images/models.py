@@ -328,6 +328,14 @@ class Source(models.Model):
                     continue
         return validRobots
 
+    def need_new_robot(self):
+        """
+        Check whether there are sufficient number of newly annotated images to train a new robot version. Needs to be settings.NEW_MODEL_THRESHOLD more than used in the previous model and > settings.MIN_NBR_ANNOTATED_IMAGES
+        """
+        
+        return Image.objects.filter(source=self, status__annotatedByHuman = True).count() > settings.NEW_MODEL_THRESHOLD * Image.objects.filter(source=self, status__usedInCurrentModel = True).count() and Image.objects.filter(source=self, status__annotatedByHuman = True).count() >= settings.MIN_NBR_ANNOTATED_IMAGES
+
+
     def remove_unused_key_values(self):
         """
         Finds all of the key values used by this source and removes unused ones.

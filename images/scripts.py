@@ -33,6 +33,10 @@ def process_source_complete_debug(source_id, force_retrain = False):
         for image in Image.objects.filter(source = source):
             image.status.usedInCurrentModel = False
             image.status.save()
+
+    for image in source.get_all_images():
+        add_labels_to_features(image.id)
+    train_robot(source.id)
     
     for image in source.get_all_images():
         preprocess_image(image.id)
@@ -40,9 +44,7 @@ def process_source_complete_debug(source_id, force_retrain = False):
         classify_image(image.id)
     
     
-    for image in source.get_all_images():
-        add_labels_to_features(image.id)
-    train_robot(source.id)
+    
     print "==== Done processing source ===="
 
 
@@ -76,6 +78,33 @@ def find_duplicate_annotations():
         except Annotation.DoesNotExist:
             d = 1
     print "done."
+
+
+"""
+This script exports all imges and annotations for the purpose of building a deep super-classifier
+"""
+def export_imgage_and_annotations(source_idlist, outdir):
+
+    for source_id in source_idlist:
+        this_dir = os.path.join(outdir, 's{}'.format(source_id))
+        os.mkdir(this_dir)
+        os.mkdir(os.path.join(this_dir, 'imgs'))
+        imdict = []
+        source = Source.objects.get(id = source_id)
+        for im in source.get_all_images:
+
+            # Special check for MLC. Do not want the imgs from 2008!!!!
+            if source_id == 16 and im.metadata.photo_date.year == 2008:
+                continue
+            if not im.status.annotatedByHuman:
+                continue
+            
+            annlist = []
+            for a in im.annotation_set.filter():
+                annlist.append((a.label.name, a.point.row, a.point.column))
+            imdict[im.metadata.name] = (annlist, im.height_cm())
+            copyfile(os.path.join('/cnhome/media', str(i.original_file)), os.path.join(this_dir, 'imgs', im.metadata.name))
+        pickle.dump(imdict, os.path.join(this_dir, 'imdict.p'))
 
 
 """

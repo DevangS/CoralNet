@@ -327,3 +327,8 @@ IMAGES_URL = '/images/'
 ANNOTATIONS_URL = '/annotations/'
 VISUALIZATION_URL = '/visualization/'
 BUG_REPORTING_URL = '/feedback/'
+
+# VISION BACKEND SETTINGS TODO: move to separate settings file.
+NEW_MODEL_THRESHOLD = 1.5
+MIN_NBR_ANNOTATED_IMAGES = 5
+NBR_IMAGES_PER_LOOP = 100
