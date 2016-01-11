@@ -100,7 +100,7 @@ def nrs_robot_wrapper():
     # check if thread is already running
     keyfilepath = os.path.join(settings.PROCESSING_ROOT, "logs/nrs_running_flag")
     if os.path.exists(keyfilepath):
-         logging.info("==== NRS MAIN WRAPPER aborting. Another process is running. ====")
+        logging.info("==== NRS MAIN WRAPPER aborting. Another process is running. ====")
         return 1
     open(keyfilepath, 'w')
 
@@ -373,7 +373,7 @@ def add_labels_to_features(image_id):
 
     ############### EVERYTHING OK, START THE PROCEDURE ###########
     featureFileIn = os.path.join(FEATURES_DIR, str(image_id) + "_" + image.get_process_date_short_str() + ".dat")
-    featureFileOut = os.path.join(FEATURES_DIR, str(image_id) + "_temp_" + image.get_process_date_short_str() + ".dat")	#temp file
+    featureFileOut = os.path.join(FEATURES_DIR, str(image_id) + "_temp_" + image.get_process_date_short_str() + ".dat") #temp file
     inputFF = open(featureFileIn, 'r')
     outputFF = open(featureFileOut, 'w')
 
