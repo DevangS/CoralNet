@@ -100,6 +100,7 @@ def nrs_robot_wrapper():
     # check if thread is already running
     keyfilepath = os.path.join(settings.PROCESSING_ROOT, "logs/nrs_running_flag")
     if os.path.exists(keyfilepath):
+         logging.info("==== NRS MAIN WRAPPER aborting. Another process is running. ====")
         return 1
     open(keyfilepath, 'w')
 
@@ -115,7 +116,8 @@ def nrs_robot_wrapper():
     for item in laundry_list:
         # check break flag:
         if os.path.exists(os.path.join(settings.PROCESSING_ROOT, "logs/break_flag")):
-            logging.info("==== NRS Aborting due to break flag raised ====")
+            logging.info("==== NRS MAIN WRAPPER Aborting due to break flag raised ====")
+            os.remove(keyfilepath)
             return 1
 
         if item['need_robot']:
