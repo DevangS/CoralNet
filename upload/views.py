@@ -1,15 +1,19 @@
 from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404, render_to_response
+from django.http import HttpResponseRedirect
 from django.template import RequestContext
+from django.contrib import messages
 from annotations.model_utils import AnnotationAreaUtils
 from decorators import source_permission_required
 from images.model_utils import PointGen
 from images.models import Source
 from lib.exceptions import FileContentError
 from lib.utils import JsonResponse
-from upload.forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm, MetadataImportForm
-from upload.utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, check_image_filename, store_csv_file
+from .forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm, MetadataImportForm
+from .utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, check_image_filename, store_csv_file, load_archived_csv, check_archived_csv, import_archived_annotations
 from visualization.forms import ImageSpecifyForm
+
+import csv
 
 @source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
 def image_upload(request, source_id):
@@ -289,3 +293,55 @@ def csv_file_process_ajax(request,source_id):
         status='error',
         message="Request was not POST",
     ))
+
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
+def upload_archived_annotations(request, source_id):
+
+    source = get_object_or_404(Source, id=source_id)
+
+    # First of all, we will check if the source contains any duplicate images file names. If so, warn them.
+    if source.all_image_names_are_unique():
+        non_unique = []
+    else:
+        non_unique = source.get_all_images().filter(metadata__name__in = source.get_nonunique_image_names())
+
+    # Now check the form.
+    if request.method == 'POST':
+        csv_import_form = CSVImportForm(request.POST, request.FILES) # grab the form
+
+        if csv_import_form.is_valid():
+            file_ = csv_import_form.cleaned_data['csv_file'] # grab the file handle
+            try:
+                anndict = load_archived_csv(source_id, file_) # decode
+            except Exception as me:
+                messages.error(request, 'Error parsing input file. Error message: {}.'.format(me))
+                return HttpResponseRedirect(reverse('annotation_upload', args=[source_id]))
+            request.session['archived_annotations'] = anndict # all ok, store in session.
+            return HttpResponseRedirect(reverse('annotation_upload_verify', args=[source_id]))
+        else:
+            messages.error(request, 'File does not seem to be a csv file.')
+            return HttpResponseRedirect(reverse('annotation_upload', args=[source_id]))
+
+    else:
+        form = CSVImportForm()
+    
+    return render_to_response('upload/upload_archived_annotations.html', {'form': form, 'source': source, 'non_unique': non_unique}, context_instance=RequestContext(request))
+
+
+@source_permission_required('source_id', perm=Source.PermTypes.EDIT.code)
+def verify_archived_annotations(request, source_id):
+    source = get_object_or_404(Source, id=source_id)
+    if request.method == 'POST': #there is only the 'submit' button, so no need to check what submit.
+        import_archived_annotations(source_id, request.session['archived_annotations']) # do the actual import.
+        messages.success(request, 'Successfully imported annotations.')
+        return HttpResponseRedirect(reverse('source_main', args=[source.id]))
+    else:
+        if 'archived_annotations' in request.session.keys():
+            status = check_archived_csv(source_id, request.session['archived_annotations'], with_labels = True)
+        else:
+            messages.error(request, 'Session timeout. Try again or contact system admin.') # This is a very odd situation, since we just added the data to the session.
+            return HttpResponseRedirect(reverse('source_main', args=[source.id]))
+
+    return render_to_response('upload/verify_archived_annotations.html', {'status': status, 'source': source}, context_instance=RequestContext(request))
+
+

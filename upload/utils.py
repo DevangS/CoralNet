@@ -716,3 +716,104 @@ def check_image_filename(filename, source, verify_metadata=True):
         return_dict['metadata_dict'] = metadata_dict
 
     return return_dict
+
+
+def load_archived_csv(source_id, file_):
+    """
+    This file is a helper for when a user uploads a csv with archived annotations (only valid for the "new" archived annotation file type, namely of format: filenams, row, col, label). 
+
+        It load the .csv file to a dictionary
+    """
+
+    anndict = {}
+    for (filename, r, c, l) in csv.reader(file_):
+        if filename not in anndict.keys():
+            anndict[filename] = [] #each filename is an entry in the dictionary
+        anndict[filename].append((int(r.strip()), int(c.strip()), l.strip())) # annotations for each file is a list of tuples (row, column, label)
+    return anndict
+
+
+def check_archived_csv(source_id, anndict, with_labels = True):
+    """
+    This file is a helper for when a user uploads a .csv file with archived annotations (only valid for the "new" archived annotation file type, namely of format: filenams, row, col, label). 
+
+        It takes an anndict (generated, for example, by load_archived_csv) and checks the following:
+        1) Do ALL specified image file names exist in source? 
+        2) Is ANY of the specified images already annotated by a human operator?
+        3) Are ALL specified labels in the source labelset?
+        4) Does ALL row and column specified fit inside the image?
+        5) Are there duplicated annotations for ANY image?
+    """
+    source = Source.objects.get(pk = source_id) # let's fetch the relevant source.
+    status = {}
+    source_images = set([i.metadata.name for i in source.get_all_images()])
+    uploaded_images = set(anndict.keys())
+
+    # Some basic stats
+    status['nbr_uploaded_images'] = len(uploaded_images)
+    status['nbr_uploaded_annotations'] = sum([len(anndict[fn]) for fn in anndict.keys()])
+
+    # First condition: 
+    status['matched_images'] = uploaded_images & source_images
+
+    # Second condition:
+    annotated_images = set([i.metadata.name for i in Image.objects.filter(source = source, status__annotatedByHuman = True)])
+    status['verified_images'] = annotated_images.intersection(status['matched_images'])
+
+    # Third, fourth, and fifth condition:
+    status['unknown_labels'] = set()
+    status['bad_locations'] = set()
+    status['duplicate_annotations'] = set()
+    source_labelset = set([l.name for l in source.labelset.labels.all()])
+    for imname in status['matched_images']:
+        image = Image.objects.get(source = source, metadata__name = imname)
+        annset_image = set() #to check for duplicate row, col locations
+        for (row, col, label) in anndict[imname]:
+            if not label in source_labelset:
+                status['unknown_labels'].add(label) #this is the condition #3
+            if not 0 <= row <= image.original_height or not 0 <= col <= image.original_width:
+                status['bad_locations'].add(imname)
+            if (row, col) in annset_image:
+                status['duplicate_annotations'].add(imname)
+            annset_image.add((row, col))
+
+    # Summarize:
+    status['can_upload'] = (len(status['matched_images']) > 0 and not status['unknown_labels'] and not status['bad_locations'] and not status['duplicate_annotations'])
+    
+    return status
+
+def import_archived_annotations(source_id, anndict):
+    pass
+
+    source = Source.objects.get(pk = source_id) # let's fetch the relevant source.
+
+    images = source.get_all_images().filter(metadata__name__in = list(anndict.keys())) # grab all image that have names in the .csv file.
+
+    for image in images:
+
+        # Start by remove annotations and points for this image
+        for ann in Annotation.objects.filter(image=image):
+            ann.delete()
+        for point in Point.objects.filter(image=image):
+            point.delete()
+    
+        # Next, set image metadata to IMPORTED.
+        image.point_generation_method = PointGen.args_to_db_format(
+                point_generation_type=PointGen.Types.IMPORTED,
+                imported_number_of_points=len(anndict[image.metadata.name])
+        )
+        image.save()
+
+#         # Iterate over this image's annotations and save them.
+#         for (point_num, (row, col, labelname)) in enumerate(anndict[image.metadata.name])
+            
+#             # Save the Point in the database.
+#             point = Point(row=row, column=col, point_number=point_num, image=image)
+#             point.save()
+
+#             label = Label.objects.filter(code=anno['label'])[0]
+
+# #                 # Save the Annotation in the database, marking the annotations as imported.
+# #                 annotation = Annotation(user=imported_user,
+# #                     point=point, image=img, label=label, source=source)
+# #                 annotation.save()

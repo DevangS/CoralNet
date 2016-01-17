@@ -1,0 +1,35 @@
+{% extends "images/base_source.html" %}
+
+{% block js-includes %}
+    {% include "javascript-includes.html" with jquery_form="yes" jquery_ui="yes" %}
+    {% include "static-local-include.html" with type="css" path="css/source.css" %}
+{% endblock %}
+
+{% block title %}Upload Annotations | CoralNet{% endblock %}
+{% block content %}
+<h2>Upload annotations</h2>
+<p>Here you can upload point annotations to images that are already in your source.</p>
+<div class="tutorial-message">
+        {% include "upload/help_upload_archived_annotations.html" %}
+</div>
+{% if non_unique.count %}
+<p>Problem! This source contains image which have the same file name. It is therefore not possible to upload annotations based on the image filenames. Please rename or delete image per the list below so that all images file names are unique. Then try again. </p>
+<table class="detail_table_scroll">
+  {% for image in non_unique %}
+    <tr><td><a href = "{%url image_detail image.id %}">{{image}}</a></td></tr>
+  {% endfor %}
+</table><br/>
+
+{% else %}
+
+
+<form enctype="multipart/form-data" action="{% url annotation_upload source.id %}" method="post">
+    {% csrf_token %}
+    <ul>
+    {{ form.as_ul }}
+	</ul>
+    <input type="submit" value="Submit" />
+</form>
+
+{% endif %}
+{% endblock %}

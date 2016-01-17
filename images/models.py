@@ -377,6 +377,21 @@ class Source(models.Model):
                     if not used:
                         value.delete()
 
+    def all_image_names_are_unique(self):
+        """
+        Return true if all images in the source have unique names. NOTE: this will be enforced during import moving forward, but it wasn't originally.
+        """
+        images = Image.objects.filter(source=self)
+        nimages = images.count()
+        nunique = len(set([i.metadata.name for i in images]))
+        return nunique == images.count()
+
+    def get_nonunique_image_names(self):
+        """
+        returns a list of image names which occur for multiple images in the source. NOTE: there is probably a fancy SQL way to do this, but I found it cleaner with a python solution. It's not time critical.
+        """
+        imnames = [i.metadata.name for i in Image.objects.filter(source=self)] 
+        return list(set([name for name in imnames if imnames.count(name) > 1]))
 
     def __unicode__(self):
         """

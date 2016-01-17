@@ -557,11 +557,13 @@ def image_detail(request, image_id):
                 ann.delete()
             image.after_deleting_annotations()
             messages.success(request, 'Successfully removed all annotations from this image.')
+            return HttpResponseRedirect(reverse('image_detail', args=[image_id]))
 
         elif(request.POST.get('regenerate_point_locations', None)):
             generate_points(image, usesourcemethod=False)
             image.after_annotation_area_change()
             messages.success(request, 'Successfully regenerated point locations.')
+            return HttpResponseRedirect(reverse('image_detail', args=[image_id]))
     
         elif(request.POST.get('set_point_gen_default', None)):
             image.point_generation_method = image.source.default_point_generation_method
@@ -569,6 +571,7 @@ def image_detail(request, image_id):
             generate_points(image, usesourcemethod=False)
             image.after_annotation_area_change()
             messages.success(request, 'Reset image point generation method to source default.')
+            return HttpResponseRedirect(reverse('image_detail', args=[image_id]))
 
         elif(request.POST.get('set_annotation_area_default', None)):
             image.metadata.annotation_area = image.source.image_annotation_area
@@ -576,6 +579,7 @@ def image_detail(request, image_id):
             generate_points(image, usesourcemethod=False)
             image.after_annotation_area_change()
             messages.success(request, 'Reset annotation area to source default.')
+            return HttpResponseRedirect(reverse('image_detail', args=[image_id]))
 
         elif(request.POST.get('delete_this_image', None)):
             image_name = image.metadata.name

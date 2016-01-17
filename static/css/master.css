@@ -1051,6 +1051,19 @@ table.detail_table td {
     padding: 5px;
 }
 
+table.detail_table_scroll {
+    display: block;
+    border-collapse: separate;  /* Firefox seems to make border widths inconsistent if border-collapse: collapse */
+    max-height: 400px;
+    overflow-y: scroll;
+}
+table.detail_table_scroll th,
+table.detail_table_scroll td {
+    border: 1px solid #999999;
+    padding: 5px;
+}
+
+
 table.detail_table.horizontal {
     border: none;
     display: inline-block;

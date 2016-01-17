@@ -1,0 +1,74 @@
+{% extends "images/base_source.html" %}
+
+{% block title %}Upload Annotations | CoralNet{% endblock %}
+
+{% block content %}
+
+{% if status.can_upload %}
+
+<p>We found {{status.nbr_uploaded_annotations}} annotations across {{status.nbr_uploaded_images}} images. 
+{% if status.matched_images|length = 0%}
+However, none of the provided images names matched image names in the source.
+{% else %}
+Of the {{status.nbr_uploaded_images}} provided image names, the following {{status.matched_images|length}} could be matched to images in the source:</p>
+<table class="detail_table_scroll">
+  {% for image in status.matched_images %}
+    <tr><td> {{ image }}</a></td></tr>
+  {% endfor %}
+</table><br/>
+<p> If you proceed, only annotations for these {{status.matched_images|length}} images will be uploaded.</p>
+{% endif %}
+
+{% if status.verified_images %}
+<p>Of the matched images, {{ status.verified_images|length }} have verified annotations in your source:</p>
+<table class="detail_table_scroll">
+  {% for image in status.verified_images %}
+    <tr><td> {{ image }}</a></td></tr>
+  {% endfor %}
+</table><br/>
+  <p> WARNING: The verified annotations pertaining to these images will be <strong> removed and replaced by those in the .csv file </strong> if you proceed with the import. If you want to keep the annotations done in the source, remove the relevant entries from the .csv file and <a href="{% url annotation_upload source.id %}">start over</a>.</p>
+{% else %}
+    <p>Of the matched images, none is verified by a human operator (which is good, because these would be over-written!) </p>
+{% endif %}
+<form action="{% url annotation_upload_verify source.id %}", method="post">
+	{% csrf_token %}
+		<input type="submit" value="Submit">
+</form>
+{% else %}
+
+{% if not status.matched_images %}
+<p>Problem! Didn't find any matches between the iamge names provided and those in the source.</p>
+{% endif %}
+
+{% if status.unknown_labels %}
+<p>Problem! Found {{status.unknown_labels|length}} labels in the .csv file that are <string>not</string> in the source labelset. These labels are:</p>
+	<table class="detail_table_scroll">
+  {% for label in status.unknown_labels %}
+    <tr><td> {{ label }}</a></td></tr>
+  {% endfor %}
+</table><br/>
+{% endif %}
+
+{% if status.bad_locations %}
+<p>Problem! Found {{status.bad_locations|length}} images for which the provided annotations are <strong> outside the image area</strong>. In other words: either the given row or colums were too small (negative) or too large (higher values than the nubmer of rows and columns in the image). These images are: </p>
+<table class="detail_table_scroll">	
+{% for label in status.bad_locations %}
+	<tr><td> {{ label }}</a></td></tr>
+{% endfor %}
+</table><br/>
+{% endif %}
+
+{% if status.duplicate_annotations %}
+<p>Problem! Found duplicate annotations (same row and column values) in the following {{status.duplicate_annotations|length}} images:
+<table class="detail_table_scroll">	
+{% for label in status.duplicate_annotations %}
+	<tr><td> {{ label }}</a></td></tr>
+{% endfor %}
+</table><br/>
+{% endif %}
+
+<p>It is not possible to finish the import due to the problems above. Please fix and <a href="{% url annotation_upload source.id %}">re-start</a>.</p>
+{% endif %}
+
+
+{% endblock %}
