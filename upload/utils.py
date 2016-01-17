@@ -764,7 +764,7 @@ def check_archived_csv(source_id, anndict, with_labels = True):
     status['unknown_labels'] = set()
     status['bad_locations'] = set()
     status['duplicate_annotations'] = set()
-    source_labelset = set([l.name for l in source.labelset.labels.all()])
+    source_labelset = set([l.code for l in source.labelset.labels.all()])
     for imname in status['matched_images']:
         image = Image.objects.get(source = source, metadata__name = imname)
         annset_image = set() #to check for duplicate row, col locations
@@ -783,9 +783,9 @@ def check_archived_csv(source_id, anndict, with_labels = True):
     return status
 
 def import_archived_annotations(source_id, anndict):
-    pass
 
     source = Source.objects.get(pk = source_id) # let's fetch the relevant source.
+    imported_user = get_imported_user() # the imported user.
 
     images = source.get_all_images().filter(metadata__name__in = list(anndict.keys())) # grab all image that have names in the .csv file.
 
@@ -802,18 +802,19 @@ def import_archived_annotations(source_id, anndict):
                 point_generation_type=PointGen.Types.IMPORTED,
                 imported_number_of_points=len(anndict[image.metadata.name])
         )
-        image.save()
+        image.status.hasRandomPoints = True
+        image.status.annotatedByHuman = True
+        image.status.save()
 
-#         # Iterate over this image's annotations and save them.
-#         for (point_num, (row, col, labelname)) in enumerate(anndict[image.metadata.name])
+        # Iterate over this image's annotations and save them.
+        for (point_num, (row, col, code)) in enumerate(anndict[image.metadata.name]):
             
-#             # Save the Point in the database.
-#             point = Point(row=row, column=col, point_number=point_num, image=image)
-#             point.save()
+            # Save the Point in the database.
+            point = Point(row=row, column=col, point_number=point_num + 1, image=image)
+            point.save()
 
-#             label = Label.objects.filter(code=anno['label'])[0]
-
-# #                 # Save the Annotation in the database, marking the annotations as imported.
-# #                 annotation = Annotation(user=imported_user,
-# #                     point=point, image=img, label=label, source=source)
-# #                 annotation.save()
+            # and save the Annotation.
+            label = Label.objects.filter(code=code)[0]
+            annotation = Annotation(user=imported_user,
+                    point=point, image=image, label=label, source=source)
+            annotation.save()
