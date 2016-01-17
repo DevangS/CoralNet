@@ -64,7 +64,7 @@ def train_small_robots(th = 50):
 
 
 """
-This scipts goes through all point and check if there are duplicate annotations. We had some problems with this so are trying to debug.
+This script goes through all point and check if there are duplicate annotations. We had some problems with this so are trying to debug.
 """
 def find_duplicate_annotations():
     n = len(Point.objects.filter())
@@ -276,6 +276,19 @@ def export_images(source_id, outDir, original_file_name = True):
             '_' + m.photo_date.isoformat() + '.jpg'
         copyfile(os.path.join('/cnhome/media', str(i.original_file)), 
         os.path.join(outDir, fname))
+
+
+"""
+This checks for duplicates among image names.
+"""
+def find_duplicate_imagenames():
+    for source in Source.objects.filter():
+        if not source.all_image_names_are_unique():
+            print '==== Source {}[{}] ===='.format(source.name, source.id)
+            for image in source.get_all_images().filter(metadata__name__in = source.get_nonunique_image_names()):
+                print image.id, image.metadata.name
+
+
 
 
 """
