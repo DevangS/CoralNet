@@ -30,6 +30,8 @@ Of the {{status.nbr_uploaded_images}} provided image names, the following {{stat
 {% else %}
     <p>Of the matched images, none is verified by a human operator (which is good, because these would be over-written!) </p>
 {% endif %}
+
+<p> NOTE: for large uploads, the import may take a few minutes. Please only press once, and then wait.</p>
 <form action="{% url annotation_upload_verify source.id %}", method="post">
 	{% csrf_token %}
 		<input type="submit" value="Submit">

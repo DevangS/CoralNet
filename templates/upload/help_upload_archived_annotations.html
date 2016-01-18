@@ -3,10 +3,12 @@
 <li>imagename, row, col, label</li>
 <li>...</li>
 </ul>
-<p> where imagename is the original name of the image file including file-extension; row and col are the row and column integer values where you want the new annotations; and label is the name of a label in your <a href = "{%url labelset_main source.id%}">label-set</a>. For example: </p>
+<p> where imagename is the original name of the image file including file-extension; row and col are the row and column integer values where you want the new annotations; and label is the label-code of a label in your <a href = "{%url labelset_main source.id%}">label-set</a>. For example: </p>
 <ul>
-<li>survey_image.jpg, 120, 330, Acropora</li>
+<li>survey_image.jpg, 120, 330, acrop</li>
 <li>survey_image.jpg, 120, 300, Favia</li>
-<li>another_survey_image.jpg, 120, 300, Acropora</li>
+<li>another_survey_image.jpg, 120, 300, acrop</li>
 </ul>
 <br/><p>Will add 2 point annotations to survey_image.jpg and 1 to another_survey_image.jpg.</p>
+
+<p>TIP! If you are having problems with the csv file formatting, try using another text editor. We warmly recommend <a href="http://www.sublimetext.com/3">Sublime</a>, it's really really nice.</p>
