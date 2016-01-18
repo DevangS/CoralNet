@@ -805,6 +805,7 @@ def import_archived_annotations(source_id, anndict):
         image.status.hasRandomPoints = True
         image.status.annotatedByHuman = True
         image.status.save()
+        image.after_annotation_area_change() # set the backend status correctly.
 
         # Iterate over this image's annotations and save them.
         for (point_num, (row, col, code)) in enumerate(anndict[image.metadata.name]):
