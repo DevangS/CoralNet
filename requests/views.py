@@ -1,7 +1,9 @@
 from django.core.mail import mail_admins
 from django.core.mail.message import BadHeaderError
-from django.http import HttpResponse, HttpRequest 
+from django.core.urlresolvers import reverse
+from django.http import HttpResponse, HttpRequest,HttpResponseRedirect
 from django.shortcuts import render_to_response
+from django.contrib import messages
 from django.template.context import RequestContext
 from requests.forms import RequestInviteForm
 from settings import DEFAULT_FROM_EMAIL 
@@ -10,7 +12,7 @@ import urllib2, urllib
 
 def request_invite(request):
 
-     messages = []
+     #messages = []
 
      if request.method == 'POST':
         form = RequestInviteForm(request.POST)
@@ -67,21 +69,22 @@ def request_invite(request):
 
             try:
                if (return_code == "true"):
-                   mail_admins('User Account Requested', message )
-                   messages.append('Your request was sent!')
+                   mail_admins('User Account Requested', message)
+                   messages.success(request, 'Your request was sent!')
+                   # messages.append('Your request was sent!')
+                   return HttpResponseRedirect(reverse('request_account_confirm'))
                else:
-                   messages.append('Invalid Captcha')
+                   messages.error(request, 'Invalid Captcha')
             except BadHeaderError:
                 messages.append('Invalid header found.')
 
         else:
-            messages.append('Make sure all fields are entered and valid.')
+            messages.error(request, 'Make sure all fields are entered and valid.')
      else:
         form = RequestInviteForm()
 
      
      return render_to_response('requests/request_invite.html', {
-        'messages': messages,
         'form': form,
         'public_key': CAPTCHA_PUBLIC_KEY,
         },
@@ -96,3 +99,5 @@ def encode_if_necessary(s):
 
 
 
+def request_invite_confirm(request):
+    return render_to_response('requests/request_invite_received.html', {}, context_instance=RequestContext(request))
