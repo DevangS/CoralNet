@@ -19,12 +19,16 @@
         <th># in current</th>
         <th># need feats</th>
         <th># uncl.</th>
-	</tr>
+    </tr>
     {% for source in laundry_list %}
-    	{% if source.need_attention %}
-    		<tr style="background-color:red">
-    	{% else %}
-         	<tr style="background-color:green">
+        {% if source.need_attention %}
+            <tr style="background-color:red">
+        {% else %}
+            {% if source.has_robot %}
+                <tr style="background-color:green">
+            {% else %}
+                <tr style="background-color:gray">
+            {% endif %}
         {% endif %}
         <td> <a href="{% url source_main source.id %}">{{source.id}}</a></td>
         <td> {{source.name_short}} </td>

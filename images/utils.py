@@ -315,17 +315,18 @@ def source_robot_status(source_id):
     status['name_short'] = source.name[:40]
     status['id'] = source.id
     status['has_robot'] = source.get_latest_robot() is not None
-    status['need_robot'] = source.need_new_robot()
     status['nbr_total_images'] = Image.objects.filter(source=source).count()
-    status['nbr_images_needs_features'] = Image.objects.filter(source=source).count() - Image.objects.filter(source=source, status__preprocessed=True, status__featuresExtracted=True).count()
+    status['nbr_images_needs_features'] = Image.objects.filter(source=source, status__featuresExtracted=False).count()
     status['nbr_unclassified_images'] = Image.objects.filter(source=source, status__annotatedByRobot=False, status__annotatedByHuman=False).count()
     
-    #latestRobot = source.get_latest_robot() # Get last robot for this source
-    #tmp = list(Image.objects.filter(source=source, status__annotatedByRobot=True, status__annotatedByHuman=False))
-    #status['nbr_underclassified_images'] = sum([1 for i in tmp if i.latest_robot_annotator.version < latestRobot.version]) #I could not figure out how to do this using db queries, since only images which are annotated by robot has the latest_robot_annotator field populated.
-
+    
     status['nbr_human_annotated_images'] = Image.objects.filter(source=source, status__annotatedByHuman = True).count()
     status['nbr_in_current_model'] = Image.objects.filter(source=source, status__usedInCurrentModel = True).count()
-    status['need_attention'] = source.enable_robot_classifier and status['nbr_human_annotated_images'] >= settings.MIN_NBR_ANNOTATED_IMAGES and (status['need_robot'] or status['nbr_images_needs_features'] > 0 or status['nbr_unclassified_images'] > 0)
+
+    status['need_robot'] = source.need_new_robot()
+    status['need_features'] = status['nbr_images_needs_features'] > 0
+    status['need_classification'] = status['has_robot'] and status['nbr_unclassified_images'] > 0
+
+    status['need_attention'] = source.enable_robot_classifier and (status['need_robot'] or status['need_features'] or status['need_classification'])
 
     return status

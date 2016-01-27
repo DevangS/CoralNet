@@ -62,46 +62,17 @@ def dummy_task_sleep(s):
     time.sleep(s)
 
 
-# This is the main tasks for classification. This does not use the task manager, but does everything in serial. Nice and slow.
-def classify_wrapper():
-    keyfilepath = os.path.join(settings.PROCESSING_ROOT, "logs/classify_flag")
-
-    if os.path.exists(keyfilepath):
-        return 1
-    open(keyfilepath, 'w')
-    logging.info("==== Start classifying all images ====")
-    for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
-        for image in source.get_all_images():
-            preprocess_image(image.id)
-            make_features(image.id)
-            classify_image(image.id)
-    logging.info("==== Done classifying all images ====")
-    os.remove(keyfilepath)
-
-# This is the main tasks for learning. This does not use the task manager, but does everything in serial. Nice and slow.
-def train_wrapper():
-    keyfilepath = os.path.join(settings.PROCESSING_ROOT, "logs/learning_flag")
-
-    if os.path.exists(keyfilepath):
-        return 1
-    open(keyfilepath, 'w')
-    logging.info("==== Start training new batch of robots ====")
-    for source in Source.objects.filter(enable_robot_classifier=True).order_by('id'):
-        for image in source.get_all_images():
-            add_labels_to_features(image.id)
-        train_robot(source.id)
-    logging.info("==== Done training robots ====")
-    os.remove(keyfilepath)
-
 
 # This is the new master function
-def nrs_robot_wrapper():
+def nrs_main_wrapper():
 
     # check if thread is already running
     keyfilepath = os.path.join(settings.PROCESSING_ROOT, "logs/nrs_running_flag")
     if os.path.exists(keyfilepath):
         logging.info("==== NRS MAIN WRAPPER aborting. Another process is running. ====")
         return 1
+
+    # no other thread running. let's go!
     open(keyfilepath, 'w')
 
     # make laundry list for the sources
@@ -112,17 +83,17 @@ def nrs_robot_wrapper():
     logging.info("==== NRS MAIN WRAPPER start processing {} sources ====".format(len(laundry_list)))
     pickle.dump(laundry_list, open(os.path.join(settings.PROCESSING_ROOT, "logs/laundry_list.pkl"), "wb"))
 
-
     for item in laundry_list:
         # check break flag:
         if os.path.exists(os.path.join(settings.PROCESSING_ROOT, "logs/break_flag")):
             logging.info("==== NRS MAIN WRAPPER Aborting due to break flag raised ====")
             os.remove(keyfilepath)
             return 1
-
         if item['need_robot']:
             nrs_train_wrapper(item['id'])
-        if item['nbr_unclassified_images'] > 0:
+        if item['need_features']:
+            nrs_feature_wrapper(item['id'])
+        if item['need_classification']:
             nrs_classify_wrapper(item['id'])
     logging.info("==== NRS MAIN WRAPPER done processing {} sources ====".format(len(laundry_list)))
 
@@ -132,19 +103,30 @@ def nrs_robot_wrapper():
 
 def nrs_train_wrapper(source_id):
 
-    # we begin by extracting features for all verified images
+    # we begin by extracting features for all verified images (up to settings.NBR_IMAGES_PER_LOOP)
     source = Source.objects.get(id = source_id)
     imglist = Image.objects.filter(source=source, status__annotatedByHuman=True, status__featuresExtracted=False)
+    if imglist.count() > settings.NBR_IMAGES_PER_LOOP: #in this case, just extract some features and try again in the next loop.
+        logging.info("==== NRS Making features for {nbr} images, but deferring robot training for source{sid}: {sname} ====".format(nbr = settings.NBR_IMAGES_PER_LOOP, sid = source.id, sname = source.name))
+        for img in imglist[:settings.NBR_IMAGES_PER_LOOP]:
+            preprocess_image(img.id)
+            make_features(img.id)
+        return 1
+
+    # else, there are less than settings.NBR_IMAGES_PER_LOOP left to make features for. Then we do that and start making the robot!
     logging.info("==== NRS Making features for {nbr} images in preparation for robot training of source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
     for img in imglist:
         preprocess_image(img.id)
         make_features(img.id)
 
+    # add features
     imglist = Image.objects.filter(source=source, status__annotatedByHuman=True, status__featuresExtracted=True)
+    logging.info("==== NRS Adding labels for {nbr} images in preparation for robot training of source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
     for img in imglist:
         add_labels_to_features(img.id)
 
     # then we train a new robot
+    logging.info("==== NRS training robot for source{sid}: {sname} ====".format(sid = source.id, sname = source.name))
     train_robot(source_id)
 
     # now we re-classify all images that were classified by an older version of the robot.
@@ -154,16 +136,25 @@ def nrs_train_wrapper(source_id):
         classify_image(img.id)
     logging.info("==== NRS Done train wrapper for source{sid}: {sname}".format(sid = source.id, sname = source.name))
 
-def nrs_classify_wrapper(source_id):
+def nrs_feature_wrapper(source_id):
 
     source = Source.objects.get(id = source_id)
-    imglist = Image.objects.filter(source = source, status__annotatedByRobot = False, status__annotatedByHuman = False)[:settings.NBR_IMAGES_PER_LOOP]
-    logging.info("==== NRS Extracting features and classifying {nbr} images from source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
+    imglist = Image.objects.filter(source = source, status__featuresExtracted=False)[:settings.NBR_IMAGES_PER_LOOP]
+    logging.info("==== NRS Extracting features for {nbr} images from source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
     for img in imglist:
         preprocess_image(img.id)
         make_features(img.id)
+    logging.info("==== NRS Done extracting features for {nbr} images from source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
+
+def nrs_classify_wrapper(source_id):
+
+    source = Source.objects.get(id = source_id)
+    
+    imglist = Image.objects.filter(source = source, status__annotatedByRobot=False, status__annotatedByHuman=False, status__featuresExtracted=True)[:settings.NBR_IMAGES_PER_LOOP]
+    logging.info("==== NRS Classifying {nbr} images from source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
+    for img in imglist:
         classify_image(img.id)
-    logging.info("==== NRS Done extracting features and classifying {nbr} images from source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
+    logging.info("==== NRS Done classifying {nbr} images from source{sid}: {sname} ====".format(nbr = len(imglist), sid = source.id, sname = source.name))
 
 
 
