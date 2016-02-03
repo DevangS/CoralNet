@@ -101,7 +101,7 @@ def nrs_main_wrapper():
         
 
 
-def nrs_train_wrapper(source_id):
+def nrs_train_wrapper(source_id, force_train = False):
 
     # we begin by extracting features for all verified images (up to settings.NBR_IMAGES_PER_LOOP)
     source = Source.objects.get(id = source_id)
@@ -127,7 +127,7 @@ def nrs_train_wrapper(source_id):
 
     # then we train a new robot
     logging.info("==== NRS training robot for source{sid}: {sname} ====".format(sid = source.id, sname = source.name))
-    train_robot(source_id)
+    train_robot(source_id, force_train = force_train)
 
     # now we re-classify all images that were classified by an older version of the robot.
     imglist = Image.objects.filter(source=source, status__annotatedByRobot=True, status__annotatedByHuman=False)
@@ -386,10 +386,10 @@ def add_labels_to_features(image_id):
     return 1
 
 @task()
-def train_robot(source_id):
+def train_robot(source_id, force_train = False)):
 
     source = Source.objects.get(id = source_id)
-    if not source.need_new_robot():
+    if not source.need_new_robot() and not force_train:
         return 1
     
     allImages = Image.objects.filter(source = source, status__annotatedByHuman = True, status__featuresExtracted = True)
