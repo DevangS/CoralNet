@@ -386,7 +386,7 @@ def add_labels_to_features(image_id):
     return 1
 
 @task()
-def train_robot(source_id, force_train = False)):
+def train_robot(source_id, force_train = False):
 
     source = Source.objects.get(id = source_id)
     if not source.need_new_robot() and not force_train:
