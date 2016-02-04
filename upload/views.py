@@ -9,7 +9,7 @@ from images.model_utils import PointGen
 from images.models import Source
 from lib.exceptions import FileContentError
 from lib.utils import JsonResponse
-from .forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm, MetadataImportForm
+from .forms import MultiImageUploadForm, ImageUploadForm, ImageUploadOptionsForm, AnnotationImportForm, AnnotationImportOptionsForm, CSVImportForm, MetadataImportForm, ImportArchivedAnnotationsForm
 from .utils import annotations_file_to_python, image_upload_process, metadata_dict_to_dupe_comparison_key, check_image_filename, store_csv_file, load_archived_csv, check_archived_csv, import_archived_annotations
 from visualization.forms import ImageSpecifyForm
 
@@ -307,23 +307,39 @@ def upload_archived_annotations(request, source_id):
 
     # Now check the form.
     if request.method == 'POST':
-        csv_import_form = CSVImportForm(request.POST, request.FILES) # grab the form
+        csv_import_form = ImportArchivedAnnotationsForm(request.POST, request.FILES) # grab the form
 
         if csv_import_form.is_valid():
             file_ = csv_import_form.cleaned_data['csv_file'] # grab the file handle
+            
+            # These next four lines look very strange. But for some reason, I had to explicitly assign it to True for the logic
+            # to work in subsequent python code. Must be some miscommunication btw. django forms and python.
+            if csv_import_form.cleaned_data['is_uploading_annotations_not_just_points'] == True:
+                uploading_anns_and_points = True
+            else:
+                uploading_anns_and_points = False
+            
             try:
-                anndict = load_archived_csv(source_id, file_) # decode
+                anndict = load_archived_csv(source_id, file_) # load CSV file.
             except Exception as me:
                 messages.error(request, 'Error parsing input file. Error message: {}.'.format(me))
                 return HttpResponseRedirect(reverse('annotation_upload', args=[source_id]))
-            request.session['archived_annotations'] = anndict # all ok, store in session.
+
+            # all is OK, store in session.
+            request.session['archived_annotations'] = anndict 
+            request.session['uploading_anns_and_points'] = uploading_anns_and_points
+            # add a message to the user.
+            if uploading_anns_and_points:
+                messages.success(request, 'You are about to upload point locations AND labels.')
+            else:
+                messages.success(request, 'You are about to upload point locations only.')
             return HttpResponseRedirect(reverse('annotation_upload_verify', args=[source_id]))
         else:
-            messages.error(request, 'File does not seem to be a csv file.')
+            messages.error(request, 'File does not seem to be a csv file')
             return HttpResponseRedirect(reverse('annotation_upload', args=[source_id]))
 
     else:
-        form = CSVImportForm()
+        form = ImportArchivedAnnotationsForm()
     
     return render_to_response('upload/upload_archived_annotations.html', {'form': form, 'source': source, 'non_unique': non_unique}, context_instance=RequestContext(request))
 
@@ -332,16 +348,16 @@ def upload_archived_annotations(request, source_id):
 def verify_archived_annotations(request, source_id):
     source = get_object_or_404(Source, id=source_id)
     if request.method == 'POST': #there is only the 'submit' button, so no need to check what submit.
-        import_archived_annotations(source_id, request.session['archived_annotations']) # do the actual import.
+        import_archived_annotations(source_id, request.session['archived_annotations'], with_labels = request.session['uploading_anns_and_points']) # do the actual import.
         messages.success(request, 'Successfully imported annotations.')
         return HttpResponseRedirect(reverse('source_main', args=[source.id]))
     else:
         if 'archived_annotations' in request.session.keys():
-            status = check_archived_csv(source_id, request.session['archived_annotations'], with_labels = True)
+            status = check_archived_csv(source_id, request.session['archived_annotations'], with_labels = request.session['uploading_anns_and_points'])
         else:
             messages.error(request, 'Session timeout. Try again or contact system admin.') # This is a very odd situation, since we just added the data to the session.
             return HttpResponseRedirect(reverse('source_main', args=[source.id]))
 
-    return render_to_response('upload/verify_archived_annotations.html', {'status': status, 'source': source}, context_instance=RequestContext(request))
+        return render_to_response('upload/verify_archived_annotations.html', {'status': status, 'source': source}, context_instance=RequestContext(request))
 
 

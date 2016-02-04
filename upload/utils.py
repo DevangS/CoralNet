@@ -721,15 +721,15 @@ def check_image_filename(filename, source, verify_metadata=True):
 def load_archived_csv(source_id, file_):
     """
     This file is a helper for when a user uploads a csv with archived annotations (only valid for the "new" archived annotation file type, namely of format: filenams, row, col, label). 
-
-        It load the .csv file to a dictionary
+    It load the .csv file to a dictionary. Option with_labels in {0, 1} indicates whether to upload labels also, or just points.
     """
-
+ 
     anndict = {}
     for (filename, r, c, l) in csv.reader(file_):
         if filename not in anndict.keys():
             anndict[filename] = [] #each filename is an entry in the dictionary
         anndict[filename].append((int(r.strip()), int(c.strip()), l.strip())) # annotations for each file is a list of tuples (row, column, label)
+ 
     return anndict
 
 
@@ -769,7 +769,7 @@ def check_archived_csv(source_id, anndict, with_labels = True):
         image = Image.objects.get(source = source, metadata__name = imname)
         annset_image = set() #to check for duplicate row, col locations
         for (row, col, label) in anndict[imname]:
-            if not label in source_labelset:
+            if (not label in source_labelset) and with_labels:
                 status['unknown_labels'].add(label) #this is the condition #3
             if not 0 <= row <= image.original_height or not 0 <= col <= image.original_width:
                 status['bad_locations'].add(imname)
@@ -782,7 +782,7 @@ def check_archived_csv(source_id, anndict, with_labels = True):
     
     return status
 
-def import_archived_annotations(source_id, anndict):
+def import_archived_annotations(source_id, anndict, with_labels = True):
 
     source = Source.objects.get(pk = source_id) # let's fetch the relevant source.
     imported_user = get_imported_user() # the imported user.
@@ -803,7 +803,7 @@ def import_archived_annotations(source_id, anndict):
                 imported_number_of_points=len(anndict[image.metadata.name])
         )
         image.status.hasRandomPoints = True
-        image.status.annotatedByHuman = True
+        image.status.annotatedByHuman = with_labels
         image.status.save()
         image.after_annotation_area_change() # set the backend status correctly.
 
@@ -815,7 +815,7 @@ def import_archived_annotations(source_id, anndict):
             point.save()
 
             # and save the Annotation.
-            label = Label.objects.filter(code=code)[0]
-            annotation = Annotation(user=imported_user,
-                    point=point, image=image, label=label, source=source)
-            annotation.save()
+            if with_labels:
+                label = Label.objects.filter(code=code)[0]
+                annotation = Annotation(user=imported_user, point=point, image=image, label=label, source=source)
+                annotation.save()
