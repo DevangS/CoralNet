@@ -116,6 +116,15 @@
     <div class="tutorial-message">
         {% include "images/help_robot.html" %}
     </div>
+    {% if backend_status.need_robot %}
+        A new robot is being trained for this source!
+    {% else %}    
+        {% if not source.has_robot %}
+            <p> This source does not have a robot yet. <br>Annotate {{backend_status.nbr_images_until_next_robot}} images to train a first one. </p>
+        {% else %}
+            <p> The current robot is based on {{backend_status.nbr_in_current_model}} images. <br>Confirm {{backend_status.nbr_images_until_next_robot}} more to trigger a new version.</p>
+        {% endif %}
+    {% endif %}
     <table class="detail_table_popup">
 
         <tr>

@@ -301,7 +301,7 @@ class Source(models.Model):
     def get_latest_robot(self):
         """
         return the latest robot associated with this source.
-        if no robots, retun None
+        if no robots, return None
         """
         validRobots = self.get_valid_robots()
         
@@ -335,6 +335,14 @@ class Source(models.Model):
         
         return Image.objects.filter(source=self, status__annotatedByHuman = True).count() > settings.NEW_MODEL_THRESHOLD * Image.objects.filter(source=self, status__usedInCurrentModel = True).count() and Image.objects.filter(source=self, status__annotatedByHuman = True).count() >= settings.MIN_NBR_ANNOTATED_IMAGES and self.enable_robot_classifier
 
+    def has_robot(self):
+        """
+        Returns true if source has a robot.
+        """
+        if Robot.objects.filter(source=self).count() == 0:
+            return False
+        else:
+            return True
 
     def remove_unused_key_values(self):
         """

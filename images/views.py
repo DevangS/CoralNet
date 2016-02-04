@@ -21,6 +21,7 @@ from images.tasks import *
 from images.forms import *
 from images.model_utils import PointGen
 from images.utils import *
+from .utils import source_robot_status
 from lib.utils import get_map_sources
 import json , csv, os.path, time, datetime
 from numpy import array
@@ -225,6 +226,7 @@ def source_main(request, source_id):
     robot_stats = make_robot_stats(source_id, 3)
     source.latitude = source.latitude[:8]
     source.longitude = source.longitude[:8]
+    backend_status = source_robot_status(source_id)
 
     return render_to_response('images/source_main.html', {
         'source': source,
@@ -233,6 +235,7 @@ def source_main(request, source_id):
         'latest_images': latest_images,
         'image_stats': image_stats,
         'robot_stats':robot_stats,
+        'backend_status':backend_status,
         },
         context_instance=RequestContext(request)
 )
