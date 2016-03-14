@@ -18,7 +18,7 @@
 {% block content %}
 
     <legend>Upload Images</legend>
-	For an overview of how to upload images to CoralNet, refer to our <a href="http://vimeo.com/album/3015579">Upload Instructions</a> album on Vimeo.
+	<p>For an overview of how to upload images to CoralNet, refer to our <a href="http://vimeo.com/album/3015579">Upload Instructions</a> album on Vimeo. </p><p>If you want to add annotations to previously uploaded images, please visit our new <a href="{% url annotation_upload source.id %}">annotations upload page</a>.</p>
     <div class="narrow_column">
 
         <form id="upload_options_form" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
