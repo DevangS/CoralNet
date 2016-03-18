@@ -464,7 +464,10 @@ def metadata_edit_ajax(request, source_id):
             image.metadata.save()
 
         # After entering data, try to remove unused key values
-        source.remove_unused_key_values()
+        # source.remove_unused_key_values()
+        #
+        # THIS WAS TEMPORARILY DISABLED SINCE IT CAUSES DATA LOSS UNDER CERTAIN RACE CONDITIONS.
+        # See issue #1 in beijbom/coralnet
 
         return JsonResponse(dict(
             status='success',
