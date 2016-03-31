@@ -478,7 +478,7 @@ class CSVImportForm(Form):
 
 class ImportArchivedAnnotationsForm(Form):
     csv_file = FileField(
-        label='CSV file TEST',
+        label='Annotations file',
     )
     is_uploading_annotations_not_just_points = ChoiceField(
         label='Data',

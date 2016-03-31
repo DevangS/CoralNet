@@ -802,6 +802,7 @@ def import_archived_annotations(source_id, anndict, with_labels = True):
                 point_generation_type=PointGen.Types.IMPORTED,
                 imported_number_of_points=len(anndict[image.metadata.name])
         )
+        image.save()
         image.status.hasRandomPoints = True
         image.status.annotatedByHuman = with_labels
         image.status.save()

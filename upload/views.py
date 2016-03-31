@@ -314,11 +314,10 @@ def upload_archived_annotations(request, source_id):
             
             # These next four lines look very strange. But for some reason, I had to explicitly assign it to True for the logic
             # to work in subsequent python code. Must be some miscommunication btw. django forms and python.
-            if csv_import_form.cleaned_data['is_uploading_annotations_not_just_points'] == True:
+            if csv_import_form.cleaned_data['is_uploading_annotations_not_just_points'] == 'True':
                 uploading_anns_and_points = True
             else:
                 uploading_anns_and_points = False
-            
             try:
                 anndict = load_archived_csv(source_id, file_) # load CSV file.
             except Exception as me:
