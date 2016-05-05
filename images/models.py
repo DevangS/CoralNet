@@ -277,6 +277,15 @@ class Source(models.Model):
         """
         return len(self.get_key_list())
 
+    def location_value_field_names(self):
+        """
+        Return the names of the location value fields that this source
+        uses, as a list:
+        ['value1', 'value2', 'value3']
+        """
+        all_fields = ['value1', 'value2', 'value3', 'value4', 'value5']
+        return all_fields[:self.num_of_keys()]
+
     def image_annotation_area_display(self):
         """
         Display the annotation-area parameters in templates.
@@ -659,25 +668,21 @@ class Image(models.Model):
         """
         Returns the image's location values as a list of strings:
         ['Shore3', 'Reef 5', 'Loc10']
+        Add one list item per value field used by the source. If this
+        image isn't using one of the value fields, the corresponding
+        list item will be an empty string:
+        ['Shore2', '', 'Loc7']
         """
+        field_names = self.source.location_value_field_names()
 
-        valueList = []
-        metadata = self.metadata
-
-        for valueIndex, valueClass in [
-                ('value1', Value1),
-                ('value2', Value2),
-                ('value3', Value3),
-                ('value4', Value4),
-                ('value5', Value5)
-        ]:
-            valueObj = getattr(metadata, valueIndex)
-            if valueObj:
-                valueList.append(valueObj.name)
+        value_name_list = []
+        for field_name in field_names:
+            value_object = getattr(self.metadata, field_name)
+            if value_object:
+                value_name_list.append(value_object.name)
             else:
-                break
-
-        return valueList
+                value_name_list.append('')
+        return value_name_list
 
     def get_location_value_str_list_robust(self):
         """
