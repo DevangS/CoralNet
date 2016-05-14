@@ -109,7 +109,7 @@ var CNMap = (function() {
                 },
                 multipleSources: {
                     name: "Multiple sources",
-                    icon: "http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/images/m1.png"
+                    icon: "static/img/m1.png"
                 }
             };
 
