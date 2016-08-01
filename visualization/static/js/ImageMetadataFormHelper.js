@@ -201,7 +201,7 @@ function metadataSaveAjaxResponseHandler(response) {
         util.pageLeaveWarningDisable();
 
         // Remove field stylings
-        $('#id_metadata_form input[type="text"]').removeClass('changed', 'error');
+        $('#id_metadata_form input[type="text"]').removeClass('changed error');
     }
     else {  // 'error'
         $('#id_metadata_save_status').text("There were error(s); couldn't save");
